@@ -8,12 +8,12 @@ import { getMessaging } from "firebase/messaging";
 // They can also be overridden via VITE_FIREBASE_* env vars during build.
 const env = (import.meta as any).env || {};
 const firebaseConfig = {
-    apiKey: (env.VITE_FIREBASE_API_KEY || "AIzaSyCDV1FvrJe3hW1VQoyUFb8yh1TRAV1T6OQ").trim(),
-    authDomain: (env.VITE_FIREBASE_AUTH_DOMAIN || "cedar-risk-compliance-suite.firebaseapp.com").trim(),
-    projectId: (env.VITE_FIREBASE_PROJECT_ID || "cedar-risk-compliance-suite").trim(),
-    storageBucket: (env.VITE_FIREBASE_STORAGE_BUCKET || "cedar-risk-compliance-suite.firebasestorage.app").trim(),
-    messagingSenderId: (env.VITE_FIREBASE_MESSAGING_SENDER_ID || "63265176715").trim(),
-    appId: (env.VITE_FIREBASE_APP_ID || "1:63265176715:web:a17405dcbb8280f917a88e").trim()
+    apiKey: (env.VITE_FIREBASE_API_KEY).trim(),
+    authDomain: (env.VITE_FIREBASE_AUTH_DOMAIN).trim(),
+    projectId: (env.VITE_FIREBASE_PROJECT_ID).trim(),
+    storageBucket: (env.VITE_FIREBASE_STORAGE_BUCKET).trim(),
+    messagingSenderId: (env.VITE_FIREBASE_MESSAGING_SENDER_ID).trim(),
+    appId: (env.VITE_FIREBASE_APP_ID).trim()
 };
 
 const app = initializeApp(firebaseConfig);
