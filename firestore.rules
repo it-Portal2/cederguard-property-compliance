@@ -1,0 +1,152 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =====================================================
+    // CedarGuard Compliance & Risk Manager – Firestore Rules
+    // =====================================================
+    // NOTE: All production data access flows through the
+    // backend API (Vercel serverless function using Firebase
+    // Admin SDK), which bypasses these rules. These rules
+    // serve as a defence-in-depth layer for any direct
+    // client SDK access and for development/testing.
+    // =====================================================
+
+    // --- Helper Functions ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function hasRole(role) {
+      return isSignedIn() && getUserData().role == role;
+    }
+
+    function isAdmin() {
+      return hasRole('admin');
+    }
+
+    function isClientAdminOrAbove() {
+      return isAdmin() || hasRole('client_admin');
+    }
+
+    // --- Users Collection ---
+    match /users/{userId} {
+      // Users can read their own profile; admins can read any
+      allow read: if isOwner(userId) || isAdmin();
+      // Users can create their own profile on first login
+      allow create: if isOwner(userId);
+      // Users can update their own profile; admins can update any
+      allow update: if isOwner(userId) || isAdmin();
+      // Only admins can delete user records
+      allow delete: if isAdmin();
+
+      // User sub-collections (preferences, legacy data)
+      match /data/{document=**} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+    }
+
+    // --- Projects Collection ---
+    match /projects/{projectId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isClientAdminOrAbove();
+
+      // Project sub-collections (compliance, risks, issues, KRIs, etc.)
+      match /data/{document=**} {
+        allow read: if isSignedIn();
+        allow write: if isSignedIn();
+      }
+    }
+
+    // --- Programmes Collection ---
+    match /programmes/{programmeId} {
+      allow read: if isSignedIn();
+      allow create: if isClientAdminOrAbove();
+      allow update: if isSignedIn();
+      allow delete: if isClientAdminOrAbove();
+    }
+
+    // --- Evidence Collection ---
+    match /evidence/{evidenceId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
+    }
+
+    // --- Invitations Collection ---
+    match /invitations/{invitationId} {
+      allow read: if isSignedIn();
+      allow create: if isClientAdminOrAbove();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // --- API Keys Collection ---
+    match /apiKeys/{keyId} {
+      allow read: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow create: if isSignedIn();
+      allow delete: if isSignedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    // --- Activity Logs Collection ---
+    match /activityLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn();
+      allow update, delete: if false; // Immutable audit log
+    }
+
+    // --- System Mappings Collection ---
+    match /systemMappings/{clientId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // --- Global Risks Collection ---
+    match /globalRisks/{clientId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // --- Compliance Library Collection ---
+    match /complianceLibrary/{itemId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // --- Compliance Domains Collection ---
+    match /complianceDomains/{domainId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // --- Invoices Collection ---
+    match /invoices/{invoiceId} {
+      allow read: if isSignedIn();
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // --- Pricing Config ---
+    match /config/{configId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // --- Deny all unmatched paths ---
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

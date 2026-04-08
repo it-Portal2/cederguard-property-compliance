@@ -1,0 +1,82 @@
+# Dependencies
+node_modules/
+
+# Build output
+build/
+dist/
+coverage/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+output.txt
+tsc_output.txt
+tsc_errors.txt
+tsc_errors_utf8.txt
+build_output.txt
+build_output_utf8.txt
+temp_dash_diff.txt
+
+# Environment files (keep .env.example as template)
+.env*
+!.env.example
+
+# Vercel
+.vercel
+
+# Firebase
+.firebase
+
+# Firebase Admin SDK service account keys (CRITICAL: never commit)
+cedar-risk-compliance-suite-firebase-adminsdk-*.json
+*-firebase-adminsdk-*.json
+*-service-account*.json
+
+# Binary archives
+*.7z
+*.zip
+*.tar.gz
+*.rar
+
+# Excel data files (source data, not code)
+*.xlsx
+*.xlsm
+*.xls
+
+# Utility scripts (dev-only, not part of the app)
+analyze_excel.py
+inspect_excel.py
+tmp_cleanup_scan.py
+extract_colors.cjs
+findMissingProps.cjs
+replace_landing.cjs
+fix_jsx.js
+depth_counter.js
+test-ai.js
+transform-data.js
+update_colors.js
+add-envs.ps1
+set-vercel-envs.ps1
+
+# JSON data dumps
+excel_analysis.json
+excel_inspection.txt
+
+# Dead/orphaned files
+*.lost
+
+# PDF documents
+*.pdf
+
+# Standalone HTML prototypes
+compliance-profiler.html
+project-compliance-profiler.html
+project-risk-identifier.html
+risk-identifier.html
+regulations.html
+
+# Temporary directories
+tmp/

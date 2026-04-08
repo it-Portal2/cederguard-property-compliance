@@ -1,0 +1,165 @@
+import { ApiContext } from "../lib/context.js";
+import { getAI, parseAIResponse } from "../lib/context.js";
+import { GoogleGenAI } from "@google/genai";
+
+export const aiRoutes: Record<
+  string,
+  (req: any, res: any, ctx: ApiContext) => Promise<any>
+> = {
+  geminiPrompt: async (req, res, ctx) => {
+    const {
+      db,
+      uid,
+      email,
+      userData,
+      isAdmin,
+      isClientAdmin,
+      SYSTEM_ADMIN_EMAILS,
+    } = ctx;
+    const { prompt, config, action } = req.body;
+    if (!prompt) return res.status(400).json({ error: "Missing prompt text" });
+
+    // Use the latest Gemini flash model alias as strictly requested
+    const PRIMARY_MODEL = "gemini-flash-latest";
+    const BACKUP_MODEL = "gemini-flash-latest";
+
+    const systemKey = process.env.GEMINI_API_KEY;
+
+    // Logic: Use system key first, fallback to user's personal key if configured
+    const userPersonalKey = (userData?.geminiBackupKey || "").trim();
+    const primaryKey = systemKey || userPersonalKey;
+    const backupKey = primaryKey === systemKey ? userPersonalKey : null; // Only use user key as backup if system was primary
+
+    const isJsonAction = [
+      "analyzeCompliance",
+      "analyzeRisks",
+      "analyzeControls",
+    ].includes(action);
+    const generationConfig = {
+      temperature: config?.temperature || 0.7,
+      topP: config?.topP || 0.95,
+      topK: config?.topK || 40,
+      maxOutputTokens: config?.maxOutputTokens || 8192,
+      responseMimeType: isJsonAction
+        ? "application/json"
+        : config?.responseMimeType || "text/plain",
+      responseSchema: isJsonAction ? config?.responseSchema : undefined,
+    };
+
+    const tryGenerate = async (
+      apiKey: string,
+      modelName: string,
+      maxRetries = 1,
+    ) => {
+      let attempts = 0;
+      while (attempts <= maxRetries) {
+        try {
+          const ai = new GoogleGenAI({ apiKey });
+          const result: any = await ai.models.generateContent({
+            model: modelName,
+            contents: [{ parts: [{ text: prompt }] }],
+            config: generationConfig,
+          });
+          let val = result.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (isJsonAction || config?.responseMimeType === "application/json") {
+            val = parseAIResponse(
+              val || "",
+              action === "analyzeCompliance" ? {} : [],
+            );
+          }
+          return val;
+        } catch (err: any) {
+          attempts++;
+          if (
+            err.message?.includes("AI_PARSE_CRITICAL_FAILURE") &&
+            attempts <= maxRetries
+          ) {
+            console.warn(
+              `[AI Retry Interceptor] Parse failed or response truncated globally. Retrying generation... (Attempt ${attempts} of ${maxRetries})`,
+            );
+            continue;
+          }
+          throw err;
+        }
+      }
+    };
+
+    try {
+      if (!primaryKey) throw new Error("No API key configured");
+      const result = await tryGenerate(primaryKey, PRIMARY_MODEL);
+      return res.status(200).json({ success: true, result });
+    } catch (initialError: any) {
+      console.error("PRIMARY AI ATTEMPT FAILED:", {
+        status: initialError?.status,
+        message: initialError?.message,
+        details: initialError?.details,
+        source: userPersonalKey ? "user" : "system",
+        action,
+      });
+
+      if (backupKey && backupKey !== primaryKey) {
+        try {
+          console.log("Attempting fallback to system key...");
+          const result = await tryGenerate(backupKey, BACKUP_MODEL);
+          return res.status(200).json({ success: true, result });
+        } catch (backupError: any) {
+          console.error("BACKUP AI ATTEMPT FAILED:", {
+            status: backupError?.status,
+            message: backupError?.message,
+            details: backupError?.details,
+            action,
+          });
+          return handleError(backupError, "system");
+        }
+      }
+      return handleError(initialError, userPersonalKey ? "user" : "system");
+    }
+
+    function handleError(err: any, source: "user" | "system") {
+      const isQuotaError =
+        err?.status === 429 ||
+        err?.message?.includes("429") ||
+        err?.message?.includes("quota");
+      const isTimeout =
+        err?.status === 408 ||
+        err?.message?.includes("deadline") ||
+        err?.message?.includes("timeout");
+
+      let errorMsg = "AI engine encountered an error.";
+      if (isQuotaError) {
+        errorMsg =
+          source === "user"
+            ? "Your personal Gemini API quota exceeded. Please wait at least 60 seconds. Check AI Studio billing."
+            : "System AI quota exceeded. Provide your own Gemini API key in Profile Settings for higher limits.";
+      } else if (isTimeout) {
+        errorMsg =
+          "AI engine timed out. The analysis is complex; please try again in a moment.";
+      } else if (err?.message?.includes("overloaded")) {
+        errorMsg =
+          "Gemini server is overloaded. Please try again or switch to a different model in settings.";
+      }
+
+      return res.status(isQuotaError ? 429 : isTimeout ? 408 : 500).json({
+        error: errorMsg,
+        details: err.message || String(err),
+        retryAfter: isQuotaError ? 60 : null,
+      });
+    }
+  },
+  analyzeCompliance: async (req, res, ctx) => {
+    req.body.action = "analyzeCompliance";
+    return aiRoutes.geminiPrompt(req, res, ctx);
+  },
+  analyzeRisks: async (req, res, ctx) => {
+    req.body.action = "analyzeRisks";
+    return aiRoutes.geminiPrompt(req, res, ctx);
+  },
+  analyzeControls: async (req, res, ctx) => {
+    req.body.action = "analyzeControls";
+    return aiRoutes.geminiPrompt(req, res, ctx);
+  },
+  chatWithAI: async (req, res, ctx) => {
+    req.body.action = "chatWithAI";
+    return aiRoutes.geminiPrompt(req, res, ctx);
+  },
+};

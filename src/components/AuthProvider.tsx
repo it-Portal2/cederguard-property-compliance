@@ -1,0 +1,45 @@
+import React, { useEffect, useState } from 'react';
+import { useStore } from '../store/useStore';
+import { auth } from '../lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { Loader2 } from 'lucide-react';
+import { api } from '../lib/api';
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const setUser = useStore(state => state.setUser);
+    const initStore = useStore(state => state.initStore);
+    const isInitialized = useStore(state => state.isInitialized);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+            if (firebaseUser) {
+                setUser(firebaseUser);
+                try {
+                    await initStore();
+                } catch (err) {
+                    console.error('AuthProvider init error:', err);
+                }
+            } else {
+                setUser(null);
+            }
+            setLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, [setUser, initStore]);
+
+    // Show loading if we are still checking auth OR if we have a user but the store isn't ready yet
+    if (loading || (useStore.getState().user && !isInitialized)) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-slate-50">
+                <div className="flex flex-col items-center gap-3">
+                    <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+                    <p className="text-sm text-slate-500 font-medium">Loading your workspace...</p>
+                </div>
+            </div>
+        );
+    }
+
+    return <>{children}</>;
+};
