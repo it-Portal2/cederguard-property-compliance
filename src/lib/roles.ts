@@ -1,6 +1,9 @@
+import { ROLE_STRINGS } from "./roleConstants";
+
 export type UserRole =
   | "admin"
   | "client_admin"
+  | "enterprise"
   | "programme_manager"
   | "project_manager"
   | "senior_pm"
@@ -9,16 +12,8 @@ export type UserRole =
   | "project_coordinator"
   | "viewer";
 
-// Default admin emails – override with VITE_SYSTEM_ADMIN_EMAILS env var (comma-separated)
-const DEFAULT_ADMIN_EMAILS = [
-  "jitbanerjeesujan@gmail.com",
-  "ali@cedarguard.co.uk",
-  "support@cedarguard.co.uk",
-  "admin@cedarguard.co.uk",
-  "anthony.baafi@gmail.com",
-  "anthony@cedar-strategies.com",
-];
-
+// Admin emails must be configured via VITE_SYSTEM_ADMIN_EMAILS env var (comma-separated).
+// No hardcoded fallback — omitting the env var means no system admins are granted via email.
 export const SYSTEM_ADMIN_EMAILS: string[] = (() => {
   const envEmails = import.meta.env.VITE_SYSTEM_ADMIN_EMAILS;
   if (envEmails && typeof envEmails === "string") {
@@ -27,16 +22,16 @@ export const SYSTEM_ADMIN_EMAILS: string[] = (() => {
       .map((e) => e.trim().toLowerCase())
       .filter(Boolean);
   }
-  return DEFAULT_ADMIN_EMAILS;
+  return [];
 })();
 
 export const SUPER_ADMIN_EMAIL =
   SYSTEM_ADMIN_EMAILS[0] || "admin@cedarguard.co.uk";
 
 export const ROLES = {
-  ADMIN: "admin",
-  CLIENT_ADMIN: "client_admin",
-  PROJECT_MANAGER: "project_manager",
+  ADMIN: ROLE_STRINGS.ADMIN,
+  CLIENT_ADMIN: ROLE_STRINGS.CLIENT_ADMIN,
+  PROJECT_MANAGER: ROLE_STRINGS.PROJECT_MANAGER,
 } as const;
 
 export const isSystemAdmin = (email?: string) => {
@@ -45,42 +40,42 @@ export const isSystemAdmin = (email?: string) => {
 
 export const isSuperAdmin = (email?: string, role?: string) => {
   // A Super Admin is someone with the 'admin' role OR a system admin
-  return role === "admin" || isSystemAdmin(email);
+  return role === ROLE_STRINGS.ADMIN || isSystemAdmin(email);
 };
 
 export const isAtLeastClientAdmin = (role?: UserRole) => {
   if (!role) return false;
-  return ["admin", "client_admin"].includes(role);
+  return [ROLE_STRINGS.ADMIN, ROLE_STRINGS.CLIENT_ADMIN].includes(role as any);
 };
 
 export const isAtLeastPM = (role?: UserRole) => {
   if (!role) return false;
   return [
-    "admin",
-    "client_admin",
-    "project_manager",
-    "senior_pm",
-    "senior_project_manager",
-    "assistant_project_manager",
-    "project_coordinator",
-  ].includes(role);
+    ROLE_STRINGS.ADMIN,
+    ROLE_STRINGS.CLIENT_ADMIN,
+    ROLE_STRINGS.PROJECT_MANAGER,
+    ROLE_STRINGS.SENIOR_PM,
+    ROLE_STRINGS.SENIOR_PROJECT_MANAGER,
+    ROLE_STRINGS.ASSISTANT_PM,
+    ROLE_STRINGS.PROJECT_COORDINATOR,
+  ].includes(role as any);
 };
 
 export const isAtLeastProgrammeManager = (role?: UserRole) => {
   if (!role) return false;
-  return ["admin", "client_admin", "programme_manager"].includes(role);
+  return [ROLE_STRINGS.ADMIN, ROLE_STRINGS.CLIENT_ADMIN, ROLE_STRINGS.PROGRAMME_MANAGER].includes(role as any);
 };
 
 export const canCreateProject = (role?: UserRole) => {
   if (!role) return false;
   // Super Admin, Client Admin, and any Project Manager role can create projects.
-  return role === "admin" || role === "client_admin" || isAtLeastPM(role);
+  return role === ROLE_STRINGS.ADMIN || role === ROLE_STRINGS.CLIENT_ADMIN || isAtLeastPM(role);
 };
 
 export const canCreateProgramme = (role?: UserRole) => {
   if (!role) return false;
   // Super Admin and Client Admin can create programmes
-  return ["admin", "client_admin"].includes(role);
+  return [ROLE_STRINGS.ADMIN, ROLE_STRINGS.CLIENT_ADMIN].includes(role as any);
 };
 
 export const canCreateCompliance = (role?: UserRole) => {
@@ -104,15 +99,15 @@ export const canViewExecutiveReports = (role?: UserRole) => {
 };
 
 export const isClientAdmin = (role?: string) => {
-  return role === "client_admin";
+  return role === ROLE_STRINGS.CLIENT_ADMIN;
 };
 
 export const isPM = (role?: string) => {
   return [
-    "project_manager",
-    "senior_pm",
-    "senior_project_manager",
-    "assistant_project_manager",
-    "project_coordinator",
-  ].includes(role || "");
+    ROLE_STRINGS.PROJECT_MANAGER,
+    ROLE_STRINGS.SENIOR_PM,
+    ROLE_STRINGS.SENIOR_PROJECT_MANAGER,
+    ROLE_STRINGS.ASSISTANT_PM,
+    ROLE_STRINGS.PROJECT_COORDINATOR,
+  ].includes((role || "") as any);
 };

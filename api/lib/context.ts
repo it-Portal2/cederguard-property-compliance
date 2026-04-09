@@ -3,6 +3,7 @@ import { getFirestore } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
 import { getMessaging } from "firebase-admin/messaging";
 import { GoogleGenAI } from "@google/genai";
+import { ROLE_STRINGS } from "../../src/lib/roleConstants.js";
 
 export const maxDuration = 60;
 
@@ -41,7 +42,11 @@ export const getMessagingService = () => getMessaging();
 
 // Helper to get fresh AI instance
 export const getAI = () => {
-  return new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY});
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY is not configured");
+  }
+  return new GoogleGenAI({ apiKey });
 };
 
 // Helper to handle AI JSON responses with potential markdown backticks
@@ -177,7 +182,7 @@ export const isAuthorizedForContextImpl = async (
   primaryUid: string,
   isAdmin: boolean,
 ): Promise<boolean> => {
-  if (!contextId) return false;
+  if (!contextId || contextId.length > 128) return false;
   if (isAdmin) return true;
 
   // Check if it's a project
@@ -185,14 +190,23 @@ export const isAuthorizedForContextImpl = async (
   if (projectDoc.exists) {
     const project = projectDoc.data() || {};
 
-    // Client Admins / Program Managers see all projects in their organization
+    // Client Admins and Enterprise users see all projects in their organization
     if (
-      userData.role === "client_admin" ||
-      userData.role === "program_manager" ||
-      userData.role === "enterprise"
+      userData.role === ROLE_STRINGS.CLIENT_ADMIN ||
+      userData.role === ROLE_STRINGS.ENTERPRISE
     ) {
       if (project.clientId === primaryUid || project.clientId === uid)
         return true;
+    }
+
+    // Programme Managers see only projects under a programme they manage
+    if (userData.role === ROLE_STRINGS.PROGRAMME_MANAGER && project.programmeId) {
+      const assignedProgDoc = await db.collection("programmes").doc(project.programmeId).get();
+      if (assignedProgDoc.exists) {
+        const assignedProg = assignedProgDoc.data() || {};
+        if (assignedProg.pm === email || assignedProg.userId === uid)
+          return true;
+      }
     }
 
     // Project Managers see only their own projects or assigned ones
@@ -216,9 +230,8 @@ export const isAuthorizedForContextImpl = async (
         (ownerDoc.data()?.clientId === primaryUid || ownerDoc.id === primaryUid)
       ) {
         if (
-          userData.role === "client_admin" ||
-          userData.role === "program_manager" ||
-          userData.role === "enterprise"
+          userData.role === ROLE_STRINGS.CLIENT_ADMIN ||
+          userData.role === ROLE_STRINGS.ENTERPRISE
         )
           return true;
       }
@@ -229,11 +242,13 @@ export const isAuthorizedForContextImpl = async (
   const progDoc = await db.collection("programmes").doc(contextId).get();
   if (progDoc.exists) {
     const prog = progDoc.data() || {};
-    if (
-      prog.clientId === primaryUid ||
-      prog.userId === uid ||
-      prog.pm === email
-    )
+    const canAccessOrgProgramme =
+      userData.role === ROLE_STRINGS.CLIENT_ADMIN ||
+      userData.role === ROLE_STRINGS.PROGRAMME_MANAGER ||
+      userData.role === ROLE_STRINGS.ENTERPRISE;
+    if (canAccessOrgProgramme && prog.clientId === primaryUid)
+      return true;
+    if (prog.userId === uid || prog.pm === email)
       return true;
   }
 
@@ -245,7 +260,8 @@ export async function createContext(
   res: any,
 ): Promise<ApiContext | null> {
   if (initError) {
-    res.status(500).json({ error: "Server Boot Error: " + initError });
+    console.error("Server boot error:", initError);
+    res.status(500).json({ error: "Server configuration error" });
     return null;
   }
 
@@ -269,7 +285,15 @@ export async function createContext(
         return null;
       }
       uid = apiKeyDoc.data()?.uid;
+      if (!uid) {
+        res.status(401).json({ error: "Unauthorized: Malformed API key" });
+        return null;
+      }
       const userDoc = await db.collection("users").doc(uid).get();
+      if (!userDoc.exists) {
+        res.status(401).json({ error: "Unauthorized: API key owner no longer exists" });
+        return null;
+      }
       email = (userDoc.data()?.email || "").toLowerCase();
     } else {
       let decodedToken: any;
@@ -289,7 +313,15 @@ export async function createContext(
     // CENTRALIZED USER CONTEXT
     const userDoc = await db.collection("users").doc(uid).get();
     const userData = userDoc.data() || {};
-    const primaryUid = userData.clientId || uid;
+    // Verify clientId points to a real org owner document before trusting it as the tenant key.
+    // Prevents a user who writes an arbitrary clientId into their own doc from claiming another org.
+    let primaryUid = uid;
+    if (userData.clientId) {
+      const orgOwnerDoc = await db.collection("users").doc(userData.clientId).get();
+      if (orgOwnerDoc.exists) {
+        primaryUid = userData.clientId;
+      }
+    }
     // Admin Check Logic: Firestore role OR System Admin list
     const SYSTEM_ADMIN_EMAILS = (process.env.SYSTEM_ADMIN_EMAILS || "")
       .split(",")
@@ -297,16 +329,16 @@ export async function createContext(
       .filter(Boolean);
 
     const isAdmin =
-      userData.role === "admin" || SYSTEM_ADMIN_EMAILS.includes(email);
+      userData.role === ROLE_STRINGS.ADMIN || SYSTEM_ADMIN_EMAILS.includes(email);
     if (isAdmin) {
       console.log(
-        `Admin access granted to: ${email} (Method: ${userData.role === "admin" ? "Firestore" : "Env Var"})`,
+        `Admin access granted to: ${email} (Method: ${userData.role === ROLE_STRINGS.ADMIN ? "Firestore" : "Env Var"})`,
       );
     }
     const isClientAdmin =
       isAdmin ||
-      userData.role === "client_admin" ||
-      userData.role === "enterprise";
+      userData.role === ROLE_STRINGS.CLIENT_ADMIN ||
+      userData.role === ROLE_STRINGS.ENTERPRISE;
 
     const isAuthorizedForContext = async (contextId: string) => {
       return isAuthorizedForContextImpl(
@@ -334,11 +366,8 @@ export async function createContext(
       getMessagingService,
     };
   } catch (e: any) {
-    res
-      .status(500)
-      .json({
-        error: "Context creation error: " + (e?.message || "Unknown error"),
-      });
+    console.error("Context creation error:", e?.message || e);
+    res.status(500).json({ error: "An internal error occurred" });
     return null;
   }
 }

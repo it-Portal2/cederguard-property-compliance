@@ -3,8 +3,12 @@ import crypto from 'crypto';
 
 export const authRoutes: Record<string, (req: any, res: any, ctx: ApiContext) => Promise<any>> = {
   generateApiKey: async (req, res, ctx) => {
-    const { db, uid, email } = ctx;
+    const { db, uid, email, userData } = ctx;
     const { name } = req.body;
+
+    if (userData?.role === 'viewer') {
+      return res.status(403).json({ error: 'Forbidden: Viewers cannot generate API keys' });
+    }
     
     // Generate a random 32 character hex string
     const cryptoContent = crypto.randomBytes(32).toString('hex');
@@ -12,7 +16,7 @@ export const authRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
 
     await db.collection('apiKeys').doc(token).set({
       uid,
-      name: name || 'API Key',
+      name: (typeof name === 'string' ? name.trim().slice(0, 100) : '') || 'API Key',
       createdAt: new Date().toISOString()
     });
 
@@ -78,15 +82,31 @@ export const authRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
     const projectsSnap = await db.collection('projects').where('userId', '==', uidToDelete).get();
     for (const pDoc of projectsSnap.docs) {
        const pid = pDoc.id;
+       // Delete evidence linked to this project
        const evidenceSnap = await db.collection('evidence').where('project', '==', pid).get();
        for (const eDoc of evidenceSnap.docs) {
            await eDoc.ref.delete();
        }
+       // Delete all subcollection data stored under projects/{pid}/data/
+       const dataSnap = await db.collection('projects').doc(pid).collection('data').get();
+       for (const dDoc of dataSnap.docs) {
+           await dDoc.ref.delete();
+       }
        await pDoc.ref.delete();
     }
 
+    // 1b. Delete top-level programme docs owned by this user
+    const programmesSnap = await db.collection('programmes').where('userId', '==', uidToDelete).get();
+    for (const progDoc of programmesSnap.docs) {
+      await progDoc.ref.delete();
+    }
+
     // 2. Delete nested data maps in the users collection
-    const collectionsToClear = ['programmes', 'systemMappings', 'globalRisks', 'preferences'];
+    const collectionsToClear = [
+      'programmes', 'systemMappings', 'globalRisks', 'preferences',
+      'complianceItems', 'complianceAnalysis', 'risks', 'issues',
+      'kris', 'tasks', 'lessonsLearned',
+    ];
     for (const coll of collectionsToClear) {
        await db.collection('users').doc(uidToDelete).collection('data').doc(coll).delete();
     }
@@ -94,14 +114,21 @@ export const authRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
     // 3. Delete the main user document
     await db.collection('users').doc(uidToDelete).delete();
 
-    // 4. Delete Firebase Auth User Record
+    // 4. Delete all API keys belonging to this user
+    const apiKeysSnap = await db.collection('apiKeys').where('uid', '==', uidToDelete).get();
+    for (const keyDoc of apiKeysSnap.docs) {
+       await keyDoc.ref.delete();
+    }
+
+    // 5. Delete Firebase Auth User Record (revoke refresh tokens first to invalidate live sessions)
     try {
+       await getAuthService().revokeRefreshTokens(uidToDelete);
        await getAuthService().deleteUser(uidToDelete);
     } catch (authErr) {
        console.error('Failed to delete user from Firebase Auth. It might already be removed.', authErr);
     }
 
-    // 5. Log deletion
+    // 6. Log deletion
     db.collection('activityLogs').add({
        type: 'account_deleted',
        uid, 

@@ -37,7 +37,7 @@ async function callApi(
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 
   try {
-    const res = await fetch(`${API_URL}?action=${action}`, {
+    const res = await fetch(`${API_URL}?action=${encodeURIComponent(action)}`, {
       method: "POST",
       headers,
       body: JSON.stringify(body),

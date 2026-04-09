@@ -8,12 +8,12 @@ import { getMessaging } from "firebase/messaging";
 // They can also be overridden via VITE_FIREBASE_* env vars during build.
 const env = (import.meta as any).env || {};
 const firebaseConfig = {
-    apiKey: (env.VITE_FIREBASE_API_KEY).trim(),
-    authDomain: (env.VITE_FIREBASE_AUTH_DOMAIN).trim(),
-    projectId: (env.VITE_FIREBASE_PROJECT_ID).trim(),
-    storageBucket: (env.VITE_FIREBASE_STORAGE_BUCKET).trim(),
-    messagingSenderId: (env.VITE_FIREBASE_MESSAGING_SENDER_ID).trim(),
-    appId: (env.VITE_FIREBASE_APP_ID).trim()
+    apiKey: (env.VITE_FIREBASE_API_KEY ?? "").trim(),
+    authDomain: (env.VITE_FIREBASE_AUTH_DOMAIN ?? "").trim(),
+    projectId: (env.VITE_FIREBASE_PROJECT_ID ?? "").trim(),
+    storageBucket: (env.VITE_FIREBASE_STORAGE_BUCKET ?? "").trim(),
+    messagingSenderId: (env.VITE_FIREBASE_MESSAGING_SENDER_ID ?? "").trim(),
+    appId: (env.VITE_FIREBASE_APP_ID ?? "").trim()
 };
 
 const app = initializeApp(firebaseConfig);
@@ -56,6 +56,8 @@ export const sendMagicLink = async (email: string) => {
     };
     try {
         await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+        // Note: localStorage is readable by any JS on the page (XSS risk). Acceptable here
+        // because the value is only a non-secret email address used to pre-fill the sign-in form.
         window.localStorage.setItem('emailForSignIn', email);
     } catch (error) {
         console.error("Error sending magic link", error);
