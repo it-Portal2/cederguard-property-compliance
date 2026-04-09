@@ -1202,7 +1202,7 @@ export const useStore = create<AppState>((set, get) => ({
     const { tasks } = get();
     const next = [task, ...tasks];
     set({ tasks: next });
-    const contextId = get().activeProjectId || get().activeProgrammeId;
+    const contextId = task.projectId || task.programmeId || get().activeProjectId || get().activeProgrammeId;
     await api.saveData('tasks', next, contextId);
   },
   updateTask: async (id, updates) => {

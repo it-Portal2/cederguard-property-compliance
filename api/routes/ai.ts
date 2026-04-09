@@ -1,5 +1,5 @@
 import { ApiContext } from "../lib/context.js";
-import { getAI, parseAIResponse } from "../lib/context.js";
+import { parseAIResponse } from "../lib/context.js";
 import { GoogleGenAI } from "@google/genai";
 
 export const aiRoutes: Record<
@@ -19,9 +19,8 @@ export const aiRoutes: Record<
     const { prompt, config, action } = req.body;
     if (!prompt) return res.status(400).json({ error: "Missing prompt text" });
 
-    // Use the latest Gemini flash model alias as strictly requested
-    const PRIMARY_MODEL = "gemini-flash-latest";
-    const BACKUP_MODEL = "gemini-flash-latest";
+    const PRIMARY_MODEL = "gemini-2.5-flash";
+    const BACKUP_MODEL = "gemini-2.5-flash-lite";
 
     const systemKey = process.env.GEMINI_API_KEY;
 
@@ -46,20 +45,25 @@ export const aiRoutes: Record<
       responseSchema: isJsonAction ? config?.responseSchema : undefined,
     };
 
+    const TIMEOUT_MS = 55000;
+
     const tryGenerate = async (
-      apiKey: string,
+      ai: GoogleGenAI,
       modelName: string,
       maxRetries = 1,
     ) => {
       let attempts = 0;
       while (attempts <= maxRetries) {
         try {
-          const ai = new GoogleGenAI({ apiKey });
-          const result: any = await ai.models.generateContent({
+          const generatePromise = ai.models.generateContent({
             model: modelName,
             contents: [{ parts: [{ text: prompt }] }],
             config: generationConfig,
           });
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("AI request timed out after 55 seconds")), TIMEOUT_MS)
+          );
+          const result: any = await Promise.race([generatePromise, timeoutPromise]);
           let val = result.candidates?.[0]?.content?.parts?.[0]?.text;
           if (isJsonAction || config?.responseMimeType === "application/json") {
             val = parseAIResponse(
@@ -70,13 +74,18 @@ export const aiRoutes: Record<
           return val;
         } catch (err: any) {
           attempts++;
-          if (
-            err.message?.includes("AI_PARSE_CRITICAL_FAILURE") &&
-            attempts <= maxRetries
-          ) {
+          const isRetryable =
+            err.message?.includes("AI_PARSE_CRITICAL_FAILURE") ||
+            err?.status === 503 ||
+            err.message?.includes("overloaded") ||
+            err.message?.includes("503");
+          if (isRetryable && attempts <= maxRetries) {
             console.warn(
-              `[AI Retry Interceptor] Parse failed or response truncated globally. Retrying generation... (Attempt ${attempts} of ${maxRetries})`,
+              `[AI Retry Interceptor] Retryable failure. Retrying... (Attempt ${attempts} of ${maxRetries})`,
             );
+            if (err?.status === 503 || err.message?.includes("overloaded")) {
+              await new Promise(r => setTimeout(r, 5000));
+            }
             continue;
           }
           throw err;
@@ -86,27 +95,27 @@ export const aiRoutes: Record<
 
     try {
       if (!primaryKey) throw new Error("No API key configured");
-      const result = await tryGenerate(primaryKey, PRIMARY_MODEL);
+      const primaryAI = new GoogleGenAI({ apiKey: primaryKey });
+      const result = await tryGenerate(primaryAI, PRIMARY_MODEL);
       return res.status(200).json({ success: true, result });
     } catch (initialError: any) {
       console.error("PRIMARY AI ATTEMPT FAILED:", {
         status: initialError?.status,
         message: initialError?.message,
-        details: initialError?.details,
         source: userPersonalKey ? "user" : "system",
         action,
       });
 
       if (backupKey && backupKey !== primaryKey) {
         try {
-          console.log("Attempting fallback to system key...");
-          const result = await tryGenerate(backupKey, BACKUP_MODEL);
+          console.log("Attempting fallback to backup key...");
+          const backupAI = new GoogleGenAI({ apiKey: backupKey });
+          const result = await tryGenerate(backupAI, BACKUP_MODEL);
           return res.status(200).json({ success: true, result });
         } catch (backupError: any) {
           console.error("BACKUP AI ATTEMPT FAILED:", {
             status: backupError?.status,
             message: backupError?.message,
-            details: backupError?.details,
             action,
           });
           return handleError(backupError, "system");
@@ -141,7 +150,6 @@ export const aiRoutes: Record<
 
       return res.status(isQuotaError ? 429 : isTimeout ? 408 : 500).json({
         error: errorMsg,
-        details: err.message || String(err),
         retryAfter: isQuotaError ? 60 : null,
       });
     }

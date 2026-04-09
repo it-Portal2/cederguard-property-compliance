@@ -1,5 +1,55 @@
 import { api } from "../lib/api";
 import { KRI_LIST } from "../data/riskData";
+import toast from "react-hot-toast";
+
+export function handleAIError(err: any, context = "AI operation") {
+  const msg: string = err?.message || String(err);
+
+  if (err?.status === 429 || msg.includes("429") || msg.includes("quota")) {
+    toast.error(
+      "AI quota exceeded. Please wait 60 seconds or add your own Gemini API key in Profile Settings.",
+      { duration: 8000 },
+    );
+  } else if (
+    err?.status === 408 ||
+    msg.includes("deadline") ||
+    msg.includes("timeout")
+  ) {
+    toast.error("AI request timed out. Please try again.", { duration: 5000 });
+  } else if (msg.includes("overloaded") || err?.status === 503) {
+    toast.error(
+      "Gemini is currently overloaded. Please try again in a few moments.",
+      { duration: 5000 },
+    );
+  } else if (
+    err?.status === 401 ||
+    err?.status === 403 ||
+    msg.includes("API_KEY") ||
+    msg.toLowerCase().includes("api key") ||
+    msg.toLowerCase().includes("unauthorized")
+  ) {
+    toast.error(
+      "AI service authentication failed. Check your API key in Profile Settings.",
+      { duration: 6000 },
+    );
+  } else if (
+    msg.includes("fetch") ||
+    msg.includes("NetworkError") ||
+    msg.includes("Failed to fetch")
+  ) {
+    toast.error(
+      "Network error. Please check your connection and try again.",
+      { duration: 5000 },
+    );
+  } else if (msg.includes("AI_PARSE_CRITICAL_FAILURE")) {
+    toast.error(
+      `${context} returned an unreadable response. Please try again.`,
+      { duration: 5000 },
+    );
+  } else {
+    toast.error(`${context} failed. Please try again.`, { duration: 4000 });
+  }
+}
 
 export async function analyzeCompliance(projectInfo: any, allItems: any[]) {
   const safeItems = Array.isArray(allItems) ? allItems : [];
@@ -112,6 +162,7 @@ FORMATTING (STRICT): ABSOLUTELY NO MARKDOWN. ANY IDENTIFIER OR ID MUST BE ON THE
     };
   } catch (err: any) {
     console.error("Compliance Analysis Error:", err);
+    handleAIError(err, "Compliance analysis");
     throw err;
   }
 }
@@ -209,6 +260,7 @@ Generate risks with precise descriptions. For each risk:
     return Array.isArray(res.result) ? res.result : [];
   } catch (err: any) {
     console.error("Risk Analysis Error:", err);
+    handleAIError(err, "Risk analysis");
     throw err;
   }
 }
@@ -329,9 +381,10 @@ FORMATTING (STRICT):
   try {
     const res = await api.analyzeRisks(prompt, config);
     if (!res.success) throw new Error(res.error || "Analysis failed");
-    return res.result;
+    return res.result ?? null;
   } catch (err: any) {
     console.error("Strategic Risk Analysis Error:", err);
+    handleAIError(err, "Strategic risk analysis");
     throw err;
   }
 }
@@ -376,11 +429,12 @@ FORMATTING (STRICT): ABSOLUTELY NO MARKDOWN. ANY IDENTIFIER OR ID MUST BE ON THE
   };
 
   try {
-    const res = await api.analyzeRisks(prompt, config); // Re-using analyzeRisks proxy for control analysis as well
+    const res = await api.analyzeControls(prompt, config);
     if (!res.success) throw new Error(res.error || "Analysis failed");
     return Array.isArray(res.result) ? res.result : [];
   } catch (err: any) {
     console.error("Control Analysis Error:", err);
+    handleAIError(err, "Control analysis");
     throw err;
   }
 }
@@ -441,6 +495,7 @@ INSTRUCTIONS (STRICT COMPLIANCE REQUIRED):
     return res.result || {};
   } catch (err: any) {
     console.error("Strategic Analysis Error:", err);
+    handleAIError(err, "Strategic insights analysis");
     throw err;
   }
 }
@@ -480,6 +535,7 @@ export async function analyzeComplianceProgress(domainStats: any[]) {
     return Array.isArray(res.result) ? res.result : [];
   } catch (err: any) {
     console.error("Compliance Progress Analysis Error:", err);
+    handleAIError(err, "Compliance progress analysis");
     throw err;
   }
 }
@@ -511,6 +567,7 @@ export async function analyzeContextSentence(sentence: string, type: 'risk' | 'c
     return Array.isArray(res.result) ? res.result : [];
   } catch (err: any) {
     console.error("Ad-hoc Analysis Error:", err);
+    handleAIError(err, "Analysis");
     throw err;
   }
 }
@@ -559,9 +616,10 @@ export async function analyzeComplianceLifecycle(projectInfo: any, complianceIte
   try {
     const res = await api.analyzeCompliance(prompt, config);
     if (!res.success) throw new Error(res.error || "Lifecycle analysis failed");
-    return res.result;
+    return res.result ?? null;
   } catch (err: any) {
     console.error("Lifecycle Analysis Error:", err);
+    handleAIError(err, "Lifecycle analysis");
     throw err;
   }
 }
@@ -615,9 +673,10 @@ export async function analyzeSensitivity(projectInfo: any, risks: any[], complia
     // Using analyzeRisks as it's more appropriate for sensitivity/ALE focus
     const res = await api.analyzeRisks(prompt, config);
     if (!res.success) throw new Error(res.error || "Sensitivity analysis failed");
-    return res.result;
+    return res.result ?? null;
   } catch (err: any) {
     console.error("Sensitivity Analysis Error:", err);
+    handleAIError(err, "Sensitivity analysis");
     throw err;
   }
 }
@@ -659,9 +718,10 @@ export async function analyzeComplianceSentiment(projectInfo: any, complianceIte
   try {
     const res = await api.analyzeCompliance(prompt, config);
     if (!res.success) throw new Error(res.error || "Sentiment analysis failed");
-    return res.result;
+    return res.result ?? null;
   } catch (err: any) {
     console.error("Sentiment Analysis Error:", err);
+    handleAIError(err, "Compliance sentiment analysis");
     throw err;
   }
 }
@@ -746,9 +806,10 @@ export async function chatWithAI(query: string, projectInfo: any, context?: stri
   try {
     const res = await api.analyzeCompliance(prompt, config);
     if (!res.success) throw new Error(res.error || "AI Chat failed");
-    return res.result.message;
+    return res.result?.message ?? "";
   } catch (err: any) {
     console.error("AI Chat Error:", err);
+    handleAIError(err, "AI chat");
     throw err;
   }
 }

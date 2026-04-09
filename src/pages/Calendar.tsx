@@ -1,32 +1,38 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { useStore } from '../store/useStore';
-import { 
-  format, addMonths, subMonths, startOfMonth, endOfMonth, 
+import {
+  format, addMonths, subMonths, startOfMonth, endOfMonth,
   startOfWeek, endOfWeek, isSameMonth, isSameDay, addDays,
-  parseISO, isWithinInterval
+  parseISO, isWithinInterval, isValid
 } from 'date-fns';
-import { 
-  ChevronLeft, ChevronRight, Calendar as CalendarIcon, 
-  Plus, Search, Filter, Building2, Rocket, Clock, ChevronDown, X, Layers, Check
+import {
+  ChevronLeft, ChevronRight, Calendar as CalendarIcon,
+  Plus, Search, Filter, Building2, Rocket, Clock, ChevronDown, X, Layers, Check, Loader2
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { clsx } from 'clsx';
 import { getRIBALabelFull } from '../data/complianceData';
+import { isAtLeastPM } from '../lib/roles';
 
 export function Calendar() {
-  const { 
-    projects, 
-    programmes, 
-    complianceItems, 
-    risks, 
+  const {
+    projects,
+    programmes,
+    complianceItems,
+    risks,
     tasks,
     addTask,
+    updateTask,
+    deleteTask,
     issues,
     activeProjectId,
     activeProgrammeId,
     setActiveProject,
-    setActiveProgramme
+    setActiveProgramme,
+    user
   } = useStore();
+  const canAddEvents = isAtLeastPM(user?.role);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month');
@@ -55,6 +61,126 @@ export function Calendar() {
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
+  // Add Event form (controlled state)
+  const [newEventForm, setNewEventForm] = useState({ title: '', description: '', date: '' });
+  const [titleError, setTitleError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Edit / Delete state for task events
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editForm, setEditForm] = useState({ title: '', description: '', date: '', projectId: '' });
+  const [editTitleError, setEditTitleError] = useState('');
+  const [isEditSaving, setIsEditSaving] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Reset and pre-populate Add Event form whenever modal opens
+  useEffect(() => {
+    if (isAddModalOpen) {
+      setNewEventForm({ title: '', description: '', date: format(selectedDate, 'yyyy-MM-dd') });
+      setTitleError('');
+    }
+  }, [isAddModalOpen]);
+
+  // Pre-populate edit form and reset edit/delete UI whenever the selected event changes
+  useEffect(() => {
+    if (selectedEvent?.type === 'task' && selectedEvent.originalItem) {
+      setEditForm({
+        title: selectedEvent.originalItem.title || '',
+        description: selectedEvent.originalItem.description || '',
+        date: selectedEvent.originalItem.dueDate || '',
+        projectId: selectedEvent.originalItem.projectId || '',
+      });
+    }
+    setIsEditMode(false);
+    setShowDeleteConfirm(false);
+    setEditTitleError('');
+  }, [selectedEvent]);
+
+  // --- Event modal handlers ---
+  const handleCloseEventModal = () => {
+    setSelectedEvent(null);
+    setIsEditMode(false);
+    setShowDeleteConfirm(false);
+    setEditTitleError('');
+  };
+
+  const handleAddEvent = async () => {
+    if (!newEventForm.title.trim()) {
+      setTitleError('Event name is required');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      // Always scope the task to the currently active context.
+      // This mirrors how risks, compliance items, and issues work in this app —
+      // one context at a time, no cross-context writes.
+      const contextProjectId = activeProjectId || undefined;
+      const contextProgrammeId = !activeProjectId ? (activeProgrammeId || undefined) : undefined;
+      const activeProject = safeProjects.find(p => p.id === activeProjectId);
+      const activeProgramme = safeProgrammes.find(p => p.id === activeProgrammeId);
+      const contextName = activeProject?.name ?? activeProgramme?.name ?? 'General';
+
+      await (addTask as any)({
+        id: crypto.randomUUID(),
+        title: newEventForm.title.trim(),
+        description: newEventForm.description,
+        dueDate: newEventForm.date || format(selectedDate, 'yyyy-MM-dd'),
+        status: 'Pending',
+        priority: 'Medium',
+        projectId: contextProjectId,
+        programmeId: contextProgrammeId,
+        projectName: contextName,
+      });
+      toast.success('Event added to calendar');
+      setIsAddModalOpen(false);
+    } catch {
+      toast.error('Failed to save event. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleEditEvent = async () => {
+    if (!editForm.title.trim()) {
+      setEditTitleError('Event name is required');
+      return;
+    }
+    if (!selectedEvent?.originalItem?.id) return;
+    setIsEditSaving(true);
+    try {
+      await (updateTask as any)(selectedEvent.originalItem.id, {
+        title: editForm.title.trim(),
+        description: editForm.description,
+        dueDate: editForm.date,
+        projectId: editForm.projectId || undefined,
+        projectName: editForm.projectId
+          ? safeProjects.find(p => p.id === editForm.projectId)?.name ?? 'General'
+          : 'General',
+      });
+      toast.success('Event updated');
+      handleCloseEventModal();
+    } catch {
+      toast.error('Failed to update event. Please try again.');
+    } finally {
+      setIsEditSaving(false);
+    }
+  };
+
+  const handleDeleteEvent = async () => {
+    if (!selectedEvent?.originalItem?.id) return;
+    setIsDeleting(true);
+    try {
+      await (deleteTask as any)(selectedEvent.originalItem.id);
+      toast.success('Event deleted');
+      handleCloseEventModal();
+    } catch {
+      toast.error('Failed to delete event. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   // Safety Guards for Store Collections
   const safeProjects = Array.isArray(projects) ? projects : [];
   const safeProgrammes = Array.isArray(programmes) ? programmes : [];
@@ -71,7 +197,7 @@ export function Calendar() {
   // Component-level helper to get events for a specific context
   const getContextEvents = (type: 'all' | 'project' | 'programme', id?: string | null) => {
     const allEvents: any[] = [];
-    
+
     let filteredProjects = activeProjects;
     let filteredProgrammes = activeProgrammes;
 
@@ -82,14 +208,14 @@ export function Calendar() {
       filteredProjects = activeProjects.filter(p => p.programmeId === id);
       filteredProgrammes = activeProgrammes.filter(p => p.id === id);
     } else if (type === 'all' && mergedCompareIds.length > 0 && compareMode) {
-      filteredProjects = activeProjects.filter(p => 
-        mergedCompareIds.includes(`project:${p.id}`) || 
+      filteredProjects = activeProjects.filter(p =>
+        mergedCompareIds.includes(`project:${p.id}`) ||
         mergedCompareIds.includes(`programme:${p.programmeId}`)
       );
-      filteredProgrammes = activeProgrammes.filter(p => 
+      filteredProgrammes = activeProgrammes.filter(p =>
         mergedCompareIds.includes(`programme:${p.id}`)
       );
-    } else if (activeProjectId && type === 'all') { // Fallback to store state if not explicit
+    } else if (activeProjectId && type === 'all') {
       filteredProjects = activeProjects.filter(p => p.id === activeProjectId);
       filteredProgrammes = activeProgrammes.filter(p => p.id === activeProjects.find(proj => proj.id === activeProjectId)?.programmeId);
     } else if (activeProgrammeId && type === 'all') {
@@ -103,41 +229,21 @@ export function Calendar() {
     // Project Events (Milestones -> Emerald)
     filteredProjects.forEach(p => {
       if (p.startOnSite) {
-        allEvents.push({
-          id: `p-start-${p.id}`,
-          title: `[Start] ${p.name}: Construction Mobilisation`,
-          date: parseISO(p.startOnSite),
-          type: 'milestone',
-          projectName: p.name,
-          color: 'bg-emerald-500',
-          originalItem: p
-        });
+        const d = parseISO(p.startOnSite);
+        if (isValid(d)) allEvents.push({ id: `p-start-${p.id}`, title: `[Start] ${p.name}: Construction Mobilisation`, date: d, type: 'milestone', projectName: p.name, color: 'bg-emerald-500', originalItem: p });
       }
       if (p.targetPC) {
-        allEvents.push({
-          id: `p-pc-${p.id}`,
-          title: `[PC] ${p.name}: Target Completion Date`,
-          date: parseISO(p.targetPC),
-          type: 'milestone',
-          projectName: p.name,
-          color: 'bg-emerald-500',
-          originalItem: p
-        });
+        const d = parseISO(p.targetPC);
+        if (isValid(d)) allEvents.push({ id: `p-pc-${p.id}`, title: `[PC] ${p.name}: Target Completion Date`, date: d, type: 'milestone', projectName: p.name, color: 'bg-emerald-500', originalItem: p });
       }
       if (p.milestones && p.milestones.length > 0) {
         p.milestones.forEach(m => {
           if (m.date) {
-            const ribaLabel = m.stage ? `(Stage ${m.stage})` : '';
-            allEvents.push({
-              id: `p-mile-${p.id}-${m.id}`,
-              title: `[Milestone] ${p.name}: ${m.name} ${ribaLabel}`,
-              date: parseISO(m.date),
-              type: 'milestone',
-              projectName: p.name,
-              color: m.isKey ? 'bg-amber-500' : 'bg-emerald-500',
-              isKey: m.isKey,
-              originalItem: { ...p, milestoneDetails: m }
-            });
+            const d = parseISO(m.date);
+            if (isValid(d)) {
+              const ribaLabel = m.stage ? `(Stage ${m.stage})` : '';
+              allEvents.push({ id: `p-mile-${p.id}-${m.id}`, title: `[Milestone] ${p.name}: ${m.name} ${ribaLabel}`, date: d, type: 'milestone', projectName: p.name, color: m.isKey ? 'bg-amber-500' : 'bg-emerald-500', isKey: m.isKey, originalItem: { ...p, milestoneDetails: m } });
+            }
           }
         });
       }
@@ -146,130 +252,77 @@ export function Calendar() {
     // Programme Events (Milestones -> Emerald)
     filteredProgrammes.forEach(prog => {
       if (prog.programmeStartDate) {
-        allEvents.push({
-          id: `prog-start-${prog.id}`,
-          title: `[Start] ${prog.name}: Programme Inception`,
-          date: parseISO(prog.programmeStartDate),
-          type: 'milestone',
-          projectName: prog.name,
-          color: 'bg-emerald-500',
-          originalItem: prog
-        });
+        const d = parseISO(prog.programmeStartDate);
+        if (isValid(d)) allEvents.push({ id: `prog-start-${prog.id}`, title: `[Start] ${prog.name}: Programme Inception`, date: d, type: 'milestone', projectName: prog.name, color: 'bg-emerald-500', originalItem: prog });
       }
       if (prog.programmeEndDate) {
-        allEvents.push({
-          id: `prog-end-${prog.id}`,
-          title: `[End] ${prog.name}: Programme Closeout`,
-          date: parseISO(prog.programmeEndDate),
-          type: 'milestone',
-          projectName: prog.name,
-          color: 'bg-emerald-500',
-          originalItem: prog
-        });
+        const d = parseISO(prog.programmeEndDate);
+        if (isValid(d)) allEvents.push({ id: `prog-end-${prog.id}`, title: `[End] ${prog.name}: Programme Closeout`, date: d, type: 'milestone', projectName: prog.name, color: 'bg-emerald-500', originalItem: prog });
       }
       if (prog.milestones && prog.milestones.length > 0) {
         prog.milestones.forEach(m => {
           if (m.date) {
-            const ribaLabel = m.stage ? `(Stage ${m.stage})` : '';
-            allEvents.push({
-              id: `prog-mile-${prog.id}-${m.id}`,
-              title: `[Milestone] ${prog.name}: ${m.name} ${ribaLabel}`,
-              date: parseISO(m.date),
-              type: 'milestone',
-              projectName: prog.name,
-              color: m.isKey ? 'bg-amber-500' : 'bg-emerald-500',
-              isKey: m.isKey,
-              originalItem: { ...prog, milestoneDetails: m }
-            });
+            const d = parseISO(m.date);
+            if (isValid(d)) {
+              const ribaLabel = m.stage ? `(Stage ${m.stage})` : '';
+              allEvents.push({ id: `prog-mile-${prog.id}-${m.id}`, title: `[Milestone] ${prog.name}: ${m.name} ${ribaLabel}`, date: d, type: 'milestone', projectName: prog.name, color: m.isKey ? 'bg-amber-500' : 'bg-emerald-500', isKey: m.isKey, originalItem: { ...prog, milestoneDetails: m } });
+            }
           }
         });
       }
     });
 
-    const filteredCompliance = safeCompliance.filter(c => 
+    const filteredCompliance = safeCompliance.filter(c =>
       c.projectId ? projectIds.includes(c.projectId) : (c.programmeId && programmeIds.includes(c.programmeId))
     );
-
-    const filteredRisks = safeRisks.filter(r => 
+    const filteredRisks = safeRisks.filter(r =>
       r.projectId ? projectIds.includes(r.projectId) : (r.programmeId && programmeIds.includes(r.programmeId))
     );
-
-    const filteredTasks = safeTasks.filter(t => 
-      projectIds.includes(t.projectId)
-    );
-
-    const filteredIssues = safeIssues.filter(i => 
+    // Tasks are context-scoped: show tasks belonging to the active project(s) or programme(s).
+    // Tasks with no projectId but a programmeId belong to a programme context.
+    // Tasks with neither belong to the general/global context and always show.
+    const filteredTasks = safeTasks.filter(t => {
+      if (t.projectId) return projectIds.includes(t.projectId);
+      if (t.programmeId) return programmeIds.includes(t.programmeId);
+      return true; // general tasks (no context) always visible
+    });
+    const filteredIssues = safeIssues.filter(i =>
       i.projectId ? projectIds.includes(i.projectId) : (i.programmeId && programmeIds.includes(i.programmeId))
     );
 
-    // Compliance Events (Compliance -> Blue)
+    // Compliance Events (Blue)
     filteredCompliance.forEach(item => {
       if (item.dueDate) {
-        allEvents.push({
-          id: `comp-${item.id}`,
-          title: `[Compliance: ${item.reg}] ${item.req} - ${item.projectName || 'General'}`,
-          date: parseISO(item.dueDate),
-          type: 'compliance',
-          projectName: item.projectName || 'General',
-          color: 'bg-blue-500',
-          originalItem: item
-        });
+        const d = parseISO(item.dueDate);
+        if (isValid(d)) allEvents.push({ id: `comp-${item.id}`, title: `[Compliance: ${item.reg}] ${item.req} - ${item.projectName || 'General'}`, date: d, type: 'compliance', projectName: item.projectName || 'General', color: 'bg-blue-500', originalItem: item });
       }
     });
 
-    // Risk Events (Risk -> Red)
+    // Risk Events (Red)
     filteredRisks.forEach(risk => {
       if (risk.dueDate) {
-        allEvents.push({
-          id: `risk-due-${risk.id}`,
-          title: `[Risk Action] ${risk.title} - ${risk.project || risk.programme || 'General'}`,
-          date: parseISO(risk.dueDate),
-          type: 'risk',
-          projectName: risk.project || risk.programme || 'General',
-          color: 'bg-red-500',
-          originalItem: risk
-        });
+        const d = parseISO(risk.dueDate);
+        if (isValid(d)) allEvents.push({ id: `risk-due-${risk.id}`, title: `[Risk Action] ${risk.title} - ${risk.project || risk.programme || 'General'}`, date: d, type: 'risk', projectName: risk.project || risk.programme || 'General', color: 'bg-red-500', originalItem: risk });
       }
       if (risk.nextReviewDate) {
-        allEvents.push({
-          id: `risk-rev-${risk.id}`,
-          title: `[Risk Review] ${risk.title} - ${risk.project || risk.programme || 'General'}`,
-          date: parseISO(risk.nextReviewDate),
-          type: 'risk',
-          projectName: risk.project || risk.programme || 'General',
-          color: 'bg-red-500',
-          originalItem: risk
-        });
+        const d = parseISO(risk.nextReviewDate);
+        if (isValid(d)) allEvents.push({ id: `risk-rev-${risk.id}`, title: `[Risk Review] ${risk.title} - ${risk.project || risk.programme || 'General'}`, date: d, type: 'risk', projectName: risk.project || risk.programme || 'General', color: 'bg-red-500', originalItem: risk });
       }
     });
 
-    // Task Events (Other -> Slate)
+    // Task Events (Slate)
     filteredTasks.forEach(task => {
       if (task.dueDate) {
-        allEvents.push({
-          id: `task-${task.id}`,
-          title: `[Task] ${task.title} - ${task.projectName || 'General'}`,
-          date: parseISO(task.dueDate),
-          type: 'task',
-          projectName: task.projectName || 'General',
-          color: 'bg-slate-500',
-          originalItem: task
-        });
+        const d = parseISO(task.dueDate);
+        if (isValid(d)) allEvents.push({ id: `task-${task.id}`, title: `[Task] ${task.title} - ${task.projectName || 'General'}`, date: d, type: 'task', projectName: task.projectName || 'General', color: 'bg-slate-500', originalItem: task });
       }
     });
 
-    // Issue Events (Issue -> Orange)
+    // Issue Events (Orange)
     filteredIssues.forEach(issue => {
       if (issue.deadline) {
-        allEvents.push({
-          id: `issue-${issue.id}`,
-          title: `[Issue] ${issue.id}: ${issue.desc}`,
-          date: parseISO(issue.deadline),
-          type: 'issue',
-          projectName: issue.project || 'General',
-          color: 'bg-orange-500',
-          originalItem: issue
-        });
+        const d = parseISO(issue.deadline);
+        if (isValid(d)) allEvents.push({ id: `issue-${issue.id}`, title: `[Issue] ${issue.id}: ${issue.desc}`, date: d, type: 'issue', projectName: issue.project || 'General', color: 'bg-orange-500', originalItem: issue });
       }
     });
 
@@ -283,18 +336,18 @@ export function Calendar() {
     });
   };
 
-  const events = useMemo(() => getContextEvents('all'), [activeProjects, activeProgrammes, safeCompliance, safeRisks, safeTasks, safeIssues, activeProjectId, activeProgrammeId, filters]);
+  const events = useMemo(() => getContextEvents('all'), [activeProjects, activeProgrammes, safeCompliance, safeRisks, safeTasks, safeIssues, activeProjectId, activeProgrammeId, filters, compareMode, mergedCompareIds]);
   const eventsA = useMemo(() => {
     if (!compareIdA) return [];
     const [type, id] = compareIdA.split(':');
     return getContextEvents(type as any, id);
-  }, [compareIdA, activeProjects, activeProgrammes, safeCompliance, safeRisks, safeTasks, safeIssues, filters]);
+  }, [compareIdA, activeProjects, activeProgrammes, safeCompliance, safeRisks, safeTasks, safeIssues, filters, compareMode]);
 
   const eventsB = useMemo(() => {
     if (!compareIdB) return [];
     const [type, id] = compareIdB.split(':');
     return getContextEvents(type as any, id);
-  }, [compareIdB, activeProjects, activeProgrammes, safeCompliance, safeRisks, safeTasks, safeIssues, filters]);
+  }, [compareIdB, activeProjects, activeProgrammes, safeCompliance, safeRisks, safeTasks, safeIssues, filters, compareMode]);
 
   const conflicts = useMemo(() => {
     const dayMap = new Map<string, Set<string>>();
@@ -364,13 +417,15 @@ export function Calendar() {
                   {splitView ? 'Merge Views' : 'Split View'}
                 </button>
               )}
-             <button
-               onClick={() => setIsAddModalOpen(true)}
-               className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-2xl text-sm font-bold shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 transition-all shrink-0"
-             >
-               <Plus className="w-4 h-4" />
-               Add Event
-             </button>
+             {canAddEvents && (
+               <button
+                 onClick={() => setIsAddModalOpen(true)}
+                 className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-2xl text-sm font-bold shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 transition-all shrink-0"
+               >
+                 <Plus className="w-4 h-4" />
+                 Add Event
+               </button>
+             )}
              {/* Dynamic Context Selector - Move here for priority */}
              <div className="relative group flex-1 sm:min-w-[280px]">
               <select
@@ -382,12 +437,8 @@ export function Calendar() {
                     setActiveProgramme(null);
                   } else if (val.startsWith('programme-')) {
                     setActiveProgramme(val.replace('programme-', ''));
-                    setActiveProject(null);
                   } else if (val.startsWith('project-')) {
-                    const pid = val.replace('project-', '');
-                    setActiveProject(pid);
-                    const project = projects.find(p => p.id === pid);
-                    if (project) setActiveProgramme(project.programmeId);
+                    setActiveProject(val.replace('project-', ''));
                   }
                 }}
                 className="appearance-none w-full bg-white border-2 border-slate-100 text-slate-900 text-sm font-bold rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 block pl-11 pr-10 py-3.5 shadow-sm transition-all hover:bg-slate-50 hover:border-slate-200"
@@ -733,7 +784,11 @@ export function Calendar() {
               <div className="flex justify-between items-start mb-2">
                 <span className={clsx(
                   "text-xs font-black w-6 h-6 flex items-center justify-center rounded-lg transition-colors",
-                  isSameDay(day, new Date()) ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200" : "text-slate-400 group-hover:text-slate-900"
+                  isSameDay(day, new Date())
+                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200"
+                    : isSameDay(day, selectedDate)
+                      ? "ring-2 ring-indigo-400 bg-indigo-50 text-indigo-700"
+                      : "text-slate-400 group-hover:text-slate-900"
                 )}>
                   {formattedDate}
                 </span>
@@ -742,17 +797,19 @@ export function Calendar() {
                     Conflict
                   </div>
                 )}
-                <button 
-                  onClick={(e) => { 
-                    e.stopPropagation(); 
-                    setSelectedDate(cloneDay); 
-                    setIsAddModalOpen(true); 
-                  }}
-                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-200 rounded text-slate-400 hover:text-indigo-600 transition-all"
-                  title="Add Event"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
+                {canAddEvents && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedDate(cloneDay);
+                      setIsAddModalOpen(true);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-200 rounded text-slate-400 hover:text-indigo-600 transition-all"
+                    title="Add Event"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                )}
               </div>
               <div className="space-y-1">
                 {dayEvents.slice(0, 3).map(event => (
@@ -802,7 +859,11 @@ export function Calendar() {
             <div className="flex justify-between items-start mb-4">
               <span className={clsx(
                 "text-sm font-black w-8 h-8 flex items-center justify-center rounded-lg transition-colors",
-                isSameDay(currentDay, new Date()) ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200" : "text-slate-400 group-hover:text-slate-900"
+                isSameDay(currentDay, new Date())
+                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200"
+                  : isSameDay(currentDay, selectedDate)
+                    ? "ring-2 ring-indigo-400 bg-indigo-50 text-indigo-700"
+                    : "text-slate-400 group-hover:text-slate-900"
               )}>
                 {format(currentDay, 'd')}
               </span>
@@ -810,9 +871,10 @@ export function Calendar() {
             </div>
             <div className="space-y-2">
               {dayEvents.map(event => (
-                  <div 
+                  <div
                     key={event.id}
                     onClick={(e) => { e.stopPropagation(); setSelectedEvent(event); }}
+                    title={event.title}
                     className={clsx(
                       "text-[11px] font-black px-3 py-2 rounded-xl text-white shadow-sm flex items-center gap-2 cursor-pointer hover:opacity-90",
                       event.color
@@ -968,7 +1030,7 @@ export function Calendar() {
               ) : (
                 <div className="py-12 flex flex-col items-center text-center">
                   <Clock className="w-10 h-10 text-slate-200 mb-3" />
-                  <p className="text-sm font-bold text-slate-400">No milestones scheduled</p>
+                  <p className="text-sm font-bold text-slate-400">No events on this date</p>
                   <p className="text-[11px] text-slate-300 mt-1">Select another date to view upcoming events</p>
                 </div>
               )}
@@ -996,113 +1058,193 @@ export function Calendar() {
 
       {/* Modals */}
       {selectedEvent && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedEvent(null)}>
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={handleCloseEventModal}>
           <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+            {/* Header */}
             <div className={`p-6 flex justify-between items-start text-white ${selectedEvent.color}`}>
               <div>
                 <div className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-1">{selectedEvent.type.replace('-', ' ')}</div>
-                <h2 className="text-xl font-bold">{selectedEvent.title}</h2>
+                <h2 className="text-xl font-bold">{isEditMode ? (editForm.title || 'Editing…') : selectedEvent.title}</h2>
               </div>
-              <button onClick={() => setSelectedEvent(null)} className="p-2 hover:bg-white/20 rounded-full transition-colors">
+              <button onClick={handleCloseEventModal} className="p-2 hover:bg-white/20 rounded-full transition-colors">
                 <X className="w-5 h-5 text-white" />
               </button>
             </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Date</label>
-                <div className="text-sm font-medium text-slate-900">{format(selectedEvent.date, 'EEEE, do MMMM yyyy')}</div>
-              </div>
-              <div>
-                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Project</label>
-                 <div className="text-sm font-medium text-slate-900">{selectedEvent.projectName || 'General'}</div>
-              </div>
-              {selectedEvent.originalItem && (
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Details</label>
-                  <div className="text-sm text-slate-700 bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-inner space-y-3">
-                    {selectedEvent.type === 'milestone' && (
-                      <div className="space-y-4">
-                        {selectedEvent.originalItem.milestoneDetails?.stage && (
-                          <div className="flex items-center gap-2 p-3 bg-indigo-50 rounded-xl border border-indigo-100">
-                             <Layers className="w-4 h-4 text-indigo-600" />
-                             <div>
-                               <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-0.5">RIBA Stage</p>
-                               <p className="text-xs font-bold text-indigo-900">{getRIBALabelFull(selectedEvent.originalItem.milestoneDetails.stage)}</p>
-                             </div>
-                          </div>
-                        )}
-                        
-                        {(selectedEvent.originalItem.description || selectedEvent.originalItem.milestoneDetails?.notes) && (
-                          <div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Description & Notes</p>
-                            <p className="text-xs font-medium text-slate-700 leading-relaxed">
-                              {selectedEvent.originalItem.milestoneDetails?.notes || selectedEvent.originalItem.description}
-                            </p>
-                          </div>
-                        )}
 
-                        {selectedEvent.originalItem.milestoneDetails?.history && selectedEvent.originalItem.milestoneDetails.history.length > 0 && (
-                          <div className="pt-4 border-t border-slate-200">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                              <Clock className="w-3 h-3" />
-                              Date Revision History
-                            </p>
-                            <div className="space-y-3">
-                              {selectedEvent.originalItem.milestoneDetails.history.map((h: any, i: number) => (
-                                <div key={i} className="pl-4 border-l-2 border-slate-200 py-1">
-                                  <div className="flex items-center justify-between mb-1">
-                                    <span className="text-[10px] font-bold text-slate-900">{h.updatedBy || 'System'}</span>
-                                    <span className="text-[10px] font-medium text-slate-400">{format(parseISO(h.updatedAt), 'dd MMM yyyy')}</span>
-                                  </div>
-                                  <p className="text-[10px] text-slate-600 italic mb-1">"{h.comment}"</p>
-                                  <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-tighter">
-                                    <ChevronRight className="w-2 h-2 text-indigo-500" />
-                                    <span className="text-indigo-600">Moved to {h.date}</span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    {selectedEvent.type === 'compliance' && (
-                      <div className="space-y-2">
-                        {selectedEvent.originalItem.reg && <p><strong>Regulation:</strong> {selectedEvent.originalItem.reg}</p>}
-                        {selectedEvent.originalItem.requirements && <p><strong>Requirements:</strong> {selectedEvent.originalItem.requirements}</p>}
-                        {selectedEvent.originalItem.category && <p><strong>Category:</strong> {selectedEvent.originalItem.category}</p>}
-                        {selectedEvent.originalItem.stage && <p><strong>Status:</strong> {selectedEvent.originalItem.stage}</p>}
-                      </div>
-                    )}
-                    {selectedEvent.type === 'risk' && (
-                      <div className="space-y-2">
-                        {selectedEvent.originalItem.title && <p><strong>Risk:</strong> {selectedEvent.originalItem.title}</p>}
-                        {selectedEvent.originalItem.description && <p><strong>Description:</strong> {selectedEvent.originalItem.description}</p>}
-                        {selectedEvent.originalItem.status && <p><strong>Status:</strong> {selectedEvent.originalItem.status}</p>}
-                        {selectedEvent.originalItem.owner && <p><strong>Owner:</strong> {selectedEvent.originalItem.owner}</p>}
-                      </div>
-                    )}
-                    {selectedEvent.type === 'issue' && (
-                      <div className="space-y-2">
-                        {selectedEvent.originalItem.description && <p><strong>Description:</strong> {selectedEvent.originalItem.description}</p>}
-                        {selectedEvent.originalItem.status && <p><strong>Status:</strong> {selectedEvent.originalItem.status}</p>}
-                        {selectedEvent.originalItem.priority && <p><strong>Priority:</strong> {selectedEvent.originalItem.priority}</p>}
-                      </div>
-                    )}
-                    {selectedEvent.type === 'task' && (
-                      <div className="space-y-2">
-                        {selectedEvent.originalItem.description && <p><strong>Description:</strong> {selectedEvent.originalItem.description}</p>}
-                        {selectedEvent.originalItem.status && <p><strong>Status:</strong> {selectedEvent.originalItem.status}</p>}
-                        {selectedEvent.originalItem.priority && <p><strong>Priority:</strong> {selectedEvent.originalItem.priority}</p>}
-                      </div>
-                    )}
-                    {!selectedEvent.originalItem && <p className="text-slate-400 italic">No additional details available.</p>}
+            {/* Body */}
+            <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+              {isEditMode && selectedEvent.type === 'task' ? (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Event Name</label>
+                    <input
+                      type="text"
+                      value={editForm.title}
+                      onChange={e => { setEditForm(f => ({ ...f, title: e.target.value })); setEditTitleError(''); }}
+                      className={clsx("w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none", editTitleError ? "border-red-400" : "border-slate-200")}
+                    />
+                    {editTitleError && <p className="text-xs text-red-500 mt-1 font-medium">{editTitleError}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Description</label>
+                    <textarea rows={3} value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Date</label>
+                    <input type="date" value={editForm.date} onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Project</label>
+                    <select value={editForm.projectId} onChange={e => setEditForm(f => ({ ...f, projectId: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                      <option value="">No Project (General)</option>
+                      {safeProjects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
                   </div>
                 </div>
+              ) : showDeleteConfirm ? (
+                <div className="text-center py-6">
+                  <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <X className="w-8 h-8 text-red-500" />
+                  </div>
+                  <h3 className="text-lg font-black text-slate-900 mb-2">Delete this event?</h3>
+                  <p className="text-sm text-slate-500">This action cannot be undone.</p>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Date</label>
+                    <div className="text-sm font-medium text-slate-900">{format(selectedEvent.date, 'EEEE, do MMMM yyyy')}</div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Project</label>
+                    <div className="text-sm font-medium text-slate-900">{selectedEvent.projectName || 'General'}</div>
+                  </div>
+                  {selectedEvent.originalItem && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Details</label>
+                      <div className="text-sm text-slate-700 bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-inner space-y-3">
+                        {selectedEvent.type === 'milestone' && (
+                          <div className="space-y-4">
+                            {selectedEvent.originalItem.milestoneDetails?.stage && (
+                              <div className="flex items-center gap-2 p-3 bg-indigo-50 rounded-xl border border-indigo-100">
+                                <Layers className="w-4 h-4 text-indigo-600" />
+                                <div>
+                                  <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-0.5">RIBA Stage</p>
+                                  <p className="text-xs font-bold text-indigo-900">{getRIBALabelFull(selectedEvent.originalItem.milestoneDetails.stage)}</p>
+                                </div>
+                              </div>
+                            )}
+                            {(selectedEvent.originalItem.description || selectedEvent.originalItem.milestoneDetails?.notes) && (
+                              <div>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Description & Notes</p>
+                                <p className="text-xs font-medium text-slate-700 leading-relaxed">
+                                  {selectedEvent.originalItem.milestoneDetails?.notes || selectedEvent.originalItem.description}
+                                </p>
+                              </div>
+                            )}
+                            {selectedEvent.originalItem.milestoneDetails?.history && selectedEvent.originalItem.milestoneDetails.history.length > 0 && (
+                              <div className="pt-4 border-t border-slate-200">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                  <Clock className="w-3 h-3" />
+                                  Date Revision History
+                                </p>
+                                <div className="space-y-3">
+                                  {selectedEvent.originalItem.milestoneDetails.history.map((h: any, i: number) => (
+                                    <div key={i} className="pl-4 border-l-2 border-slate-200 py-1">
+                                      <div className="flex items-center justify-between mb-1">
+                                        <span className="text-[10px] font-bold text-slate-900">{h.updatedBy || 'System'}</span>
+                                        <span className="text-[10px] font-medium text-slate-400">
+                                          {h.updatedAt && isValid(parseISO(h.updatedAt)) ? format(parseISO(h.updatedAt), 'dd MMM yyyy') : 'Unknown date'}
+                                        </span>
+                                      </div>
+                                      <p className="text-[10px] text-slate-600 italic mb-1">"{h.comment}"</p>
+                                      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-tighter">
+                                        <ChevronRight className="w-2 h-2 text-indigo-500" />
+                                        <span className="text-indigo-600">Moved to {h.date}</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {selectedEvent.type === 'compliance' && (
+                          <div className="space-y-2">
+                            {selectedEvent.originalItem.reg && <p><strong>Regulation:</strong> {selectedEvent.originalItem.reg}</p>}
+                            {selectedEvent.originalItem.requirements && <p><strong>Requirements:</strong> {selectedEvent.originalItem.requirements}</p>}
+                            {selectedEvent.originalItem.category && <p><strong>Category:</strong> {selectedEvent.originalItem.category}</p>}
+                            {selectedEvent.originalItem.stage && <p><strong>Status:</strong> {selectedEvent.originalItem.stage}</p>}
+                          </div>
+                        )}
+                        {selectedEvent.type === 'risk' && (
+                          <div className="space-y-2">
+                            {selectedEvent.originalItem.title && <p><strong>Risk:</strong> {selectedEvent.originalItem.title}</p>}
+                            {selectedEvent.originalItem.description && <p><strong>Description:</strong> {selectedEvent.originalItem.description}</p>}
+                            {selectedEvent.originalItem.status && <p><strong>Status:</strong> {selectedEvent.originalItem.status}</p>}
+                            {selectedEvent.originalItem.owner && <p><strong>Owner:</strong> {selectedEvent.originalItem.owner}</p>}
+                          </div>
+                        )}
+                        {selectedEvent.type === 'issue' && (
+                          <div className="space-y-2">
+                            {selectedEvent.originalItem.description && <p><strong>Description:</strong> {selectedEvent.originalItem.description}</p>}
+                            {selectedEvent.originalItem.status && <p><strong>Status:</strong> {selectedEvent.originalItem.status}</p>}
+                            {selectedEvent.originalItem.priority && <p><strong>Priority:</strong> {selectedEvent.originalItem.priority}</p>}
+                          </div>
+                        )}
+                        {selectedEvent.type === 'task' && (
+                          <div className="space-y-2">
+                            {selectedEvent.originalItem.description && <p><strong>Description:</strong> {selectedEvent.originalItem.description}</p>}
+                            {selectedEvent.originalItem.status && <p><strong>Status:</strong> {selectedEvent.originalItem.status}</p>}
+                            {selectedEvent.originalItem.priority && <p><strong>Priority:</strong> {selectedEvent.originalItem.priority}</p>}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
-            <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
-              <button onClick={() => setSelectedEvent(null)} className="px-5 py-2.5 rounded-xl font-bold text-slate-600 hover:bg-slate-200 transition-colors">Close</button>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-between items-center gap-3">
+              {isEditMode ? (
+                <>
+                  <button onClick={() => { setIsEditMode(false); setEditTitleError(''); }} className="px-5 py-2.5 rounded-xl font-bold text-slate-600 hover:bg-slate-200 transition-colors">
+                    Cancel
+                  </button>
+                  <button onClick={handleEditEvent} disabled={isEditSaving} className="px-5 py-2.5 rounded-xl font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 transition-all flex items-center gap-2 disabled:opacity-60">
+                    {isEditSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                    {isEditSaving ? 'Saving…' : 'Save Changes'}
+                  </button>
+                </>
+              ) : showDeleteConfirm ? (
+                <>
+                  <button onClick={() => setShowDeleteConfirm(false)} className="px-5 py-2.5 rounded-xl font-bold text-slate-600 hover:bg-slate-200 transition-colors">
+                    Cancel
+                  </button>
+                  <button onClick={handleDeleteEvent} disabled={isDeleting} className="px-5 py-2.5 rounded-xl font-bold bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-200 transition-all flex items-center gap-2 disabled:opacity-60">
+                    {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
+                    {isDeleting ? 'Deleting…' : 'Yes, Delete'}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2">
+                    {selectedEvent.type === 'task' && (
+                      <>
+                        <button onClick={() => setIsEditMode(true)} className="px-4 py-2.5 rounded-xl font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors text-sm">
+                          Edit
+                        </button>
+                        <button onClick={() => setShowDeleteConfirm(true)} className="px-4 py-2.5 rounded-xl font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors text-sm">
+                          Delete
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  <button onClick={handleCloseEventModal} className="px-5 py-2.5 rounded-xl font-bold text-slate-600 hover:bg-slate-200 transition-colors">Close</button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -1116,69 +1258,61 @@ export function Calendar() {
               <button onClick={() => setIsAddModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><X className="w-5 h-5 text-slate-500" /></button>
             </div>
             <div className="p-6 space-y-4">
+              {/* Context label — tells user exactly where this event will be saved */}
+              <div className="flex items-center gap-2 px-3 py-2 bg-indigo-50 border border-indigo-100 rounded-xl">
+                <Building2 className="w-4 h-4 text-indigo-500 shrink-0" />
+                <p className="text-xs font-semibold text-indigo-700">
+                  Saving to:{' '}
+                  <span className="font-black">
+                    {activeProjectId
+                      ? (safeProjects.find(p => p.id === activeProjectId)?.name ?? 'Selected Project')
+                      : activeProgrammeId
+                        ? (safeProgrammes.find(p => p.id === activeProgrammeId)?.name ?? 'Selected Programme')
+                        : 'General (no context selected)'}
+                  </span>
+                </p>
+              </div>
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Title</label>
-                <input 
-                  type="text" 
-                  id="modal-title"
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" 
-                  placeholder="Event title..." 
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Event Name</label>
+                <input
+                  type="text"
+                  value={newEventForm.title}
+                  onChange={e => { setNewEventForm(f => ({ ...f, title: e.target.value })); setTitleError(''); }}
+                  className={clsx("w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none", titleError ? "border-red-400" : "border-slate-200")}
+                  placeholder="Event title..."
+                  autoFocus
                 />
+                {titleError && <p className="text-xs text-red-500 mt-1 font-medium">{titleError}</p>}
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Description / Notes</label>
-                <textarea 
-                  id="modal-desc"
-                  rows={3} 
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" 
-                  placeholder="Details..." 
+                <textarea
+                  rows={3}
+                  value={newEventForm.description}
+                  onChange={e => setNewEventForm(f => ({ ...f, description: e.target.value }))}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                  placeholder="Details..."
                 />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Date</label>
-                <input 
-                  type="date" 
-                  id="modal-date"
-                  defaultValue={format(selectedDate, 'yyyy-MM-dd')}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" 
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Project (Optional)</label>
-                <select 
-                  id="modal-project"
+                <input
+                  type="date"
+                  value={newEventForm.date}
+                  onChange={e => setNewEventForm(f => ({ ...f, date: e.target.value }))}
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                >
-                  <option value="">No Project (General)</option>
-                  {safeProjects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
+                />
               </div>
             </div>
             <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
               <button onClick={() => setIsAddModalOpen(false)} className="px-6 py-3 rounded-xl font-bold text-slate-600 hover:bg-slate-200 transition-colors">Cancel</button>
               <button
-                onClick={() => {
-                  const titleInput = document.getElementById('modal-title') as HTMLInputElement;
-                  const descInput = document.getElementById('modal-desc') as HTMLTextAreaElement;
-                  const projInput = document.getElementById('modal-project') as HTMLSelectElement;
-                  const dateInput = document.getElementById('modal-date') as HTMLInputElement;
-                  if (!titleInput.value) return;
-
-                  addTask({
-                    id: crypto.randomUUID(),
-                    title: titleInput.value,
-                    description: descInput.value,
-                    dueDate: dateInput.value || format(selectedDate, 'yyyy-MM-dd'),
-                    status: 'Pending',
-                    priority: 'Medium',
-                    projectId: projInput.value || undefined,
-                    projectName: projInput.value ? safeProjects.find(p => p.id === projInput.value)?.name : 'General'
-                  });
-                  setIsAddModalOpen(false);
-                }}
-                className="px-6 py-3 rounded-xl font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 transition-all"
+                onClick={handleAddEvent}
+                disabled={isSaving}
+                className="px-6 py-3 rounded-xl font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 transition-all flex items-center gap-2 disabled:opacity-60"
               >
-                Add Event
+                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                {isSaving ? 'Adding…' : 'Add Event'}
               </button>
             </div>
           </div>

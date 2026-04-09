@@ -104,7 +104,7 @@ export function AIInquiryPopup({ isOpen: controlledIsOpen, onClose: controlledOn
       const errorMsg: Message = {
         id: 'error',
         role: 'assistant',
-        content: `I'm sorry, I encountered an error processing your inquiry: ${error.message || 'Unknown error'}. Please check your connection and try again.`,
+        content: `I'm sorry, I encountered an error processing your inquiry. Please check your connection and try again.`,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMsg]);

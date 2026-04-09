@@ -336,7 +336,7 @@ export function Dashboard() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+            <div className={clsx("grid gap-4 mb-8", isClientAdmin ? "grid-cols-2 lg:grid-cols-5" : "grid-cols-2 lg:grid-cols-4")}>
               <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 transition-all hover:bg-white hover:shadow-lg hover:shadow-indigo-500/5 group">
                 <div className="text-3xl font-black text-slate-900 group-hover:text-indigo-600 transition-colors">{displayProgrammes.length}</div>
                 <div className="text-[10px] text-slate-400 mt-1 font-black uppercase tracking-widest">Total Programmes</div>
@@ -353,12 +353,14 @@ export function Dashboard() {
                 <div className="text-3xl font-black text-amber-500">{displayProjects.filter((p: any) => !p.isPublished).length}</div>
                 <div className="text-[10px] text-slate-400 mt-1 font-black uppercase tracking-widest">Draft / In Progress</div>
               </div>
-              <div className="bg-slate-900 rounded-2xl p-5 shadow-lg shadow-slate-900/20 flex flex-col justify-between">
-                <Link to="/setup/workspace" className="block">
-                  <div className="text-xl font-bold text-white flex items-center gap-2 mb-1"><Plus className="w-5 h-5 text-indigo-400" /> Invite PM</div>
-                  <div className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Workspace Management</div>
-                </Link>
-              </div>
+              {isClientAdmin && (
+                <div className="bg-slate-900 rounded-2xl p-5 shadow-lg shadow-slate-900/20 flex flex-col justify-between">
+                  <Link to="/setup/workspace" className="block">
+                    <div className="text-xl font-bold text-white flex items-center gap-2 mb-1"><Plus className="w-5 h-5 text-indigo-400" /> Invite PM</div>
+                    <div className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Workspace Management</div>
+                  </Link>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -1244,8 +1246,8 @@ export function Dashboard() {
               <p className="text-xs text-slate-500 mt-1 max-w-sm">
                 No risks have been identified for this {activeProjectId ? 'project' : 'programme'}.
               </p>
-              <Link 
-                to={`/risk/id${activeProgrammeId ? '?type=programme' : ''}`}
+              <Link
+                to={`/risk/ai${activeProgrammeId ? '?type=programme' : ''}`}
                 className="mt-4 flex items-center gap-2 px-5 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm"
               >
                 <Briefcase className="w-3.5 h-3.5" /> Launch AI Risk ID

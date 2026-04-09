@@ -8,7 +8,7 @@ import { clsx } from 'clsx';
 import { Link } from 'react-router';
 import { stripMarkdown, parseAISuggestion } from '../lib/utils';
 import { useNavigate } from 'react-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { analyzeStrategicInsights } from '../services/aiService';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -39,13 +39,16 @@ export function ExecutiveReport() {
   const [aiInsight, setAiInsight] = useState<any>(null);
   const [aiError, setAiError] = useState<ApiError | string | null>(null);
   const [loading, setLoading] = useState(false);
+  const isGeneratingRef = useRef(false);
 
   const getInsight = async () => {
+    if (isGeneratingRef.current) return;
     if (safeRisks.length === 0 && safeComplianceItems.length === 0 && safeIssues.length === 0) {
       setAiInsight(null);
       return;
     }
-    
+
+    isGeneratingRef.current = true;
     setLoading(true);
     setAiError(null);
     try {
@@ -74,6 +77,7 @@ export function ExecutiveReport() {
       setAiError(e instanceof ApiError ? e : (e.message || 'Failed to generate AI insights. Please try again.'));
     } finally {
       setLoading(false);
+      isGeneratingRef.current = false;
     }
   };
 
