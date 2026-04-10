@@ -1,16 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router";
-import { ClipboardList, ScanSearch, ShieldCheck, AlertCircle, Loader2, Check, ArrowRight, PlusCircle, ArrowLeft, CheckCircle2, Info, Trash2, Lock, ChevronDown, ChevronUp, Layers, FolderKanban, Target } from 'lucide-react';
+import { ClipboardList, ScanSearch, ShieldCheck, AlertCircle, Loader2, Check, ArrowRight, ArrowLeft, CheckCircle2, Info, Trash2, Lock, ChevronDown, ChevronUp, Layers, FolderKanban, Target } from 'lucide-react';
 import { clsx } from "clsx";
 import { useStore } from "../store/useStore";
 import { analyzeCompliance } from "../services/aiService";
 import { COMPLIANCE_ITEMS } from "../data/complianceData";
-import { stripMarkdown, generateId } from "../lib/utils";
 import {
   PROGRAMME_PHASES,
   PROJECT_PHASES,
-  Question,
-  QuestionPhase,
 } from "../data/complianceQuestions";
 import {
   isAtLeastClientAdmin,
@@ -26,7 +23,7 @@ import { AIInquiryPopup } from "../components/AIInquiryPopup";
 import { AnalysisSummary } from "../components/compliance/AnalysisSummary";
 import { determineProjectCategory } from "../utils/complianceCategorization";
 
-// ─── Checkbox pill component ─────────────────────────────────────────────────
+// ─── Checkbox pill component 
 function CheckPill({
   val,
   label,
@@ -42,7 +39,7 @@ function CheckPill({
   return (
     <label
       className={clsx(
-        "flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all select-none text-sm font-semibold",
+        "flex items-start gap-3 p-3 sm:p-4 rounded-xl border cursor-pointer transition-all select-none text-sm font-semibold min-w-0",
         checked
           ? "bg-indigo-600 border-indigo-600 text-white shadow-md"
           : "bg-white border-slate-200 text-slate-600 hover:border-indigo-400 hover:bg-slate-50",
@@ -62,12 +59,12 @@ function CheckPill({
       >
         {checked && <Check className="w-3.5 h-3.5 text-white stroke-[3px]" />}
       </div>
-      <span className="leading-relaxed">{label}</span>
+      <span className="leading-relaxed wrap-break-word min-w-0">{label}</span>
     </label>
   );
 }
 
-// ─── Phase header ─────────────────────────────────────────────────────────────
+// ─── Phase header
 function PhaseHeader({ num, title }: { num: number; title: string }) {
   return (
     <div className="flex items-center gap-4 mb-6 sm:mb-8 pb-4 sm:pb-6 border-b border-slate-100">
@@ -81,7 +78,7 @@ function PhaseHeader({ num, title }: { num: number; title: string }) {
   );
 }
 
-// ─── Form field wrappers ──────────────────────────────────────────────────────
+// ─── Form field wrappers 
 const inputCls =
   "w-full border border-slate-200 rounded-2xl px-6 py-4 text-sm font-medium focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white/80 backdrop-blur-sm placeholder:text-slate-400 shadow-sm hover:border-slate-300";
 const labelCls =
@@ -114,7 +111,7 @@ function Field({
   );
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// ─── Main component 
 export function ComplianceSetup() {
   const {
     activeProjectId,
@@ -175,6 +172,7 @@ export function ComplianceSetup() {
   );
   const [showAnalysisExists, setShowAnalysisExists] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isDataLoading, setIsDataLoading] = useState(false); // non-AI loading (select/restart)
   const [error, setError] = useState<string | ApiError | null>(null);
   const [searchParams] = useSearchParams();
   const fromInitiation = searchParams.get("from") === "initiation";
@@ -217,9 +215,6 @@ export function ComplianceSetup() {
   );
   const [isResetting, setIsResetting] = useState(false);
 
-  useEffect(() => {
-    // Redundant scroll logic removed (handled globally in App.tsx)
-  }, []);
 
   // Auto-select from URL
   useEffect(() => {
@@ -238,11 +233,7 @@ export function ComplianceSetup() {
       setPhase(1);
       // Stay on Metadata — project is pre-selected, user clicks "Conduct Detailed Assessment" to proceed
     }
-  }, [
-    searchParams.get("id"),
-    searchParams.get("type"),
-    searchParams.get("from"),
-  ]);
+  }, [searchParams]);
 
   // Set initial active question
   useEffect(() => {
@@ -250,15 +241,15 @@ export function ComplianceSetup() {
     if (isQuestionnaireActive && !activeQuestionId) {
       const phases =
         activeType === "programme" ? PROGRAMME_PHASES : PROJECT_PHASES;
-      for (const phase of phases) {
-        for (const q of phase.questions) {
+      for (const qPhase of phases) {
+        for (const q of qPhase.questions) {
           const val = projectInfo[q.id];
           const isAnswered = Array.isArray(val)
             ? val.length > 0
             : val !== undefined && val !== null && val !== "";
           if (!isAnswered) {
             setActiveQuestionId(q.id);
-            setExpandedPhases([phase.id]);
+            setExpandedPhases([qPhase.id]);
             return;
           }
         }
@@ -282,6 +273,21 @@ export function ComplianceSetup() {
 
   const [isAIInquiryOpen, setIsAIInquiryOpen] = useState(false);
   const userInitiatedOpen = useRef(false);
+  const isMountedRef = useRef(true);
+  const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup on unmount — cancel pending timers, mark unmounted.
+  // isMountedRef.current = true on every mount handles React Strict Mode's
+  // double-invoke (mount → cleanup → remount) which would otherwise leave it false.
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+    };
+  }, []);
 
   // Safeguard: prevent auto-opening - only allow if user explicitly clicked
   useEffect(() => {
@@ -293,7 +299,8 @@ export function ComplianceSetup() {
 
   const scrollToPhase = (phaseId: string, qId?: string) => {
     // Increased delay (550ms) to ensure the 500ms CSS transition is fully complete
-    setTimeout(() => {
+    if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+    scrollTimerRef.current = setTimeout(() => {
       const main = document.querySelector("main");
       // Priority: 1. Specific question anchor, 2. Phase-first-q anchor, 3. Header, 4. Container
       const anchorId = qId ? `q-container-${qId}` : `phase-first-q-${phaseId}`;
@@ -431,6 +438,7 @@ export function ComplianceSetup() {
     programmes,
     searchParams,
     phase,
+    isResetting,
   ]);
 
   const pi = projectInfo as any;
@@ -460,10 +468,6 @@ export function ComplianceSetup() {
       if (nextQId) break;
     }
 
-    // Trace transition for debugging nextQId
-    console.log(
-      `[ComplianceSetup] Transition trace: key=${key}, nextQId=${nextQId}, nextPId=${nextPId}`,
-    );
 
     if (nextQId) {
       setActiveQuestionId(nextQId);
@@ -578,6 +582,7 @@ export function ComplianceSetup() {
 
   const handleProgrammeSelect = async (progId: string) => {
     setLoading(true);
+    setIsDataLoading(true);
     try {
       // Clear stale AI results when switching context
       setLastAnalysisResults(null);
@@ -596,56 +601,13 @@ export function ComplianceSetup() {
           // Comprehensive mapping from Initiation to Compliance Questions
           const totalValue = Number(prog.totalValue) || 0;
 
-          const mappedInfo = {
+          // Only pre-fill fields where source data is explicitly set.
+          // Leave toggle questions blank so the user must answer them.
+          const mappedInfo: Record<string, any> = {
             name: prog.name,
             type: prog.type || "",
             loc: prog.geographicScope || "",
             scope: prog.strategicObjectives || (prog as any).scope || "",
-
-            // Phase 1: Organisation & Regulatory
-            q1_1: (prog as any).type?.includes("Local Authority")
-              ? "Yes"
-              : "No",
-            q1_2:
-              (prog as any).type?.includes("Registered Provider") ||
-              (prog as any).type?.includes("Housing Association")
-                ? "Yes"
-                : "No",
-            q1_3:
-              (prog as any).regulatoryObligations?.includes(
-                "Regulator of Social Housing (RSH)",
-              ) || (prog as any).regulatoryObligations?.includes("RSH")
-                ? "Yes"
-                : "No",
-            q1_4:
-              (prog as any).type?.toLowerCase().includes("social") ||
-              (prog as any).type?.toLowerCase().includes("affordable")
-                ? "Yes"
-                : "No",
-            q1_5:
-              (prog as any).regulatoryObligations?.length > 0 ? "Yes" : "No",
-            q1_6: totalValue > 0 || prog.fundingSources ? "Yes" : "No",
-
-            // Phase 2: Tenure & Residents
-            q2_tenures: (prog as any).tenureMix || [],
-            q2_3: (prog as any).leaseholderStatus === "Yes" ? "Yes" : "No",
-            q2_4: (prog as any).leaseholderStatus === "Yes" ? "Yes" : "No",
-            q2_5:
-              (prog as any).type?.toLowerCase().includes("supported") ||
-              (prog as any).type?.toLowerCase().includes("care")
-                ? "Yes"
-                : "No",
-
-            // Phase 3: Building Characteristics
-            q3_1: (prog as any).hrbScheme === "Yes" ? "Yes" : "No",
-            q3_2: (prog as any).hrbScheme === "Yes" ? "Yes" : "No",
-            q3_3: "Yes", // Programmes are primarily residential by default in Cedar
-
-            // Phase 10: Information Governance
-            q10_1: (prog as any).type?.includes("Local Authority")
-              ? "Yes"
-              : "No",
-
             value: prog.totalValue?.toString() || "",
             ap: prog.sponsor || "",
             notes: prog.notes || "",
@@ -659,7 +621,22 @@ export function ComplianceSetup() {
             funders: prog.funders || [],
             rshStandards: prog.rshStandards || [],
             regulatoryObligations: prog.regulatoryObligations || [],
+            q2_tenures: (prog as any).tenureMix || [],
+            q3_3: "Yes", // Programmes are primarily residential by default in Cedar
           };
+          // Only pre-fill toggle questions when source value is explicitly positive
+          if ((prog as any).type?.includes("Local Authority")) {
+            mappedInfo.q1_1 = "Yes";
+            mappedInfo.q10_1 = "Yes";
+          }
+          if ((prog as any).type?.includes("Registered Provider") || (prog as any).type?.includes("Housing Association")) mappedInfo.q1_2 = "Yes";
+          if ((prog as any).regulatoryObligations?.includes("Regulator of Social Housing (RSH)") || (prog as any).regulatoryObligations?.includes("RSH")) mappedInfo.q1_3 = "Yes";
+          if ((prog as any).type?.toLowerCase().includes("social") || (prog as any).type?.toLowerCase().includes("affordable")) mappedInfo.q1_4 = "Yes";
+          if ((prog as any).regulatoryObligations?.length > 0) mappedInfo.q1_5 = "Yes";
+          if (totalValue > 0 || prog.fundingSources) mappedInfo.q1_6 = "Yes";
+          if ((prog as any).leaseholderStatus === "Yes") { mappedInfo.q2_3 = "Yes"; mappedInfo.q2_4 = "Yes"; }
+          if ((prog as any).type?.toLowerCase().includes("supported") || (prog as any).type?.toLowerCase().includes("care")) mappedInfo.q2_5 = "Yes";
+          if ((prog as any).hrbScheme === "Yes") { mappedInfo.q3_1 = "Yes"; mappedInfo.q3_2 = "Yes"; }
           setProjectInfo(mappedInfo as any);
       }
     } catch (err) {
@@ -667,11 +644,13 @@ export function ComplianceSetup() {
       setError("Failed to load programme data.");
     } finally {
       setLoading(false);
+      setIsDataLoading(false);
     }
   };
 
   const handleProjectSelect = async (projId: string) => {
     setLoading(true);
+    setIsDataLoading(true);
     try {
       // Clear stale AI results when switching context
       setLastAnalysisResults(null);
@@ -705,32 +684,27 @@ export function ComplianceSetup() {
           else if (storeys === 7) storeyRange = "7 storeys";
           else if (storeys >= 3) storeyRange = "3–6 storeys";
 
-          const mappedInfo = {
+          // Only pre-fill fields where source data is explicitly set.
+          // Leave toggle questions blank so the user must answer them.
+          const mappedInfo: Record<string, any> = {
             name: proj.name,
             type: proj.type || "",
             loc: proj.loc || "",
-
-            // Phase 1: Scope
             p1_type: proj.type || "",
             p1_client: proj.client || "",
-            p1_units: unitRange,
-            p1_value: proj.contractValue || "£1m–£5 million",
-            p1_occupied:
-              (proj as any).occupiedDuringWorks === "Yes" ? "Yes" : "No",
-
-            // Phase 2: Building
-            p2_height: (proj as any).height || "Under 11 metres",
-            p2_storeys: storeyRange,
-            p2_hrb: proj.isHRB ? "Yes" : "No",
-            p2_use: (proj as any).useClassification
-              ? [(proj as any).useClassification]
-              : [],
-
-            // Phase 3: Building Safety Act
-            p3_g2: proj.isHRB ? "Yes" : "No",
-            p3_g3: proj.isHRB ? "Yes" : "No",
-            p3_golden: proj.isHRB ? "Yes" : "No",
+            p2_use: (proj as any).useClassification ? [(proj as any).useClassification] : [],
           };
+          if (units > 0) mappedInfo.p1_units = unitRange;
+          if (proj.contractValue) mappedInfo.p1_value = proj.contractValue;
+          if ((proj as any).occupiedDuringWorks === "Yes") mappedInfo.p1_occupied = "Yes";
+          if ((proj as any).height) mappedInfo.p2_height = (proj as any).height;
+          if (storeys > 0) mappedInfo.p2_storeys = storeyRange;
+          if (proj.isHRB) {
+            mappedInfo.p2_hrb = "Yes";
+            mappedInfo.p3_g2 = "Yes";
+            mappedInfo.p3_g3 = "Yes";
+            mappedInfo.p3_golden = "Yes";
+          }
           setProjectInfo(mappedInfo as any);
       }
     } catch (err) {
@@ -738,6 +712,7 @@ export function ComplianceSetup() {
       setError("Failed to load project data.");
     } finally {
       setLoading(false);
+      setIsDataLoading(false);
     }
   };
 
@@ -913,6 +888,7 @@ export function ComplianceSetup() {
 
       setLoadingStep("Cross-referencing 160+ UK Regulations...");
       const analysis = await analyzeCompliance(fullInfo, filteredLibrary);
+      if (!isMountedRef.current) return;
       setLoadingStep("Building Compliance Strategy...");
       setLastAnalyzedAnswers(answersJson);
       setProjectInfo(fullInfo);
@@ -1010,16 +986,12 @@ export function ComplianceSetup() {
       setSubPhase("review");
       toast.success("Compliance profile generated successfully!");
     } catch (err: any) {
-      let friendlyMessage = "Failed to generate AI insights. Please try again.";
-
-      // Handle specific Gemini/AI quota or exhaustion errors
-      if (err?.message?.includes("429") || err?.message?.includes("RESOURCE_EXHAUSTED")) {
-        friendlyMessage = "AI capacity reached. Please wait a moment and try again.";
-      } else if (err?.message) {
-        friendlyMessage = err.message;
-      }
-
-      toast.error(friendlyMessage, { duration: 5000 });
+      // aiService.ts already called handleAIError() which shows a toast.
+      // Only set the inline error state here to avoid double-toasting.
+      const friendlyMessage =
+        err?.message?.includes("429") || err?.message?.includes("RESOURCE_EXHAUSTED")
+          ? "AI capacity reached. Please wait a moment and try again."
+          : err?.message || "Failed to generate AI insights. Please try again.";
       setError(friendlyMessage);
     } finally {
       setLoading(false);
@@ -1037,6 +1009,7 @@ export function ComplianceSetup() {
       if (!contextId) return;
 
       setLoading(true);
+      setIsDataLoading(true);
       setIsResetting(true);
       try {
         // 1. Reset setup status in store to prevent the 'Existing Analysis' loop
@@ -1102,7 +1075,11 @@ export function ComplianceSetup() {
         setError("Failed to reset compliance data. Please try again.");
       } finally {
         setLoading(false);
-        setTimeout(() => setIsResetting(false), 500);
+        setIsDataLoading(false);
+        if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+        resetTimerRef.current = setTimeout(() => {
+          if (isMountedRef.current) setIsResetting(false);
+        }, 500);
       }
     }
   };
@@ -1168,7 +1145,6 @@ export function ComplianceSetup() {
       setError("Failed to save compliance configuration.");
     } finally {
       setLoading(false);
-      setLoadingStep(null);
     }
   };
 
@@ -1257,7 +1233,8 @@ export function ComplianceSetup() {
       type: "excluded" as const,
     }));
 
-    return [...conditionalObjs, ...excludedItems];
+    // Filter out conditional items already in the Framework Scope tab
+    return [...conditionalObjs.filter(c => !alreadyInTracker.has(c.id)), ...excludedItems];
   };
 
   return (
@@ -1289,10 +1266,18 @@ export function ComplianceSetup() {
             </div>
           </div>
         )}
+        {isDataLoading && !loadingStep && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl shadow-xl p-8 flex flex-col items-center gap-4 max-w-xs w-full mx-4">
+              <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+              <p className="text-sm font-bold text-slate-600 uppercase tracking-wider">Loading...</p>
+            </div>
+          </div>
+        )}
         {/* Existing Analysis Overlay */}
         {showAnalysisExists && (
           <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md">
-            <div className="bg-white rounded-[24px] sm:rounded-[40px] shadow-2xl border border-slate-100 max-w-2xl w-full overflow-hidden animate-in fade-in zoom-in duration-500">
+            <div className="bg-white rounded-3xl sm:rounded-[40px] shadow-2xl border border-slate-100 max-w-2xl w-full overflow-hidden animate-in fade-in zoom-in duration-500">
               <div className="p-6 sm:p-10 text-center">
                 <div className="w-20 h-20 bg-indigo-50 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-xl shadow-indigo-100 ring-4 ring-white">
                   <ShieldCheck className="w-10 h-10 text-indigo-600" />
@@ -1321,7 +1306,8 @@ export function ComplianceSetup() {
                   </button>
                   <button
                     onClick={handleRestart}
-                    className="w-full flex items-center justify-center gap-3 px-8 py-5 bg-white text-slate-900 border-2 border-slate-100 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all hover:bg-slate-50 hover:border-slate-200 active:scale-95"
+                    disabled={loading}
+                    className="w-full flex items-center justify-center gap-3 px-8 py-5 bg-white text-slate-900 border-2 border-slate-100 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all hover:bg-slate-50 hover:border-slate-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
                   >
                     Restart Analysis
                   </button>
@@ -1330,6 +1316,7 @@ export function ComplianceSetup() {
                 <div className="mt-8 flex flex-col items-center gap-4">
                   {fromInitiation ? (
                     <button
+                      disabled={loading}
                       onClick={async () => {
                         const contextId = activeProjectId || activeProgrammeId;
                         if (contextId) {
@@ -1348,7 +1335,7 @@ export function ComplianceSetup() {
                             : "/initiate",
                         );
                       }}
-                      className="flex items-center gap-2 px-6 py-3 bg-emerald-50 text-emerald-700 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-100 transition-all border border-emerald-100"
+                      className="flex items-center gap-2 px-6 py-3 bg-emerald-50 text-emerald-700 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-100 transition-all border border-emerald-100 disabled:opacity-50 disabled:pointer-events-none"
                     >
                       <CheckCircle2 className="w-4 h-4" /> Continue to
                       Initiation Step 3
@@ -1390,7 +1377,7 @@ export function ComplianceSetup() {
           )}
 
           {/* ─── Premium Breadcrumb Nav ─── */}
-          <div className="flex items-center justify-between bg-white/60 backdrop-blur-md p-2 sm:p-3 rounded-[2rem] sm:rounded-4xl border border-slate-200/50 shadow-sm mb-4 overflow-x-auto scrollbar-hide">
+          <div className="flex items-center justify-between bg-white/60 backdrop-blur-md p-2 sm:p-3 rounded-4xl sm:rounded-4xl border border-slate-200/50 shadow-sm mb-4 overflow-x-auto scrollbar-hide">
             <div className="flex items-center gap-1 sm:gap-2 shrink-0 min-w-max px-1">
               {[
                 { n: 1, label: "Metadata", p: 1 },
@@ -1407,6 +1394,11 @@ export function ComplianceSetup() {
                     <button
                       disabled={isLocked && !isPast && !isActive}
                       onClick={() => {
+                        // Prevent jumping to Strategic Review (Phase 3) without AI results
+                        if (s.p === 3 && !lastAnalysisResults) {
+                          toast.error("Run AI Analysis first to access Strategic Review.");
+                          return;
+                        }
                         // Prevent jumping to Publication (Phase 4) if not finalised
                         if (s.p === 4 && phase < 4 && !activeDetails?.complianceSetupDone) {
                           toast.error("Please click 'Finalise Analysis' to save your results before proceeding to publication.", {
@@ -2106,7 +2098,7 @@ export function ComplianceSetup() {
 
               {/* Right Column: Profile Details */}
               <div className="lg:col-span-8">
-                <div className="bg-white rounded-[2rem] sm:rounded-4xl border border-slate-100 p-6 md:p-12 shadow-xl shadow-slate-200/50">
+                <div className="bg-white rounded-4xl sm:rounded-4xl border border-slate-100 p-6 md:p-12 shadow-xl shadow-slate-200/50">
                   <PhaseHeader
                     num={2}
                     title={`${activeType.charAt(0).toUpperCase() + activeType.slice(1)} Delivery Profile`}
@@ -2172,7 +2164,7 @@ export function ComplianceSetup() {
                       <label className={labelCls}>
                         Technical Characteristics
                       </label>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                         {[
                           { id: "hrb", label: "Higher-Risk (HRB)" },
                           { id: "brownfield", label: "Brownfield Site" },
@@ -2203,24 +2195,32 @@ export function ComplianceSetup() {
                         </p>
                       </div>
 
-                      <button
-                        onClick={() => {
-                          setPhase(2);
-                          setPathChoice("detailed");
-                          setIsQuestionnaireActive(true);
-                        }}
-                        className={clsx(
-                          "w-full md:w-auto px-10 py-5 bg-indigo-600 text-white rounded-[1.25rem] font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-indigo-200 transition-all hover:bg-indigo-700 active:scale-95 flex items-center justify-center gap-3",
-                          (!projectInfo.name ||
-                            !projectInfo.type ||
-                            !projectInfo.loc ||
-                            !projectInfo.scope) &&
-                            "opacity-50 grayscale pointer-events-none",
+                      <div className="flex flex-col items-end gap-2 w-full md:w-auto">
+                        {(!projectInfo.name || !projectInfo.type || !projectInfo.loc || !projectInfo.scope) && (
+                          <p className="text-[11px] text-amber-600 font-bold flex items-center gap-1.5">
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                            Required: {[!projectInfo.name && 'Name', !projectInfo.type && 'Type', !projectInfo.loc && 'Location', !projectInfo.scope && 'Scope'].filter(Boolean).join(', ')}
+                          </p>
                         )}
-                      >
-                        Conduct Detailed Assessment{" "}
-                        <ArrowRight className="w-4 h-4" />
-                      </button>
+                        <button
+                          onClick={() => {
+                            setPhase(2);
+                            setPathChoice("detailed");
+                            setIsQuestionnaireActive(true);
+                          }}
+                          className={clsx(
+                            "w-full px-10 py-5 bg-indigo-600 text-white rounded-[1.25rem] font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-indigo-200 transition-all hover:bg-indigo-700 active:scale-95 flex items-center justify-center gap-3",
+                            (!projectInfo.name ||
+                              !projectInfo.type ||
+                              !projectInfo.loc ||
+                              !projectInfo.scope) &&
+                              "opacity-50 grayscale pointer-events-none",
+                          )}
+                        >
+                          Conduct Detailed Assessment{" "}
+                          <ArrowRight className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>

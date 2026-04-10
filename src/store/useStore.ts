@@ -1112,12 +1112,13 @@ export const useStore = create<AppState>((set, get) => ({
     }
     
     // FETCH LATEST data for this project to ensure we don't have stale "pre-fill" state
+    // Stamp each item with projectId so the Calendar filter can match them by context.
     await Promise.all([
-      api.getData('risks', projectId).then(res => set({ risks: res.success ? (res.data || []) : [] })),
-      api.getData('issues', projectId).then(res => set({ issues: res.success ? (res.data || []) : [] })),
+      api.getData('risks', projectId).then(res => set({ risks: res.success ? (res.data || []).map((r: any) => ({ ...r, projectId })) : [] })),
+      api.getData('issues', projectId).then(res => set({ issues: res.success ? (res.data || []).map((i: any) => ({ ...i, projectId })) : [] })),
       api.getData('kris', projectId).then(res => set({ kris: res.success ? (res.data || []) : [] })),
-      api.getData('complianceItems', projectId).then(res => set({ complianceItems: res.success ? (res.data || []) : [] })),
-      api.getData('tasks', projectId).then(res => set({ tasks: res.success ? (res.data || []) : [] })),
+      api.getData('complianceItems', projectId).then(res => set({ complianceItems: res.success ? (res.data || []).map((c: any) => ({ ...c, projectId })) : [] })),
+      api.getData('tasks', projectId).then(res => set({ tasks: res.success ? (res.data || []).map((t: any) => ({ ...t, projectId })) : [] })),
       api.getData('complianceAnalysis', projectId).then(res => {
         const data = res.success ? (res.data || null) : null;
         set({ 
@@ -1245,8 +1246,23 @@ export const useStore = create<AppState>((set, get) => ({
   },
   deleteProject: async (id) => {
     await api.deleteProject(id);
-    const { projects } = get();
-    set({ projects: projects.filter(p => p.id !== id) });
+    const { projects, activeProjectId } = get();
+    const wasActive = activeProjectId === id;
+    set({
+      projects: projects.filter(p => p.id !== id),
+      ...(wasActive ? {
+        activeProjectId: null,
+        activeProject: null,
+        risks: [],
+        issues: [],
+        tasks: [],
+        complianceItems: [],
+        kris: [],
+        complianceAnalysis: null,
+        lastAnalysisResults: null,
+        projectInfo: {},
+      } : {}),
+    });
   },
   archiveProgramme: async (id) => {
     await api.updateProgramme(id, { isArchived: true });
@@ -1317,7 +1333,11 @@ export const useStore = create<AppState>((set, get) => ({
   setIsMarketingDarkMode: (isDark) => set({ isMarketingDarkMode: isDark }),
   setComplianceAnalysis: (data) => set({ complianceAnalysis: data }),
   addConditionalItems: (items) => {
-    const next = [...get().complianceItems, ...items];
+    const existing = get().complianceItems;
+    const existingIds = new Set(existing.map((i: any) => i.id));
+    const deduped = items.filter((i: any) => !existingIds.has(i.id));
+    if (deduped.length === 0) return;
+    const next = [...existing, ...deduped];
     set({ complianceItems: next });
     const contextId = get().activeProjectId || get().activeProgrammeId;
     if (contextId) {
@@ -1503,12 +1523,13 @@ export const useStore = create<AppState>((set, get) => ({
 
     // FIX: Fetch programme-level compliance, risk, and issue data
     // Programme data is stored under projects/{programmeId}/data/... path (same as project data)
+    // Stamp each item with programmeId so the Calendar filter can match them by context.
     await Promise.all([
-      api.getData('risks', programmeId).then(res => set({ risks: res.success ? (res.data || []) : [] })),
-      api.getData('issues', programmeId).then(res => set({ issues: res.success ? (res.data || []) : [] })),
+      api.getData('risks', programmeId).then(res => set({ risks: res.success ? (res.data || []).map((r: any) => ({ ...r, programmeId })) : [] })),
+      api.getData('issues', programmeId).then(res => set({ issues: res.success ? (res.data || []).map((i: any) => ({ ...i, programmeId })) : [] })),
       api.getData('kris', programmeId).then(res => set({ kris: res.success ? (res.data || []) : [] })),
-      api.getData('complianceItems', programmeId).then(res => set({ complianceItems: res.success ? (res.data || []) : [] })),
-      api.getData('tasks', programmeId).then(res => set({ tasks: res.success ? (res.data || []) : [] })),
+      api.getData('complianceItems', programmeId).then(res => set({ complianceItems: res.success ? (res.data || []).map((c: any) => ({ ...c, programmeId })) : [] })),
+      api.getData('tasks', programmeId).then(res => set({ tasks: res.success ? (res.data || []).map((t: any) => ({ ...t, programmeId })) : [] })),
       api.getData('complianceAnalysis', programmeId).then(res => {
         const data = res.success ? (res.data || null) : null;
         set({ 

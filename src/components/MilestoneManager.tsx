@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Plus, Trash2, Calendar, Edit2, CheckCircle2, Circle, AlertCircle, Save, X, History, Star, ChevronDown, ChevronUp } from 'lucide-react';
 import { clsx } from 'clsx';
 import { ProgrammeMilestone, MilestoneHistory, useStore } from '../store/useStore';
-import { format } from 'date-fns';
+import { format, parseISO, isValid } from 'date-fns';
 import { RIBA_STAGES, getRIBALabel } from '../constants/ribaStages';
 
 interface MilestoneManagerProps {
@@ -11,7 +11,7 @@ interface MilestoneManagerProps {
     entityType?: 'project' | 'programme';
 }
 
-export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones = [], onChange }) => {
+export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones = [], onChange, entityType = 'project' }) => {
     const safeMilestones = Array.isArray(milestones) ? milestones : [];
     const { user } = useStore();
     const [isAdding, setIsAdding] = useState(false);
@@ -30,6 +30,8 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
         originalDate: string;
     } | null>(null);
     const [comment, setComment] = useState('');
+    const [editForm, setEditForm] = useState<Partial<ProgrammeMilestone>>({});
+    const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
     const handleAdd = () => {
         if (!newMilestone.name || !newMilestone.date) return;
@@ -93,9 +95,13 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
     };
 
     const handleDelete = (id: string) => {
-        if (window.confirm('Are you sure you want to delete this milestone?')) {
-            onChange(safeMilestones.filter(m => m.id !== id));
-        }
+        setDeleteConfirmId(id);
+    };
+
+    const confirmDelete = () => {
+        if (!deleteConfirmId) return;
+        onChange(safeMilestones.filter(m => m.id !== deleteConfirmId));
+        setDeleteConfirmId(null);
     };
 
     const getStatusConfig = (status: string) => {
@@ -106,13 +112,17 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
         }
     };
 
-    const sortedMilestones = [...milestones].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const sortedMilestones = [...milestones].sort((a, b) => {
+        const aTime = a.date && isValid(parseISO(a.date)) ? parseISO(a.date).getTime() : Infinity;
+        const bTime = b.date && isValid(parseISO(b.date)) ? parseISO(b.date).getTime() : Infinity;
+        return aTime - bTime;
+    });
 
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <div>
-                    <h3 className="text-sm font-black text-slate-900 tracking-tight">Project Milestones</h3>
+                    <h3 className="text-sm font-black text-slate-900 tracking-tight">{entityType === 'programme' ? 'Programme' : 'Project'} Milestones</h3>
                     <p className="text-[11px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">RIBA Stages & Key Deadlines</p>
                 </div>
                 {!isAdding && (
@@ -229,26 +239,26 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                                         <div className="col-span-2 md:col-span-1">
                                             <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Name</label>
                                             <input
-                                                id={`edit-name-${m.id}`}
                                                 type="text"
-                                                defaultValue={m.name}
+                                                value={editForm.name || ''}
+                                                onChange={e => setEditForm(prev => ({ ...prev, name: e.target.value }))}
                                                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
                                             />
                                         </div>
                                         <div>
                                             <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Date</label>
                                             <input
-                                                id={`edit-date-${m.id}`}
                                                 type="date"
-                                                defaultValue={m.date}
+                                                value={editForm.date || ''}
+                                                onChange={e => setEditForm(prev => ({ ...prev, date: e.target.value }))}
                                                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
                                             />
                                         </div>
                                         <div>
                                             <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Stage</label>
                                             <select
-                                                id={`edit-stage-${m.id}`}
-                                                defaultValue={m.stage || 'S2'}
+                                                value={editForm.stage || 'S2'}
+                                                onChange={e => setEditForm(prev => ({ ...prev, stage: e.target.value }))}
                                                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
                                             >
                                                 {RIBA_STAGES.map(s => (
@@ -259,8 +269,8 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                                         <div>
                                             <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Status</label>
                                             <select
-                                                id={`edit-status-${m.id}`}
-                                                defaultValue={m.status}
+                                                value={editForm.status || 'Pending'}
+                                                onChange={e => setEditForm(prev => ({ ...prev, status: e.target.value as ProgrammeMilestone['status'] }))}
                                                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
                                             >
                                                 <option value="Pending">Pending</option>
@@ -271,9 +281,9 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                                         <div className="md:col-span-2">
                                             <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Description</label>
                                             <input
-                                                id={`edit-desc-${m.id}`}
                                                 type="text"
-                                                defaultValue={m.description}
+                                                value={editForm.description || ''}
+                                                onChange={e => setEditForm(prev => ({ ...prev, description: e.target.value }))}
                                                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
                                                 placeholder="Description"
                                             />
@@ -281,9 +291,9 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                                         <div className="md:col-span-2 flex items-center gap-2">
                                             <label className="flex items-center gap-2 cursor-pointer">
                                                 <input
-                                                    id={`edit-key-${m.id}`}
                                                     type="checkbox"
-                                                    defaultChecked={m.isKey}
+                                                    checked={editForm.isKey || false}
+                                                    onChange={e => setEditForm(prev => ({ ...prev, isKey: e.target.checked }))}
                                                     className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                                                 />
                                                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Key Milestone</span>
@@ -293,15 +303,7 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                                     <div className="flex justify-end gap-2">
                                         <button onClick={() => setEditingId(null)} className="px-3 py-1.5 text-[11px] font-bold text-slate-500">Cancel</button>
                                         <button
-                                            onClick={() => {
-                                                const name = (document.getElementById(`edit-name-${m.id}`) as HTMLInputElement).value;
-                                                const date = (document.getElementById(`edit-date-${m.id}`) as HTMLInputElement).value;
-                                                const description = (document.getElementById(`edit-desc-${m.id}`) as HTMLInputElement).value;
-                                                const status = (document.getElementById(`edit-status-${m.id}`) as HTMLSelectElement).value as any;
-                                                const stage = (document.getElementById(`edit-stage-${m.id}`) as HTMLSelectElement).value;
-                                                const isKey = (document.getElementById(`edit-key-${m.id}`) as HTMLInputElement).checked;
-                                                handleUpdate(m.id, { name, date, description, status, stage, isKey });
-                                            }}
+                                            onClick={() => handleUpdate(m.id, editForm)}
                                             className="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-[11px] font-black uppercase flex items-center gap-1.5"
                                         >
                                             <Save className="w-3.5 h-3.5" /> Save
@@ -335,7 +337,7 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                                             </div>
                                             <div className="flex items-center gap-2 mt-0.5">
                                                 <span className="text-[11px] text-slate-600 font-bold bg-slate-50 px-1.5 rounded">
-                                                    {format(new Date(m.date), 'dd MMM yyyy')}
+                                                    {m.date && isValid(parseISO(m.date)) ? format(parseISO(m.date), 'dd MMM yyyy') : '—'}
                                                 </span>
                                                 {m.description && (
                                                     <>
@@ -366,9 +368,19 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                                                 </button>
                                             )}
                                         </div>
-                                        <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                        <div className="flex items-center gap-1">
                                             <button
-                                                onClick={() => setEditingId(m.id)}
+                                                onClick={() => {
+                                                    setEditingId(m.id);
+                                                    setEditForm({
+                                                        name: m.name,
+                                                        date: m.date || '',
+                                                        description: m.description || '',
+                                                        status: m.status,
+                                                        stage: m.stage || 'S2',
+                                                        isKey: m.isKey || false,
+                                                    });
+                                                }}
                                                 className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                                             >
                                                 <Edit2 className="w-3.5 h-3.5" />
@@ -395,8 +407,8 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                                                         </div>
                                                         <div className="flex-1 min-w-0">
                                                             <div className="flex items-center justify-between gap-4 mb-1">
-                                                                <span className="text-[10px] font-black text-slate-900 uppercase">Moved to {format(new Date(entry.date), 'dd MMM yyyy')}</span>
-                                                                <span className="text-[9px] text-slate-400 font-medium">{format(new Date(entry.updatedAt), 'dd/MM/yy HH:mm')}</span>
+                                                                <span className="text-[10px] font-black text-slate-900 uppercase">Moved to {isValid(new Date(entry.date)) ? format(new Date(entry.date), 'dd MMM yyyy') : entry.date}</span>
+                                                                <span className="text-[9px] text-slate-400 font-medium">{isValid(new Date(entry.updatedAt)) ? format(new Date(entry.updatedAt), 'dd/MM/yy HH:mm') : '—'}</span>
                                                             </div>
                                                             <p className="text-[11px] text-slate-600 leading-normal italic">"{entry.comment}"</p>
                                                             <div className="mt-1 text-[8px] font-bold text-slate-400 uppercase tracking-widest">— {entry.updatedBy}</div>
@@ -410,6 +422,44 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                             </div>
                         );
                     })}
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {deleteConfirmId && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-300">
+                        <div className="px-6 py-5 border-b border-slate-100 bg-rose-50/50">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-600">
+                                    <Trash2 className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="font-black text-slate-800 uppercase tracking-tighter text-base">Delete Milestone</h3>
+                                    <p className="text-xs text-slate-500 mt-0.5 truncate max-w-[220px]">
+                                        {safeMilestones.find(m => m.id === deleteConfirmId)?.name || 'This milestone'}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="p-6">
+                            <p className="text-sm text-slate-600">This will permanently remove the milestone and its history. This cannot be undone.</p>
+                            <div className="pt-5 flex gap-3">
+                                <button
+                                    onClick={() => setDeleteConfirmId(null)}
+                                    className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-xs font-black uppercase hover:bg-slate-50 transition-colors tracking-widest"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={confirmDelete}
+                                    className="flex-1 px-4 py-2.5 bg-rose-600 text-white rounded-xl text-xs font-black uppercase hover:bg-rose-700 transition-all shadow-lg shadow-rose-200 tracking-widest"
+                                >
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
 

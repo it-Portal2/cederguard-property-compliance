@@ -370,25 +370,25 @@ export function Calendar() {
     return (
       <div className="space-y-6 mb-10">
         {/* Top Row: Title & Action Summary */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-5">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-4 mb-2">
-              <div className="p-3 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-200/50 shrink-0">
-                <CalendarIcon className="w-8 h-8 text-white" />
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2.5 md:p-3 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-200/50 shrink-0">
+                <CalendarIcon className="w-6 h-6 md:w-8 md:h-8 text-white" />
               </div>
-              <h1 className="text-2xl md:text-4xl font-black text-slate-900 tracking-tight whitespace-nowrap truncate">
+              <h1 className="text-xl sm:text-2xl lg:text-4xl font-black text-slate-900 tracking-tight">
                 Project Calendar
               </h1>
             </div>
             <div className="flex items-center gap-3 ml-1">
-              <div className="h-1 w-12 bg-indigo-600 rounded-full shrink-0" />
-              <p className="text-[11px] text-slate-500 font-black uppercase tracking-[0.2em] opacity-70 whitespace-nowrap truncate">
+              <div className="hidden sm:block h-1 w-12 bg-indigo-600 rounded-full shrink-0" />
+              <p className="text-[9px] sm:text-[11px] text-slate-500 font-bold uppercase tracking-[0.15em] sm:tracking-[0.2em] opacity-70">
                 {compareMode ? 'High-Level Timeline Comparison Mode' : `Tracking ${events.length} milestones across ${activeProjects.length} active projects`}
               </p>
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+          <div className="grid grid-cols-2 xl:flex items-stretch xl:items-center gap-3 w-full xl:w-auto">
               <button
                 onClick={() => {
                   setCompareMode(!compareMode);
@@ -427,7 +427,7 @@ export function Calendar() {
                </button>
              )}
              {/* Dynamic Context Selector - Move here for priority */}
-             <div className="relative group flex-1 sm:min-w-[280px]">
+             <div className="relative group col-span-2 xl:min-w-[280px]">
               <select
                 value={activeProjectId ? `project-${activeProjectId}` : activeProgrammeId ? `programme-${activeProgrammeId}` : 'all'}
                 onChange={(e) => {
@@ -537,7 +537,7 @@ export function Calendar() {
 
           return (
             <div className="p-6 bg-indigo-50/50 border-2 border-dashed border-indigo-200 rounded-[2rem] animate-in fade-in slide-in-from-top-4 mb-2">
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
                 <div className="flex items-center gap-4">
                   <div className="p-2 bg-indigo-100 rounded-xl">
                     <Layers className="w-5 h-5 text-indigo-600" />
@@ -612,8 +612,8 @@ export function Calendar() {
         })()}
 
         {/* Global Controls & Filtering Bar */}
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-6 p-2 bg-white/50 backdrop-blur-md border border-slate-100 rounded-[2rem] shadow-xl shadow-slate-200/40">
-          <div className="flex flex-wrap items-center gap-2 px-2">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 p-3 sm:p-2 bg-white/50 backdrop-blur-md border border-slate-100 rounded-2xl sm:rounded-[2rem] shadow-xl shadow-slate-200/40">
+          <div className="flex flex-nowrap sm:flex-wrap items-center gap-2 px-2 overflow-x-auto sm:overflow-visible scrollbar-none">
              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2 ml-2">Quick Filter:</span>
              <button
                onClick={() => setFilters(f => ({ ...f, milestone: !f.milestone }))}
@@ -667,8 +667,8 @@ export function Calendar() {
               </button>
           </div>
 
-          <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-2xl">
-            <div className="flex gap-1 mr-4">
+          <div className="flex flex-wrap items-center justify-center gap-2 bg-slate-100 p-1.5 rounded-2xl w-full lg:w-auto">
+            <div className="flex gap-1 mr-0 sm:mr-4">
               <button 
                 onClick={() => setViewMode('month')}
                 className={clsx(
@@ -710,7 +710,7 @@ export function Calendar() {
                 <ChevronLeft className="w-4 h-4" />
               </button>
               
-              <div className="bg-white px-6 py-2 rounded-xl border border-slate-200/50 shadow-sm min-w-[180px] text-center">
+              <div className="bg-white px-3 sm:px-6 py-2 rounded-xl border border-slate-200/50 shadow-sm min-w-[120px] sm:min-w-[180px] text-center">
                 <span className="text-[11px] font-black text-slate-900 uppercase tracking-widest whitespace-nowrap">
                   {viewMode === 'month' 
                     ? format(currentMonth, 'MMMM yyyy') 

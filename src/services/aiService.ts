@@ -726,7 +726,7 @@ export async function analyzeComplianceSentiment(projectInfo: any, complianceIte
   }
 }
 
-export async function chatWithAI(query: string, projectInfo: any, context?: string, lastAnalysis?: any, user?: any) {
+export async function chatWithAI(query: string, projectInfo: any, context?: string, lastAnalysis?: any, user?: any, contextData?: any) {
   // Extract real data for more specific context
   const analysisContext = lastAnalysis ? {
     summary: lastAnalysis.summary,
@@ -735,18 +735,43 @@ export async function chatWithAI(query: string, projectInfo: any, context?: stri
     overallRag: lastAnalysis.overallRag || 'Unknown'
   } : null;
 
+  // Build live data sections from contextData (compliance tracker, risk register, issues)
+  const entitySection = contextData?.entity
+    ? `ACTIVE ${contextData.entity.isProject ? 'PROJECT' : 'PROGRAMME'}:\nName: ${contextData.entity.name || 'N/A'} | Type: ${contextData.entity.type || 'N/A'} | Location: ${contextData.entity.location || 'N/A'}\nDescription: ${contextData.entity.description || 'N/A'}\nCompliance Setup Done: ${contextData.entity.complianceSetupDone ? 'Yes' : 'No'} | Risk Setup Done: ${contextData.entity.riskSetupDone ? 'Yes' : 'No'}`
+    : '';
+
+  const complianceSection = contextData?.compliance
+    ? `COMPLIANCE TRACKER (live):\nTotal: ${contextData.compliance.total} | Complete: ${contextData.compliance.complete} | In Progress: ${contextData.compliance.inProgress} | Not Started: ${contextData.compliance.notStarted} | High Risk Open: ${contextData.compliance.highRiskOpen}\nTop High-Risk Incomplete: ${JSON.stringify(contextData.compliance.topHighRisk)}`
+    : '';
+
+  const riskSection = contextData?.risks
+    ? `RISK REGISTER (live):\nTotal: ${contextData.risks.total} | Open: ${contextData.risks.open} | High Severity (rating≥16): ${contextData.risks.highSeverity}\nTop Open Risks: ${JSON.stringify(contextData.risks.topOpen)}`
+    : '';
+
+  const issueSection = contextData?.issues
+    ? `ISSUES (live):\nTotal: ${contextData.issues.total} | Open: ${contextData.issues.open} | Escalated: ${contextData.issues.escalated}\nTop Open Issues: ${JSON.stringify(contextData.issues.topOpen)}`
+    : '';
+
   const prompt = `
     You are CedarGuard AI, a professional compliance and risk expert for the Cedar Property Compliance & Risk Manager Suite.
-    
+
     USER ROLE:
     ${user?.role || 'Project Stakeholder'} (${user?.email || 'Anonymous'})
-    
-    PROJECT PROFILE:
+
+    ${entitySection}
+
+    PROJECT PROFILE (questionnaire answers):
     ${JSON.stringify(projectInfo, null, 2)}
-    
-    PREVIOUS ANALYSIS RESULTS:
+
+    PREVIOUS AI ANALYSIS RESULTS:
     ${analysisContext ? JSON.stringify(analysisContext, null, 2) : "No analysis performed yet."}
-    
+
+    ${complianceSection}
+
+    ${riskSection}
+
+    ${issueSection}
+
     CURRENT PAGE/USER CONTEXT:
     ${context || 'General Overview'}
     

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams, useLocation, Link } from "react-router";
 import { api } from "../lib/api";
-import { useStore } from "../store/useStore";
+import { useStore, TeamMember } from "../store/useStore";
 import { isAtLeastPM, isSuperAdmin, isAtLeastClientAdmin } from "../lib/roles";
 import { Save, CheckCircle2, Info, LayoutTemplate, UserCircle, Rocket, ChevronRight, AlertCircle, Shield, Trash2, ScanSearch, AlertTriangle, Plus } from 'lucide-react';
 import { clsx } from "clsx";
@@ -31,7 +31,10 @@ export function ProjectInitiation() {
   } = useStore();
 
   const [loading, setLoading] = useState(false);
+  const [publishLoading, setPublishLoading] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const [teamSaving, setTeamSaving] = useState(false);
+  const [teamSaved, setTeamSaved] = useState(false);
   const [draftToDelete, setDraftToDelete] = useState<string | null>(null);
   const [deletingDraft, setDeletingDraft] = useState(false);
 
@@ -296,6 +299,7 @@ export function ProjectInitiation() {
           typeOfUnits: formData.typeOfUnits,
           bedroomsPerProperty: formData.bedroomsPerProperty,
           milestones: formData.milestones,
+          deliveryTeam: formData.deliveryTeam,
           createdBy: user?.email || "",
           pm: formData.projectManagerId || user?.email || "",
         } as any);
@@ -363,7 +367,7 @@ export function ProjectInitiation() {
       return;
     }
 
-    setLoading(true);
+    setPublishLoading(true);
     try {
       await updateProject(activeProjectId, {
         isPublished: true,
@@ -381,7 +385,7 @@ export function ProjectInitiation() {
     } catch (err: any) {
       toast.error(err.message || "Failed to publish project.");
     } finally {
-      setLoading(false);
+      setPublishLoading(false);
     }
   };
 
@@ -503,23 +507,21 @@ export function ProjectInitiation() {
         </div>
 
         {/* ── MAIN CONTENT GRID ─────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {loading && (
+            <div className="absolute inset-0 z-50 bg-white/60 backdrop-blur-[2px] rounded-3xl flex items-center justify-center">
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-10 h-10 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin shadow-md" />
+                <span className="text-sm font-black text-indigo-900 tracking-widest uppercase">Processing</span>
+              </div>
+            </div>
+          )}
           {/* LEFT: FORM SECTION (Column Span 8) */}
           <div className="lg:col-span-8 order-2 lg:order-1 space-y-8">
             <form
               onSubmit={handleSubmit}
-              className="relative overflow-hidden bg-white border border-slate-200 rounded-3xl p-6 md:p-10 shadow-xl shadow-slate-200/50 space-y-10"
+              className="bg-white border border-slate-200 rounded-3xl p-6 md:p-10 shadow-xl shadow-slate-200/50 space-y-10"
             >
-              {loading && (
-                <div className="absolute inset-0 z-50 bg-white/60 backdrop-blur-[2px] flex items-center justify-center">
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="w-10 h-10 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin shadow-md" />
-                    <span className="text-sm font-black text-indigo-900 tracking-widest uppercase">
-                      Processing
-                    </span>
-                  </div>
-                </div>
-              )}
               {/* Continuing Drafts Overlay-style section */}
               {(Array.isArray(projects) ? projects : []).filter(
                 (p) => !p.isPublished,
@@ -873,17 +875,31 @@ export function ProjectInitiation() {
               {/* ── SECTION: DELIVERY TEAM ── */}
               <div id="project-delivery" className="scroll-mt-24">
                 <DeliveryTeamCRUD
-                  activeId={urlProjectId || activeProjectId || ""}
-                  type="project"
-                  deliveryTeam={formData.deliveryTeam}
-                  deliveryTeamDone={formData.deliveryTeamDone}
-                  onUpdate={async (data) => {
-                    setFormData((prev) => ({ ...prev, ...data }));
-                    if (urlProjectId || activeProjectId) {
-                      await updateProject(
-                        urlProjectId || activeProjectId || "",
-                        data,
-                      );
+                  members={formData.deliveryTeam}
+                  isDone={formData.deliveryTeamDone}
+                  saving={teamSaving}
+                  saved={teamSaved}
+                  onUpdate={async (updatedMembers: TeamMember[], updatedIsDone: boolean) => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      deliveryTeam: updatedMembers,
+                      deliveryTeamDone: updatedIsDone,
+                    }));
+                    const projectId = urlProjectId || activeProjectId;
+                    if (projectId) {
+                      setTeamSaving(true);
+                      setTeamSaved(false);
+                      try {
+                        await updateProject(projectId, { deliveryTeam: updatedMembers });
+                        setTeamSaved(true);
+                        setTimeout(() => setTeamSaved(false), 2500);
+                      } catch {
+                        toast.error("Failed to save team changes. Please try again.");
+                      } finally {
+                        setTeamSaving(false);
+                      }
+                    } else {
+                      setIsDirty(true);
                     }
                   }}
                 />
@@ -928,7 +944,7 @@ export function ProjectInitiation() {
 
           {/* RIGHT: TRACKER SECTION (Column Span 4) */}
           <div className="lg:col-span-4 order-1 lg:order-2 sticky top-6">
-            <PublicationChecklist onPublish={handlePublish} loading={loading} />
+            <PublicationChecklist onPublish={handlePublish} loading={publishLoading} />
           </div>
         </div>
       </div>

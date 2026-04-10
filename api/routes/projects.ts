@@ -231,7 +231,28 @@ export const projectRoutes: Record<
         .json({ error: "Forbidden: You do not have access to this project." });
     }
 
+    // 1. Delete all documents in the projects/{id}/data subcollection
+    const dataSnap = await db.collection("projects").doc(id).collection("data").get();
+    if (!dataSnap.empty) {
+      const dataBatch = db.batch();
+      dataSnap.docs.forEach((doc) => dataBatch.delete(doc.ref));
+      await dataBatch.commit();
+    }
+
+    // 2. Delete all evidence documents linked to this project
+    const evidenceSnap = await db.collection("evidence").where("project", "==", id).get();
+    if (!evidenceSnap.empty) {
+      // Firestore batch limit is 500 — chunk if needed
+      for (let i = 0; i < evidenceSnap.docs.length; i += 500) {
+        const evidenceBatch = db.batch();
+        evidenceSnap.docs.slice(i, i + 500).forEach((doc) => evidenceBatch.delete(doc.ref));
+        await evidenceBatch.commit();
+      }
+    }
+
+    // 3. Delete the project document itself
     await db.collection("projects").doc(id).delete();
+
     db.collection("activityLogs")
       .add({
         type: "project_deleted",

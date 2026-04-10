@@ -44,7 +44,99 @@ export function AIInquiryPopup({ isOpen: controlledIsOpen, onClose: controlledOn
   const [input, setInput] = useState(initialQuestion || '');
   const [isTyping, setIsTyping] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const { user, projectInfo, lastAnalysisResults } = useStore();
+  const {
+    user,
+    projectInfo,
+    lastAnalysisResults,
+    complianceItems,
+    risks,
+    issues,
+    activeProject,
+    activeProgramme,
+    activeProjectId,
+    activeProgrammeId,
+  } = useStore();
+
+  const buildContextData = () => {
+    const activeEntity = activeProject || activeProgramme;
+    const isProject = !!activeProject;
+
+    const ctxCompliance = (Array.isArray(complianceItems) ? complianceItems : []).filter((c) =>
+      activeProjectId ? c.projectId === activeProjectId : c.programmeId === activeProgrammeId
+    );
+    const ctxRisks = (Array.isArray(risks) ? risks : []).filter((r) =>
+      activeProjectId ? r.projectId === activeProjectId : r.programmeId === activeProgrammeId
+    );
+    const ctxIssues = (Array.isArray(issues) ? issues : []).filter((i) =>
+      activeProjectId ? i.projectId === activeProjectId : i.programmeId === activeProgrammeId
+    );
+
+    return {
+      entity: activeEntity
+        ? {
+            isProject,
+            name: (activeEntity as any).name,
+            type: (activeEntity as any).type,
+            location:
+              (activeEntity as any).location ||
+              (activeEntity as any).geographicScope ||
+              (activeEntity as any).loc,
+            description:
+              (activeEntity as any).description ||
+              (activeEntity as any).strategicObjectives,
+            complianceSetupDone: !!(activeEntity as any).complianceSetupDone,
+            riskSetupDone: !!(activeEntity as any).riskSetupDone,
+          }
+        : null,
+      compliance: {
+        total: ctxCompliance.length,
+        complete: ctxCompliance.filter((c) => (c as any).stage === 'Complete').length,
+        inProgress: ctxCompliance.filter((c) => (c as any).stage === 'In Progress').length,
+        notStarted: ctxCompliance.filter((c) => (c as any).stage === 'Not Started').length,
+        highRiskOpen: ctxCompliance.filter(
+          (c) => c.risk === 'High' && (c as any).stage !== 'Complete'
+        ).length,
+        topHighRisk: ctxCompliance
+          .filter((c) => c.risk === 'High' && (c as any).stage !== 'Complete')
+          .slice(0, 5)
+          .map((c) => ({
+            reg: (c as any).reg,
+            req: (c as any).req?.substring(0, 80),
+            domain: c.domain,
+          })),
+      },
+      risks: {
+        total: ctxRisks.length,
+        open: ctxRisks.filter((r) => r.status === 'Open').length,
+        highSeverity: ctxRisks.filter(
+          (r) => (r.grossRating ?? r.grossL * r.grossI) >= 16
+        ).length,
+        topOpen: ctxRisks
+          .filter((r) => r.status === 'Open')
+          .sort((a, b) => (b.grossRating ?? 0) - (a.grossRating ?? 0))
+          .slice(0, 5)
+          .map((r) => ({
+            title: r.title,
+            category: r.category,
+            rating: r.grossRating ?? r.grossL * r.grossI,
+            owner: r.owner,
+          })),
+      },
+      issues: {
+        total: ctxIssues.length,
+        open: ctxIssues.filter((i) => i.status !== '4. Resolved').length,
+        escalated: ctxIssues.filter((i) => i.status === '2. Escalated').length,
+        topOpen: ctxIssues
+          .filter((i) => i.status !== '4. Resolved')
+          .slice(0, 5)
+          .map((i) => ({
+            title: (i as any).title || i.desc?.substring(0, 50),
+            status: i.status,
+            owner: i.owner,
+          })),
+      },
+    };
+  };
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const isRiskContext = context ? context.includes('programme_risks') : false;
@@ -89,7 +181,7 @@ export function AIInquiryPopup({ isOpen: controlledIsOpen, onClose: controlledOn
 
     try {
       // Use the new chatWithAI service for dynamic, context-aware responses
-      const response = await chatWithAI(text, projectInfo, context, lastAnalysisResults, user);
+      const response = await chatWithAI(text, projectInfo, context, lastAnalysisResults, user, buildContextData());
       
       const assistantMsg: Message = {
         id: (Date.now() + 1).toString(),

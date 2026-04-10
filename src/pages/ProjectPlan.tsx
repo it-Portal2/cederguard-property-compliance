@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import toast from 'react-hot-toast';
 import { useStore } from '../store/useStore';
 import { MilestoneManager } from '../components/MilestoneManager';
 import type { ProgrammeMilestone } from '../store/useStore';
@@ -23,7 +24,11 @@ export function ProjectPlan() {
 
     const handleMilestonesChange = async (updated: ProgrammeMilestone[]) => {
         if (!activeProjectId) return;
-        await updateProject(activeProjectId, { milestones: updated } as any);
+        try {
+            await updateProject(activeProjectId, { milestones: updated } as any);
+        } catch {
+            toast.error('Failed to save milestones. Please try again.');
+        }
     };
 
     const toggleStage = (id: string) => {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ShieldCheck, CheckCircle2, AlertCircle, ClipboardList, Trash2, PlusCircle, Target, Check, ArrowLeft, Loader2 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { determineProjectCategory } from '../../utils/complianceCategorization';
@@ -48,6 +48,11 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
 }) => {
   const categoryData = determineProjectCategory(projectInfo);
   const addableItems = buildAddableItems();
+  // Bug 15: stable ID — recomputed only when category changes, not on every render
+  const verifiedId = useMemo(
+    () => `${categoryData.category}-${Math.random().toString(36).substring(7).toUpperCase()}`,
+    [categoryData.category]
+  );
 
   return (
     <div className="space-y-8 animate-in fade-in zoom-in duration-700 pb-20">
@@ -69,7 +74,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
                   <h2 className="text-2xl sm:text-3xl font-black tracking-tight">{categoryData.label}</h2>
                   <span className="px-3 py-1 bg-white/10 border border-white/20 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-indigo-300 w-fit">
-                    Verified ID: {categoryData.category}-{Math.random().toString(36).substring(7).toUpperCase()}
+                    Verified ID: {verifiedId}
                   </span>
                 </div>
                 <p className="text-slate-400 text-sm leading-relaxed max-w-2xl font-medium">
@@ -157,7 +162,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
                 ].map((t) => (
                   <button
                     key={t.id}
-                    onClick={() => setSubPhase(t.id as any)}
+                    onClick={() => { setSubPhase(t.id as any); setSelectedIds([]); }}
                     className={clsx(
                       "px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-wider transition-all shrink-0",
                       subPhase === t.id 
@@ -230,7 +235,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
                             <td className="px-4 sm:px-8 py-4 sm:py-6 text-right">
                               <button
                                 onClick={(e) => { e.stopPropagation(); deleteComplianceItem(item.id); }}
-                                className="p-3 rounded-xl text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-all bg-white border border-slate-100 shadow-sm opacity-0 group-hover:opacity-100"
+                                className="p-3 rounded-xl text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-all bg-white border border-slate-100 shadow-sm"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>

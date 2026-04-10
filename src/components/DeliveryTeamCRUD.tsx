@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { useStore, TeamMember } from '../store/useStore';
-import { Plus, User, Mail, Phone, Building2, Trash2, Edit2, CheckCircle2, X } from 'lucide-react';
-import { clsx } from 'clsx';
+import { TeamMember } from '../store/useStore';
+import { Plus, User, Mail, Building2, Trash2, Edit2, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
 import { generateId } from '../lib/utils';
 
 interface DeliveryTeamCRUDProps {
@@ -9,16 +8,21 @@ interface DeliveryTeamCRUDProps {
     isDone: boolean;
     onUpdate: (members: TeamMember[], isDone: boolean) => void;
     title?: string;
+    saving?: boolean;
+    saved?: boolean;
 }
 
-export const DeliveryTeamCRUD: React.FC<DeliveryTeamCRUDProps> = ({ 
-    members = [], 
-    isDone, 
+export const DeliveryTeamCRUD: React.FC<DeliveryTeamCRUDProps> = ({
+    members = [],
+    isDone,
     onUpdate,
-    title = "Delivery Team Composition"
+    title = "Delivery Team Composition",
+    saving = false,
+    saved = false,
 }) => {
     const [isAdding, setIsAdding] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
     const [formData, setFormData] = useState<Partial<TeamMember>>({
         name: '',
         role: '',
@@ -57,17 +61,19 @@ export const DeliveryTeamCRUD: React.FC<DeliveryTeamCRUDProps> = ({
     };
 
     const handleDelete = (id: string) => {
-        onUpdate(members.filter(m => m.id !== id), isDone);
+        setDeleteConfirmId(id);
+    };
+
+    const confirmDelete = () => {
+        if (!deleteConfirmId) return;
+        onUpdate(members.filter(m => m.id !== deleteConfirmId), isDone);
+        setDeleteConfirmId(null);
     };
 
     const startEdit = (member: TeamMember) => {
         setFormData(member);
         setEditingId(member.id);
         setIsAdding(true);
-    };
-
-    const toggleDone = () => {
-        onUpdate(members, !isDone);
     };
 
     const inputCls = "w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all";
@@ -78,9 +84,20 @@ export const DeliveryTeamCRUD: React.FC<DeliveryTeamCRUDProps> = ({
             <div className="flex items-center justify-between">
                 <div>
                     <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">{title}</h3>
-                    <p className="text-[10px] text-slate-500 font-medium">Assign key stakeholders and project roles.</p>
+                    {saving ? (
+                        <span className="flex items-center gap-1 text-[10px] font-bold text-indigo-500 mt-0.5">
+                            <Loader2 className="w-3 h-3 animate-spin" /> Saving...
+                        </span>
+                    ) : saved ? (
+                        <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 mt-0.5">
+                            <CheckCircle2 className="w-3 h-3" /> Saved
+                        </span>
+                    ) : (
+                        <p className="text-[10px] text-slate-500 font-medium">Assign key stakeholders and project roles.</p>
+                    )}
                 </div>
                 <button
+                    type="button"
                     onClick={() => { resetForm(); setIsAdding(true); }}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-indigo-100 transition-all"
                 >
@@ -129,13 +146,15 @@ export const DeliveryTeamCRUD: React.FC<DeliveryTeamCRUDProps> = ({
                         </div>
                     </div>
                     <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
-                        <button 
+                        <button
+                            type="button"
                             onClick={resetForm}
                             className="px-3 py-1.5 text-[10px] font-black text-slate-500 uppercase hover:bg-slate-100 rounded-lg transition-all"
                         >
                             Cancel
                         </button>
-                        <button 
+                        <button
+                            type="button"
                             onClick={editingId ? handleUpdate : handleAdd}
                             disabled={!formData.name || !formData.role}
                             className="flex items-center gap-1.5 px-4 py-1.5 bg-indigo-600 text-white rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-md shadow-indigo-100"
@@ -177,14 +196,16 @@ export const DeliveryTeamCRUD: React.FC<DeliveryTeamCRUDProps> = ({
                                     </div>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button 
+                            <div className="flex items-center gap-1">
+                                <button
+                                    type="button"
                                     onClick={() => startEdit(member)}
                                     className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
                                 >
                                     <Edit2 className="w-3.5 h-3.5" />
                                 </button>
-                                <button 
+                                <button
+                                    type="button"
                                     onClick={() => handleDelete(member.id)}
                                     className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
                                 >
@@ -196,30 +217,37 @@ export const DeliveryTeamCRUD: React.FC<DeliveryTeamCRUDProps> = ({
                 )}
             </div>
 
-            <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100/50">
-                <div className="text-center sm:text-left">
-                    <p className="text-xs font-black text-indigo-900 uppercase tracking-tight">Requirement Completion</p>
-                    <p className="text-[10px] text-indigo-700/70 font-medium">Is the delivery team fully assigned and confirmed?</p>
+            {deleteConfirmId && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200">
+                        <div className="flex items-center gap-3 mb-4 text-rose-600">
+                            <div className="p-2 bg-rose-50 rounded-xl">
+                                <AlertTriangle className="w-5 h-5" />
+                            </div>
+                            <h3 className="text-base font-black tracking-tight">Remove Team Member</h3>
+                        </div>
+                        <p className="text-slate-500 mb-6 text-sm leading-relaxed">
+                            Are you sure you want to remove <strong className="text-slate-800">{members.find(m => m.id === deleteConfirmId)?.name}</strong> from the delivery team?
+                        </p>
+                        <div className="flex items-center gap-3 justify-end">
+                            <button
+                                type="button"
+                                onClick={() => setDeleteConfirmId(null)}
+                                className="px-4 py-2 font-black text-xs uppercase tracking-widest text-slate-500 hover:bg-slate-50 border border-slate-200 rounded-xl transition-all"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={confirmDelete}
+                                className="px-4 py-2 font-black text-xs uppercase tracking-widest text-white bg-rose-600 hover:bg-rose-700 shadow-lg shadow-rose-200/50 rounded-xl transition-all"
+                            >
+                                Remove
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <button 
-                    onClick={toggleDone}
-                    className={clsx(
-                        "w-full sm:w-auto px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2",
-                        isDone 
-                            ? "bg-emerald-500 text-white shadow-lg shadow-emerald-200" 
-                            : "bg-white border border-indigo-200 text-indigo-600 hover:bg-indigo-50 shadow-sm"
-                    )}
-                >
-                    {isDone ? (
-                        <>
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            Completed
-                        </>
-                    ) : (
-                        "Mark Section Complete"
-                    )}
-                </button>
-            </div>
+            )}
         </div>
     );
 };
