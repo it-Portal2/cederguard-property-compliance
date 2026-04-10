@@ -1,0 +1,14 @@
+[
+  {
+    "origin": [
+      "http://localhost:3000",
+      "https://cedarguard.co.uk",
+      "https://www.cedarguard.co.uk",
+      "https://cedar-risk-compliance-suite.web.app",
+      "https://cedar-risk-compliance-suite.firebaseapp.com"
+    ],
+    "method": ["GET", "POST", "PUT", "DELETE", "HEAD"],
+    "maxAgeSeconds": 3600,
+    "responseHeader": ["Content-Type", "Authorization", "Content-Length", "X-Requested-With", "x-goog-resumable"]
+  }
+]

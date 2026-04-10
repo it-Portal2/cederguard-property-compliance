@@ -152,7 +152,7 @@ export function Sidebar() {
       )}
 
       <div className={clsx(
-        "w-64 bg-white border-r border-slate-200 flex flex-col h-full fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 md:relative md:translate-x-0",
+        "w-64 bg-white border-r border-slate-200 flex flex-col h-full fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 md:relative md:translate-x-0 print:hidden",
         isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         {/* Logo */}

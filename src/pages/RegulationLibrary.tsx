@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, ChevronRight, AlertTriangle, FileText, List, Shield, Users, Clock, CheckCircle2, Info, AlertCircle, Filter, X, ScanSearch, ShieldCheck, MessageSquare, Plus } from 'lucide-react';
+import { Search, ChevronRight, AlertTriangle, FileText, List, Shield, Users, Clock, CheckCircle2, Info, AlertCircle, Filter, X, ScanSearch, ShieldCheck, MessageSquare, Plus, Loader2 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { REGULATIONS } from '../data/regulationsLibraryData';
 import { motion, AnimatePresence } from 'motion/react';
@@ -9,6 +9,7 @@ import { isAtLeastPM } from '../lib/roles';
 import { AIInquiryPopup } from '../components/AIInquiryPopup';
 import { AIWriter } from '../components/AIWriter';
 import { generateId } from '../lib/utils';
+import toast from 'react-hot-toast';
 
 const CATS = [...new Set(REGULATIONS.map(r => r.cat))].sort();
 
@@ -26,8 +27,9 @@ function RegulationCard({ item, key }: { item: any; key?: string }) {
   const [isAddingUpdate, setIsAddingUpdate] = useState(false);
   const [updateContent, setUpdateContent] = useState('');
   const [isAIInquiryOpen, setIsAIInquiryOpen] = useState(false);
+  const [isSavingUpdate, setIsSavingUpdate] = useState(false);
   
-  const { updateRegulationItem, user } = useStore();
+  const { updateRegulationItem, addCustomRegulation, customRegulations, user, activeProject, activeProgramme, activeProjectId, activeProgrammeId } = useStore();
 
   const riskStyles = {
     Critical: "bg-red-50 text-red-600 border-red-200",
@@ -36,25 +38,44 @@ function RegulationCard({ item, key }: { item: any; key?: string }) {
     Low: "bg-slate-50 text-slate-500 border-slate-200"
   };
 
-  const handleAddUpdate = () => {
+  const handleAddUpdate = async () => {
     if (!updateContent.trim()) return;
-    
-    const newUpdate = {
-      id: Math.random().toString(36).substr(2, 9),
-      date: new Date().toISOString(),
-      content: updateContent,
-      author: user?.profile?.name || 'User'
-    };
+    if (!activeProjectId && !activeProgrammeId) {
+      toast.error('Please select a project or programme before saving.');
+      return;
+    }
+    setIsSavingUpdate(true);
+    try {
+      const newUpdate = {
+        id: Math.random().toString(36).substr(2, 9),
+        date: new Date().toISOString(),
+        content: updateContent,
+        author: user?.profile?.name || 'User'
+      };
 
-    const updatedItem = {
-      ...item,
-      lastUpdated: new Date().toISOString(),
-      updates: [newUpdate, ...(item.updates || [])]
-    };
+      const updatedItem = {
+        ...item,
+        lastUpdated: new Date().toISOString(),
+        updates: [newUpdate, ...(item.updates || [])]
+      };
 
-    updateRegulationItem(updatedItem);
-    setUpdateContent('');
-    setIsAddingUpdate(false);
+      // If this is a static regulation (no id or not in customRegulations), clone it into customRegulations
+      const isCustom = item.id && customRegulations.some((r: any) => r.id === item.id);
+      if (isCustom) {
+        await updateRegulationItem(updatedItem);
+      } else {
+        // Clone static regulation into custom with a generated ID
+        const cloned = { ...updatedItem, id: item.id || generateId('REG'), tag: item.tag || 'Original' };
+        await addCustomRegulation(cloned);
+      }
+      setUpdateContent('');
+      setIsAddingUpdate(false);
+      toast.success('Update saved successfully');
+    } catch (err) {
+      toast.error('Failed to save update. Please try again.');
+    } finally {
+      setIsSavingUpdate(false);
+    }
   };
 
   return (
@@ -95,18 +116,18 @@ function RegulationCard({ item, key }: { item: any; key?: string }) {
             exit={{ height: 0, opacity: 0 }}
             className="border-t border-slate-100 bg-slate-50/50"
           >
-            <div className="flex border-b border-slate-200 bg-slate-50">
+            <div className="flex border-b border-slate-200 bg-slate-50 overflow-x-auto no-scrollbar">
               {[
                 { id: 'overview', label: 'Overview' },
-                { id: 'process', label: 'Process Steps' },
-                { id: 'evidence', label: 'Evidence Required' },
+                { id: 'process', label: 'Process' },
+                { id: 'evidence', label: 'Evidence' },
                 { id: 'owners', label: 'Owners' }
               ].map(tab => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
                   className={clsx(
-                    "px-4 py-2.5 text-xs font-medium transition-colors border-b-2",
+                    "px-3 md:px-4 py-2.5 text-[10px] md:text-xs font-medium transition-colors border-b-2 whitespace-nowrap shrink-0",
                     activeTab === tab.id ? "border-indigo-500 text-indigo-600" : "border-transparent text-slate-500 hover:text-slate-800"
                   )}
                 >
@@ -215,10 +236,11 @@ function RegulationCard({ item, key }: { item: any; key?: string }) {
                       </button>
                       <button 
                         onClick={handleAddUpdate}
-                        disabled={!updateContent.trim()}
-                        className="px-4 py-1.5 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-wider rounded-lg hover:bg-indigo-700 transition-all shadow-sm disabled:opacity-50"
+                        disabled={!updateContent.trim() || isSavingUpdate}
+                        className="px-4 py-1.5 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-wider rounded-lg hover:bg-indigo-700 transition-all shadow-sm disabled:opacity-50 flex items-center gap-1.5"
                       >
-                        Save Update
+                        {isSavingUpdate && <Loader2 className="w-3 h-3 animate-spin" />}
+                        {isSavingUpdate ? 'Saving...' : 'Save Update'}
                       </button>
                     </div>
                   </div>
@@ -245,14 +267,14 @@ function RegulationCard({ item, key }: { item: any; key?: string }) {
               </div>
             </div>
             
-            <div className="px-5 py-3 border-t border-slate-200 bg-slate-50 flex justify-between items-center">
-              <div className="flex items-center gap-4">
-                <div className="text-[11px] text-slate-400 flex items-center gap-1">
-                  <Info className="w-3.5 h-3.5" /> Regulation active for Construction Programme
+            <div className="px-3 md:px-5 py-3 border-t border-slate-200 bg-slate-50 flex flex-col sm:flex-row gap-2 sm:justify-between sm:items-center">
+              <div className="flex items-center gap-2 md:gap-4 flex-wrap">
+                <div className="text-[10px] md:text-[11px] text-slate-400 flex items-center gap-1 truncate">
+                  <Info className="w-3 md:w-3.5 h-3 md:h-3.5 shrink-0" /> <span className="truncate">Active for {activeProject?.name || (activeProgramme as any)?.name || 'current context'}</span>
                 </div>
                 {item.lastUpdated && (
-                  <div className="text-[11px] text-indigo-500 flex items-center gap-1 font-semibold">
-                    <Clock className="w-3.5 h-3.5" /> Last Revision: {format(new Date(item.lastUpdated), 'dd/MM/yy')}
+                  <div className="text-[10px] md:text-[11px] text-indigo-500 flex items-center gap-1 font-semibold shrink-0">
+                    <Clock className="w-3 md:w-3.5 h-3 md:h-3.5" /> {format(new Date(item.lastUpdated), 'dd/MM/yy')}
                   </div>
                 )}
               </div>
@@ -262,17 +284,26 @@ function RegulationCard({ item, key }: { item: any; key?: string }) {
                   e.stopPropagation();
                   setIsAIInquiryOpen(true);
                 }}
-                className="flex items-center gap-2 px-3 py-1.5 bg-white border border-indigo-200 text-indigo-600 text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-indigo-50 transition-all shadow-sm active:scale-95"
+                className="flex items-center gap-2 px-3 py-1.5 bg-white border border-indigo-200 text-indigo-600 text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-indigo-50 transition-all shadow-sm active:scale-95 shrink-0 self-end sm:self-auto"
               >
                 <MessageSquare className="w-3 h-3" />
-                Ask AI About This
+                Ask AI
               </button>
             </div>
 
             <AIInquiryPopup 
               isOpen={isAIInquiryOpen} 
               onClose={() => setIsAIInquiryOpen(false)} 
-              context={`Regulation: ${item.name}. Requirement: ${item.req}`}
+              context={[
+                `Regulation: ${item.name} (${item.reg}).`,
+                `Category: ${item.cat}. Risk Level: ${item.risk}.`,
+                `Requirement: ${item.req}`,
+                `Penalty for Breach: ${item.penalty}`,
+                `Process Steps: ${item.process?.replace(/\|/g, ', ')}`,
+                activeProject ? `Current Project: ${activeProject.name} (Type: ${(activeProject as any).type || 'N/A'}, Location: ${(activeProject as any).loc || 'N/A'}).` : '',
+                activeProgramme ? `Current Programme: ${(activeProgramme as any).name}.` : '',
+                `Provide project-specific implementation guidance for this regulation, not generic regulatory information.`
+              ].filter(Boolean).join(' ')}
             />
           </motion.div>
         )}
@@ -282,10 +313,11 @@ function RegulationCard({ item, key }: { item: any; key?: string }) {
 }
 
 export function RegulationLibrary() {
-  const { user, customRegulations, addCustomRegulation } = useStore();
+  const { user, customRegulations, addCustomRegulation, activeProject, activeProgramme, activeProjectId, activeProgrammeId } = useStore();
   const [activeView, setActiveView] = useState<'all' | 'new'>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAIInquiryOpen, setIsAIInquiryOpen] = useState(false);
+  const [isSavingEntry, setIsSavingEntry] = useState(false);
   const [newReg, setNewReg] = useState<Partial<RegulationItem>>({
     cat: CATS[0] || 'General',
     risk: 'Medium',
@@ -301,9 +333,27 @@ export function RegulationLibrary() {
   const [activeRisks, setActiveRisks] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
 
+  // Merge static + custom regulations, preserving original order
+  // Custom overrides replace static items in-place; truly new custom entries go at end
+  const allItems = useMemo(() => {
+    const customByKey = new Map(customRegulations.map((r: any) => [`${r.cat}::${r.name}`, r]));
+    const usedKeys = new Set<string>();
+    // Walk static list — swap in custom override if one exists
+    const merged = REGULATIONS.map(r => {
+      const key = `${r.cat}::${r.name}`;
+      if (customByKey.has(key)) {
+        usedKeys.add(key);
+        return customByKey.get(key)!;
+      }
+      return r;
+    });
+    // Append truly new custom regulations (not overrides of static ones)
+    const newCustom = customRegulations.filter((r: any) => !usedKeys.has(`${r.cat}::${r.name}`));
+    return [...merged, ...newCustom];
+  }, [customRegulations]);
+
   // Filter Items
   const filteredItems = useMemo(() => {
-    const allItems = [...REGULATIONS, ...customRegulations];
     return allItems.filter(item => {
       const matchSearch = item.name.toLowerCase().includes(search.toLowerCase()) || 
                           item.req.toLowerCase().includes(search.toLowerCase()) ||
@@ -313,13 +363,13 @@ export function RegulationLibrary() {
       const matchView = activeView === 'all' || item.tag === 'NEW';
       return matchSearch && matchCat && matchRisk && matchView;
     });
-  }, [search, activeCat, activeRisks, activeView, customRegulations]);
+  }, [search, activeCat, activeRisks, activeView, allItems]);
 
   // Stats
   const stats = useMemo(() => {
     const lastUpdateDate = filteredItems.reduce((latest, item) => {
-      if (!item.lastUpdated) return latest;
-      const itemDate = new Date(item.lastUpdated);
+      if (!(item as any).lastUpdated) return latest;
+      const itemDate = new Date((item as any).lastUpdated);
       return itemDate > latest ? itemDate : latest;
     }, new Date(0));
 
@@ -397,12 +447,12 @@ export function RegulationLibrary() {
             >
               <span>All Categories</span>
               <span className={clsx("text-[10px] px-2 py-0.5 rounded-full font-bold", activeCat === 'All' ? "bg-indigo-50 text-indigo-700" : "bg-slate-100 text-slate-500")}>
-                {REGULATIONS.length}
+                {allItems.length}
               </span>
             </button>
             
             {CATS.map(cat => {
-              const count = REGULATIONS.filter(r => r.cat === cat).length;
+              const count = allItems.filter(r => r.cat === cat).length;
               const isActive = activeCat === cat;
               return (
                 <button 
@@ -449,11 +499,11 @@ export function RegulationLibrary() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto min-h-screen pt-4 pb-24 md:pb-6 px-4 md:px-6">
-      <div className="flex flex-col md:flex-row gap-8">
+    <div className="max-w-7xl mx-auto min-h-screen pt-4 pb-24 lg:pb-6 px-4 lg:px-6">
+      <div className="flex flex-col lg:flex-row gap-8">
         
         {/* MOBILE STICKY HEADER */}
-        <div className="md:hidden sticky top-[3.5rem] z-30 bg-slate-50/80 backdrop-blur-md -mx-4 px-4 py-3 border-b border-slate-200 space-y-3 mb-6">
+        <div className="lg:hidden sticky top-[3.5rem] z-30 bg-slate-50/80 backdrop-blur-md -mx-4 px-4 py-3 border-b border-slate-200 space-y-3 mb-6">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-lg font-black text-slate-900 tracking-tight leading-none mb-1">Library</h1>
@@ -464,6 +514,15 @@ export function RegulationLibrary() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {isPM && (
+                <button
+                  onClick={() => setIsAddModalOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-black shadow-sm transition-transform active:scale-95"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Add
+                </button>
+              )}
               <button
                 onClick={() => setShowFilters(true)}
                 className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-700 shadow-sm transition-transform active:scale-95"
@@ -491,14 +550,14 @@ export function RegulationLibrary() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setShowFilters(false)}
-                className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[60] md:hidden"
+                className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[60] lg:hidden"
               />
               <motion.aside
                 initial={{ x: '-100%' }}
                 animate={{ x: 0 }}
                 exit={{ x: '-100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="fixed inset-y-0 left-0 w-[280px] bg-white z-[70] md:hidden shadow-2xl flex flex-col"
+                className="fixed inset-y-0 left-0 w-[280px] bg-white z-[70] lg:hidden shadow-2xl flex flex-col"
               >
                 <div className="p-4 border-b border-slate-100 flex items-center justify-between">
                   <h3 className="font-black text-slate-900 uppercase tracking-tight text-sm">Filters</h3>
@@ -526,18 +585,18 @@ export function RegulationLibrary() {
         </AnimatePresence>
 
         {/* DESKTOP SIDEBAR */}
-        <aside className="hidden md:block w-64 shrink-0 space-y-6">
+        <aside className="hidden lg:block w-64 shrink-0 space-y-6">
           {renderSidebarContent()}
         </aside>
 
         {/* MAIN CONTENT */}
         <div className="flex-1 min-w-0">
-          <div className="mt-8 mb-6 border-b border-slate-200">
-            <div className="flex gap-8">
+          <div className="mt-4 md:mt-8 mb-6 border-b border-slate-200">
+            <div className="flex gap-4 md:gap-8">
               <button 
                 onClick={() => setActiveView('all')}
                 className={clsx(
-                  "pb-4 px-1 text-sm font-black transition-all",
+                  "pb-3 md:pb-4 px-1 text-xs md:text-sm font-black transition-all whitespace-nowrap",
                   activeView === 'all' ? "text-indigo-600 border-b-2 border-indigo-600" : "text-slate-400 hover:text-slate-600"
                 )}
               >
@@ -546,19 +605,19 @@ export function RegulationLibrary() {
               <button 
                 onClick={() => setActiveView('new')}
                 className={clsx(
-                  "pb-4 px-1 text-sm font-black transition-all flex items-center gap-2",
+                  "pb-3 md:pb-4 px-1 text-xs md:text-sm font-black transition-all flex items-center gap-2 whitespace-nowrap",
                   activeView === 'new' ? "text-indigo-600 border-b-2 border-indigo-600" : "text-slate-400 hover:text-slate-600"
                 )}
               >
                 New Updates
                 <span className="bg-indigo-600 text-white text-[9px] px-1.5 py-0.5 rounded-full">
-                  {REGULATIONS.filter(r => r.tag === 'NEW').length}
+                  {allItems.filter((r: any) => r.tag === 'NEW').length}
                 </span>
               </button>
             </div>
           </div>
 
-          <div className="hidden md:flex mb-8 items-start justify-between">
+          <div className="hidden lg:flex mb-8 items-start justify-between">
             <div>
               <div className="flex items-center gap-3 mb-1">
                 <h1 className="text-xl font-black text-slate-900 tracking-tight">Regulatory Reference</h1>
@@ -652,9 +711,9 @@ export function RegulationLibrary() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh]"
+              className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh] mx-2 md:mx-0"
             >
-              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
+              <div className="px-4 md:px-6 py-3 md:py-4 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
                 <div>
                   <h3 className="text-lg font-black text-slate-900 tracking-tight">Manual Regulation Entry</h3>
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Add custom compliance requirement</p>
@@ -664,7 +723,7 @@ export function RegulationLibrary() {
                 </button>
               </div>
 
-              <div className="p-6 overflow-y-auto space-y-5">
+              <div className="p-4 md:p-6 overflow-y-auto space-y-4 md:space-y-5">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Category</label>
@@ -718,9 +777,17 @@ export function RegulationLibrary() {
                   <div className="flex items-center justify-between px-1">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Requirement Details</label>
                     <AIWriter
-                      onGenerated={(text) => setNewReg({ ...newReg, req: text })}
-                      context={`regulatory requirement for ${newReg.name || 'a new compliance item'}`}
-                      buttonLabel="Help me define this"
+                      onSuggest={(text) => setNewReg({ ...newReg, req: text })}
+                      context={[
+                        `Write a specific UK compliance requirement for a ${newReg.cat} regulation.`,
+                        `Regulation Name: ${newReg.name || 'Not specified'}.`,
+                        `Abbreviation/Tag: ${newReg.reg || 'Not specified'}.`,
+                        `Risk Level: ${newReg.risk}.`,
+                        activeProject ? `Project: ${activeProject.name}, Type: ${(activeProject as any).type || 'N/A'}, Location: ${(activeProject as any).loc || 'N/A'}.` : '',
+                        activeProgramme ? `Programme: ${(activeProgramme as any).name}.` : '',
+                        `Provide a specific, actionable compliance requirement statement — not a generic summary. Plain text only, no markdown.`
+                      ].filter(Boolean).join(' ')}
+                      label="AI Assist"
                     />
                   </div>
                   <textarea 
@@ -751,27 +818,42 @@ export function RegulationLibrary() {
                   Cancel
                 </button>
                 <button 
-                  onClick={() => {
+                  onClick={async () => {
                     if (!newReg.name || !newReg.req) {
-                      alert("Please provide at least a name and requirement description.");
+                      toast.error('Please provide at least a name and requirement description.');
                       return;
                     }
-                    addCustomRegulation({
-                      ...newReg as RegulationItem,
-                      id: generateId('REG'),
-                      process: "Identify Requirement|Evidence Collection|Review|Verification",
-                      evidence: "Document Evidence|Third Party Audit",
-                      owners: user?.profile?.name || "System Admin",
-                      when: "Immediate",
-                      alerts: "Default Alert",
-                      lastUpdated: new Date().toISOString(),
-                      updates: []
-                    });
-                    setIsAddModalOpen(false);
+                    if (!activeProjectId && !activeProgrammeId) {
+                      toast.error('Please select a project or programme before saving.');
+                      return;
+                    }
+                    setIsSavingEntry(true);
+                    try {
+                      await addCustomRegulation({
+                        ...newReg as RegulationItem,
+                        id: generateId('REG'),
+                        process: "Identify Requirement|Evidence Collection|Review|Verification",
+                        evidence: "Document Evidence|Third Party Audit",
+                        owners: user?.profile?.name || "System Admin",
+                        when: "Immediate",
+                        alerts: "Default Alert",
+                        lastUpdated: new Date().toISOString(),
+                        updates: []
+                      });
+                      toast.success('Regulation added successfully');
+                      setIsAddModalOpen(false);
+                      setNewReg({ cat: CATS[0] || 'General', risk: 'Medium', status: 'Not Started', tag: 'Manual' });
+                    } catch (err) {
+                      toast.error('Failed to add regulation. Please try again.');
+                    } finally {
+                      setIsSavingEntry(false);
+                    }
                   }}
-                  className="px-6 py-2.5 bg-indigo-600 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 active:scale-95"
+                  disabled={isSavingEntry || !newReg.name || !newReg.req}
+                  className="px-6 py-2.5 bg-indigo-600 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
-                  Confirm Entry
+                  {isSavingEntry && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  {isSavingEntry ? 'Saving...' : 'Confirm Entry'}
                 </button>
               </div>
             </motion.div>
@@ -783,7 +865,13 @@ export function RegulationLibrary() {
       <AIInquiryPopup 
         isOpen={isAIInquiryOpen} 
         onClose={() => setIsAIInquiryOpen(false)}
-        context="You are assisting with the Cedar Property Compliance Regulation Library. You have access to detailed regulatory requirements across multiple domains including Health & Safety, Building Safety Act, Fire Safety, and more."
+        context={[
+          `You are CedarGuard AI assisting with the Regulation Library.`,
+          activeProject ? `Active Project: ${activeProject.name} (Type: ${(activeProject as any).type || 'N/A'}, Location: ${(activeProject as any).loc || 'N/A'}).` : '',
+          activeProgramme ? `Active Programme: ${(activeProgramme as any).name}.` : '',
+          `The library contains ${allItems.length} regulations across categories: ${CATS.join(', ')}.`,
+          `Provide specific, project-relevant regulatory guidance based on the active project context.`
+        ].filter(Boolean).join(' ')}
       />
 
       {/* Floating Action Button for AI Inquiry */}

@@ -164,7 +164,7 @@ export function Header() {
   };
 
   return (
-    <header className="bg-white border-b border-slate-200 h-14 flex items-center px-4 justify-between shrink-0 gap-4">
+    <header className="bg-white border-b border-slate-200 h-14 flex items-center px-4 justify-between shrink-0 gap-4 print:hidden">
       {/* ─── GLOBAL CONTEXT SELECTOR ─── */}
       <div className="flex-1 flex items-center gap-2 md:gap-4 min-w-0">
         <button

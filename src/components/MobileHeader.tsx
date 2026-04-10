@@ -21,7 +21,7 @@ export function MobileHeader() {
   const hasUnread = notifications.some(n => !n.read);
 
   return (
-    <header className="md:hidden bg-white/80 backdrop-blur-md border-b border-slate-200/60 min-h-[3.5rem] pt-safe flex items-center px-4 justify-between sticky top-0 z-40 transition-all duration-300 no-select relative">
+    <header className="md:hidden print:hidden bg-white/80 backdrop-blur-md border-b border-slate-200/60 min-h-[3.5rem] pt-safe flex items-center px-4 justify-between sticky top-0 z-40 transition-all duration-300 no-select relative">
       <div className="flex items-center gap-1">
         <button
           onClick={() => setMobileMenuOpen(!isMobileMenuOpen)}

@@ -460,7 +460,8 @@ export interface AppState {
   setComplianceItems: (items: ComplianceItem[]) => void;
   updateComplianceItem: (id: string, updates: Partial<ComplianceItem>) => Promise<void>;
   addComplianceItem: (item: Partial<ComplianceItem>) => Promise<void>;
-  deleteComplianceItem: (id: string) => void;
+  deleteComplianceItem: (id: string) => Promise<void>;
+  bulkDeleteComplianceItems: (ids: string[]) => Promise<void>;
   
   // Risk Management
   risks: RiskItem[];
@@ -699,11 +700,12 @@ export const useStore = create<AppState>((set, get) => ({
   },
   updateComplianceItem: async (id, updates) => {
     const { complianceItems } = get();
+    const prev = complianceItems;
     const next = complianceItems.map(item => {
       if (item.id === id) {
         const isNowClosed = (updates.stage === 'Live' || updates.status === 'Closed') && (item.stage !== 'Live' && item.status !== 'Closed');
-        return { 
-          ...item, 
+        return {
+          ...item,
           ...updates,
           completedAt: isNowClosed ? new Date().toISOString() : (updates.stage === 'In Progress' ? undefined : item.completedAt)
         };
@@ -712,10 +714,16 @@ export const useStore = create<AppState>((set, get) => ({
     });
     set({ complianceItems: next });
     const contextId = get().activeProjectId || get().activeProgrammeId;
-    await api.saveData('complianceItems', next, contextId);
+    try {
+      await api.saveData('complianceItems', next, contextId);
+    } catch (err) {
+      set({ complianceItems: prev });
+      throw err;
+    }
   },
   addComplianceItem: async (item) => {
     const { complianceItems } = get();
+    const prev = complianceItems;
     const newItem: ComplianceItem = {
       id: item.id || generateId('REQ'),
       cat: 'General',
@@ -737,14 +745,38 @@ export const useStore = create<AppState>((set, get) => ({
     const updated = [...complianceItems, newItem];
     set({ complianceItems: updated });
     const contextId = get().activeProjectId || get().activeProgrammeId;
-    await api.saveData('complianceItems', updated, contextId);
+    try {
+      await api.saveData('complianceItems', updated, contextId);
+    } catch (err) {
+      set({ complianceItems: prev });
+      throw err;
+    }
   },
   deleteComplianceItem: async (id) => {
     const { complianceItems } = get();
+    const prev = complianceItems;
     const updated = complianceItems.filter(i => i.id !== id);
     set({ complianceItems: updated });
     const contextId = get().activeProjectId || get().activeProgrammeId;
-    await api.saveData('complianceItems', updated, contextId);
+    try {
+      await api.saveData('complianceItems', updated, contextId);
+    } catch (err) {
+      set({ complianceItems: prev });
+      throw err;
+    }
+  },
+  bulkDeleteComplianceItems: async (ids) => {
+    const { complianceItems } = get();
+    const prev = complianceItems;
+    const next = complianceItems.filter(i => !ids.includes(i.id));
+    set({ complianceItems: next });
+    const contextId = get().activeProjectId || get().activeProgrammeId;
+    try {
+      await api.saveData('complianceItems', next, contextId);
+    } catch (err) {
+      set({ complianceItems: prev });
+      throw err;
+    }
   },
   getActiveItems: () => {
     const { complianceItems, activeProjectId, activeProgrammeId } = get();
@@ -1119,6 +1151,7 @@ export const useStore = create<AppState>((set, get) => ({
       api.getData('kris', projectId).then(res => set({ kris: res.success ? (res.data || []) : [] })),
       api.getData('complianceItems', projectId).then(res => set({ complianceItems: res.success ? (res.data || []).map((c: any) => ({ ...c, projectId })) : [] })),
       api.getData('tasks', projectId).then(res => set({ tasks: res.success ? (res.data || []).map((t: any) => ({ ...t, projectId })) : [] })),
+      api.getData('customRegulations', projectId).then(res => set({ customRegulations: res.success ? (res.data || []) : [] })),
       api.getData('complianceAnalysis', projectId).then(res => {
         const data = res.success ? (res.data || null) : null;
         set({ 
@@ -1530,6 +1563,7 @@ export const useStore = create<AppState>((set, get) => ({
       api.getData('kris', programmeId).then(res => set({ kris: res.success ? (res.data || []) : [] })),
       api.getData('complianceItems', programmeId).then(res => set({ complianceItems: res.success ? (res.data || []).map((c: any) => ({ ...c, programmeId })) : [] })),
       api.getData('tasks', programmeId).then(res => set({ tasks: res.success ? (res.data || []).map((t: any) => ({ ...t, programmeId })) : [] })),
+      api.getData('customRegulations', programmeId).then(res => set({ customRegulations: res.success ? (res.data || []) : [] })),
       api.getData('complianceAnalysis', programmeId).then(res => {
         const data = res.success ? (res.data || null) : null;
         set({ 
@@ -1668,7 +1702,7 @@ export const useStore = create<AppState>((set, get) => ({
     await api.saveData('risks', updatedRisks, contextId);
     await api.saveData('issues', [newIssue, ...get().issues], contextId);
   },
-  escalateRisk: async (riskId: string, projectId: string) => {
+  escalateRisk: async (riskId: string, _projectId: string) => {
     const { risks } = get();
     const risk = risks.find(r => r.id === riskId);
     if (!risk) return;

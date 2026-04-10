@@ -1,5 +1,17 @@
 import React, { useState } from 'react';
 import { ScanSearch, Loader2, Check, X, ShieldCheck } from 'lucide-react';
+import { api } from '../lib/api';
+import { handleAIError } from '../services/aiService';
+import { stripMarkdown } from '../lib/utils';
+
+/** Trim AI response to the first N complete sentences, max `maxChars` chars. */
+function truncateToSentences(text: string, maxChars = 220): string {
+  if (text.length <= maxChars) return text;
+  // Find the last sentence boundary within maxChars
+  const slice = text.slice(0, maxChars);
+  const lastPeriod = Math.max(slice.lastIndexOf('. '), slice.lastIndexOf('.\n'));
+  return lastPeriod > 40 ? slice.slice(0, lastPeriod + 1).trim() : slice.trim() + '…';
+}
 
 interface AIWriterProps {
   onSuggest: (content: string) => void;
@@ -20,18 +32,16 @@ export const AIWriter: React.FC<AIWriterProps> = ({
 
   const generateSuggestion = async () => {
     setIsGenerating(true);
-    // Simulate AI delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    const mockSuggestions: Record<string, string> = {
-      "risk": "A significant project delay is anticipated due to prolonged lead times for essential structural components, specifically high-grade steel and specialized glass panels. Mitigation strategies include early procurement orders and identifying alternative local suppliers to ensure Gateway 2 compliance timelines are met.",
-      "compliance": "Technical building standards for Gateway 2 require comprehensive documentation of structural integrity and fire safety measures. The current status indicates a need for final certification from the lead structural engineer and a verified fire strategy report from the accredited consultant.",
-      "regulation": "The Building Safety Act 2022 introduces a new regulatory framework for higher-risk buildings. Key requirements include the creation of a 'golden thread' of information, mandatory reporting of safety concerns, and the implementation of a safety case approach to demonstrate ongoing risk management throughout the building's lifecycle."
-    };
-
-    const key = Object.keys(mockSuggestions).find(k => context.toLowerCase().includes(k)) || "compliance";
-    setSuggestion(mockSuggestions[key]);
-    setIsGenerating(false);
+    try {
+      const res = await api.testGemini(context);
+      if (!res?.success || !res?.result) throw new Error('Empty AI response');
+      const clean = truncateToSentences(stripMarkdown(res.result));
+      setSuggestion(clean);
+    } catch (err: any) {
+      handleAIError(err, 'AI draft');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleApply = () => {

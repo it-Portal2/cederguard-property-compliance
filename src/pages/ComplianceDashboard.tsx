@@ -37,14 +37,22 @@ export function ComplianceDashboard() {
     const fromInitiation = searchParams.get('from') === 'initiation';
     const [isAIInquiryOpen, setIsAIInquiryOpen] = React.useState(false);
     
-    // Load data when active context changes
+    // Load data when active context changes.
+    // Skip re-fetch if we already have items for this context (e.g. loaded by initStore or Tracker).
     React.useEffect(() => {
+        if (!activeProjectId && !activeProgrammeId) return;
+        const contextId = activeProjectId || activeProgrammeId!;
+        const alreadyLoaded = safeComplianceItems.some(i =>
+            activeProjectId ? i.projectId === contextId : i.programmeId === contextId
+        );
+        if (alreadyLoaded) return;
         if (activeProjectId) {
             loadProjectData(activeProjectId);
         } else if (activeProgrammeId) {
             loadProgrammeData(activeProgrammeId);
         }
-    }, [activeProjectId, activeProgrammeId, loadProjectData, loadProgrammeData]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeProjectId, activeProgrammeId]);
 
     // Sync URL params to store context
     React.useEffect(() => {
@@ -92,41 +100,47 @@ export function ComplianceDashboard() {
         );
     }
 
-    // Filter items based on active context and verification status
-    const allContextItems = safeComplianceItems.filter(c => {
-        if (activeProjectId) return c.projectId === activeProjectId;
-        if (activeProgrammeId) return c.programmeId === activeProgrammeId;
-        return true;
-    });
-
     const activeProgramme = safeProgrammes.find(p => p.id === activeProgrammeId);
     const milestones = activeProgramme?.milestones || [];
 
-    const contextCompliance = allContextItems.filter(i => i.status !== 'dismissed' && i.status !== 'pending');
-    const pendingReview = allContextItems.filter(i => i.status === 'pending');
+    // Use the same store selectors as ComplianceTracker so both pages always agree.
+    // getActiveItems() → status === 'applicable', scoped to activeProjectId / activeProgrammeId
+    // getPendingItems() → status === 'pending', scoped to active context
+    const contextCompliance = getActiveItems();
+    const pendingReview = getPendingItems();
 
-    const compTotal = contextCompliance.length;
-    const compComplete = contextCompliance.filter(i => i.stage === "Complete").length;
-    const compInProgress = contextCompliance.filter(i => i.stage === "In Progress").length;
-    const compNotStarted = contextCompliance.filter(i => i.stage === "Not Started").length;
-    const compHighRisk = contextCompliance.filter(i => i.risk === "High" && i.stage !== "Complete").length;
-    const compPct = compTotal ? Math.round((compComplete / compTotal) * 100) : 0;
+    // Stage values stored by ComplianceTracker:
+    //   Live / Archived  → "complete" for progress purposes
+    //   In Progress      → in-flight
+    //   Information Gap / Risk Identified → open / not started
+    const isComplete  = (s?: string) => s === 'Live' || s === 'Archived';
+    const isOpen      = (s?: string) => s === 'Information Gap' || s === 'Risk Identified';
+    const isHighRisk  = (r?: string) => r === 'High' || r === 'Critical';
 
+    const compTotal      = contextCompliance.length;
+    const compComplete   = contextCompliance.filter(i => isComplete(i.stage)).length;
+    const compInProgress = contextCompliance.filter(i => i.stage === 'In Progress').length;
+    const compNotStarted = contextCompliance.filter(i => isOpen(i.stage)).length;
+    const compHighRisk   = contextCompliance.filter(i => isHighRisk(i.risk) && !isComplete(i.stage)).length;
+    const compPct        = compTotal ? Math.round((compComplete / compTotal) * 100) : 0;
+
+    // Match domain by both id AND label to handle legacy items stored with label strings.
     const activeDoms = DOMAINS.map(d => {
-        const di = contextCompliance.filter(i => i.domain === d.id);
-        const c = di.filter(i => i.stage === "Complete").length;
+        const di = contextCompliance.filter(i => i.domain === d.id || i.domain === d.label);
+        const c  = di.filter(i => isComplete(i.stage)).length;
         return {
             ...d,
-            total: di.length,
-            complete: c,
-            inProgress: di.filter(i => i.stage === "In Progress").length,
-            notStarted: di.filter(i => i.stage === "Not Started").length,
-            highRisk: di.filter(i => i.risk === "High" && i.stage !== "Complete").length,
-            pct: di.length ? Math.round((c / di.length) * 100) : 0
+            total:      di.length,
+            complete:   c,
+            inProgress: di.filter(i => i.stage === 'In Progress').length,
+            notStarted: di.filter(i => isOpen(i.stage)).length,
+            highRisk:   di.filter(i => isHighRisk(i.risk) && !isComplete(i.stage)).length,
+            pct:        di.length ? Math.round((c / di.length) * 100) : 0,
         };
     }).filter(d => d.total > 0);
 
-    const criticalItems = contextCompliance.filter(i => i.risk === "High" && i.stage === "Not Started");
+    // Critical = High/Critical risk AND still open (not started)
+    const criticalItems = contextCompliance.filter(i => isHighRisk(i.risk) && isOpen(i.stage));
 
     return (
         <>
@@ -145,9 +159,9 @@ export function ComplianceDashboard() {
 
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
                 <StatCard title="Total Requirements" value={compTotal} icon={<CheckCircle2 className="text-indigo-500 w-5 h-5" />} />
-                <StatCard title="Complete" value={compComplete} icon={<CheckCircle2 className="text-emerald-500 w-5 h-5" />} color="emerald" />
+                <StatCard title="Live / Complete" value={compComplete} icon={<CheckCircle2 className="text-emerald-500 w-5 h-5" />} color="emerald" />
                 <StatCard title="In Progress" value={compInProgress} icon={<Clock className="text-amber-500 w-5 h-5" />} color="amber" />
-                <StatCard title="Not Started" value={compNotStarted} icon={<CircleDashed className="text-slate-400 w-5 h-5" />} color="slate" />
+                <StatCard title="Open / Not Started" value={compNotStarted} icon={<CircleDashed className="text-slate-400 w-5 h-5" />} color="slate" />
                 <StatCard title="High Risk Open" value={compHighRisk} icon={<FileWarning className="text-red-500 w-5 h-5" />} color="red" />
             </div>
 
@@ -292,8 +306,9 @@ export function ComplianceDashboard() {
                 <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4 border-b border-slate-200 pb-2">Compliance by Domain</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {activeDoms.map(dom => (
-                        <div key={dom.id} className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:border-indigo-200 hover:shadow-md transition-all group cursor-pointer">
-                            <div className="flex justify-between items-start mb-3">
+                        <div key={dom.id} className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:border-indigo-200 hover:shadow-md transition-all group cursor-pointer flex flex-col gap-3" style={{ borderBottomWidth: 3, borderBottomColor: dom.color }}>
+                            {/* Header: abbr + label + percentage */}
+                            <div className="flex justify-between items-start">
                                 <div className="flex items-center gap-2">
                                     <span className="text-[10px] font-black px-2 py-0.5 rounded-md" style={{ backgroundColor: `${dom.color}15`, color: dom.color, border: `1px solid ${dom.color}30` }}>
                                         {dom.abbr}
@@ -302,15 +317,40 @@ export function ComplianceDashboard() {
                                 </div>
                                 <span className="font-black text-slate-700 text-sm tracking-tighter">{dom.pct}%</span>
                             </div>
-                            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden mb-3">
-                                <div className="h-full transition-all duration-1000" style={{ backgroundColor: dom.color, width: `${dom.pct}%` }} />
+
+                            {/* Total count */}
+                            <p className="text-[10px] text-slate-400 font-bold -mt-1">{dom.total} total requirement{dom.total !== 1 ? 's' : ''}</p>
+
+                            {/* Progress bar */}
+                            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                <div className="h-full transition-all duration-1000 rounded-full" style={{ backgroundColor: dom.color, width: `${dom.pct}%` }} />
                             </div>
-                            <div className="flex gap-3 text-[9px] font-black uppercase tracking-wider">
-                                <span className="text-emerald-600/70">Complete</span>
-                                <span className="text-amber-500/70">In Progress</span>
-                                <span className="text-slate-400/70">Open</span>
-                                {dom.highRisk > 0 && <span className="text-red-500 ml-auto flex items-center gap-1"><FileWarning className="w-3 h-3" /> {dom.highRisk}</span>}
+
+                            {/* Status breakdown with counts */}
+                            <div className="grid grid-cols-3 gap-2 text-center">
+                                <div className="bg-emerald-50 rounded-lg py-1.5 px-1">
+                                    <p className="text-base font-black text-emerald-700 leading-none">{dom.complete}</p>
+                                    <p className="text-[8px] font-black text-emerald-600/60 uppercase tracking-widest mt-0.5">Live</p>
+                                </div>
+                                <div className="bg-amber-50 rounded-lg py-1.5 px-1">
+                                    <p className="text-base font-black text-amber-700 leading-none">{dom.inProgress}</p>
+                                    <p className="text-[8px] font-black text-amber-600/60 uppercase tracking-widest mt-0.5">In Progress</p>
+                                </div>
+                                <div className="bg-slate-50 rounded-lg py-1.5 px-1">
+                                    <p className="text-base font-black text-slate-700 leading-none">{dom.notStarted}</p>
+                                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Open</p>
+                                </div>
                             </div>
+
+                            {/* High risk warning — clearly labelled */}
+                            {dom.highRisk > 0 && (
+                                <div className="flex items-center gap-1.5 px-2 py-1.5 bg-red-50 border border-red-100 rounded-lg">
+                                    <FileWarning className="w-3 h-3 text-red-500 shrink-0" />
+                                    <span className="text-[9px] font-black text-red-600 uppercase tracking-widest">
+                                        {dom.highRisk} High Risk Open
+                                    </span>
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>

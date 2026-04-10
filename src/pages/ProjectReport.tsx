@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { DOMAINS, STAGES, getRIBALabelFull } from '../data/complianceData';
 import { useNavigate, useSearchParams } from 'react-router';
-import { Building2, User, MapPin, ShieldCheck, AlertCircle, PoundSterling, Printer, Download, CheckCircle2, TrendingDown, BarChart, Target, ChevronDown, Loader2, ArrowRight, AlertTriangle, Layers, Shield, ArrowLeft, Database, ListChecks, Presentation, Inbox, LayoutGrid, Plus, PlusCircle } from 'lucide-react';
+import { Building2, User, ShieldCheck, AlertCircle, PoundSterling, Download, BarChart, Target, ChevronDown, Loader2, ArrowRight, AlertTriangle, Layers, Shield, ArrowLeft, Database, ListChecks, Presentation, Plus, PlusCircle } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Link } from 'react-router';
 import { 
@@ -37,6 +37,7 @@ export function ProjectReport() {
     activeProgrammeId,
     setActiveProject,
     setActiveProgramme,
+    loadProjectData,
     user
   } = useStore();
 
@@ -75,24 +76,39 @@ export function ProjectReport() {
     setAiError(null);
   }, [searchParams, activeProjectId, activeProgrammeId, setActiveProject, setActiveProgramme]);
 
+  // Load project data when activeProjectId changes (skip if already loaded)
+  useEffect(() => {
+    if (!activeProjectId) return;
+    const alreadyLoaded = complianceItems.some(i => i.projectId === activeProjectId) &&
+                          risks.some(r => r.projectId === activeProjectId);
+    if (alreadyLoaded) return;
+    loadProjectData(activeProjectId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeProjectId]);
+
   const currentProject = (Array.isArray(projects) ? projects : []).find(p => p.id === activeProjectId);
   const currentProgramme = (Array.isArray(programmes) ? programmes : []).find(p => p.id === currentProject?.programmeId);
 
   const projectRisks = (Array.isArray(risks) ? risks : []).filter(r => r.projectId === activeProjectId);
-  const projectCompliance = (Array.isArray(complianceItems) ? complianceItems : []).filter(c => c.projectId === activeProjectId);
+  // Only applicable items — matches what ComplianceDashboard and ComplianceTracker show
+  const projectCompliance = (Array.isArray(complianceItems) ? complianceItems : []).filter(
+    c => c.projectId === activeProjectId && c.status === 'applicable'
+  );
 
   const totalALE = projectRisks.reduce((s, r) => s + (r.residualALE || 0), 0);
   const highRisks = projectRisks.filter(r => (r.residualRating || 0) >= 12);
 
-  const compComplete = projectCompliance.filter(i => i.stage === 'Complete').length;
+  // Valid complete stages are 'Live' and 'Archived' (not 'Complete')
+  const compComplete = projectCompliance.filter(i => i.stage === 'Live' || i.stage === 'Archived').length;
   const compPct = projectCompliance.length ? Math.round((compComplete / projectCompliance.length) * 100) : 0;
 
+  // Guard against undefined category to prevent crashes
   const categoryData = [
-    { name: 'Finance', value: projectRisks.filter(r => r.category.includes('Finance')).length },
-    { name: 'Safety', value: projectRisks.filter(r => r.category.includes('Safety')).length },
-    { name: 'Legal', value: projectRisks.filter(r => r.category.includes('Legal')).length },
-    { name: 'Technical', value: projectRisks.filter(r => r.category.includes('Technical')).length },
-    { name: 'Operational', value: projectRisks.filter(r => r.category.includes('Operational')).length },
+    { name: 'Finance', value: projectRisks.filter(r => (r.category || '').includes('Finance')).length },
+    { name: 'Safety', value: projectRisks.filter(r => (r.category || '').includes('Safety')).length },
+    { name: 'Legal', value: projectRisks.filter(r => (r.category || '').includes('Legal')).length },
+    { name: 'Technical', value: projectRisks.filter(r => (r.category || '').includes('Technical')).length },
+    { name: 'Operational', value: projectRisks.filter(r => (r.category || '').includes('Operational')).length },
   ].filter(d => d.value > 0);
 
   const userRole = (user?.role || user?.profile?.role) as UserRole | undefined;
@@ -219,10 +235,7 @@ export function ProjectReport() {
               </Link>
             )}
 
-            <button onClick={() => window.print()} className="flex items-center justify-center p-3.5 bg-slate-50 text-slate-800 rounded-2xl border border-slate-200 hover:bg-slate-100 transition-all shadow-sm">
-                <Printer className="w-5 h-5" />
-            </button>
-            <button className="flex items-center justify-center gap-3 px-8 py-3.5 bg-[#111827] text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-slate-200 active:scale-95">
+            <button onClick={() => window.print()} className="flex items-center justify-center gap-3 px-8 py-3.5 bg-[#111827] text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-slate-200 active:scale-95">
                 <Download className="w-4 h-4" /> Export Report
             </button>
         </div>
@@ -363,15 +376,15 @@ export function ProjectReport() {
                                         </div>
                                         <div className={clsx(
                                             "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5",
-                                            item.stage === 'Complete' ? "bg-emerald-50 text-emerald-600 border border-emerald-100" :
-                                            item.stage === 'At Risk' ? "bg-rose-50 text-rose-600 border border-rose-100" :
-                                            "bg-amber-50 text-amber-600 border border-amber-100"
+                                            (item.stage === 'Live' || item.stage === 'Archived') ? "bg-emerald-50 text-emerald-600 border border-emerald-100" :
+                                            item.stage === 'In Progress' ? "bg-amber-50 text-amber-600 border border-amber-100" :
+                                            "bg-rose-50 text-rose-600 border border-rose-100"
                                         )}>
                                             <div className={clsx("w-1.5 h-1.5 rounded-full",
-                                                item.stage === 'Complete' ? 'bg-emerald-500' :
-                                                item.stage === 'At Risk' ? 'bg-rose-500' : 'bg-amber-500'
+                                                (item.stage === 'Live' || item.stage === 'Archived') ? 'bg-emerald-500' :
+                                                item.stage === 'In Progress' ? 'bg-amber-500' : 'bg-rose-500'
                                             )} />
-                                            {item.stage}
+                                            {item.stage || 'Information Gap'}
                                         </div>
                                     </div>
                                 ))}
@@ -794,11 +807,10 @@ export function ProjectReport() {
                     </div>
                     
                     <div className="relative z-10 shrink-0">
-                        <button 
+                        <button
                             onClick={() => {
-                                // Ensure project context is set high before navigating
                                 if (activeProjectId) {
-                                    navigate(`/dashboard?viewAs=pm&projectId=${activeProjectId}`);
+                                    navigate('/project/initiation');
                                 }
                             }}
                             className="flex items-center gap-4 px-10 py-5 bg-indigo-600 text-white rounded-[1.5rem] font-black text-[12px] uppercase tracking-[0.2em] shadow-xl shadow-indigo-500/20 hover:bg-indigo-500 hover:shadow-indigo-500/40 transition-all active:scale-95 group/btn"

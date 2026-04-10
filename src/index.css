@@ -24,6 +24,54 @@ html, body {
   outline-color: #4f46e5;
 }
 
+@media print {
+  /* Hide navigation chrome */
+  aside,
+  header,
+  nav,
+  [class*="MobileHeader"],
+  [class*="MobileNav"],
+  [class*="ServiceManagementBar"] {
+    display: none !important;
+  }
+
+  /* Let the flex shell collapse so the report takes full width */
+  body > #root > div,
+  .flex.h-screen {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* The scrollable main content area must not clip */
+  main {
+    overflow: visible !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Remove max-width cap so content fills the page */
+  .max-w-\[1600px\] {
+    max-width: none !important;
+  }
+
+  /* Force white backgrounds and remove decorative shadows */
+  * {
+    box-shadow: none !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Avoid breaking cards across pages */
+  .rounded-\[2rem\],
+  .rounded-\[2\.5rem\],
+  .rounded-\[3rem\] {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+}
+
 @layer utilities {
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);

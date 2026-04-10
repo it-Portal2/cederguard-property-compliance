@@ -17,7 +17,7 @@ import * as XLSX from 'xlsx';
 import { useStore } from '../store/useStore';
 import { clsx } from 'clsx';
 
-export const ServiceManagementBar: React.FC = () => {
+export const ServiceManagementBar: React.FC<{ className?: string }> = ({ className }) => {
   const navigate = useNavigate();
   const {
     activeProject,
@@ -201,7 +201,7 @@ export const ServiceManagementBar: React.FC = () => {
   );
 
   return (
-    <div className="sticky top-0 z-30 w-full px-4 py-3 bg-white/80 backdrop-blur-md border-b border-slate-200/60 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
+    <div className={`sticky top-0 z-30 w-full px-4 py-3 bg-white/80 backdrop-blur-md border-b border-slate-200/60 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500${className ? ` ${className}` : ''}`}>
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
 
         {/* Left: Context Identity */}

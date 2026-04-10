@@ -389,26 +389,39 @@ FORMATTING (STRICT):
   }
 }
 
-export async function analyzeControls(risks: any[]) {
+export async function analyzeControls(risks: any[], projectContext?: any, projectInfo?: any) {
   if (risks.length === 0) return [];
 
   const risksArray = Array.isArray(risks) ? risks : [];
-  const prompt = `You are a senior compliance and risk management professional. For the following high-priority risks, brainstorm at least 10 highly specific, actionable mitigation controls.
-Use formal, precise language appropriate for an enterprise risk register or a board-level report. Focus on industry-standard mitigation strategies. Do not include introductory phrases. 
 
-For every control suggestion, you MUST address:
-- WHAT: The specific control or measure.
-- WHO: The responsible party for implementation.
-- WHEN: The maintenance frequency or trigger point.
-- HOW: The exact process or procedural step.
-- WHERE: The specific area of the project or asset.
-- WHY: The risk driver it addresses and the expected residual impact.
+  // Build a concise project context line so AI knows the sector, type and stage
+  const projectLine = projectContext
+    ? [
+        projectContext.name && `Project: ${projectContext.name}`,
+        (projectContext.type || projectInfo?.type) && `Type: ${projectContext.type || projectInfo?.type}`,
+        (projectContext.location || projectInfo?.loc) && `Location: ${projectContext.location || projectInfo?.loc}`,
+        (projectInfo?.riba || projectContext.riba) && `RIBA Stage: ${projectInfo?.riba || projectContext.riba}`,
+      ].filter(Boolean).join(' | ')
+    : null;
 
-Risks:
-${risksArray.map(r => `Risk ID: ${r.id}\nRisk: ${r.title}\nDescription: ${r.desc}\nCurrent Controls: ${r.controls || 'None'}`).join('\n\n')}
+  const prompt = `You are a senior risk management professional. For each risk below, generate 3 mitigation controls that directly address the specific risk title, description, category, and current score provided. Do not give generic advice — every control must respond to the exact details of that risk.
+${projectLine ? `\nPROJECT CONTEXT: ${projectLine}\nTailor controls to this specific project type, stage, and location.\n` : ''}
+${risksArray.map(r => {
+  const gross = r.grossRating ?? ((r.grossL || 0) * (r.grossI || 0));
+  const residual = r.residualRating ?? 'N/A';
+  return `RISK ID: ${r.id}
+Title: ${r.title}
+Description: ${r.desc || 'Not provided'}
+Category: ${r.category || 'N/A'} | Workstream: ${r.workstream || 'N/A'}
+Owner: ${r.owner || 'Not assigned'}
+Gross Score: ${gross} | Residual Score: ${residual}
+Existing Controls: ${r.controls && r.controls !== 'None' ? r.controls : 'None in place'}`;
+}).join('\n\n')}
 
-Focus on practical, actionable controls. Output only the requested JSON array.
-FORMATTING (STRICT): ABSOLUTELY NO MARKDOWN. ANY IDENTIFIER OR ID MUST BE ON THE SAME LINE AS ITS LABEL.`;
+Each control suggestion must follow this format:
+WHAT: [specific action for this risk] WHO: [responsible role] WHEN: [timing or trigger] HOW: [exact steps]
+
+FORMATTING: NO MARKDOWN. No **bold**, no headers, no bullet points. Plain text only.`;
 
   const config = {
     responseMimeType: "application/json",
@@ -417,13 +430,14 @@ FORMATTING (STRICT): ABSOLUTELY NO MARKDOWN. ANY IDENTIFIER OR ID MUST BE ON THE
       items: {
         type: "object",
         properties: {
-          riskId: { type: "string", description: "The title of the risk being addressed" },
+          riskId: { type: "string", description: "The exact RISK ID string from the input (copy it verbatim, e.g. 'risk-0001')" },
           suggestions: {
             type: "array",
             items: { type: "string" },
-            description: "3-4 specific mitigation control suggestions"
+            description: "3 mitigation control suggestions, each with WHAT WHO WHEN HOW"
           }
-        }
+        },
+        required: ["riskId", "suggestions"]
       }
     }
   };
@@ -541,17 +555,74 @@ export async function analyzeComplianceProgress(domainStats: any[]) {
 }
 
 export async function analyzeContextSentence(sentence: string, type: 'risk' | 'compliance' = 'risk') {
-  const prompt = `Based on this description: "${sentence}", identify at least 10 potential ${type === 'compliance' ? 'compliance requirements or statutory obligations' : 'risk identifiers'}.
-    For each item, be extremely detailed and ensure you address:
-    - WHAT: The specific requirement or risk.
-    - WHO: The responsible party or stakeholder affected.
-    - WHEN: The trigger point or deadline.
-    - HOW: The method of mitigation or compliance.
-    - WHERE: The specific area of the asset or project.
-    - WHY: The regulatory driver or impact.
-    
-    Return the items as a simple JSON string array. Each string must be a self-contained detailed paragraph addressing all 6 points (What, Who, When, How, Where, Why).
-    FORMATTING (STRICT): ABSOLUTELY NO MARKDOWN. ANY IDENTIFIER OR ID MUST BE ON THE SAME LINE AS ITS LABEL. Ensure the paragraph is clean and professional without bold markers or headers.`;
+  // ── Compliance path — returns structured objects ──────────────────
+  if (type === 'compliance') {
+    const DOMAIN_IDS = 'hs,bs,fs,bc,pl,pr,en,qu,ut,dr,sh,hq,ha,ac,ee,ah,sv,pw,fc,lc,dm,lr';
+    const prompt = `You are a UK statutory compliance specialist in construction and property management.
+
+The user has described the following specific project or situation:
+"${sentence}"
+
+Identify 10 statutory compliance requirements that directly and specifically apply to this description. Every item must respond to exactly what was described — do not list requirements that could apply to any generic project.
+
+For each requirement:
+- req: A clear, specific statement of what must be done to comply — one or two sentences.
+- reg: The exact regulation, statute, or standard (e.g. CDM 2015 Reg 4, BSA 2022 s.5, Building Regs Part B).
+- domain: One domain id from: ${DOMAIN_IDS}
+- who: 2 sentences — name the specific dutyholder role and their legal obligation under this requirement.
+- when: 2 sentences — state the specific project stage, gateway, or event that triggers this requirement and the consequence of missing it.
+- how: A concise explanation of the evidence, action, or process required to comply.
+- risk: Severity of non-compliance (Low / Medium / High / Critical).
+- stage: Current posture (Information Gap = not yet investigated, Risk Identified = gap confirmed, In Progress = being addressed).
+- status: Always "applicable".
+
+FORMATTING: NO MARKDOWN. No **bold**, no headers, no bullet points. All string fields must be plain prose text only.`;
+
+    const config = {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            req:    { type: "string", description: "The specific compliance requirement — what must be done" },
+            reg:    { type: "string", description: "The exact regulation or standard reference (e.g. CDM 2015 Reg 4, BSA 2022 s.5, Building Regs Part B)" },
+            domain: { type: "string", description: `One domain id from: ${DOMAIN_IDS}` },
+            who:    { type: "string", description: "The responsible dutyholder or role" },
+            when:   { type: "string", description: "The trigger point, gateway, or deadline" },
+            how:    { type: "string", description: "The evidence, action, or process required to comply" },
+            risk:   { type: "string", enum: ["Low", "Medium", "High", "Critical"], description: "Severity of non-compliance" },
+            stage:  { type: "string", enum: ["Information Gap", "Risk Identified", "In Progress"], description: "Current posture stage" },
+            status: { type: "string", enum: ["applicable"], description: "Always applicable for newly identified requirements" },
+          },
+          required: ["req", "reg", "domain", "who", "when", "how", "risk", "stage", "status"]
+        }
+      }
+    };
+
+    try {
+      const res = await api.analyzeCompliance(prompt, config);
+      if (!res.success) throw new Error(res.error || "Analysis failed");
+      return Array.isArray(res.result) ? res.result : [];
+    } catch (err: any) {
+      console.error("Compliance Outlook Analysis Error:", err);
+      handleAIError(err, "Compliance analysis");
+      throw err;
+    }
+  }
+
+  // ── Risk path — returns plain strings (existing behaviour) ────────
+  const prompt = `You are a specialist in UK construction and property risk management.
+
+The user has described the following specific concern:
+"${sentence}"
+
+Generate 5 risk mitigation strategies that directly and specifically address this concern. Every strategy must respond to exactly what was described above — do not give generic advice that could apply to any situation.
+
+Each strategy must follow this structure:
+WHAT: [specific action addressing the concern above] WHO: [named responsible role] WHEN: [exact timing or trigger] HOW: [concrete implementation steps]
+
+5 strategies only. FORMATTING: NO MARKDOWN. No **bold**, no headers, no bullet points. Plain text only.`;
 
   const config = {
     responseMimeType: "application/json",
@@ -562,11 +633,11 @@ export async function analyzeContextSentence(sentence: string, type: 'risk' | 'c
   };
 
   try {
-    const res = await (type === 'risk' ? api.analyzeRisks(prompt, config) : api.analyzeCompliance(prompt, config));
+    const res = await api.analyzeRisks(prompt, config);
     if (!res.success) throw new Error(res.error || "Analysis failed");
     return Array.isArray(res.result) ? res.result : [];
   } catch (err: any) {
-    console.error("Ad-hoc Analysis Error:", err);
+    console.error("Ad-hoc Risk Analysis Error:", err);
     handleAIError(err, "Analysis");
     throw err;
   }

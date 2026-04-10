@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Shield, Search, Filter, ChevronRight, AlertCircle, CheckCircle2, Clock, Calendar, AlertTriangle, ArrowRight, TrendingUp, LayoutGrid, List, ExternalLink, Info, ShieldCheck, SearchCheck, FileText, Target, History, Lock, MessageSquare, MoreVertical, Plus, ScanSearch, Trash2, ArrowLeft, X, ChevronDown, Edit2, Layers, FileSpreadsheet } from 'lucide-react';
+import { Shield, Search, Filter, ChevronRight, AlertCircle, CheckCircle2, Clock, Calendar, AlertTriangle, ArrowRight, TrendingUp, LayoutGrid, List, ExternalLink, Info, ShieldCheck, SearchCheck, FileText, Target, History, Lock, MessageSquare, MoreVertical, Plus, ScanSearch, Trash2, ArrowLeft, X, ChevronDown, Edit2, Layers, FileSpreadsheet, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'motion/react';
@@ -8,9 +8,11 @@ import { useStore, ComplianceItem } from '../store/useStore';
 import { DOMAINS, getRIBALabelFull } from '../data/complianceData';
 import { isAtLeastClientAdmin } from '../lib/roles';
 import { stripMarkdown, downloadFile, exportComplianceToCSV } from '../lib/utils';
+import { api } from '../lib/api';
 import { AIInquiryPopup } from '../components/AIInquiryPopup';
 import { AIWriter } from '../components/AIWriter';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
+import toast from 'react-hot-toast';
 import { ServiceManagementBar } from '../components/ServiceManagementBar';
 import { canCreateCompliance } from '../lib/roles';
 
@@ -36,6 +38,8 @@ const Badge = ({ children, variant = 'default', className = '' }: { children: Re
     success: 'bg-emerald-50 text-emerald-700 border-emerald-100',
     warning: 'bg-amber-50 text-amber-700 border-amber-100',
     danger: 'bg-rose-50 text-rose-700 border-rose-100',
+    rose: 'bg-rose-50 text-rose-700 border-rose-100',
+    orange: 'bg-orange-50 text-orange-700 border-orange-100',
     indigo: 'bg-indigo-50 text-indigo-700 border-indigo-100',
     blue: 'bg-blue-50 text-blue-700 border-blue-100',
   };
@@ -69,18 +73,21 @@ function cn(...classes: (string | boolean | undefined | null)[]) {
    ═══════════════════════════════════════════════════ */
 
 export function ComplianceTracker() {
-  const { 
-    complianceItems, 
-    updateComplianceItem, 
-    isComplianceLocked, 
+  const {
+    complianceItems,
+    updateComplianceItem,
+    isComplianceLocked,
     setComplianceLocked,
     activeProjectId,
     activeProgrammeId,
+    activeProject,
+    activeProgramme,
     projects,
     programmes,
     user: currentUser,
     deleteComplianceItem,
     addComplianceItem,
+    bulkDeleteComplianceItems,
     addNotification,
     getActiveItems,
     getPendingItems,
@@ -93,14 +100,26 @@ export function ComplianceTracker() {
   } = useStore();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Load data when active context changes
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Load data when active context changes.
+  // Skip the fetch if complianceItems already has data for this context (e.g. loaded by initStore).
   useEffect(() => {
-    if (activeProjectId) {
-      loadProjectData(activeProjectId);
-    } else if (activeProgrammeId) {
-      loadProgrammeData(activeProgrammeId);
-    }
-  }, [activeProjectId, activeProgrammeId, loadProjectData, loadProgrammeData]);
+    if (!activeProjectId && !activeProgrammeId) return;
+    const contextId = activeProjectId || activeProgrammeId!;
+    const alreadyLoaded = complianceItems.some(i =>
+      activeProjectId ? i.projectId === contextId : i.programmeId === contextId
+    );
+    if (alreadyLoaded) return;
+    let cancelled = false;
+    setIsLoading(true);
+    const loadFn = activeProjectId
+      ? loadProjectData(activeProjectId)
+      : loadProgrammeData(activeProgrammeId!);
+    loadFn.finally(() => { if (!cancelled) setIsLoading(false); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeProjectId, activeProgrammeId]);
 
   // Sync URL params to store context
   useEffect(() => {
@@ -144,6 +163,40 @@ export function ComplianceTracker() {
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [expandedEvidence, setExpandedEvidence] = useState<any[]>([]);
+  const [evidenceLoading, setEvidenceLoading] = useState(false);
+
+  // Fetch evidence documents linked to the expanded compliance item
+  const contextId = activeProjectId || activeProgrammeId || 'all';
+  useEffect(() => {
+    if (!expandedId) { setExpandedEvidence([]); return; }
+    let cancelled = false;
+    setEvidenceLoading(true);
+    api.getEvidence(contextId).then(res => {
+      if (!cancelled && res.success) {
+        setExpandedEvidence(
+          (res.data || []).filter((e: any) => e.relatedRequirementId === expandedId)
+        );
+      }
+    }).catch(() => {}).finally(() => { if (!cancelled) setEvidenceLoading(false); });
+    return () => { cancelled = true; };
+  }, [expandedId, contextId]);
+
+  // Confirmation dialog state — replaces all window.confirm() calls
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmLabel?: string;
+    isDanger?: boolean;
+    onConfirm: () => void;
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+
+  const openConfirm = (opts: Omit<typeof confirmDialog, 'isOpen'>) =>
+    setConfirmDialog({ ...opts, isOpen: true });
+
+  const closeConfirm = () =>
+    setConfirmDialog(prev => ({ ...prev, isOpen: false }));
 
   const toggleSelectAll = () => {
     if (selectedIds.length === filteredItems.length) {
@@ -162,37 +215,61 @@ export function ComplianceTracker() {
 
   const handleBulkDelete = () => {
     if (selectedIds.length === 0) return;
-    if (window.confirm(`Are you sure you want to delete ${selectedIds.length} selected compliance requirements?`)) {
-      selectedIds.forEach(id => deleteComplianceItem(id));
-      addNotification({
-        title: 'Bulk Deletion Successful',
-        body: `Removed ${selectedIds.length} requirements from the tracker.`,
-        type: 'system',
-        severity: 'Medium'
-      });
-      setSelectedIds([]);
-    }
+    const count = selectedIds.length;
+    const idsToDelete = [...selectedIds];
+    openConfirm({
+      title: 'Delete Selected Requirements',
+      message: `Are you sure you want to permanently delete ${count} selected compliance requirement${count > 1 ? 's' : ''}? This cannot be undone.`,
+      confirmLabel: `Delete ${count}`,
+      isDanger: true,
+      onConfirm: async () => {
+        setSelectedIds([]);
+        try {
+          await bulkDeleteComplianceItems(idsToDelete);
+          toast.success(`Deleted ${count} requirement${count > 1 ? 's' : ''}`);
+        } catch {
+          toast.error('Something went wrong. Please try again.');
+        }
+      }
+    });
   };
 
-  const handleVerify = (id: string) => {
-    updateComplianceItem(id, { status: 'applicable' });
+  const handleVerify = async (id: string) => {
+    try {
+      await updateComplianceItem(id, { status: 'applicable' });
+    } catch {
+      toast.error('Something went wrong. Please try again.');
+    }
   };
 
   const handleDismiss = (id: string) => {
-    if (window.confirm('Are you sure you want to dismiss this requirement? it will be moved to history/archived and no longer appear in your active tracker.')) {
-      updateComplianceItem(id, { status: 'dismissed' });
-    }
+    openConfirm({
+      title: 'Dismiss Requirement',
+      message: 'Are you sure you want to dismiss this requirement? It will be moved to history and will no longer appear in your active tracker.',
+      confirmLabel: 'Dismiss',
+      isDanger: false,
+      onConfirm: async () => {
+        try {
+          await updateComplianceItem(id, { status: 'dismissed' });
+        } catch {
+          toast.error('Something went wrong. Please try again.');
+        }
+      }
+    });
   };
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ComplianceItem | null>(null);
   const [newReq, setNewReq] = useState({ domain: 'General', reg: '', auth: '', risk: 'Medium', req: '' });
+  const [isSaving, setIsSaving] = useState(false);
   const [isAIInquiryOpen, setIsAIInquiryOpen] = useState(false);
 
   const openEditModal = (item: ComplianceItem) => {
     setEditingItem(item);
+    // Normalise stored domain (id or label) to label so the modal select can match it
+    const domainLabel = DOMAINS.find(d => d.id === item.domain || d.label === item.domain)?.label || item.domain || 'General';
     setNewReq({
-      domain: item.domain || 'General',
+      domain: domainLabel,
       reg: item.reg || '',
       auth: item.auth || '',
       risk: item.risk || 'Medium',
@@ -201,27 +278,38 @@ export function ComplianceTracker() {
     setIsAddModalOpen(true);
   };
 
-  const handleSaveRequirement = () => {
-    if (editingItem) {
-      updateComplianceItem(editingItem.id, newReq);
-      setEditingItem(null);
-    } else {
-      addComplianceItem({
-        ...newReq,
-        projectId: activeProjectId || undefined,
-        programmeId: activeProgrammeId || undefined,
-        status: 'applicable'
-      });
-      addNotification({
-        title: 'New Requirement Added',
-        body: `Requirement "${newReq.req || 'New Requirement'}" added manually.`,
-        type: 'compliance',
-        projectId: activeProjectId || undefined
-      });
+  const handleSaveRequirement = async () => {
+    // Normalise domain: always store the id (e.g. "bs"), not the label ("Building Safety")
+    const domainId = DOMAINS.find(d => d.label === newReq.domain || d.id === newReq.domain)?.id || newReq.domain;
+    const payload = { ...newReq, domain: domainId, reg: newReq.reg.trim(), req: newReq.req.trim() };
+    setIsSaving(true);
+    try {
+      if (editingItem) {
+        await updateComplianceItem(editingItem.id, payload);
+        toast.success('Requirement updated');
+        setEditingItem(null);
+      } else {
+        await addComplianceItem({
+          ...payload,
+          projectId: activeProjectId || undefined,
+          programmeId: activeProgrammeId || undefined,
+          status: 'applicable'
+        });
+        toast.success('Requirement added');
+        addNotification({
+          title: 'New Requirement Added',
+          body: `Requirement "${newReq.req.trim() || 'New Requirement'}" added manually.`,
+          type: 'compliance',
+          projectId: activeProjectId || undefined
+        });
+      }
+      setIsAddModalOpen(false);
+      setNewReq({ domain: 'General', reg: '', auth: '', risk: 'Medium', req: '' });
+    } catch {
+      toast.error('Something went wrong. Please try again.');
+    } finally {
+      setIsSaving(false);
     }
-    
-    setIsAddModalOpen(false);
-    setNewReq({ domain: 'General', reg: '', auth: '', risk: 'Medium', req: '' });
   };
 
   const dismissedItems = useMemo(() => {
@@ -611,7 +699,34 @@ export function ComplianceTracker() {
       </div>
 
       <AnimatePresence mode="wait">
-        {filteredItems.length === 0 ? (
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-pulse">
+                <div className="p-6 space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div className="w-12 h-12 bg-slate-100 rounded-2xl" />
+                    <div className="w-16 h-8 bg-slate-100 rounded-lg" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-5 bg-slate-100 rounded-lg w-3/4" />
+                    <div className="h-4 bg-slate-100 rounded-lg w-1/2" />
+                  </div>
+                  <div className="h-2 bg-slate-100 rounded-full" />
+                  <div className="space-y-2 pt-2">
+                    <div className="h-3 bg-slate-100 rounded w-full" />
+                    <div className="h-3 bg-slate-100 rounded w-4/5" />
+                    <div className="h-3 bg-slate-100 rounded w-3/5" />
+                  </div>
+                </div>
+                <div className="bg-slate-50 p-4 border-t border-slate-200 flex justify-between">
+                  <div className="h-6 w-20 bg-slate-100 rounded-full" />
+                  <div className="h-8 w-8 bg-slate-100 rounded-lg" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filteredItems.length === 0 ? (
           <motion.div
             key="empty-state"
             initial={{ opacity: 0, y: 20 }}
@@ -755,8 +870,8 @@ export function ComplianceTracker() {
                   {DOMAINS.map(domain => {
                     const isActive = selectedDomainId === domain.id;
                     const counts = {
-                      total: complianceItems.filter(i => i.domain === domain.id).length,
-                      live: complianceItems.filter(i => i.domain === domain.id && i.stage === 'Live').length
+                      total: activeItems.filter(i => i.domain === domain.id || i.domain === domain.label).length,
+                      live: activeItems.filter(i => (i.domain === domain.id || i.domain === domain.label) && i.stage === 'Live').length
                     };
 
                     return (
@@ -794,7 +909,7 @@ export function ComplianceTracker() {
                   <button
                     onClick={() => {
                       setEditingItem(null);
-                      setNewReq({ domain: selectedDomainId ? (DOMAINS.find(d => d.id === selectedDomainId)?.label || 'Fire Safety') : 'Fire Safety', reg: '', req: '', risk: 'Medium' });
+                      setNewReq({ domain: selectedDomainId ? (DOMAINS.find(d => d.id === selectedDomainId)?.label || 'Fire Safety') : 'Fire Safety', reg: '', auth: '', req: '', risk: 'Medium' });
                       setIsAddModalOpen(true);
                     }}
                     className="w-full flex items-center justify-center gap-2 py-3.5 bg-indigo-600/10 text-indigo-600 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all shadow-sm active:scale-95"
@@ -805,24 +920,6 @@ export function ComplianceTracker() {
                 </div>
               </div>
 
-              {/* Status Summary Widget */}
-              <div className="bg-slate-900 rounded-2xl p-6 text-white overflow-hidden relative group">
-                <div className="relative z-10 space-y-4">
-                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Compliance Health</h4>
-                  <div className="flex items-end gap-2">
-                    <span className="text-4xl font-black">{Object.values(complianceItems).filter(item => item.stage === 'Live').length}</span>
-                    <span className="text-slate-400 font-bold mb-1.5">/ {complianceItems.length} Live</span>
-                  </div>
-                  <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${(Object.values(complianceItems).filter(item => item.stage === 'Live').length / (complianceItems.length || 1)) * 100}%` }}
-                      className="bg-emerald-500 h-full rounded-full"
-                    />
-                  </div>
-                </div>
-                <Target className="absolute -right-4 -bottom-4 w-24 h-24 text-white/5 rotate-12 group-hover:rotate-45 transition-transform duration-700" />
-              </div>
             </aside>
 
             {/* Main Content Area */}
@@ -925,7 +1022,13 @@ export function ComplianceTracker() {
                                   )}
                                   value={item.stage || 'Information Gap'}
                                   onClick={(e) => e.stopPropagation()}
-                                  onChange={(e) => updateComplianceItem(item.id, { stage: e.target.value as any })}
+                                  onChange={async (e) => {
+                                    try {
+                                      await updateComplianceItem(item.id, { stage: e.target.value as any });
+                                    } catch {
+                                      toast.error('Something went wrong. Please try again.');
+                                    }
+                                  }}
                                 >
                                   {STAGES.map(stage => (
                                     <option key={stage} value={stage} className="bg-white text-slate-900 font-bold uppercase tracking-widest">{stage}</option>
@@ -947,7 +1050,7 @@ export function ComplianceTracker() {
                               </div>
                             </td>
                             <td className="px-6 py-4 text-right">
-                              <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="flex items-center justify-end gap-1">
                                 <button
                                   onClick={(e) => { e.stopPropagation(); openEditModal(item); }}
                                   className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
@@ -956,11 +1059,23 @@ export function ComplianceTracker() {
                                   <Edit2 className="w-3.5 h-3.5" />
                                 </button>
                                 <button
-                                  onClick={(e) => { 
-                                    e.stopPropagation(); 
-                                    if (window.confirm('Delete this requirement?')) {
-                                      deleteComplianceItem(item.id);
-                                    }
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const label = item.req ? `"${stripMarkdown(item.req).slice(0, 60)}${item.req.length > 60 ? '…' : ''}"` : 'this requirement';
+                                    openConfirm({
+                                      title: 'Delete Requirement',
+                                      message: `Are you sure you want to permanently delete ${label}? This cannot be undone.`,
+                                      confirmLabel: 'Delete',
+                                      isDanger: true,
+                                      onConfirm: async () => {
+                                        try {
+                                          await deleteComplianceItem(item.id);
+                                          toast.success('Requirement deleted');
+                                        } catch {
+                                          toast.error('Something went wrong. Please try again.');
+                                        }
+                                      }
+                                    });
                                   }}
                                   className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
                                   title="Delete"
@@ -989,7 +1104,7 @@ export function ComplianceTracker() {
                                           <List className="w-3 h-3" /> Step-by-Step Tasks
                                         </h4>
                                         <ul className="space-y-4">
-                                          {(item.tasks || []).map((task, idx) => (
+                                          {(item.tasks || []).map((task: string, idx: number) => (
                                             <li key={idx} className="flex gap-4 text-xs text-slate-600 leading-relaxed font-medium">
                                               <span className="text-indigo-600 font-black">{String(idx + 1).padStart(2, '0')}</span>
                                               {stripMarkdown(task)}
@@ -1013,11 +1128,11 @@ export function ComplianceTracker() {
                                           </h4>
                                           <div className="space-y-3 max-h-60 overflow-y-auto pr-2 scrollbar-thin">
                                             {item.updates && item.updates.length > 0 ? (
-                                              item.updates.map((update, idx) => (
+                                              item.updates.map((update: { id: string; date: string; content: string; author?: string }) => (
                                                 <div key={update.id} className="p-3 bg-white border border-slate-100 rounded-xl shadow-sm space-y-1">
                                                   <div className="flex justify-between items-center">
                                                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
-                                                      {format(new Date(update.date), 'dd MMM yyyy HH:mm')}
+                                                      {isValid(new Date(update.date)) ? format(new Date(update.date), 'dd MMM yyyy HH:mm') : '—'}
                                                     </span>
                                                     <span className="text-[9px] font-black text-indigo-600 uppercase italic">{update.author}</span>
                                                   </div>
@@ -1033,13 +1148,22 @@ export function ComplianceTracker() {
                                                <textarea 
                                                 placeholder="Add a progress update..."
                                                 className="w-full bg-white border border-slate-200 rounded-xl p-3 text-[11px] font-medium focus:ring-2 focus:ring-indigo-500/20 transition-all min-h-[80px]"
-                                                onKeyDown={(e) => {
+                                                onKeyDown={async (e) => {
                                                   if (e.key === 'Enter' && !e.shiftKey) {
                                                     e.preventDefault();
                                                     const val = e.currentTarget.value.trim();
-                                                    if (val) {
-                                                      addComplianceUpdate(item.id, val);
+                                                    if (!val) return;
+                                                    const updateObj = {
+                                                      id: `upd-${Date.now()}`,
+                                                      date: new Date().toISOString(),
+                                                      content: val,
+                                                      author: currentUser?.displayName || currentUser?.email || 'User'
+                                                    };
+                                                    try {
+                                                      await addComplianceUpdate(item.id, updateObj);
                                                       e.currentTarget.value = '';
+                                                    } catch {
+                                                      toast.error('Something went wrong. Please try again.');
                                                     }
                                                   }
                                                 }}
@@ -1056,16 +1180,64 @@ export function ComplianceTracker() {
                                             <ExternalLink className="w-3 h-3" /> Evidence
                                           </h4>
                                           <div className="space-y-2">
+                                            {/* Linked evidence from Evidence Vault */}
+                                            {evidenceLoading ? (
+                                              <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg">
+                                                <Loader2 className="w-3 h-3 animate-spin text-slate-400" />
+                                                <span className="text-[10px] text-slate-400 font-bold">Loading evidence...</span>
+                                              </div>
+                                            ) : expandedEvidence.length > 0 ? (
+                                              <div className="space-y-1.5">
+                                                {expandedEvidence.map((ev: any) => (
+                                                  <a
+                                                    key={ev.id}
+                                                    href={ev.url}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="flex items-center gap-2 p-2 bg-emerald-50 border border-emerald-100 rounded-lg hover:bg-emerald-100 transition-colors group"
+                                                  >
+                                                    <div className="w-6 h-6 bg-emerald-100 rounded flex items-center justify-center shrink-0">
+                                                      <FileText className="w-3 h-3 text-emerald-600" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                      <p className="text-[11px] font-bold text-emerald-800 truncate">{ev.name}</p>
+                                                      <p className="text-[9px] text-emerald-600">
+                                                        {ev.type === 'link' ? 'External URL' : (ev.size ? `${(ev.size / 1024).toFixed(1)} KB` : 'File')}
+                                                        {ev.uploadedAt && ` · ${new Date(ev.uploadedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}`}
+                                                      </p>
+                                                    </div>
+                                                    <ExternalLink className="w-3 h-3 text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                                                  </a>
+                                                ))}
+                                                <Link
+                                                  to={`/compliance/evidence${activeProjectId ? '?type=project' : activeProgrammeId ? '?type=programme' : ''}`}
+                                                  className="flex items-center gap-1.5 text-[10px] text-indigo-600 font-black hover:underline px-1 mt-1"
+                                                >
+                                                  <ExternalLink className="w-3 h-3" /> View in Evidence Vault
+                                                </Link>
+                                              </div>
+                                            ) : null}
+
+                                            {/* Manual fallback input */}
                                             <input
                                               type="text"
                                               className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold focus:ring-2 focus:ring-indigo-500/10 transition-all"
-                                              value={item.evidence || ''}
-                                              placeholder="Link evidence..."
-                                              onChange={(e) => updateComplianceItem(item.id, { evidence: e.target.value })}
+                                              defaultValue={item.evidence || ''}
+                                              placeholder={expandedEvidence.length > 0 ? 'Add additional link...' : 'Link evidence...'}
+                                              onClick={(e) => e.stopPropagation()}
+                                              onBlur={async (e) => {
+                                                const val = e.target.value.trim();
+                                                if (val === (item.evidence || '')) return;
+                                                try {
+                                                  await updateComplianceItem(item.id, { evidence: val });
+                                                } catch {
+                                                  toast.error('Something went wrong. Please try again.');
+                                                }
+                                              }}
                                             />
                                             {item.evidence && item.evidence.startsWith('http') && (
                                               <a href={item.evidence} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[10px] text-indigo-600 font-black hover:underline px-1">
-                                                <ExternalLink className="w-3 h-3" /> Open Evidence
+                                                <ExternalLink className="w-3 h-3" /> Open Manual Link
                                               </a>
                                             )}
                                           </div>
@@ -1078,7 +1250,16 @@ export function ComplianceTracker() {
                                                   type="date"
                                                   className="bg-transparent text-[10px] font-black text-slate-900 focus:outline-none"
                                                   value={item.dueDate || ''}
-                                                  onChange={(e) => updateComplianceItem(item.id, { dueDate: e.target.value })}
+                                                  onChange={async (e) => {
+                                                    const val = e.target.value;
+                                                    // Reject invalid dates; allow clearing (empty string)
+                                                    if (val && !isValid(new Date(val))) return;
+                                                    try {
+                                                      await updateComplianceItem(item.id, { dueDate: val || undefined });
+                                                    } catch {
+                                                      toast.error('Something went wrong. Please try again.');
+                                                    }
+                                                  }}
                                                 />
                                               </div>
                                               <button
@@ -1183,9 +1364,16 @@ export function ComplianceTracker() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Requirement Detail</label>
-                  <AIWriter 
+                  <AIWriter
                     onSuggest={(content) => setNewReq({...newReq, req: content})}
-                    context="compliance requirement"
+                    context={[
+                      `Write one plain-text sentence (max 30 words) describing a compliance action for a UK construction project.`,
+                      `Domain: ${DOMAINS.find(d => d.id === newReq.domain || d.label === newReq.domain)?.label || newReq.domain}.`,
+                      `Regulation: ${newReq.reg || 'General'}.`,
+                      `Risk: ${newReq.risk}.`,
+                      newReq.req ? `Expand on: "${newReq.req.slice(0, 80)}".` : '',
+                      `No markdown, no bullet points, no headers. Plain text only.`
+                    ].filter(Boolean).join(' ')}
                     label="Draft with AI"
                   />
                 </div>
@@ -1207,12 +1395,66 @@ export function ComplianceTracker() {
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   onClick={handleSaveRequirement}
-                  disabled={!newReq.reg || !newReq.req}
-                  className="flex-1 py-4 px-6 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-xl shadow-indigo-200"
+                  disabled={!newReq.reg || !newReq.req || isSaving}
+                  className="flex-1 py-4 px-6 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-xl shadow-indigo-200 flex items-center justify-center gap-2"
                 >
-                  {editingItem ? 'Update Requirement' : 'Add to Registry'}
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Saving…
+                    </>
+                  ) : (
+                    editingItem ? 'Update Requirement' : 'Add to Registry'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Confirmation Dialog */}
+      {confirmDialog.isOpen && (
+        <div
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4"
+          onClick={(e) => e.target === e.currentTarget && closeConfirm()}
+        >
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <h3 className="text-base font-black text-slate-900 uppercase tracking-tight">
+                {confirmDialog.title}
+              </h3>
+              <button
+                onClick={closeConfirm}
+                className="p-1.5 hover:bg-slate-200 rounded-xl transition-colors shrink-0"
+              >
+                <X className="w-4 h-4 text-slate-500" />
+              </button>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-slate-600 font-medium leading-relaxed">
+                {confirmDialog.message}
+              </p>
+              <div className="mt-6 flex gap-3">
+                <button
+                  onClick={closeConfirm}
+                  className="flex-1 py-3 px-4 bg-slate-100 text-slate-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    confirmDialog.onConfirm();
+                    closeConfirm();
+                  }}
+                  className={`flex-1 py-3 px-4 rounded-2xl font-black text-xs uppercase tracking-widest text-white transition-all shadow-lg ${
+                    confirmDialog.isDanger
+                      ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-200'
+                      : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200'
+                  }`}
+                >
+                  {confirmDialog.confirmLabel || 'Confirm'}
                 </button>
               </div>
             </div>
@@ -1220,9 +1462,9 @@ export function ComplianceTracker() {
         </div>
       )}
       {/* AI Inquiry Popup */}
-      <AIInquiryPopup 
-        isOpen={isAIInquiryOpen} 
-        onClose={() => setIsAIInquiryOpen(false)} 
+      <AIInquiryPopup
+        isOpen={isAIInquiryOpen}
+        onClose={() => setIsAIInquiryOpen(false)}
         context="Compliance Tracker Dashboard"
       />
       <button
