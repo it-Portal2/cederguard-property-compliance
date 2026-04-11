@@ -6,7 +6,7 @@ import { InfoTooltip } from '../components/InfoTooltip';
 import { api, ApiError } from '../lib/api';
 import { AIErrorAlert } from '../components/AIErrorAlert';
 import { FolderKanban, Loader2, Plus, TrendingUp, Milestone, Shield, ShieldCheck, ScanSearch, Briefcase, AlertTriangle, CheckCircle, PoundSterling, BarChart, ListFilter, ShieldAlert, ArrowLeft, Eye, ChevronRight, Trash2, LayoutTemplate, FileBarChart, PieChart, Layers, BookOpen, AlertCircle, ArrowRight, Star, Calendar } from 'lucide-react';
-import { isSuperAdmin, isAtLeastClientAdmin, isAtLeastPM, UserRole } from '../lib/roles';
+import { isSuperAdmin, isAtLeastClientAdmin, isAtLeastPM, isAtLeastProgrammeManager, UserRole } from '../lib/roles';
 import { clsx } from 'clsx';
 import { analyzeStrategicInsights } from '../services/aiService';
 import { stripMarkdown, parseAISuggestion } from '../lib/utils';
@@ -32,6 +32,8 @@ export function Dashboard() {
     loadProgrammeData,
     loadAggregateData,
     deleteProject,
+    isInitialized,
+    setContextSwitching,
   } = useStore();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -43,9 +45,10 @@ export function Dashboard() {
   const userRole = (user?.role || user?.profile?.role) as UserRole | undefined;
   const userIsSuperAdmin = isSuperAdmin(user?.email, userRole);
   const isClientAdmin = (isAtLeastClientAdmin(userRole) || userIsSuperAdmin) && !isViewingAsPM;
-  const isProjectManager = isAtLeastPM(userRole) || userIsSuperAdmin;
+  const isProjectManager = isAtLeastPM(userRole) || isAtLeastProgrammeManager(userRole) || userIsSuperAdmin;
 
   const [loadingOverview, setLoadingOverview] = useState(false);
+  const [isLoadingContent, setIsLoadingContent] = useState(false);
   const [strategicInsights, setStrategicInsights] = useState<any>(null);
   const [generatingInsights, setGeneratingInsights] = useState(false);
   const [aiError, setAiError] = useState<string | ApiError | null>(null);
@@ -65,17 +68,20 @@ export function Dashboard() {
 
   // Load data when active context changes
   useEffect(() => {
+    if (!isInitialized) return;
     if (activeProjectId) {
-      loadProjectData(activeProjectId);
+      setIsLoadingContent(true);
+      void loadProjectData(activeProjectId).finally(() => setIsLoadingContent(false));
     } else if (activeProgrammeId) {
-      loadProgrammeData(activeProgrammeId);
-    } else if (isProjectManager || safeProjects.length > 0) {
-      console.log('Dashboard: Loading aggregate portfolio data...');
-      loadAggregateData();
+      setIsLoadingContent(true);
+      void loadProgrammeData(activeProgrammeId).finally(() => setIsLoadingContent(false));
+    } else if (isProjectManager || isClientAdmin) {
+      setLoadingOverview(true);
+      void loadAggregateData().finally(() => setLoadingOverview(false));
     }
     setStrategicInsights(null);
     setAiError(null);
-  }, [activeProjectId, activeProgrammeId, isClientAdmin, safeProjects.length, loadProjectData, loadProgrammeData, loadAggregateData]);
+  }, [isInitialized, activeProjectId, activeProgrammeId, isClientAdmin, isProjectManager, loadProjectData, loadProgrammeData, loadAggregateData]);
 
   // Sync URL params to store context
   useEffect(() => {
@@ -90,8 +96,13 @@ export function Dashboard() {
 
   const handleLoadDemo = async () => {
     setLoadingDemo(true);
-    await loadDemoData();
-    setLoadingDemo(false);
+    try {
+      await loadDemoData();
+    } catch (err) {
+      console.error('Failed to load demo data:', err);
+    } finally {
+      setLoadingDemo(false);
+    }
   };
 
   const handleClearData = async () => {
@@ -101,13 +112,21 @@ export function Dashboard() {
       return;
     }
     setLoadingClear(true);
-    await clearData();
-    setStrategicInsights(null);
-    setAiError(null);
-    setConfirmClear(false);
-    setLoadingClear(false);
+    try {
+      await clearData();
+      setStrategicInsights(null);
+      setAiError(null);
+      setConfirmClear(false);
+    } catch (err) {
+      console.error('Failed to clear data:', err);
+    } finally {
+      setLoadingClear(false);
+    }
   };
 
+
+  // True while any data fetch for the current context is in-flight
+  const isLoading = isLoadingContent || loadingOverview;
 
   // Filter projects for PM - show projects owned by the user or projects for their client if they have permissions
   const displayProjects = safeProjects.filter(p => !p.isArchived);
@@ -123,13 +142,12 @@ export function Dashboard() {
       const belongsToProgProject = safeProjects.some(p => p.id === c.projectId && p.programmeId === activeProgrammeId);
       return isProgLevel || belongsToProgProject;
     }
-    if (isProjectManager && !isClientAdmin) {
-      return displayProjects.some(p => p.id === c.projectId);
-    }
-    return true;
+    if (isClientAdmin) return true;
+    return displayProjects.some(p => p.id === c.projectId);
   });
 
-  const contextCompliance = allContextCompliance.filter(i => i.status !== 'dismissed' && i.status !== 'pending');
+  // Only count 'applicable' items for stats — same as ComplianceDashboard's getActiveItems()
+  const contextCompliance = allContextCompliance.filter(i => i.status === 'applicable');
   const pendingComplianceCount = allContextCompliance.filter(i => i.status === 'pending').length;
 
   const contextRisks = safeRisks.filter(r => {
@@ -139,10 +157,8 @@ export function Dashboard() {
       const belongsToProgProject = safeProjects.some(p => p.id === r.projectId && p.programmeId === activeProgrammeId);
       return isProgLevel || belongsToProgProject;
     }
-    if (isProjectManager && !isClientAdmin) {
-      return displayProjects.some(p => p.id === r.projectId);
-    }
-    return true;
+    if (isClientAdmin) return true;
+    return displayProjects.some(p => p.id === r.projectId);
   });
 
 
@@ -153,36 +169,29 @@ export function Dashboard() {
       const belongsToProgProject = safeProjects.some(p => p.id === i.projectId && p.programmeId === activeProgrammeId);
       return isProgLevel || belongsToProgProject;
     }
-    if (isProjectManager && !isClientAdmin) {
-      return displayProjects.some(p => p.id === i.projectId);
-    }
-    return true;
+    if (isClientAdmin) return true;
+    return displayProjects.some(p => p.id === i.projectId);
   });
 
-  console.log('Dashboard Diagnostics:', {
-    activeProjectId,
-    activeProgrammeId,
-    risksInStore: safeRisks.length,
-    issuesInStore: safeIssues.length,
-    complianceInStore: safeComplianceItems.length,
-    filteredRisks: contextRisks.length,
-    filteredIssues: contextIssues.length,
-    projectsLoaded: safeProjects.length
-  });
+  // Compliance Stats — stage values must match ComplianceDashboard exactly:
+  //   Complete  → stage 'Live' or 'Archived'
+  //   Open      → stage 'Information Gap' or 'Risk Identified'
+  //   High risk → risk 'High' or 'Critical'
+  const compIsComplete  = (s?: string) => s === 'Live' || s === 'Archived';
+  const compIsOpen      = (s?: string) => s === 'Information Gap' || s === 'Risk Identified';
+  const compIsHighRisk  = (r?: string) => r === 'High' || r === 'Critical';
 
-  // Filter items based on active context for accurate stats
-  // Compliance Stats
-  const compTotal = contextCompliance.length;
-  const compComplete = contextCompliance.filter(i => i.stage === "Complete").length;
-  const compInProgress = contextCompliance.filter(i => i.stage === "In Progress").length;
-  const compNotStarted = contextCompliance.filter(i => i.stage === "Not Started").length;
-  const compHighRisk = contextCompliance.filter(i => i.risk === "High" && i.stage !== "Complete").length;
-  const compPct = compTotal ? Math.round((compComplete / compTotal) * 100) : 0;
+  const compTotal      = contextCompliance.length;
+  const compComplete   = contextCompliance.filter(i => compIsComplete(i.stage)).length;
+  const compInProgress = contextCompliance.filter(i => i.stage === 'In Progress').length;
+  const compNotStarted = contextCompliance.filter(i => compIsOpen(i.stage)).length;
+  const compHighRisk   = contextCompliance.filter(i => compIsHighRisk(i.risk) && !compIsComplete(i.stage)).length;
+  const compPct        = compTotal ? Math.round((compComplete / compTotal) * 100) : 0;
 
   // Risk Stats
   const riskTotal = contextRisks.length;
   const riskOpen = contextRisks.filter(r => r.status === "Open").length;
-  const riskHigh = contextRisks.filter(r => r.grossRating >= 16).length;
+  const riskHigh = contextRisks.filter(r => (r.grossRating || 0) >= 16).length;
   const riskEscalated = contextRisks.filter(r => r.escalated).length;
   const riskResidualALE = contextRisks.reduce((s, r) => s + (r.residualALE || 0), 0);
 
@@ -195,9 +204,7 @@ export function Dashboard() {
     .sort((a, b) => (b.grossRating || 0) - (a.grossRating || 0))
     .slice(0, 5);
 
-  const isComplianceSetup = (activeProjectId || activeProgrammeId) 
-    ? (complianceAnalysis !== null && contextCompliance.length > 0)
-    : (contextCompliance.length > 0);
+  const isComplianceSetup = contextCompliance.length > 0;
   const isRiskSetup = contextRisks.length > 0;
 
   const handleGenerateInsights = async () => {
@@ -249,18 +256,23 @@ export function Dashboard() {
               value={activeProjectId ? `project:${activeProjectId}` : (activeProgrammeId ? `programme:${activeProgrammeId}` : 'all')}
               onChange={async (e) => {
                 const [type, id] = e.target.value.split(':');
-                if (type === 'all') {
-                  await loadAggregateData();
-                  navigate('/dashboard');
-                } else if (type === 'programme') {
-                  setActiveProject(null);
-                  setActiveProgramme(id);
-                  await loadProgrammeData(id);
-                  navigate(`/dashboard?programmeId=${id}`);
-                } else if (type === 'project') {
-                  setActiveProject(id);
-                  await loadProjectData(id);
-                  navigate(`/dashboard?projectId=${id}`);
+                setContextSwitching(true);
+                try {
+                  if (type === 'all') {
+                    await loadAggregateData();
+                    navigate('/dashboard');
+                  } else if (type === 'programme') {
+                    setActiveProject(null);
+                    setActiveProgramme(id);
+                    await loadProgrammeData(id);
+                    navigate(`/dashboard?programmeId=${id}`);
+                  } else if (type === 'project') {
+                    setActiveProject(id);
+                    await loadProjectData(id);
+                    navigate(`/dashboard?projectId=${id}`);
+                  }
+                } finally {
+                  setContextSwitching(false);
                 }
               }}
               className="bg-transparent border-none text-xs font-bold text-indigo-600 focus:ring-0 cursor-pointer w-full md:min-w-[240px]"
@@ -328,7 +340,9 @@ export function Dashboard() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-0 mb-6 md:mb-8">
               <div>
                 <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">{isClientAdmin ? 'Portfolio Overview' : 'My Project Portfolio'}</h2>
-                <p className="text-slate-500 text-xs md:text-sm font-medium mt-1">Global oversight across all managers and active projects</p>
+                <p className="text-slate-500 text-xs md:text-sm font-medium mt-1">
+                  {isClientAdmin ? 'Global oversight across all managers and active projects' : 'Overview of your assigned projects and portfolio.'}
+                </p>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-xs uppercase tracking-widest border border-indigo-100/50">
                 {loadingOverview ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Layers className="w-3.5 h-3.5" />}
@@ -336,7 +350,10 @@ export function Dashboard() {
               </div>
             </div>
 
-            <div className={clsx("grid gap-4 mb-8", isClientAdmin ? "grid-cols-2 lg:grid-cols-5" : "grid-cols-2 lg:grid-cols-4")}>
+            {loadingOverview ? (
+              <div className="mb-8"><SkeletonStatCards count={isClientAdmin ? 5 : 4} /></div>
+            ) : null}
+            <div className={clsx("grid gap-4 mb-8", isClientAdmin ? "grid-cols-2 lg:grid-cols-5" : "grid-cols-2 lg:grid-cols-4", loadingOverview && "hidden")}>
               <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 transition-all hover:bg-white hover:shadow-lg hover:shadow-indigo-500/5 group">
                 <div className="text-3xl font-black text-slate-900 group-hover:text-indigo-600 transition-colors">{displayProgrammes.length}</div>
                 <div className="text-[10px] text-slate-400 mt-1 font-black uppercase tracking-widest">Total Programmes</div>
@@ -408,7 +425,7 @@ export function Dashboard() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="text-sm font-bold text-slate-900 truncate" title={stripMarkdown(p.name || 'Untitled Project')}>{stripMarkdown(p.name || 'Untitled Project')}</div>
-                          <div className="text-[10px] text-slate-400 font-medium truncate" title={p.type || 'Sectary'}>{p.type || 'Sectary'}</div>
+                          <div className="text-[10px] text-slate-400 font-medium truncate" title={p.type || '—'}>{p.type || '—'}</div>
                         </div>
                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
                       </div>
@@ -1096,10 +1113,17 @@ export function Dashboard() {
         <div className="space-y-4">
           <div className="flex items-center gap-2 mb-2">
             <Shield className="w-5 h-5 text-indigo-600" />
-            <h2 className="text-lg font-bold text-slate-800">Compliance Portfolio</h2>
+            <h2 className="text-lg font-bold text-slate-800">
+              {activeProjectId ? 'Project Compliance' : activeProgrammeId ? 'Programme Compliance' : 'Compliance Portfolio'}
+            </h2>
           </div>
-          
-          {isComplianceSetup ? (
+
+          {isLoading ? (
+            <>
+              <SkeletonStatCards count={5} />
+              <SkeletonBar />
+            </>
+          ) : isComplianceSetup ? (
             <>
               <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
                 <StatCard label="Total Requirements" value={compTotal} color="blue" border="border-l-blue-500" info={`Total number of compliance requirements identified for this ${isProjectManager && !activeProjectId ? 'portfolio' : 'project'}.`} />
@@ -1129,7 +1153,7 @@ export function Dashboard() {
               <p className="text-xs text-slate-500 mt-1 max-w-sm">
                 Requirement analysis has not been performed for this {activeProjectId ? 'project' : 'programme'}.
               </p>
-              <Link 
+              <Link
                 to={`/compliance/setup${activeProgrammeId ? '?type=programme' : ''}`}
                 className="mt-4 flex items-center gap-2 px-5 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm"
               >
@@ -1146,7 +1170,15 @@ export function Dashboard() {
             <h2 className="text-lg font-bold text-slate-800">Risk & Issues Overview</h2>
           </div>
 
-          {isRiskSetup ? (
+          {isLoading ? (
+            <>
+              <SkeletonStatCards count={5} />
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
+                <div className="lg:col-span-2"><SkeletonTable rows={5} /></div>
+                <SkeletonIssueSummary />
+              </div>
+            </>
+          ) : isRiskSetup ? (
             <>
               <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
                 <StatCard label="Total Risks" value={riskTotal} color="blue" border="border-l-blue-500" />
@@ -1157,59 +1189,61 @@ export function Dashboard() {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
-                {/* Top 5 Risks Table */}
-                <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                    <div className="flex items-center gap-2">
-                      <BarChart className="w-4 h-4 text-indigo-500" />
-                      <h3 className="text-xs font-bold text-slate-600 uppercase tracking-widest">Top 5 Critical Risks</h3>
-                  </div>
-                  <Link to="/risk/register" className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 uppercase tracking-wider">View Full Register</Link>
-                </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                      <thead className="bg-slate-50 text-slate-500 text-[11px] font-black uppercase tracking-widest border-b border-slate-100">
-                        <tr>
-                          <th className="px-6 py-4">Risk Title</th>
-                          <th className="px-6 py-4 text-center">Owner</th>
-                          <th className="px-6 py-4 text-center">Score</th>
-                          <th className="px-6 py-4 text-right">ALE</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {topRisks.length > 0 ? topRisks.map((risk) => {
-                          const score = risk.grossRating || 0;
-                          const scoreColor = score >= 15 ? 'text-red-600' : score >= 8 ? 'text-amber-600' : 'text-emerald-600';
-                          return (
-                            <tr key={risk.id} className="hover:bg-slate-50/50 transition-colors">
-                              <td className="px-6 py-4">
-                                <div className="font-bold text-slate-900 truncate max-w-[200px]" title={stripMarkdown(risk.title)}>{stripMarkdown(risk.title)}</div>
-                                <div className="text-[10px] text-slate-500 truncate max-w-[200px]" title={stripMarkdown(risk.category)}>{stripMarkdown(risk.category)}</div>
-                              </td>
-                              <td className="px-6 py-4">
-                                <span className="text-xs font-medium text-slate-600 truncate block max-w-[120px]" title={stripMarkdown(risk.owner || 'Unassigned')}>{stripMarkdown(risk.owner || 'Unassigned')}</span>
-                              </td>
-                              <td className="px-6 py-4 text-center">
-                                <span className={clsx("font-black text-base px-2 py-1 rounded-lg", scoreColor)}>
-                                  {score}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 text-right">
-                                <span className="font-mono font-bold text-slate-700">£{(risk.residualALE || 0).toLocaleString()}</span>
-                              </td>
-                            </tr>
-                          );
-                        }) : (
+                {/* Top 5 Risks Table — hidden in aggregate view (portfolio section above already shows it with source context) */}
+                {(activeProjectId || activeProgrammeId) && (
+                  <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                      <div className="flex items-center gap-2">
+                        <BarChart className="w-4 h-4 text-indigo-500" />
+                        <h3 className="text-xs font-bold text-slate-600 uppercase tracking-widest">Top 5 Critical Risks</h3>
+                      </div>
+                      <Link to="/risk/register" className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 uppercase tracking-wider">View Full Register</Link>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-sm">
+                        <thead className="bg-slate-50 text-slate-500 text-[11px] font-black uppercase tracking-widest border-b border-slate-100">
                           <tr>
-                            <td colSpan={4} className="px-6 py-12 text-center text-slate-400 italic">No risks registered yet.</td>
+                            <th className="px-6 py-4">Risk Title</th>
+                            <th className="px-6 py-4 text-center">Owner</th>
+                            <th className="px-6 py-4 text-center">Gross Score</th>
+                            <th className="px-6 py-4 text-right">ALE</th>
                           </tr>
-                        )}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {topRisks.length > 0 ? topRisks.map((risk) => {
+                            const score = risk.grossRating || 0;
+                            const scoreColor = score >= 16 ? 'text-red-600' : score >= 9 ? 'text-amber-600' : 'text-emerald-600';
+                            return (
+                              <tr key={risk.id} className="hover:bg-slate-50/50 transition-colors">
+                                <td className="px-6 py-4">
+                                  <div className="font-bold text-slate-900 truncate max-w-[200px]" title={stripMarkdown(risk.title)}>{stripMarkdown(risk.title)}</div>
+                                  <div className="text-[10px] text-slate-500 truncate max-w-[200px]" title={stripMarkdown(risk.category)}>{stripMarkdown(risk.category)}</div>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <span className="text-xs font-medium text-slate-600 truncate block max-w-[120px]" title={stripMarkdown(risk.owner || 'Unassigned')}>{stripMarkdown(risk.owner || 'Unassigned')}</span>
+                                </td>
+                                <td className="px-6 py-4 text-center">
+                                  <span className={clsx("font-black text-base px-2 py-1 rounded-lg", scoreColor)}>
+                                    {score}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 text-right">
+                                  <span className="font-mono font-bold text-slate-700">£{(risk.residualALE || 0).toLocaleString()}</span>
+                                </td>
+                              </tr>
+                            );
+                          }) : (
+                            <tr>
+                              <td colSpan={4} className="px-6 py-12 text-center text-slate-400 italic">No risks registered yet.</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+                <div className={clsx("bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-shadow", (!activeProjectId && !activeProgrammeId) && "lg:col-span-3")}>
                   <div className="flex items-center gap-2 mb-4">
                     <AlertCircle className="w-4 h-4 text-indigo-500" />
                     <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Issues Summary</h3>
@@ -1219,12 +1253,14 @@ export function Dashboard() {
                       <span className="text-xs font-medium text-slate-500">Total Registered</span>
                       <span className="text-lg font-extrabold text-slate-900">{issueTotal}</span>
                     </div>
-                    <div className="flex justify-between items-center pb-2 border-b border-slate-50">
-                      <span className="text-xs font-medium text-slate-500">RIBA Stage</span>
-                      <span className="text-sm font-bold text-slate-700">
-                        {activeProject?.riba ? getRIBALabel(activeProject.riba) : 'S0 - Strategic Definition'}
-                      </span>
-                    </div>
+                    {activeProject?.riba && (
+                      <div className="flex justify-between items-center pb-2 border-b border-slate-50">
+                        <span className="text-xs font-medium text-slate-500">RIBA Stage</span>
+                        <span className="text-sm font-bold text-slate-700">
+                          {getRIBALabel(activeProject.riba)}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex justify-between items-center pb-2 border-b border-slate-50">
                       <span className="text-xs font-medium text-slate-500">Live & Open</span>
                       <span className="text-lg font-extrabold text-amber-600">{issueOpen}</span>
@@ -1260,6 +1296,73 @@ export function Dashboard() {
     </div>
   );
 }
+
+// ─── Skeleton helpers ────────────────────────────────────────────────────────
+
+function SkeletonStatCards({ count }: { count: number }) {
+  return (
+    <div className={`grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-${count} gap-4`}>
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-slate-200 px-4 py-4 shadow-sm animate-pulse">
+          <div className="h-3 bg-slate-200 rounded w-3/4 mb-3" />
+          <div className="h-7 bg-slate-200 rounded w-1/2" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SkeletonBar() {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 p-4 md:p-5 flex flex-col md:flex-row md:items-center gap-4 md:gap-6 shadow-sm animate-pulse">
+      <div className="h-3 bg-slate-200 rounded w-24 shrink-0" />
+      <div className="flex-1 h-3 bg-slate-200 rounded-full" />
+      <div className="h-5 bg-slate-200 rounded w-10 shrink-0" />
+    </div>
+  );
+}
+
+function SkeletonTable({ rows }: { rows: number }) {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-pulse">
+      <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+        <div className="h-3 bg-slate-200 rounded w-36" />
+        <div className="h-3 bg-slate-200 rounded w-24" />
+      </div>
+      <div className="divide-y divide-slate-100">
+        {Array.from({ length: rows }).map((_, i) => (
+          <div key={i} className="flex items-center gap-4 px-6 py-4">
+            <div className="flex-1 space-y-2">
+              <div className="h-3 bg-slate-200 rounded w-3/4" />
+              <div className="h-2.5 bg-slate-100 rounded w-1/2" />
+            </div>
+            <div className="h-3 bg-slate-200 rounded w-16 shrink-0" />
+            <div className="h-7 w-7 bg-slate-200 rounded-xl shrink-0" />
+            <div className="h-3 bg-slate-200 rounded w-14 shrink-0" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SkeletonIssueSummary() {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm animate-pulse">
+      <div className="h-3 bg-slate-200 rounded w-28 mb-5" />
+      <div className="space-y-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="flex justify-between items-center pb-3 border-b border-slate-50">
+            <div className="h-3 bg-slate-200 rounded w-28" />
+            <div className="h-6 bg-slate-200 rounded w-10" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 function StatCard({ label, value, color, border, info }: { label: string, value: string | number, color: string, border: string, info?: string }) {
   const colors: Record<string, string> = {

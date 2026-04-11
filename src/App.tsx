@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
+
 import { MobileNav } from './components/MobileNav';
 
 import { Dashboard } from './pages/Dashboard';
@@ -69,6 +70,25 @@ import { RiskIdentifier } from './pages/RiskIdentifier';
 import { BillingPanel } from './pages/BillingPanel';
 import { MobileHeader } from './components/MobileHeader';
 import { ProfileSettingsModal } from './components/ProfileSettingsModal';
+
+function ContextSwitchingOverlay() {
+  const isContextSwitching = useStore(state => state.isContextSwitching);
+  if (!isContextSwitching) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/45 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="flex flex-col items-center gap-4 bg-white rounded-2xl border border-slate-200 shadow-2xl shadow-slate-900/10 px-10 py-8">
+        <div className="relative">
+          <div className="w-12 h-12 rounded-full border-4 border-indigo-100" />
+          <div className="absolute inset-0 w-12 h-12 rounded-full border-4 border-indigo-600 border-t-transparent animate-spin" />
+        </div>
+        <div className="text-center">
+          <p className="text-sm font-bold text-slate-900 tracking-tight">Switching context</p>
+          <p className="text-[11px] text-slate-400 font-medium mt-0.5 uppercase tracking-widest">Loading data…</p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function AppContent() {
   const user = useStore(state => state.user);
@@ -226,6 +246,8 @@ function AppContent() {
             onClose={() => setProfileSettingsOpen(false)}
           />
         )}
+        {/* Full-page context-switching overlay — sits above everything */}
+        <ContextSwitchingOverlay />
       </div>
     </div>
 

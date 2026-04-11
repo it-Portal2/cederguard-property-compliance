@@ -529,6 +529,8 @@ export interface AppState {
   strategicRiskAnalysis?: any;
   setStrategicRiskAnalysis: (analysis: any) => void;
   isMobileMenuOpen: boolean;
+  isContextSwitching: boolean;
+  setContextSwitching: (val: boolean) => void;
   clientId: string | null;
   portfolioInfo: {
     projectCount: number;
@@ -781,6 +783,8 @@ export const useStore = create<AppState>((set, get) => ({
   setActiveProgrammeId: (id) => set({ activeProgrammeId: id }),
   isMobileMenuOpen: false,
   setMobileMenuOpen: (isOpen) => set({ isMobileMenuOpen: isOpen }),
+  isContextSwitching: false,
+  setContextSwitching: (val) => set({ isContextSwitching: val }),
 
   // Compliance
   complianceItems: [],

@@ -29,14 +29,15 @@ export function Header() {
     clearNotifications,
     markNotificationAsRead,
     isMobileMenuOpen,
-    setMobileMenuOpen
+    setMobileMenuOpen,
+    isContextSwitching,
+    setContextSwitching,
   } = useStore();
 
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [showProgrammeDropdown, setShowProgrammeDropdown] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isSwitching, setIsSwitching] = useState(false);
   const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
 
 
@@ -101,7 +102,7 @@ export function Header() {
       setShowProjectDropdown(false);
       return;
     }
-    setIsSwitching(true);
+    setContextSwitching(true);
     setShowProjectDropdown(false);
     try {
       await loadProjectData(projectId);
@@ -109,7 +110,7 @@ export function Header() {
     } catch (e) {
       console.error('Failed to switch project', e);
     } finally {
-      setIsSwitching(false);
+      setContextSwitching(false);
     }
   };
 
@@ -118,7 +119,7 @@ export function Header() {
       setShowProgrammeDropdown(false);
       return;
     }
-    setIsSwitching(true);
+    setContextSwitching(true);
     setShowProgrammeDropdown(false);
     try {
       await loadProgrammeData(programmeId);
@@ -126,7 +127,7 @@ export function Header() {
     } catch (e) {
       console.error('Failed to switch programme', e);
     } finally {
-      setIsSwitching(false);
+      setContextSwitching(false);
     }
   };
 
@@ -144,7 +145,7 @@ export function Header() {
   const isDashboard = location.pathname === '/' || location.pathname === '/dashboard';
 
   const handleSelectChange = async (value: string) => {
-    setIsSwitching(true);
+    setContextSwitching(true);
     try {
       if (value === 'aggregate') {
         await loadAggregateData();
@@ -159,7 +160,7 @@ export function Header() {
         navigate(`/dashboard?programmeId=${programmeId}`);
       }
     } finally {
-      setIsSwitching(false);
+      setContextSwitching(false);
     }
   };
 
@@ -178,7 +179,7 @@ export function Header() {
           <div className="flex flex-col min-w-0 flex-1">
             <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-0.5 truncate">Active Context</span>
             <select
-              disabled={isSwitching}
+              disabled={isContextSwitching}
               value={activeProjectId ? `project:${activeProjectId}` : (activeProgrammeId ? `programme:${activeProgrammeId}` : 'aggregate')}
               onChange={(e) => handleSelectChange(e.target.value)}
               className="bg-transparent border-none p-0 text-sm font-bold text-slate-800 focus:ring-0 cursor-pointer w-full text-ellipsis overflow-hidden whitespace-nowrap"
@@ -212,7 +213,7 @@ export function Header() {
               })()}
             </select>
           </div>
-          {isSwitching && <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-500 ml-1 shrink-0" />}
+          {isContextSwitching && <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-500 ml-1 shrink-0" />}
         </div>
 
         {/* ── NEW ACTIONS (Global Entry Points) ── */}
