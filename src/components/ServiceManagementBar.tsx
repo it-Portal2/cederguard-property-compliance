@@ -14,6 +14,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { differenceInDays } from 'date-fns';
 import { useStore } from '../store/useStore';
 import { clsx } from 'clsx';
 
@@ -70,12 +71,15 @@ export const ServiceManagementBar: React.FC<{ className?: string }> = ({ classNa
 
 
   // Detect which page we're on to make export context-aware
-  const isRiskPage       = pathname.startsWith('/risk');
+  const isIssuesPage     = pathname === '/risk/issues' || pathname === '/risk/programme-issues';
+  const isRiskPage       = pathname.startsWith('/risk') && !isIssuesPage;
   const isTrackerPage    = pathname === '/compliance/tracker';
   const isCompliancePage = pathname.startsWith('/compliance') && !isTrackerPage;
 
   const exportLabel = isExporting
     ? 'Exporting...'
+    : isIssuesPage
+    ? 'Export Issues Data (Excel)'
     : isRiskPage
     ? 'Export Risk Data (Excel)'
     : isTrackerPage
@@ -84,7 +88,9 @@ export const ServiceManagementBar: React.FC<{ className?: string }> = ({ classNa
     ? 'Export Compliance Data (Excel)'
     : 'Export Data (Excel)';
 
-  const exportDescription = isRiskPage
+  const exportDescription = isIssuesPage
+    ? 'Download all issues register data as .xlsx.'
+    : isRiskPage
     ? 'Download all risk register data as .xlsx.'
     : isTrackerPage
     ? 'Download compliance tracker data as .xlsx.'
@@ -111,8 +117,64 @@ export const ServiceManagementBar: React.FC<{ className?: string }> = ({ classNa
         isProject ? i.projectId === contextId : i.programmeId === contextId
       );
 
+      const safeProjects = Array.isArray(projects) ? projects : [];
+
+      // ── Issues-only export ──────────────────────────────────────────────
+      if (isIssuesPage) {
+        const scoreLabel = (p: number | string, s: number | string) => {
+          const map: Record<string, number> = { Low: 1, Medium: 3, High: 5, Critical: 10 };
+          const pv = typeof p === 'number' ? p : (map[String(p)] || 1);
+          const sv = typeof s === 'number' ? s : (map[String(s)] || 1);
+          const v = pv * sv;
+          if (v >= 20) return 'Critical';
+          if (v >= 12) return 'High';
+          if (v >= 8) return 'Medium';
+          return 'Low';
+        };
+        const fDate = (d?: string) => {
+          if (!d) return '—';
+          try { return new Date(d).toLocaleDateString(); } catch { return d; }
+        };
+        const ageCalc = (d?: string, status?: string) => {
+          if (!d || status === '4. Resolved') return '—';
+          try { return differenceInDays(new Date(), new Date(d)) + 'd'; } catch { return '—'; }
+        };
+
+        const rows = ctxIssues.map((iss) => ({
+          'Issue Ref': iss.id,
+          'Risk Ref': iss.linkedRisk || '',
+          'Date Added': fDate(iss.dateAdded),
+          'Issue Description': iss.desc || '',
+          'Impact': iss.impact || '',
+          'Issue Owner': iss.owner || '',
+          'Priority': iss.priority ?? '',
+          'Severity': iss.severity ?? '',
+          'Score': scoreLabel(iss.priority, iss.severity),
+          'Issue Response': iss.response || '',
+          'Response Description': (iss as any).responsDesc || '',
+          'Control Owner': (iss as any).controlOwner || '',
+          'Progress Updates': (iss as any).progress || '',
+          'Date Updated': fDate((iss as any).dateUpdated),
+          'Control Deadline': fDate(iss.deadline),
+          'Status': iss.status || '',
+          'Age': ageCalc(iss.dateAdded, iss.status),
+          'Lessons Learnt': (iss as any).lessonsLearnt || '',
+          'Source Project':
+            safeProjects.find((p) => p.id === iss.projectId)?.name ||
+            ((iss as any).isProgrammeLevel ? 'Programme Level' : ''),
+        }));
+        if (rows.length > 0) {
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Issues Register');
+        } else {
+          XLSX.utils.book_append_sheet(
+            wb,
+            XLSX.utils.json_to_sheet([{ Note: 'No issues data for this context.' }]),
+            'Issues Register',
+          );
+        }
+
       // ── Risk-only export ────────────────────────────────────────────────
-      if (isRiskPage) {
+      } else if (isRiskPage) {
         const rows = ctxRisks.map((r) => ({
           'Ref': r.id,
           'Workstream': r.workstream || '—',

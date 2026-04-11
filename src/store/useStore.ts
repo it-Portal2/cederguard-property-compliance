@@ -1211,12 +1211,13 @@ export const useStore = create<AppState>((set, get) => ({
       complianceItems: COMPLIANCE_ITEMS,
       tasks: SEED_TASKS_LINKED,
     });
+    const seedContextId = get().activeProjectId || get().activeProgrammeId;
     await Promise.all([
-      api.saveData("risks", SEED_RISKS),
-      api.saveData("issues", SEED_ISSUES),
-      api.saveData("kris", SEED_KRIS),
-      api.saveData("complianceItems", COMPLIANCE_ITEMS),
-      api.saveData("tasks", SEED_TASKS_LINKED),
+      api.saveData("risks", SEED_RISKS, seedContextId),
+      api.saveData("issues", SEED_ISSUES, seedContextId),
+      api.saveData("kris", SEED_KRIS, seedContextId),
+      api.saveData("complianceItems", COMPLIANCE_ITEMS, seedContextId),
+      api.saveData("tasks", SEED_TASKS_LINKED, seedContextId),
     ]);
   },
   clearData: async () => {
@@ -1306,9 +1307,27 @@ export const useStore = create<AppState>((set, get) => ({
             : [],
         }),
       ),
-      api
-        .getData("kris", projectId)
-        .then((res) => set({ kris: res.success ? res.data || [] : [] })),
+      // KRIs: load from project path → fallback to user-level legacy path
+      //       → auto-seed standard KRIs if still empty
+      (async () => {
+        const ctxRes = await api.getData("kris", projectId);
+        const ctxKRIs = ctxRes.success ? ctxRes.data || [] : [];
+        if (ctxKRIs.length > 0) {
+          set({ kris: ctxKRIs });
+          return;
+        }
+        const userRes = await api.getData("kris");
+        const userKRIs = userRes.success ? userRes.data || [] : [];
+        if (userKRIs.length > 0) {
+          set({ kris: userKRIs });
+          // Migrate to project path so future loads skip this fallback
+          api.saveData("kris", userKRIs, projectId).catch(console.error);
+          return;
+        }
+        // Nothing anywhere — seed the 7 standard KRIs for this project context
+        set({ kris: SEED_KRIS });
+        api.saveData("kris", SEED_KRIS, projectId).catch(console.error);
+      })(),
       api.getData("complianceItems", projectId).then((res) =>
         set({
           complianceItems: res.success
@@ -1797,25 +1816,129 @@ export const useStore = create<AppState>((set, get) => ({
     // Programme data is stored under projects/{programmeId}/data/... path (same as project data)
     // Stamp each item with programmeId so the Calendar filter can match them by context.
     await Promise.all([
-      api.getData("risks", programmeId).then((res) =>
-        set({
-          risks: res.success
-            ? (res.data || []).map(
-                (r: any) => normalizeRisk({ ...r, programmeId }) as RiskItem,
-              )
-            : [],
-        }),
-      ),
-      api.getData("issues", programmeId).then((res) =>
-        set({
-          issues: res.success
-            ? (res.data || []).map((i: any) => ({ ...i, programmeId }))
-            : [],
-        }),
-      ),
-      api
-        .getData("kris", programmeId)
-        .then((res) => set({ kris: res.success ? res.data || [] : [] })),
+      // Risks: merge programme-level + per-project risks for this programme
+      (async () => {
+        const res = await api.getData("risks", programmeId);
+        const progRisks = res.success
+          ? (res.data || []).map(
+              (r: any) => normalizeRisk({ ...r, programmeId }) as RiskItem,
+            )
+          : [];
+
+        const progProjects = get().projects.filter(
+          (p: any) => p.programmeId === programmeId,
+        );
+        const projRiskArrays = await Promise.all(
+          progProjects.map((proj: any) =>
+            api.getData("risks", proj.id).then((r: any) =>
+              r.success
+                ? (r.data || []).map(
+                    (risk: any) =>
+                      normalizeRisk({
+                        ...risk,
+                        projectId: proj.id,
+                        programmeId,
+                      }) as RiskItem,
+                  )
+                : [],
+            ),
+          ),
+        );
+
+        const seenRiskIds = new Set(progRisks.map((r: any) => r.id));
+        const allRisks = [...progRisks];
+        for (const projRisks of projRiskArrays) {
+          for (const risk of projRisks) {
+            if (!seenRiskIds.has(risk.id)) {
+              seenRiskIds.add(risk.id);
+              allRisks.push(risk);
+            }
+          }
+        }
+        set({ risks: allRisks });
+      })(),
+
+      // Issues: merge programme-level + per-project issues for this programme
+      (async () => {
+        const res = await api.getData("issues", programmeId);
+        const progIssues = res.success
+          ? (res.data || []).map((i: any) => ({ ...i, programmeId }))
+          : [];
+
+        const progProjects = get().projects.filter(
+          (p: any) => p.programmeId === programmeId,
+        );
+        const projIssueArrays = await Promise.all(
+          progProjects.map((proj: any) =>
+            api.getData("issues", proj.id).then((r: any) =>
+              r.success
+                ? (r.data || []).map((i: any) => ({
+                    ...i,
+                    projectId: proj.id,
+                    programmeId,
+                  }))
+                : [],
+            ),
+          ),
+        );
+
+        const seenIds = new Set(progIssues.map((i: any) => i.id));
+        const allIssues = [...progIssues];
+        for (const projIssues of projIssueArrays) {
+          for (const issue of projIssues) {
+            if (!seenIds.has(issue.id)) {
+              seenIds.add(issue.id);
+              allIssues.push(issue);
+            }
+          }
+        }
+        set({ issues: allIssues });
+      })(),
+
+      // KRIs: merge programme-level + per-project KRIs + user-level legacy fallback
+      (async () => {
+        const progRes = await api.getData("kris", programmeId);
+        const progKRIs = progRes.success ? progRes.data || [] : [];
+
+        // Fetch KRIs from each project in this programme
+        const progProjects = get().projects.filter(
+          (p: any) => p.programmeId === programmeId,
+        );
+        const projKRIArrays = await Promise.all(
+          progProjects.map((proj: any) =>
+            api
+              .getData("kris", proj.id)
+              .then((r: any) => (r.success ? r.data || [] : [])),
+          ),
+        );
+
+        const seenKRIIds = new Set(progKRIs.map((k: any) => k.id));
+        const allKRIs = [...progKRIs];
+        for (const projKRIs of projKRIArrays) {
+          for (const kri of projKRIs) {
+            if (!seenKRIIds.has(kri.id)) {
+              seenKRIIds.add(kri.id);
+              allKRIs.push(kri);
+            }
+          }
+        }
+
+        if (allKRIs.length > 0) {
+          set({ kris: allKRIs });
+          return;
+        }
+        // Fall back to user-level legacy path (seed data)
+        const userRes = await api.getData("kris");
+        const userKRIs = userRes.success ? userRes.data || [] : [];
+        if (userKRIs.length > 0) {
+          set({ kris: userKRIs });
+          api.saveData("kris", userKRIs, programmeId).catch(console.error);
+          return;
+        }
+        // Nothing anywhere — seed the 7 standard KRIs for this programme context
+        set({ kris: SEED_KRIS });
+        api.saveData("kris", SEED_KRIS, programmeId).catch(console.error);
+      })(),
       api.getData("complianceItems", programmeId).then((res) =>
         set({
           complianceItems: res.success
@@ -1957,10 +2080,17 @@ export const useStore = create<AppState>((set, get) => ({
     const risk = get().risks.find((r) => r.id === riskId);
     if (!risk) return;
 
+    // Resolve context IDs — risks loaded via loadProjectData are only stamped
+    // with projectId, not programmeId. Fall back to the active context so the
+    // new issue is discoverable under both project and programme views.
+    const resolvedProjectId = risk.projectId || get().activeProjectId || "";
+    const resolvedProgrammeId =
+      risk.programmeId || get().activeProgrammeId || "";
+
     const newIssue: IssueItem = {
       id: generateId("ISS"),
-      projectId: risk.projectId,
-      programmeId: risk.programmeId,
+      projectId: resolvedProjectId,
+      programmeId: resolvedProgrammeId,
       project: risk.project,
       linkedRisk: risk.id,
       dateAdded: new Date().toISOString().split("T")[0],
@@ -1982,9 +2112,12 @@ export const useStore = create<AppState>((set, get) => ({
       risks: updatedRisks,
     }));
 
+    // Use get().issues AFTER set() — it already contains newIssue. Do NOT
+    // prepend again or the DB ends up with a duplicate entry.
     const contextId = get().activeProjectId || get().activeProgrammeId;
+    const updatedIssues = get().issues;
     await api.saveData("risks", updatedRisks, contextId);
-    await api.saveData("issues", [newIssue, ...get().issues], contextId);
+    await api.saveData("issues", updatedIssues, contextId);
   },
   escalateRisk: async (riskId: string, _projectId: string) => {
     const { risks } = get();
