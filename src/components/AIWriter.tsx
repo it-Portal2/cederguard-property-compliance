@@ -1,16 +1,43 @@
-import React, { useState } from 'react';
-import { ScanSearch, Loader2, Check, X, ShieldCheck } from 'lucide-react';
-import { api } from '../lib/api';
-import { handleAIError } from '../services/aiService';
-import { stripMarkdown } from '../lib/utils';
+import React, { useState } from "react";
+import { ScanSearch, Loader2, Check, X, ShieldCheck } from "lucide-react";
+import { api } from "../lib/api";
+import { handleAIError } from "../services/aiService";
+import { stripMarkdown } from "../lib/utils";
+
+/** Strip common AI meta-commentary prefixes from responses */
+function stripAIPrefixes(text: string): string {
+  const prefixes = [
+    /^here[\'"']?s an?\s+(improved|enhanced|better|rewritten|updated)\s+(version|text|description|control|action)\s*:?\s*/i,
+    /^here[\'"']?s the\s+(improved|enhanced|better|rewritten|updated)\s+(version|text|description|control|action)\s*:?\s*/i,
+    /^(rewritten|improved|updated|enhanced)\s+(version|text)\s*:?\s*/i,
+    /^(here[\'"']?s|this is)\s+(what\s+i\s+have|my\s+(suggestion|improvement))\s*:?\s*/i,
+    /^["']+\s*(here[\'"']?s|this\s+is)\s*/i,
+    /\s*["']+\s*$/,
+  ];
+
+  let cleaned = text.trim();
+  prefixes.forEach((prefix) => {
+    cleaned = cleaned.replace(prefix, "");
+  });
+
+  // Remove leading/trailing quotes if they exist
+  cleaned = cleaned.replace(/^["']+|["']+$/g, "").trim();
+
+  return cleaned;
+}
 
 /** Trim AI response to the first N complete sentences, max `maxChars` chars. */
 function truncateToSentences(text: string, maxChars = 220): string {
   if (text.length <= maxChars) return text;
   // Find the last sentence boundary within maxChars
   const slice = text.slice(0, maxChars);
-  const lastPeriod = Math.max(slice.lastIndexOf('. '), slice.lastIndexOf('.\n'));
-  return lastPeriod > 40 ? slice.slice(0, lastPeriod + 1).trim() : slice.trim() + '…';
+  const lastPeriod = Math.max(
+    slice.lastIndexOf(". "),
+    slice.lastIndexOf(".\n"),
+  );
+  return lastPeriod > 40
+    ? slice.slice(0, lastPeriod + 1).trim()
+    : slice.trim() + "…";
 }
 
 interface AIWriterProps {
@@ -25,7 +52,7 @@ export const AIWriter: React.FC<AIWriterProps> = ({
   onSuggest,
   context,
   label = "AI Assist",
-  className = ""
+  className = "",
 }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [suggestion, setSuggestion] = useState<string | null>(null);
@@ -34,11 +61,13 @@ export const AIWriter: React.FC<AIWriterProps> = ({
     setIsGenerating(true);
     try {
       const res = await api.testGemini(context);
-      if (!res?.success || !res?.result) throw new Error('Empty AI response');
-      const clean = truncateToSentences(stripMarkdown(res.result));
+      if (!res?.success || !res?.result) throw new Error("Empty AI response");
+      const clean = truncateToSentences(
+        stripAIPrefixes(stripMarkdown(res.result)),
+      );
       setSuggestion(clean);
     } catch (err: any) {
-      handleAIError(err, 'AI draft');
+      handleAIError(err, "AI draft");
     } finally {
       setIsGenerating(false);
     }

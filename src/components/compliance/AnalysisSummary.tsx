@@ -340,24 +340,70 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
             
             <div className="space-y-6">
               <div className="space-y-4">
-                {['Building Safety', 'Health & Safety', 'Sustainability', 'Governance'].map((domain) => {
-                  const count = complianceItems.filter((i: any) => i.domain.toLowerCase().includes(domain.toLowerCase())).length;
-                  const percent = Math.min(100, Math.max(10, count * 20));
-                  return (
-                    <div key={domain} className="space-y-2">
-                      <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-500">
-                        <span>{domain}</span>
-                        <span>{count} Items</span>
+                {(() => {
+                  const DOMAIN_LABELS: Record<string, string> = {
+                    bs: 'Building Safety',
+                    hs: 'Health & Safety',
+                    fs: 'Fire Safety',
+                    bc: 'Building Control',
+                    pl: 'Planning',
+                    en: 'Environmental',
+                    pr: 'Procurement',
+                    sh: 'Social Housing',
+                    ee: 'Energy Efficiency',
+                    ah: 'Affordable Housing',
+                    sv: 'Social Value',
+                    ac: 'Accessibility',
+                    dr: 'Digital Records',
+                    lc: 'Leasehold',
+                    lr: 'Leasehold Reform',
+                    ha: 'Housing Standards',
+                    fc: 'Funding Conditions',
+                    qu: 'Quality Assurance',
+                    hq: 'Housing Quality',
+                    dm: 'Damp & Mould',
+                    ut: 'Utilities',
+                    pw: 'Party Wall',
+                  };
+
+                  // Count items per domain, then take the top 4 by count
+                  const counts: Record<string, number> = {};
+                  complianceItems.forEach((i: any) => {
+                    if (i.domain) counts[i.domain] = (counts[i.domain] || 0) + 1;
+                  });
+
+                  const top4 = Object.entries(counts)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 4);
+
+                  if (top4.length === 0) {
+                    return (
+                      <p className="text-[11px] text-slate-400 italic text-center py-4">
+                        No compliance items added yet.
+                      </p>
+                    );
+                  }
+
+                  const maxCount = top4[0][1];
+
+                  return top4.map(([code, count]) => {
+                    const percent = count === 0 ? 0 : Math.min(100, Math.round((count / maxCount) * 100));
+                    return (
+                      <div key={code} className="space-y-2">
+                        <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-500">
+                          <span>{DOMAIN_LABELS[code] ?? code.toUpperCase()}</span>
+                          <span>{count} Items</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-slate-900 rounded-full transition-all duration-1000"
+                            style={{ width: `${percent}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-slate-900 rounded-full transition-all duration-1000" 
-                          style={{ width: `${percent}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  });
+                })()}
               </div>
 
               <div className="pt-6 border-t border-slate-100">

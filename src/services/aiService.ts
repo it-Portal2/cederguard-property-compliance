@@ -1,5 +1,13 @@
 import { api } from "../lib/api";
 import { KRI_LIST } from "../data/riskData";
+import {
+  STRATEGIC_CATEGORIES,
+  OPERATIONAL_CATEGORY_NAMES,
+  OPERATIONAL_WORKSTREAMS,
+  getCategoryId,
+  CategoryId,
+  WorkstreamId,
+} from "../data/riskTaxonomy";
 import toast from "react-hot-toast";
 
 export function handleAIError(err: any, context = "AI operation") {
@@ -37,10 +45,9 @@ export function handleAIError(err: any, context = "AI operation") {
     msg.includes("NetworkError") ||
     msg.includes("Failed to fetch")
   ) {
-    toast.error(
-      "Network error. Please check your connection and try again.",
-      { duration: 5000 },
-    );
+    toast.error("Network error. Please check your connection and try again.", {
+      duration: 5000,
+    });
   } else if (msg.includes("AI_PARSE_CRITICAL_FAILURE")) {
     toast.error(
       `${context} returned an unreadable response. Please try again.`,
@@ -53,13 +60,23 @@ export function handleAIError(err: any, context = "AI operation") {
 
 export async function analyzeCompliance(projectInfo: any, allItems: any[]) {
   const safeItems = Array.isArray(allItems) ? allItems : [];
-  const itemSummary = safeItems.map(i => `${i.id}|${i.domain || 'N/A'}|${i.reg || 'N/A'}|${(i.req || '').slice(0, 60)}`).join("\n");
+  const itemSummary = safeItems
+    .map(
+      (i) =>
+        `${i.id}|${i.domain || "N/A"}|${i.reg || "N/A"}|${(i.req || "").slice(0, 60)}`,
+    )
+    .join("\n");
 
   let mappingDirectives = "";
   try {
     const res = await api.getSystemMappings();
     if (res.success && res.mappings) {
-      mappingDirectives = res.mappings.map((m: any) => `DIRECTIVE: ${m.description}\nINSTRUCTION: ${m.directive}`).join("\n\n");
+      mappingDirectives = res.mappings
+        .map(
+          (m: any) =>
+            `DIRECTIVE: ${m.description}\nINSTRUCTION: ${m.directive}`,
+        )
+        .join("\n\n");
     }
   } catch (e) {
     console.warn("Failed to fetch system mappings for AI", e);
@@ -123,42 +140,100 @@ FORMATTING (STRICT): ABSOLUTELY NO MARKDOWN. ANY IDENTIFIER OR ID MUST BE ON THE
     responseSchema: {
       type: "object",
       properties: {
-        summary: { type: "string", description: "Executive summary of the regulatory landscape and primary obligations." },
-        applicableIds: { type: "array", items: { type: "string" }, description: "IDs of compliance items that definitely apply." },
-        notApplicableIds: { type: "array", items: { type: "string" }, description: "IDs of compliance items that definitely do not apply." },
-        conditionalIds: { 
-          type: "array", 
-          items: { 
+        summary: {
+          type: "string",
+          description:
+            "Executive summary of the regulatory landscape and primary obligations.",
+        },
+        applicableIds: {
+          type: "array",
+          items: { type: "string" },
+          description: "IDs of compliance items that definitely apply.",
+        },
+        notApplicableIds: {
+          type: "array",
+          items: { type: "string" },
+          description: "IDs of compliance items that definitely do not apply.",
+        },
+        conditionalIds: {
+          type: "array",
+          items: {
             type: "object",
             properties: {
               id: { type: "string" },
-              condition: { type: "string", description: "Why this might apply and what information is missing." }
-            }
-          }
+              condition: {
+                type: "string",
+                description:
+                  "Why this might apply and what information is missing.",
+              },
+            },
+          },
         },
-        regulatoryAuthorities: { type: "array", items: { type: "string" }, description: "List of regulatory authorities involved (e.g., BSR, RSH, HSE, EA)." },
-        criticalActions: { type: "array", items: { type: "string" }, description: "Mandatory compliance actions that must be prioritised immediately." },
-        requiredApprovals: { type: "array", items: { type: "string" }, description: "Specific approvals or consents required (e.g., Gateway 2, S106, Planning)." },
-        keyRisks: { type: "array", items: { type: "string" }, description: "Primary regulatory and compliance risks identified based on the profile." }
+        regulatoryAuthorities: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "List of regulatory authorities involved (e.g., BSR, RSH, HSE, EA).",
+        },
+        criticalActions: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "Mandatory compliance actions that must be prioritised immediately.",
+        },
+        requiredApprovals: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "Specific approvals or consents required (e.g., Gateway 2, S106, Planning).",
+        },
+        keyRisks: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "Primary regulatory and compliance risks identified based on the profile.",
+        },
       },
-      required: ["summary", "applicableIds", "notApplicableIds", "conditionalIds", "regulatoryAuthorities", "criticalActions", "requiredApprovals", "keyRisks"]
-    }
+      required: [
+        "summary",
+        "applicableIds",
+        "notApplicableIds",
+        "conditionalIds",
+        "regulatoryAuthorities",
+        "criticalActions",
+        "requiredApprovals",
+        "keyRisks",
+      ],
+    },
   };
 
   try {
     const res = await api.analyzeCompliance(prompt, config);
     if (!res.success) throw new Error(res.error || "Analysis failed");
 
-    const result = (res.result && typeof res.result === 'object') ? res.result : {};
+    const result =
+      res.result && typeof res.result === "object" ? res.result : {};
     return {
       summary: result.summary || "No summary provided.",
-      applicableIds: Array.isArray(result.applicableIds) ? result.applicableIds : [],
-      notApplicableIds: Array.isArray(result.notApplicableIds) ? result.notApplicableIds : [],
-      conditionalIds: Array.isArray(result.conditionalIds) ? result.conditionalIds : [],
-      regulatoryAuthorities: Array.isArray(result.regulatoryAuthorities) ? result.regulatoryAuthorities : [],
-      criticalActions: Array.isArray(result.criticalActions) ? result.criticalActions : [],
-      requiredApprovals: Array.isArray(result.requiredApprovals) ? result.requiredApprovals : [],
-      keyRisks: Array.isArray(result.keyRisks) ? result.keyRisks : []
+      applicableIds: Array.isArray(result.applicableIds)
+        ? result.applicableIds
+        : [],
+      notApplicableIds: Array.isArray(result.notApplicableIds)
+        ? result.notApplicableIds
+        : [],
+      conditionalIds: Array.isArray(result.conditionalIds)
+        ? result.conditionalIds
+        : [],
+      regulatoryAuthorities: Array.isArray(result.regulatoryAuthorities)
+        ? result.regulatoryAuthorities
+        : [],
+      criticalActions: Array.isArray(result.criticalActions)
+        ? result.criticalActions
+        : [],
+      requiredApprovals: Array.isArray(result.requiredApprovals)
+        ? result.requiredApprovals
+        : [],
+      keyRisks: Array.isArray(result.keyRisks) ? result.keyRisks : [],
     };
   } catch (err: any) {
     console.error("Compliance Analysis Error:", err);
@@ -169,13 +244,20 @@ FORMATTING (STRICT): ABSOLUTELY NO MARKDOWN. ANY IDENTIFIER OR ID MUST BE ON THE
 
 export async function analyzeRisks(projectInfo: any, existingRisks: any[]) {
   const risksArray = Array.isArray(existingRisks) ? existingRisks : [];
-  const existingRiskTitles = risksArray.map(r => `${r.id}: ${r.title}`).join("\n");
+  const existingRiskTitles = risksArray
+    .map((r) => `${r.id}: ${r.title}`)
+    .join("\n");
 
   let mappingDirectives = "";
   try {
     const res = await api.getSystemMappings();
     if (res.success && res.mappings) {
-      mappingDirectives = res.mappings.map((m: any) => `DIRECTIVE: ${m.description}\nINSTRUCTION: ${m.directive}`).join("\n\n");
+      mappingDirectives = res.mappings
+        .map(
+          (m: any) =>
+            `DIRECTIVE: ${m.description}\nINSTRUCTION: ${m.directive}`,
+        )
+        .join("\n\n");
     }
   } catch (e) {
     console.warn("Failed to fetch system mappings for AI", e);
@@ -197,6 +279,12 @@ Ensure strict adherence to standard enterprise risk management terminology (e.g.
 SYSTEM MAPPING DIRECTIVES (MUST FOLLOW):
 ${mappingDirectives || "None defined."}
 
+ALLOWED CATEGORIES (MUST use exactly one of these for each risk):
+${OPERATIONAL_CATEGORY_NAMES.map((c) => `- ${c}`).join("\n")}
+
+ALLOWED WORKSTREAMS (MUST use exactly one of these for each risk):
+${OPERATIONAL_WORKSTREAMS.map((w) => `- ${w}`).join("\n")}
+
 PROFILE:
 ${JSON.stringify(projectInfo, null, 2)}
 
@@ -204,7 +292,7 @@ RISKS ALREADY IN REGISTER (do not duplicate these):
 ${existingRiskTitles || "None"}
 
 ALLOWED KEY RISK INDICATORS (KRI):
-- ${KRI_LIST.join('\n- ')}
+- ${KRI_LIST.join("\n- ")}
 
 Generate risks with precise descriptions. For each risk:
 1. Provide a clear 'cause'.
@@ -243,15 +331,37 @@ Generate risks with precise descriptions. For each risk:
           controls: { type: "string" },
           furtherAction: { type: "string" },
           appetite: { type: "string" },
-          grossImpact: { type: "number", description: "Financial value in GBP (£)" },
-          grossProb: { type: "number", description: "Probability between 0.0 and 1.0" },
-          residualImpact: { type: "number", description: "Financial value in GBP (£)" },
-          residualProb: { type: "number", description: "Probability between 0.0 and 1.0" },
-          rationale: { type: "string" }
+          grossImpact: {
+            type: "number",
+            description: "Financial value in GBP (£)",
+          },
+          grossProb: {
+            type: "number",
+            description: "Probability between 0.0 and 1.0",
+          },
+          residualImpact: {
+            type: "number",
+            description: "Financial value in GBP (£)",
+          },
+          residualProb: {
+            type: "number",
+            description: "Probability between 0.0 and 1.0",
+          },
+          rationale: { type: "string" },
         },
-        required: ["title", "desc", "cause", "grossL", "grossI", "grossImpact", "grossProb", "residualImpact", "residualProb"]
-      }
-    }
+        required: [
+          "title",
+          "desc",
+          "cause",
+          "grossL",
+          "grossI",
+          "grossImpact",
+          "grossProb",
+          "residualImpact",
+          "residualProb",
+        ],
+      },
+    },
   };
 
   try {
@@ -270,11 +380,21 @@ export async function analyzeStrategicRisks(programmeProfile: any) {
   try {
     const res = await api.getSystemMappings();
     if (res.success && res.mappings) {
-      mappingDirectives = res.mappings.map((m: any) => `DIRECTIVE: ${m.description}\nINSTRUCTION: ${m.directive}`).join("\n\n");
+      mappingDirectives = res.mappings
+        .map(
+          (m: any) =>
+            `DIRECTIVE: ${m.description}\nINSTRUCTION: ${m.directive}`,
+        )
+        .join("\n\n");
     }
   } catch (e) {
     console.warn("Failed to fetch system mappings for AI", e);
   }
+
+  // Build category ID mapping for AI
+  const categoryMapping = STRATEGIC_CATEGORIES.map(
+    (c) => `${c.id}: "${c.name}"`,
+  ).join("\n");
 
   const prompt = `SYSTEM ROLE
 You are an AI Strategic Programme Risk Advisor specialising in UK housing, regeneration, construction, and infrastructure programmes.
@@ -298,6 +418,11 @@ Your analysis must consider risks across the following 12 strategic risk domains
 11. Schedule & Delivery Pressure Risk
 12. Operational Readiness & Handover Risk
 
+CATEGORY ID MAPPING - Use these exact categoryId values in your response:
+${categoryMapping}
+
+Workstream ID: ws-prog-strat (always use this for programme strategic risks)
+
 SYSTEM MAPPING DIRECTIVES (MUST FOLLOW):
 ${mappingDirectives || "None defined."}
 
@@ -306,7 +431,7 @@ ${JSON.stringify(programmeProfile, null, 2)}
 
 TASK:
 1. Identify the top 12-15 strategic risks based on the questionnaire answers. It is CRITICAL that you provide a minimum of 12 risks.
-2. Categorise each risk under one of the 12 Strategic Risk Domains.
+2. Categorise each risk under one of the 12 Strategic Risk Domains using the exact categoryId from the mapping above.
 3. For each risk, describe with extreme detail:
    - Risk Title: Concise and professional.
    - Context/Trigger: Detailed explanation of Why this is a risk and What answer triggered it.
@@ -319,12 +444,13 @@ TASK:
 6. Identify the "Critical Success Factors" for risk management for this programme.
 
 ALLOWED KEY RISK INDICATORS (KRI):
-- ${KRI_LIST.join('\n- ')}
+- ${KRI_LIST.join("\n- ")}
   
 FORMATTING (STRICT):
 1. ABSOLUTELY NO MARKDOWN in any string field. No **bold**, no # headers, no _italics_, no \`code\`.
 2. ANY IDENTIFIER OR ID MUST BE ON THE SAME LINE AS ITS LABEL (e.g., "ID: PROG-01").
-3. Ensure every field is populated with professional, expert content.`;
+3. Use the exact categoryId values provided in the CATEGORY ID MAPPING section.
+4. Ensure every field is populated with professional, expert content.`;
 
   const config = {
     responseMimeType: "application/json",
@@ -336,25 +462,47 @@ FORMATTING (STRICT):
           items: {
             type: "object",
             properties: {
+              categoryId: {
+                type: "string",
+                enum: STRATEGIC_CATEGORIES.map((c) => c.id),
+              },
+              workstreamId: {
+                type: "string",
+                enum: ["ws-prog-strat"],
+              },
               domain: { type: "string" },
               title: { type: "string" },
               trigger: { type: "string" },
               severity: { type: "string", enum: ["High", "Medium", "Low"] },
               impact: { type: "string" },
               mitigation: { type: "string" },
-              kri: { type: "string" }
+              kri: { type: "string" },
             },
-            required: ["domain", "title", "trigger", "severity", "impact", "mitigation", "kri"]
-          }
+            required: [
+              "categoryId",
+              "workstreamId",
+              "domain",
+              "title",
+              "trigger",
+              "severity",
+              "impact",
+              "mitigation",
+              "kri",
+            ],
+          },
         },
         summary: {
           type: "object",
           properties: {
             overallRating: { type: "string" },
             executiveOverview: { type: "string" },
-            criticalSuccessFactors: { type: "string" }
+            criticalSuccessFactors: { type: "string" },
           },
-          required: ["overallRating", "executiveOverview", "criticalSuccessFactors"]
+          required: [
+            "overallRating",
+            "executiveOverview",
+            "criticalSuccessFactors",
+          ],
         },
         heatOverview: {
           type: "object",
@@ -366,16 +514,16 @@ FORMATTING (STRICT):
                 type: "object",
                 properties: {
                   domain: { type: "string" },
-                  score: { type: "number" }
-                }
-              }
-            }
+                  score: { type: "number" },
+                },
+              },
+            },
           },
-          required: ["riskConcentration", "domainHeatMap"]
-        }
+          required: ["riskConcentration", "domainHeatMap"],
+        },
       },
-      required: ["riskProfile", "summary", "heatOverview"]
-    }
+      required: ["riskProfile", "summary", "heatOverview"],
+    },
   };
 
   try {
@@ -389,7 +537,11 @@ FORMATTING (STRICT):
   }
 }
 
-export async function analyzeControls(risks: any[], projectContext?: any, projectInfo?: any) {
+export async function analyzeControls(
+  risks: any[],
+  projectContext?: any,
+  projectInfo?: any,
+) {
   if (risks.length === 0) return [];
 
   const risksArray = Array.isArray(risks) ? risks : [];
@@ -398,25 +550,32 @@ export async function analyzeControls(risks: any[], projectContext?: any, projec
   const projectLine = projectContext
     ? [
         projectContext.name && `Project: ${projectContext.name}`,
-        (projectContext.type || projectInfo?.type) && `Type: ${projectContext.type || projectInfo?.type}`,
-        (projectContext.location || projectInfo?.loc) && `Location: ${projectContext.location || projectInfo?.loc}`,
-        (projectInfo?.riba || projectContext.riba) && `RIBA Stage: ${projectInfo?.riba || projectContext.riba}`,
-      ].filter(Boolean).join(' | ')
+        (projectContext.type || projectInfo?.type) &&
+          `Type: ${projectContext.type || projectInfo?.type}`,
+        (projectContext.location || projectInfo?.loc) &&
+          `Location: ${projectContext.location || projectInfo?.loc}`,
+        (projectInfo?.riba || projectContext.riba) &&
+          `RIBA Stage: ${projectInfo?.riba || projectContext.riba}`,
+      ]
+        .filter(Boolean)
+        .join(" | ")
     : null;
 
   const prompt = `You are a senior risk management professional. For each risk below, generate 3 mitigation controls that directly address the specific risk title, description, category, and current score provided. Do not give generic advice — every control must respond to the exact details of that risk.
-${projectLine ? `\nPROJECT CONTEXT: ${projectLine}\nTailor controls to this specific project type, stage, and location.\n` : ''}
-${risksArray.map(r => {
-  const gross = r.grossRating ?? ((r.grossL || 0) * (r.grossI || 0));
-  const residual = r.residualRating ?? 'N/A';
-  return `RISK ID: ${r.id}
+${projectLine ? `\nPROJECT CONTEXT: ${projectLine}\nTailor controls to this specific project type, stage, and location.\n` : ""}
+${risksArray
+  .map((r) => {
+    const gross = r.grossRating ?? (r.grossL || 0) * (r.grossI || 0);
+    const residual = r.residualRating ?? "N/A";
+    return `RISK ID: ${r.id}
 Title: ${r.title}
-Description: ${r.desc || 'Not provided'}
-Category: ${r.category || 'N/A'} | Workstream: ${r.workstream || 'N/A'}
-Owner: ${r.owner || 'Not assigned'}
+Description: ${r.desc || "Not provided"}
+Category: ${r.category || "N/A"} | Workstream: ${r.workstream || "N/A"}
+Owner: ${r.owner || "Not assigned"}
 Gross Score: ${gross} | Residual Score: ${residual}
-Existing Controls: ${r.controls && r.controls !== 'None' ? r.controls : 'None in place'}`;
-}).join('\n\n')}
+Existing Controls: ${r.controls && r.controls !== "None" ? r.controls : "None in place"}`;
+  })
+  .join("\n\n")}
 
 Each control suggestion must follow this format:
 WHAT: [specific action for this risk] WHO: [responsible role] WHEN: [timing or trigger] HOW: [exact steps]
@@ -430,16 +589,21 @@ FORMATTING: NO MARKDOWN. No **bold**, no headers, no bullet points. Plain text o
       items: {
         type: "object",
         properties: {
-          riskId: { type: "string", description: "The exact RISK ID string from the input (copy it verbatim, e.g. 'risk-0001')" },
+          riskId: {
+            type: "string",
+            description:
+              "The exact RISK ID string from the input (copy it verbatim, e.g. 'risk-0001')",
+          },
           suggestions: {
             type: "array",
             items: { type: "string" },
-            description: "3 mitigation control suggestions, each with WHAT WHO WHEN HOW"
-          }
+            description:
+              "3 mitigation control suggestions, each with WHAT WHO WHEN HOW",
+          },
         },
-        required: ["riskId", "suggestions"]
-      }
-    }
+        required: ["riskId", "suggestions"],
+      },
+    },
   };
 
   try {
@@ -453,12 +617,15 @@ FORMATTING: NO MARKDOWN. No **bold**, no headers, no bullet points. Plain text o
   }
 }
 
-export async function analyzeStrategicInsights(context: { compliance: any, risks: any, issues: any, projects?: any[] }, user?: any) {
+export async function analyzeStrategicInsights(
+  context: { compliance: any; risks: any; issues: any; projects?: any[] },
+  user?: any,
+) {
   const prompt = `You are a Chief Technology Officer and Compliance Director for a major social housing organization. 
 Analyse the following cross-functional data (Compliance, Risks, and Issues) and provide strategic, high-level corporate insights. 
 
 USER ROLE:
-${user?.role || 'Executive'} (${user?.email || 'Anonymous'})
+${user?.role || "Executive"} (${user?.email || "Anonymous"})
 
 DATA OVERVIEW:
 - Compliance Posture: ${JSON.stringify(context.compliance)}
@@ -492,15 +659,38 @@ INSTRUCTIONS (STRICT COMPLIANCE REQUIRED):
     responseSchema: {
       type: "object",
       properties: {
-        outlook: { type: "string", description: "3-4 sentence strategic summary" },
+        outlook: {
+          type: "string",
+          description: "3-4 sentence strategic summary",
+        },
         healthScore: { type: "number", description: "Score from 0-100" },
         healthRationale: { type: "string" },
-        criticalBlindspots: { type: "array", items: { type: "string" }, description: "Provide at least 10 critical blindspots." },
-        strategicPriorities: { type: "array", items: { type: "string" }, description: "Provide at least 10 urgent strategic priorities." },
-        detailedSuggestions: { type: "array", items: { type: "string" }, description: "Provide at least 10 highly detailed suggestions covering the What, Who, When, How, Where and Why for each item." }
+        criticalBlindspots: {
+          type: "array",
+          items: { type: "string" },
+          description: "Provide at least 10 critical blindspots.",
+        },
+        strategicPriorities: {
+          type: "array",
+          items: { type: "string" },
+          description: "Provide at least 10 urgent strategic priorities.",
+        },
+        detailedSuggestions: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "Provide at least 10 highly detailed suggestions covering the What, Who, When, How, Where and Why for each item.",
+        },
       },
-      required: ["outlook", "healthScore", "healthRationale", "criticalBlindspots", "strategicPriorities", "detailedSuggestions"]
-    }
+      required: [
+        "outlook",
+        "healthScore",
+        "healthRationale",
+        "criticalBlindspots",
+        "strategicPriorities",
+        "detailedSuggestions",
+      ],
+    },
   };
 
   try {
@@ -537,10 +727,14 @@ export async function analyzeComplianceProgress(domainStats: any[]) {
         type: "object",
         properties: {
           domain: { type: "string" },
-          summary: { type: "string", description: "A single, actionable sentence summarizing the compliance posture." }
-        }
-      }
-    }
+          summary: {
+            type: "string",
+            description:
+              "A single, actionable sentence summarizing the compliance posture.",
+          },
+        },
+      },
+    },
   };
 
   try {
@@ -554,10 +748,14 @@ export async function analyzeComplianceProgress(domainStats: any[]) {
   }
 }
 
-export async function analyzeContextSentence(sentence: string, type: 'risk' | 'compliance' = 'risk') {
+export async function analyzeContextSentence(
+  sentence: string,
+  type: "risk" | "compliance" = "risk",
+) {
   // ── Compliance path — returns structured objects ──────────────────
-  if (type === 'compliance') {
-    const DOMAIN_IDS = 'hs,bs,fs,bc,pl,pr,en,qu,ut,dr,sh,hq,ha,ac,ee,ah,sv,pw,fc,lc,dm,lr';
+  if (type === "compliance") {
+    const DOMAIN_IDS =
+      "hs,bs,fs,bc,pl,pr,en,qu,ut,dr,sh,hq,ha,ac,ee,ah,sv,pw,fc,lc,dm,lr";
     const prompt = `You are a UK statutory compliance specialist in construction and property management.
 
 The user has described the following specific project or situation:
@@ -585,19 +783,63 @@ FORMATTING: NO MARKDOWN. No **bold**, no headers, no bullet points. All string f
         items: {
           type: "object",
           properties: {
-            req:    { type: "string", description: "The specific compliance requirement — what must be done" },
-            reg:    { type: "string", description: "The exact regulation or standard reference (e.g. CDM 2015 Reg 4, BSA 2022 s.5, Building Regs Part B)" },
-            domain: { type: "string", description: `One domain id from: ${DOMAIN_IDS}` },
-            who:    { type: "string", description: "The responsible dutyholder or role" },
-            when:   { type: "string", description: "The trigger point, gateway, or deadline" },
-            how:    { type: "string", description: "The evidence, action, or process required to comply" },
-            risk:   { type: "string", enum: ["Low", "Medium", "High", "Critical"], description: "Severity of non-compliance" },
-            stage:  { type: "string", enum: ["Information Gap", "Risk Identified", "In Progress"], description: "Current posture stage" },
-            status: { type: "string", enum: ["applicable"], description: "Always applicable for newly identified requirements" },
+            req: {
+              type: "string",
+              description:
+                "The specific compliance requirement — what must be done",
+            },
+            reg: {
+              type: "string",
+              description:
+                "The exact regulation or standard reference (e.g. CDM 2015 Reg 4, BSA 2022 s.5, Building Regs Part B)",
+            },
+            domain: {
+              type: "string",
+              description: `One domain id from: ${DOMAIN_IDS}`,
+            },
+            who: {
+              type: "string",
+              description: "The responsible dutyholder or role",
+            },
+            when: {
+              type: "string",
+              description: "The trigger point, gateway, or deadline",
+            },
+            how: {
+              type: "string",
+              description:
+                "The evidence, action, or process required to comply",
+            },
+            risk: {
+              type: "string",
+              enum: ["Low", "Medium", "High", "Critical"],
+              description: "Severity of non-compliance",
+            },
+            stage: {
+              type: "string",
+              enum: ["Information Gap", "Risk Identified", "In Progress"],
+              description: "Current posture stage",
+            },
+            status: {
+              type: "string",
+              enum: ["applicable"],
+              description:
+                "Always applicable for newly identified requirements",
+            },
           },
-          required: ["req", "reg", "domain", "who", "when", "how", "risk", "stage", "status"]
-        }
-      }
+          required: [
+            "req",
+            "reg",
+            "domain",
+            "who",
+            "when",
+            "how",
+            "risk",
+            "stage",
+            "status",
+          ],
+        },
+      },
     };
 
     try {
@@ -628,8 +870,8 @@ WHAT: [specific action addressing the concern above] WHO: [named responsible rol
     responseMimeType: "application/json",
     responseSchema: {
       type: "array",
-      items: { type: "string" }
-    }
+      items: { type: "string" },
+    },
   };
 
   try {
@@ -643,9 +885,17 @@ WHAT: [specific action addressing the concern above] WHO: [named responsible rol
   }
 }
 
-export async function analyzeComplianceLifecycle(projectInfo: any, complianceItems: any[]) {
+export async function analyzeComplianceLifecycle(
+  projectInfo: any,
+  complianceItems: any[],
+) {
   const safeItems = Array.isArray(complianceItems) ? complianceItems : [];
-  const compCtx = safeItems.map(i => `${i.id}|${i.stage_link || 'N/A'}|${(i.req || '').slice(0, 50)}|${i.stage || 'N/A'}`).join("\n");
+  const compCtx = safeItems
+    .map(
+      (i) =>
+        `${i.id}|${i.stage_link || "N/A"}|${(i.req || "").slice(0, 50)}|${i.stage || "N/A"}`,
+    )
+    .join("\n");
   const prompt = `You are a Senior RIBA Architect and Compliance Lead. Analyse the following project's compliance evolution across RIBA stages 0-7.
   
   PROJECT: ${JSON.stringify(projectInfo)}
@@ -672,16 +922,21 @@ export async function analyzeComplianceLifecycle(projectInfo: any, complianceIte
               stage: { type: "string" },
               requirement: { type: "string" },
               actionableInsight: { type: "string" },
-              responsible: { type: "string" }
+              responsible: { type: "string" },
             },
-            required: ["stage", "requirement", "actionableInsight", "responsible"]
-          }
+            required: [
+              "stage",
+              "requirement",
+              "actionableInsight",
+              "responsible",
+            ],
+          },
         },
         bottlenecks: { type: "array", items: { type: "string" } },
-        strategicSummary: { type: "string" }
+        strategicSummary: { type: "string" },
       },
-      required: ["lifecycleRoadmap", "bottlenecks", "strategicSummary"]
-    }
+      required: ["lifecycleRoadmap", "bottlenecks", "strategicSummary"],
+    },
   };
 
   try {
@@ -695,9 +950,16 @@ export async function analyzeComplianceLifecycle(projectInfo: any, complianceIte
   }
 }
 
-export async function analyzeSensitivity(projectInfo: any, risks: any[], compliancePct: number, totalALE: number) {
+export async function analyzeSensitivity(
+  projectInfo: any,
+  risks: any[],
+  compliancePct: number,
+  totalALE: number,
+) {
   const safeRisks = Array.isArray(risks) ? risks : [];
-  const riskCtx = safeRisks.map(r => `${r.title} (ALE: £${(r.residualALE || 0).toLocaleString()})`).join("\n");
+  const riskCtx = safeRisks
+    .map((r) => `${r.title} (ALE: £${(r.residualALE || 0).toLocaleString()})`)
+    .join("\n");
   const prompt = `You are a Senior Risk Actuary. Perform a deep-dive strategic sensitivity analysis for "${projectInfo?.name || "this project"}".
   
   CONTEXT:
@@ -727,23 +989,29 @@ export async function analyzeSensitivity(projectInfo: any, risks: any[], complia
             properties: {
               title: { type: "string" },
               details: { type: "string" },
-              riskVector: { type: "string" }
+              riskVector: { type: "string" },
             },
-            required: ["title", "details", "riskVector"]
-          }
+            required: ["title", "details", "riskVector"],
+          },
         },
         volatilityAnalysis: { type: "string" },
         contingencyStrategies: { type: "array", items: { type: "string" } },
-        summary: { type: "string" }
+        summary: { type: "string" },
       },
-      required: ["guardrails", "volatilityAnalysis", "contingencyStrategies", "summary"]
-    }
+      required: [
+        "guardrails",
+        "volatilityAnalysis",
+        "contingencyStrategies",
+        "summary",
+      ],
+    },
   };
 
   try {
     // Using analyzeRisks as it's more appropriate for sensitivity/ALE focus
     const res = await api.analyzeRisks(prompt, config);
-    if (!res.success) throw new Error(res.error || "Sensitivity analysis failed");
+    if (!res.success)
+      throw new Error(res.error || "Sensitivity analysis failed");
     return res.result ?? null;
   } catch (err: any) {
     console.error("Sensitivity Analysis Error:", err);
@@ -752,9 +1020,14 @@ export async function analyzeSensitivity(projectInfo: any, risks: any[], complia
   }
 }
 
-export async function analyzeComplianceSentiment(projectInfo: any, complianceItems: any[]) {
+export async function analyzeComplianceSentiment(
+  projectInfo: any,
+  complianceItems: any[],
+) {
   const safeItems = Array.isArray(complianceItems) ? complianceItems : [];
-  const compCtx = safeItems.map(i => `${(i.req || '').slice(0, 50)}: ${i.stage || 'N/A'}`).join("\n");
+  const compCtx = safeItems
+    .map((i) => `${(i.req || "").slice(0, 50)}: ${i.stage || "N/A"}`)
+    .join("\n");
   const prompt = `You are a Regulatory Sentiment Auditor. Assess the qualitative 'Confidence' and 'Sentiment' of the compliance status for this project.
   
   PROJECT: ${JSON.stringify(projectInfo)}
@@ -780,10 +1053,16 @@ export async function analyzeComplianceSentiment(projectInfo: any, complianceIte
         sentimentTone: { type: "string" },
         rationale: { type: "array", items: { type: "string" } },
         culturalShifts: { type: "array", items: { type: "string" } },
-        auditorNote: { type: "string" }
+        auditorNote: { type: "string" },
       },
-      required: ["confidenceScore", "sentimentTone", "rationale", "culturalShifts", "auditorNote"]
-    }
+      required: [
+        "confidenceScore",
+        "sentimentTone",
+        "rationale",
+        "culturalShifts",
+        "auditorNote",
+      ],
+    },
   };
 
   try {
@@ -797,37 +1076,50 @@ export async function analyzeComplianceSentiment(projectInfo: any, complianceIte
   }
 }
 
-export async function chatWithAI(query: string, projectInfo: any, context?: string, lastAnalysis?: any, user?: any, contextData?: any) {
+export async function chatWithAI(
+  query: string,
+  projectInfo: any,
+  context?: string,
+  lastAnalysis?: any,
+  user?: any,
+  contextData?: any,
+) {
   // Extract real data for more specific context
-  const analysisContext = lastAnalysis ? {
-    summary: lastAnalysis.summary,
-    criticalActions: (lastAnalysis.criticalActions || []).slice(0, 5).map((a: any) => a.title || a.action || a),
-    keyRisks: (lastAnalysis.keyRisks || []).slice(0, 5).map((r: any) => r.title || r.risk || r),
-    overallRag: lastAnalysis.overallRag || 'Unknown'
-  } : null;
+  const analysisContext = lastAnalysis
+    ? {
+        summary: lastAnalysis.summary,
+        criticalActions: (lastAnalysis.criticalActions || [])
+          .slice(0, 5)
+          .map((a: any) => a.title || a.action || a),
+        keyRisks: (lastAnalysis.keyRisks || [])
+          .slice(0, 5)
+          .map((r: any) => r.title || r.risk || r),
+        overallRag: lastAnalysis.overallRag || "Unknown",
+      }
+    : null;
 
   // Build live data sections from contextData (compliance tracker, risk register, issues)
   const entitySection = contextData?.entity
-    ? `ACTIVE ${contextData.entity.isProject ? 'PROJECT' : 'PROGRAMME'}:\nName: ${contextData.entity.name || 'N/A'} | Type: ${contextData.entity.type || 'N/A'} | Location: ${contextData.entity.location || 'N/A'}\nDescription: ${contextData.entity.description || 'N/A'}\nCompliance Setup Done: ${contextData.entity.complianceSetupDone ? 'Yes' : 'No'} | Risk Setup Done: ${contextData.entity.riskSetupDone ? 'Yes' : 'No'}`
-    : '';
+    ? `ACTIVE ${contextData.entity.isProject ? "PROJECT" : "PROGRAMME"}:\nName: ${contextData.entity.name || "N/A"} | Type: ${contextData.entity.type || "N/A"} | Location: ${contextData.entity.location || "N/A"}\nDescription: ${contextData.entity.description || "N/A"}\nCompliance Setup Done: ${contextData.entity.complianceSetupDone ? "Yes" : "No"} | Risk Setup Done: ${contextData.entity.riskSetupDone ? "Yes" : "No"}`
+    : "";
 
   const complianceSection = contextData?.compliance
     ? `COMPLIANCE TRACKER (live):\nTotal: ${contextData.compliance.total} | Complete: ${contextData.compliance.complete} | In Progress: ${contextData.compliance.inProgress} | Not Started: ${contextData.compliance.notStarted} | High Risk Open: ${contextData.compliance.highRiskOpen}\nTop High-Risk Incomplete: ${JSON.stringify(contextData.compliance.topHighRisk)}`
-    : '';
+    : "";
 
   const riskSection = contextData?.risks
     ? `RISK REGISTER (live):\nTotal: ${contextData.risks.total} | Open: ${contextData.risks.open} | High Severity (rating≥16): ${contextData.risks.highSeverity}\nTop Open Risks: ${JSON.stringify(contextData.risks.topOpen)}`
-    : '';
+    : "";
 
   const issueSection = contextData?.issues
     ? `ISSUES (live):\nTotal: ${contextData.issues.total} | Open: ${contextData.issues.open} | Escalated: ${contextData.issues.escalated}\nTop Open Issues: ${JSON.stringify(contextData.issues.topOpen)}`
-    : '';
+    : "";
 
   const prompt = `
     You are CedarGuard AI, a professional compliance and risk expert for the Cedar Property Compliance & Risk Manager Suite.
 
     USER ROLE:
-    ${user?.role || 'Project Stakeholder'} (${user?.email || 'Anonymous'})
+    ${user?.role || "Project Stakeholder"} (${user?.email || "Anonymous"})
 
     ${entitySection}
 
@@ -844,7 +1136,7 @@ export async function chatWithAI(query: string, projectInfo: any, context?: stri
     ${issueSection}
 
     CURRENT PAGE/USER CONTEXT:
-    ${context || 'General Overview'}
+    ${context || "General Overview"}
     
     USER QUERY:
     "${query}"
@@ -893,10 +1185,10 @@ export async function chatWithAI(query: string, projectInfo: any, context?: stri
     responseSchema: {
       type: "object",
       properties: {
-        message: { type: "string" }
+        message: { type: "string" },
       },
-      required: ["message"]
-    }
+      required: ["message"],
+    },
   };
 
   try {

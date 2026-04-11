@@ -90,9 +90,7 @@ export function MyTasks() {
       prev.filter((id) => !tasksToDelete.find((t) => t.id === id)),
     );
     setShowBulkDeleteModal(false);
-    toast.success(`${tasksToDelete.length} tasks deleted successfully`, {
-      icon: "🗑️",
-    });
+    toast.success(`${tasksToDelete.length} tasks deleted successfully`);
   };
 
   // Merge manual tasks, actionable compliance items, risk reviews, and issue deadlines
@@ -362,10 +360,10 @@ export function MyTasks() {
         dueDate: currentTask.dueDate || new Date().toISOString().split("T")[0],
       };
       addTask(task);
-      toast.success("Task created successfully", { icon: "📝" });
+      toast.success("Task created successfully");
     } else if (modalMode === "edit" && currentTask.id) {
       updateTask(currentTask.id, currentTask);
-      toast.success("Task updated successfully", { icon: "✏️" });
+      toast.success("Task updated successfully");
     }
 
     setShowModal(false);
@@ -384,7 +382,6 @@ export function MyTasks() {
         isCompleting
           ? `"${item.title}" marked as complete`
           : `"${item.title}" re-opened for review`,
-        { icon: isCompleting ? "✅" : "🔄" },
       );
     } else {
       updateTask(item.id, {
@@ -395,7 +392,6 @@ export function MyTasks() {
         isCompleting
           ? `Task "${item.title}" completed`
           : `Task "${item.title}" marked as pending`,
-        { icon: isCompleting ? "✅" : "🔄" },
       );
     }
   };
@@ -693,9 +689,7 @@ export function MyTasks() {
                             onClick={(e) => {
                               e.stopPropagation();
                               deleteTask(item.id);
-                              toast.success(`Task "${item.title}" deleted`, {
-                                icon: "🗑️",
-                              });
+                              toast.success(`Task "${item.title}" deleted`);
                             }}
                             className="p-2 text-slate-400 bg-white border border-slate-200 rounded-xl hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all shadow-sm"
                             title="Delete task"

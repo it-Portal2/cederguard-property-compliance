@@ -1,11 +1,92 @@
-import { create } from 'zustand';
-import { COMPLIANCE_ITEMS } from '../data/complianceData';
-import { SEED_RISKS, SEED_ISSUES, SEED_KRIS, type KRI } from '../data/riskData';
+import { create } from "zustand";
+import { COMPLIANCE_ITEMS } from "../data/complianceData";
+import { SEED_RISKS, SEED_ISSUES, SEED_KRIS, type KRI } from "../data/riskData";
 export type { KRI };
-import { api } from '../lib/api';
-import { isAtLeastClientAdmin } from '../lib/roles';
-import { generateId, isValidDateString } from '../lib/utils';
-import { auth } from '../lib/firebase';
+import {
+  getCategoryName,
+  getWorkstreamName,
+  getCategoryId,
+  getWorkstreamId,
+} from "../data/riskTaxonomy";
+import { api } from "../lib/api";
+import { isAtLeastClientAdmin } from "../lib/roles";
+import { generateId, isValidDateString } from "../lib/utils";
+import { auth } from "../lib/firebase";
+
+/**
+ * Check if a value looks like a valid category ID (starts with "cat-")
+ */
+const isValidCategoryIdFormat = (id: string): boolean => {
+  return id.startsWith("cat-");
+};
+
+/**
+ * Check if a value looks like a valid workstream ID (starts with "ws-")
+ */
+const isValidWorkstreamIdFormat = (id: string): boolean => {
+  return id.startsWith("ws-");
+};
+
+/**
+ * Normalize risk data to ensure both ID and name fields are populated.
+ * Handles both ID-based (new) and name-only (legacy) risk data.
+ * Also handles cases where names were incorrectly stored in ID fields.
+ */
+export const normalizeRisk = (risk: Partial<RiskItem>): Partial<RiskItem> => {
+  const normalized = { ...risk };
+
+  // CASE 1: Check if categoryId exists but is actually a name (not a valid ID format)
+  if (
+    normalized.categoryId &&
+    !isValidCategoryIdFormat(normalized.categoryId)
+  ) {
+    // The "ID" field contains a name - use it to resolve the proper ID
+    const properId = getCategoryId(normalized.categoryId);
+    // Only update if we got a valid ID back
+    if (isValidCategoryIdFormat(properId)) {
+      normalized.categoryId = properId;
+    }
+  }
+
+  // CASE 2: Check if workstreamId exists but is actually a name
+  if (
+    normalized.workstreamId &&
+    !isValidWorkstreamIdFormat(normalized.workstreamId)
+  ) {
+    const properId = getWorkstreamId(normalized.workstreamId);
+    if (isValidWorkstreamIdFormat(properId)) {
+      normalized.workstreamId = properId;
+    }
+  }
+
+  // CASE 3: Has valid IDs, resolve names
+  if (normalized.categoryId && isValidCategoryIdFormat(normalized.categoryId)) {
+    normalized.category = getCategoryName(normalized.categoryId);
+  }
+  if (
+    normalized.workstreamId &&
+    isValidWorkstreamIdFormat(normalized.workstreamId)
+  ) {
+    normalized.workstream = getWorkstreamName(normalized.workstreamId);
+  }
+
+  // CASE 4: Has names but no valid IDs (legacy data)
+  if (
+    normalized.category &&
+    (!normalized.categoryId || !isValidCategoryIdFormat(normalized.categoryId))
+  ) {
+    normalized.categoryId = getCategoryId(normalized.category);
+  }
+  if (
+    normalized.workstream &&
+    (!normalized.workstreamId ||
+      !isValidWorkstreamIdFormat(normalized.workstreamId))
+  ) {
+    normalized.workstreamId = getWorkstreamId(normalized.workstream);
+  }
+
+  return normalized;
+};
 
 export interface MilestoneHistory {
   id: string;
@@ -69,7 +150,7 @@ export interface ProgrammeMilestone {
   id: string;
   name: string;
   updatedBy: string;
-  status: 'In Progress' | 'Completed' | 'Delayed' | 'Pending';
+  status: "In Progress" | "Completed" | "Delayed" | "Pending";
   category: string;
   owner?: string;
   evidence?: string;
@@ -217,7 +298,7 @@ export interface Programme {
   // Strategic Risk Context
   knownStrategicRisks: string;
   notes: string;
-  status?: 'Draft' | 'Active' | 'Completed';
+  status?: "Draft" | "Active" | "Completed";
   createdAt?: string;
   updatedAt?: string;
 
@@ -250,12 +331,14 @@ export interface RiskItem {
   project: string;
   projectName?: string;
   workstream: string;
+  workstreamId?: string; // NEW: ID-based reference
   kri: string;
   dateAdded: string;
   title: string;
   desc: string;
   cause?: string;
   category: string;
+  categoryId?: string; // NEW: ID-based reference
   grossL: number;
   grossI: number;
   grossRating?: number;
@@ -286,8 +369,8 @@ export interface RiskItem {
   nextReview?: string;
   priority?: string;
   programme?: string;
-  impact?: 'Low' | 'Medium' | 'High' | 'Critical';
-  likelihood?: 'Low' | 'Medium' | 'High' | 'Critical';
+  impact?: "Low" | "Medium" | "High" | "Critical";
+  likelihood?: "Low" | "Medium" | "High" | "Critical";
   mitigation?: string;
 }
 
@@ -306,7 +389,7 @@ export interface IssueItem {
   impact: string;
   owner: string;
   priority: number;
-  severity: number | 'Low' | 'Medium' | 'High' | 'Critical';
+  severity: number | "Low" | "Medium" | "High" | "Critical";
   response: string;
   responsDesc?: string;
   controlOwner?: string;
@@ -322,13 +405,13 @@ export interface IssueItem {
 
 export interface AppNotification {
   id: string;
-  type: 'compliance' | 'risk' | 'issue' | 'system';
+  type: "compliance" | "risk" | "issue" | "system";
   title: string;
   message: string;
   body?: string;
-  status: 'Read' | 'Unread';
+  status: "Read" | "Unread";
   time: string;
-  severity: 'Low' | 'Medium' | 'High' | 'Critical';
+  severity: "Low" | "Medium" | "High" | "Critical";
   projectId?: string;
   programmeId?: string;
   read?: boolean;
@@ -344,7 +427,7 @@ export interface Project {
   client: string;
   clientId?: string;
   programmeId?: string;
-  status?: 'Draft' | 'Active' | 'Completed';
+  status?: "Draft" | "Active" | "Completed";
   createdAt?: string;
   createdBy?: string;
 
@@ -361,7 +444,7 @@ export interface Project {
   reference?: string;
   schemeType?: string;
   pmName?: string;
-  rag?: 'Green' | 'Amber' | 'Red';
+  rag?: "Green" | "Amber" | "Red";
   riba?: string;
   isHRB?: boolean;
   overdueCount?: number;
@@ -404,8 +487,8 @@ export interface TaskItem {
   id: string;
   title: string;
   description?: string;
-  status: 'Pending' | 'In Progress' | 'Completed';
-  priority: 'Low' | 'Medium' | 'High' | 'Critical';
+  status: "Pending" | "In Progress" | "Completed";
+  priority: "Low" | "Medium" | "High" | "Critical";
   dueDate: string;
   projectName?: string;
   projectId?: string;
@@ -454,22 +537,25 @@ export interface AppState {
   } | null;
   setPortfolioInfo: (info: any) => void;
   wipeAllCurrentData: () => Promise<void>;
-  
+
   // Compliance
   complianceItems: ComplianceItem[];
   setComplianceItems: (items: ComplianceItem[]) => void;
-  updateComplianceItem: (id: string, updates: Partial<ComplianceItem>) => Promise<void>;
+  updateComplianceItem: (
+    id: string,
+    updates: Partial<ComplianceItem>,
+  ) => Promise<void>;
   addComplianceItem: (item: Partial<ComplianceItem>) => Promise<void>;
   deleteComplianceItem: (id: string) => Promise<void>;
   bulkDeleteComplianceItems: (ids: string[]) => Promise<void>;
-  
+
   // Risk Management
   risks: RiskItem[];
   setRisks: (risks: RiskItem[]) => void;
   addRisk: (risk: RiskItem) => Promise<void>;
   updateRisk: (id: string, updates: Partial<RiskItem>) => Promise<void>;
   deleteRisk: (id: string) => Promise<void>;
-  
+
   // Issues
   issues: IssueItem[];
   setIssues: (issues: IssueItem[]) => void;
@@ -492,7 +578,12 @@ export interface AppState {
 
   // Notifications
   notifications: AppNotification[];
-  addNotification: (notification: Partial<AppNotification> & { title: string; type: AppNotification['type'] }) => void;
+  addNotification: (
+    notification: Partial<AppNotification> & {
+      title: string;
+      type: AppNotification["type"];
+    },
+  ) => void;
   clearNotifications: () => void;
   markNotificationAsRead: (id: string) => void;
 
@@ -531,19 +622,19 @@ export interface AppState {
   loadAllData: () => Promise<void>;
   updateProject: (id: string, updates: any) => Promise<void>;
   updateProgramme: (id: string, updates: any) => Promise<void>;
-  
+
   // Missing properties used in components
   lessonsLearned: any[];
   addLessonLearned: (lesson: any) => Promise<void>;
   addRisks: (risks: RiskItem[]) => Promise<void>;
   convertToIssue: (riskId: string) => Promise<void>;
   escalateRisk: (riskId: string, projectId: string) => Promise<void>;
-  
+
   // Compliance Helpers
   getActiveItems: () => any[];
   getPendingItems: () => any[];
   addComplianceUpdate: (itemId: string, update: any) => Promise<void>;
-  
+
   // Risk & Issue Helpers
   getPendingRisks: () => RiskItem[];
   getPendingIssues: () => IssueItem[];
@@ -607,62 +698,63 @@ export const useStore = create<AppState>((set, get) => ({
   toggleDarkMode: () => {
     const next = !get().isDarkMode;
     set({ isDarkMode: next });
-    api.savePreference('darkMode', next);
+    api.savePreference("darkMode", next);
   },
   isMarketingDarkMode: false,
-  toggleMarketingDarkMode: () => set({ isMarketingDarkMode: !get().isMarketingDarkMode }),
+  toggleMarketingDarkMode: () =>
+    set({ isMarketingDarkMode: !get().isMarketingDarkMode }),
   lastAnalysisResults: null,
   activeProject: null,
   setActiveProject: (proj) => {
-    if (typeof proj === 'string') {
-      const found = get().projects.find(p => p.id === proj);
-      set({ 
-        activeProject: found || null, 
+    if (typeof proj === "string") {
+      const found = get().projects.find((p) => p.id === proj);
+      set({
+        activeProject: found || null,
         activeProjectId: proj,
         activeProgramme: null,
-        activeProgrammeId: null
+        activeProgrammeId: null,
       });
-      api.savePreference('activeProjectId', proj);
-      api.savePreference('activeProgrammeId', null);
+      api.savePreference("activeProjectId", proj);
+      api.savePreference("activeProgrammeId", null);
     } else {
-      set({ 
-        activeProject: proj, 
+      set({
+        activeProject: proj,
         activeProjectId: proj?.id || null,
         activeProgramme: null,
-        activeProgrammeId: null
+        activeProgrammeId: null,
       });
       if (proj?.id) {
-        api.savePreference('activeProjectId', proj.id);
-        api.savePreference('activeProgrammeId', null);
+        api.savePreference("activeProjectId", proj.id);
+        api.savePreference("activeProgrammeId", null);
       } else {
-        api.savePreference('activeProjectId', null);
+        api.savePreference("activeProjectId", null);
       }
     }
   },
   activeProgramme: null,
   setActiveProgramme: (prog) => {
-    if (typeof prog === 'string') {
-      const found = get().programmes.find(p => p.id === prog);
-      set({ 
-        activeProgramme: found || null, 
+    if (typeof prog === "string") {
+      const found = get().programmes.find((p) => p.id === prog);
+      set({
+        activeProgramme: found || null,
         activeProgrammeId: prog,
         activeProject: null,
-        activeProjectId: null
+        activeProjectId: null,
       });
-      api.savePreference('activeProgrammeId', prog);
-      api.savePreference('activeProjectId', null);
+      api.savePreference("activeProgrammeId", prog);
+      api.savePreference("activeProjectId", null);
     } else {
-      set({ 
-        activeProgramme: prog, 
+      set({
+        activeProgramme: prog,
         activeProgrammeId: prog?.id || null,
         activeProject: null,
-        activeProjectId: null
+        activeProjectId: null,
       });
       if (prog?.id) {
-        api.savePreference('activeProgrammeId', prog.id);
-        api.savePreference('activeProjectId', null);
+        api.savePreference("activeProgrammeId", prog.id);
+        api.savePreference("activeProjectId", null);
       } else {
-        api.savePreference('activeProgrammeId', null);
+        api.savePreference("activeProgrammeId", null);
       }
     }
   },
@@ -676,12 +768,13 @@ export const useStore = create<AppState>((set, get) => ({
   setProjectInfo: (info: any) => {
     set({ projectInfo: info });
     const contextId = get().activeProjectId || get().activeProgrammeId;
-    api.saveData('projectInfo', info, contextId).catch(console.error);
+    api.saveData("projectInfo", info, contextId).catch(console.error);
   },
   suggestedRisks: [],
   setSuggestedRisks: (risks: any) => set({ suggestedRisks: risks }),
   strategicRiskAnalysis: null,
-  setStrategicRiskAnalysis: (analysis: any) => set({ strategicRiskAnalysis: analysis }),
+  setStrategicRiskAnalysis: (analysis: any) =>
+    set({ strategicRiskAnalysis: analysis }),
   activeProjectId: null,
   activeProgrammeId: null,
   setActiveProjectId: (id) => set({ activeProjectId: id }),
@@ -695,19 +788,28 @@ export const useStore = create<AppState>((set, get) => ({
     set({ complianceItems });
     const contextId = get().activeProjectId || get().activeProgrammeId;
     if (contextId) {
-      api.saveData('complianceItems', complianceItems, contextId).catch(console.error);
+      api
+        .saveData("complianceItems", complianceItems, contextId)
+        .catch(console.error);
     }
   },
   updateComplianceItem: async (id, updates) => {
     const { complianceItems } = get();
     const prev = complianceItems;
-    const next = complianceItems.map(item => {
+    const next = complianceItems.map((item) => {
       if (item.id === id) {
-        const isNowClosed = (updates.stage === 'Live' || updates.status === 'Closed') && (item.stage !== 'Live' && item.status !== 'Closed');
+        const isNowClosed =
+          (updates.stage === "Live" || updates.status === "Closed") &&
+          item.stage !== "Live" &&
+          item.status !== "Closed";
         return {
           ...item,
           ...updates,
-          completedAt: isNowClosed ? new Date().toISOString() : (updates.stage === 'In Progress' ? undefined : item.completedAt)
+          completedAt: isNowClosed
+            ? new Date().toISOString()
+            : updates.stage === "In Progress"
+              ? undefined
+              : item.completedAt,
         };
       }
       return item;
@@ -715,7 +817,7 @@ export const useStore = create<AppState>((set, get) => ({
     set({ complianceItems: next });
     const contextId = get().activeProjectId || get().activeProgrammeId;
     try {
-      await api.saveData('complianceItems', next, contextId);
+      await api.saveData("complianceItems", next, contextId);
     } catch (err) {
       set({ complianceItems: prev });
       throw err;
@@ -725,28 +827,28 @@ export const useStore = create<AppState>((set, get) => ({
     const { complianceItems } = get();
     const prev = complianceItems;
     const newItem: ComplianceItem = {
-      id: item.id || generateId('REQ'),
-      cat: 'General',
-      name: '',
-      reg: '',
-      risk: 'Medium',
-      req: '',
-      penalty: '',
-      when: '',
-      alerts: '',
-      owners: '',
-      process: '',
-      evidence: '',
-      status: 'applicable',
-      tag: 'manual',
-      category: 'General',
-      ...item
+      id: item.id || generateId("REQ"),
+      cat: "General",
+      name: "",
+      reg: "",
+      risk: "Medium",
+      req: "",
+      penalty: "",
+      when: "",
+      alerts: "",
+      owners: "",
+      process: "",
+      evidence: "",
+      status: "applicable",
+      tag: "manual",
+      category: "General",
+      ...item,
     } as ComplianceItem;
     const updated = [...complianceItems, newItem];
     set({ complianceItems: updated });
     const contextId = get().activeProjectId || get().activeProgrammeId;
     try {
-      await api.saveData('complianceItems', updated, contextId);
+      await api.saveData("complianceItems", updated, contextId);
     } catch (err) {
       set({ complianceItems: prev });
       throw err;
@@ -755,11 +857,11 @@ export const useStore = create<AppState>((set, get) => ({
   deleteComplianceItem: async (id) => {
     const { complianceItems } = get();
     const prev = complianceItems;
-    const updated = complianceItems.filter(i => i.id !== id);
+    const updated = complianceItems.filter((i) => i.id !== id);
     set({ complianceItems: updated });
     const contextId = get().activeProjectId || get().activeProgrammeId;
     try {
-      await api.saveData('complianceItems', updated, contextId);
+      await api.saveData("complianceItems", updated, contextId);
     } catch (err) {
       set({ complianceItems: prev });
       throw err;
@@ -768,11 +870,11 @@ export const useStore = create<AppState>((set, get) => ({
   bulkDeleteComplianceItems: async (ids) => {
     const { complianceItems } = get();
     const prev = complianceItems;
-    const next = complianceItems.filter(i => !ids.includes(i.id));
+    const next = complianceItems.filter((i) => !ids.includes(i.id));
     set({ complianceItems: next });
     const contextId = get().activeProjectId || get().activeProgrammeId;
     try {
-      await api.saveData('complianceItems', next, contextId);
+      await api.saveData("complianceItems", next, contextId);
     } catch (err) {
       set({ complianceItems: prev });
       throw err;
@@ -780,79 +882,91 @@ export const useStore = create<AppState>((set, get) => ({
   },
   getActiveItems: () => {
     const { complianceItems, activeProjectId, activeProgrammeId } = get();
-    return complianceItems.filter(i => {
-      if (activeProjectId) return i.projectId === activeProjectId && i.status === 'applicable';
-      if (activeProgrammeId) return i.programmeId === activeProgrammeId && i.status === 'applicable';
-      return i.status === 'applicable';
+    return complianceItems.filter((i) => {
+      if (activeProjectId)
+        return i.projectId === activeProjectId && i.status === "applicable";
+      if (activeProgrammeId)
+        return i.programmeId === activeProgrammeId && i.status === "applicable";
+      return i.status === "applicable";
     });
   },
   getPendingItems: () => {
     const { complianceItems, activeProjectId, activeProgrammeId } = get();
-    return complianceItems.filter(i => {
-      if (activeProjectId) return i.projectId === activeProjectId && i.status === 'pending';
-      if (activeProgrammeId) return i.programmeId === activeProgrammeId && i.status === 'pending';
-      return i.status === 'pending';
+    return complianceItems.filter((i) => {
+      if (activeProjectId)
+        return i.projectId === activeProjectId && i.status === "pending";
+      if (activeProgrammeId)
+        return i.programmeId === activeProgrammeId && i.status === "pending";
+      return i.status === "pending";
     });
   },
   getPendingRisks: () => {
     const { risks, activeProjectId, activeProgrammeId } = get();
-    return risks.filter(r => {
-      if (activeProjectId) return r.projectId === activeProjectId && r.status === 'pending';
-      if (activeProgrammeId) return r.programmeId === activeProgrammeId && r.status === 'pending';
-      return r.status === 'pending';
+    return risks.filter((r) => {
+      if (activeProjectId)
+        return r.projectId === activeProjectId && r.status === "pending";
+      if (activeProgrammeId)
+        return r.programmeId === activeProgrammeId && r.status === "pending";
+      return r.status === "pending";
     });
   },
   getPendingIssues: () => {
     const { issues, activeProjectId, activeProgrammeId } = get();
-    return issues.filter(i => {
-      if (activeProjectId) return i.projectId === activeProjectId && i.status === 'pending';
-      if (activeProgrammeId) return i.programmeId === activeProgrammeId && i.status === 'pending';
-      return i.status === 'pending';
+    return issues.filter((i) => {
+      if (activeProjectId)
+        return i.projectId === activeProjectId && i.status === "pending";
+      if (activeProgrammeId)
+        return i.programmeId === activeProgrammeId && i.status === "pending";
+      return i.status === "pending";
     });
   },
   approveRisk: async (id) => {
     const { risks } = get();
-    const updated = risks.map(r => r.id === id ? { ...r, status: 'Open', isProgrammeLevel: true } : r);
+    const updated = risks.map((r) =>
+      r.id === id ? { ...r, status: "Open", isProgrammeLevel: true } : r,
+    );
     set({ risks: updated });
     const contextId = get().activeProjectId || get().activeProgrammeId;
-    await api.saveData('risks', updated, contextId);
+    await api.saveData("risks", updated, contextId);
   },
   dismissRisk: async (id) => {
     const { risks } = get();
-    const updated = risks.filter(r => r.id !== id);
+    const updated = risks.filter((r) => r.id !== id);
     set({ risks: updated });
     const contextId = get().activeProjectId || get().activeProgrammeId;
-    await api.saveData('risks', updated, contextId);
+    await api.saveData("risks", updated, contextId);
   },
   approveIssue: async (id) => {
     const { issues } = get();
-    const updated = issues.map(i => i.id === id ? { ...i, status: '1. Investigating' } : i);
+    const updated = issues.map((i) =>
+      i.id === id ? { ...i, status: "1. Investigating" } : i,
+    );
     set({ issues: updated });
     const contextId = get().activeProjectId || get().activeProgrammeId;
-    await api.saveData('issues', updated, contextId);
+    await api.saveData("issues", updated, contextId);
   },
   dismissIssue: async (id) => {
     const { issues } = get();
-    const updated = issues.filter(i => i.id !== id);
+    const updated = issues.filter((i) => i.id !== id);
     set({ issues: updated });
     const contextId = get().activeProjectId || get().activeProgrammeId;
-    await api.saveData('issues', updated, contextId);
+    await api.saveData("issues", updated, contextId);
   },
   addComplianceUpdate: async (itemId, update) => {
     const { complianceItems } = get();
-    const updated = complianceItems.map(item => {
+    const updated = complianceItems.map((item) => {
       if (item.id === itemId) {
         return {
           ...item,
           updates: [update, ...(item.updates || [])],
-          lastUpdated: new Date().toISOString()
+          lastUpdated: new Date().toISOString(),
         };
       }
       return item;
     });
     set({ complianceItems: updated });
     const contextId = get().activeProjectId || get().activeProgrammeId;
-    await api.saveData('complianceItems', updated, contextId);
+    await api.saveData("complianceItems", updated, contextId);
   },
   isComplianceLocked: false,
   setComplianceLocked: (isComplianceLocked) => set({ isComplianceLocked }),
@@ -862,41 +976,45 @@ export const useStore = create<AppState>((set, get) => ({
   setRisks: (risks) => set({ risks }),
   addRisk: async (risk) => {
     const { risks } = get();
-    const newRisks = [risk, ...risks];
+    // Normalize to ensure both ID and name fields are populated
+    const normalizedRisk = normalizeRisk(risk) as RiskItem;
+    const newRisks = [normalizedRisk, ...risks];
     set({ risks: newRisks });
-    
+
     // If escalated, trigger notification
     if (risk.escalated) {
       get().addNotification({
-        id: generateId('NOTIF'),
-        type: 'risk',
-        title: 'Risk Escalated',
+        id: generateId("NOTIF"),
+        type: "risk",
+        title: "Risk Escalated",
         message: `Risk "${risk.title}" has been escalated to the programme level.`,
-        status: 'Unread',
+        status: "Unread",
         time: new Date().toISOString(),
-        severity: 'High'
+        severity: "High",
       });
     }
 
     const contextId = get().activeProjectId || get().activeProgrammeId;
-    await api.saveData('risks', newRisks, contextId);
+    await api.saveData("risks", newRisks, contextId);
   },
   updateRisk: async (id, updates) => {
     const { risks } = get();
-    const updated = risks.map(risk => {
+    const updated = risks.map((risk) => {
       if (risk.id === id) {
-        const next = { ...risk, ...updates };
+        const merged = { ...risk, ...updates };
+        // Normalize to ensure both ID and name fields are populated
+        const next = normalizeRisk(merged) as RiskItem;
         if (updates.escalated && !risk.escalated) {
           get().addNotification({
-            id: generateId('NOTIF'),
-            type: 'risk',
-            title: 'Risk Escalated',
+            id: generateId("NOTIF"),
+            type: "risk",
+            title: "Risk Escalated",
             message: `Risk "${next.title}" has been escalated to the programme level.`,
-            status: 'Unread',
+            status: "Unread",
             time: new Date().toISOString(),
-            severity: 'High'
+            severity: "High",
           });
-          if (next.status !== 'Escalated') next.status = 'Escalated';
+          if (next.status !== "Escalated") next.status = "Escalated";
         }
         return next;
       }
@@ -904,21 +1022,23 @@ export const useStore = create<AppState>((set, get) => ({
     });
     set({ risks: updated });
     const contextId = get().activeProjectId || get().activeProgrammeId;
-    await api.saveData('risks', updated, contextId);
+    await api.saveData("risks", updated, contextId);
   },
   deleteRisk: async (id) => {
     const { risks } = get();
-    const updated = risks.filter(risk => risk.id !== id);
+    const updated = risks.filter((risk) => risk.id !== id);
     set({ risks: updated });
     const contextId = get().activeProjectId || get().activeProgrammeId;
-    await api.saveData('risks', updated, contextId);
+    await api.saveData("risks", updated, contextId);
   },
   addRisks: async (newRisks) => {
     const { risks } = get();
-    const updated = [...newRisks, ...risks];
+    // Normalize all risks to ensure both ID and name fields are populated
+    const normalizedRisks = newRisks.map((r) => normalizeRisk(r) as RiskItem);
+    const updated = [...normalizedRisks, ...risks];
     set({ risks: updated });
     const contextId = get().activeProjectId || get().activeProgrammeId;
-    await api.saveData('risks', updated, contextId);
+    await api.saveData("risks", updated, contextId);
   },
 
   // Issues
@@ -929,14 +1049,16 @@ export const useStore = create<AppState>((set, get) => ({
     const next = [issue, ...issues];
     set({ issues: next });
     const contextId = get().activeProjectId || get().activeProgrammeId;
-    await api.saveData('issues', next, contextId);
+    await api.saveData("issues", next, contextId);
   },
   updateIssue: async (id, updates) => {
     const { issues } = get();
-    const updated = issues.map(issue => issue.id === id ? { ...issue, ...updates } : issue);
+    const updated = issues.map((issue) =>
+      issue.id === id ? { ...issue, ...updates } : issue,
+    );
     set({ issues: updated });
     const contextId = get().activeProjectId || get().activeProgrammeId;
-    await api.saveData('issues', updated, contextId);
+    await api.saveData("issues", updated, contextId);
   },
 
   // KRIs
@@ -947,21 +1069,23 @@ export const useStore = create<AppState>((set, get) => ({
     const next = [kri, ...kris];
     set({ kris: next });
     const contextId = get().activeProjectId || get().activeProgrammeId;
-    await api.saveData('kris', next, contextId);
+    await api.saveData("kris", next, contextId);
   },
   updateKRI: async (id, updates) => {
     const { kris } = get();
-    const updated = kris.map(kri => kri.id === id ? { ...kri, ...updates } : kri);
+    const updated = kris.map((kri) =>
+      kri.id === id ? { ...kri, ...updates } : kri,
+    );
     set({ kris: updated });
     const contextId = get().activeProjectId || get().activeProgrammeId;
-    await api.saveData('kris', updated, contextId);
+    await api.saveData("kris", updated, contextId);
   },
   deleteKRI: async (id) => {
     const { kris } = get();
-    const updated = kris.filter(k => k.id !== id);
+    const updated = kris.filter((k) => k.id !== id);
     set({ kris: updated });
     const contextId = get().activeProjectId || get().activeProgrammeId;
-    await api.saveData('kris', updated, contextId);
+    await api.saveData("kris", updated, contextId);
   },
 
   // Regulatory
@@ -973,58 +1097,74 @@ export const useStore = create<AppState>((set, get) => ({
     const updated = [item, ...customRegulations];
     set({ customRegulations: updated });
     const contextId = get().activeProjectId || get().activeProgrammeId;
-    await api.saveData('customRegulations', updated, contextId);
+    await api.saveData("customRegulations", updated, contextId);
   },
   updateRegulationItem: async (item) => {
     const { customRegulations } = get();
-    const updated = customRegulations.map(r => r.id === item.id ? item : r);
+    const updated = customRegulations.map((r) => (r.id === item.id ? item : r));
     set({ customRegulations: updated });
     const contextId = get().activeProjectId || get().activeProgrammeId;
-    await api.saveData('customRegulations', updated, contextId);
+    await api.saveData("customRegulations", updated, contextId);
   },
 
   // Notifications
   notifications: [],
-  addNotification: (notification) => set(state => {
-    const newNotif: AppNotification = {
-      id: generateId('NOTIF'),
-      status: 'Unread',
-      time: (notification.time && isValidDateString(notification.time)) ? notification.time : new Date().toISOString(),
-      severity: 'Medium',
-      message: notification.message || notification.body || '',
-      ...notification
-    };
-    // Ensure time was not overridden by ...notification with invalid value
-    if (!isValidDateString(newNotif.time)) {
-      newNotif.time = new Date().toISOString();
-    }
-    return { notifications: [newNotif, ...state.notifications] };
-  }),
+  addNotification: (notification) =>
+    set((state) => {
+      const newNotif: AppNotification = {
+        id: generateId("NOTIF"),
+        status: "Unread",
+        time:
+          notification.time && isValidDateString(notification.time)
+            ? notification.time
+            : new Date().toISOString(),
+        severity: "Medium",
+        message: notification.message || notification.body || "",
+        ...notification,
+      };
+      // Ensure time was not overridden by ...notification with invalid value
+      if (!isValidDateString(newNotif.time)) {
+        newNotif.time = new Date().toISOString();
+      }
+      return { notifications: [newNotif, ...state.notifications] };
+    }),
   clearNotifications: () => set({ notifications: [] }),
-  markNotificationAsRead: (id) => set(state => ({
-    notifications: state.notifications.map(n => n.id === id ? { ...n, status: 'Read' } : n)
-  })),
+  markNotificationAsRead: (id) =>
+    set((state) => ({
+      notifications: state.notifications.map((n) =>
+        n.id === id ? { ...n, status: "Read" } : n,
+      ),
+    })),
 
   // Alerts State
   acknowledgedAlerts: [],
   snoozedAlerts: {},
-  ackAlert: (id) => set((state) => ({ acknowledgedAlerts: [...state.acknowledgedAlerts, id] })),
-  snoozeAlert: (id, days) => set((state) => ({ 
-    snoozedAlerts: { ...state.snoozedAlerts, [id]: Date.now() + days * 86400000 } 
-  })),
+  ackAlert: (id) =>
+    set((state) => ({ acknowledgedAlerts: [...state.acknowledgedAlerts, id] })),
+  snoozeAlert: (id, days) =>
+    set((state) => ({
+      snoozedAlerts: {
+        ...state.snoozedAlerts,
+        [id]: Date.now() + days * 86400000,
+      },
+    })),
   resetAlerts: () => set({ acknowledgedAlerts: [], snoozedAlerts: {} }),
 
   // CPD Training State
   cpdModules: [],
-  updateCPDModule: (id, updates) => set((state) => ({
-    cpdModules: state.cpdModules.map(m => m.id === id ? { ...m, ...updates } : m)
-  })),
+  updateCPDModule: (id, updates) =>
+    set((state) => ({
+      cpdModules: state.cpdModules.map((m) =>
+        m.id === id ? { ...m, ...updates } : m,
+      ),
+    })),
 
   // General App State
   isSidebarOpen: true,
   setSidebarOpen: (isSidebarOpen) => set({ isSidebarOpen }),
   isProfileSettingsOpen: false,
-  setProfileSettingsOpen: (isProfileSettingsOpen) => set({ isProfileSettingsOpen }),
+  setProfileSettingsOpen: (isProfileSettingsOpen) =>
+    set({ isProfileSettingsOpen }),
   setDeferredPrompt: (deferredPrompt) => set({ deferredPrompt }),
 
   // New Dashboard & Data Methods
@@ -1032,17 +1172,17 @@ export const useStore = create<AppState>((set, get) => ({
   loadDemoData: async () => {
     const SEED_TASKS_LINKED: TaskItem[] = [
       {
-        id: generateId('TSK'),
+        id: generateId("TSK"),
         title: "Explore further measures to reduce overspend",
         status: "Pending",
         priority: "High",
         dueDate: "2026-04-15",
         riskId: "PR_0005",
         projectId: "P001",
-        owner: "Hemali"
+        owner: "Hemali",
       },
       {
-        id: generateId('TSK'),
+        id: generateId("TSK"),
         title: "Update and adopt revised Contract Procedure Rules",
         status: "Completed",
         priority: "Medium",
@@ -1050,18 +1190,18 @@ export const useStore = create<AppState>((set, get) => ({
         riskId: "PR_0006",
         projectId: "P001",
         owner: "Zoe",
-        completedAt: "2026-03-24T10:00:00Z"
+        completedAt: "2026-03-24T10:00:00Z",
       },
       {
-        id: generateId('TSK'),
+        id: generateId("TSK"),
         title: "Commission fire engineer peer review",
         status: "Pending",
         priority: "Critical",
         dueDate: "2026-04-01",
         issueId: "PI-0002",
         projectId: "P001",
-        owner: "Project Director"
-      }
+        owner: "Project Director",
+      },
     ];
 
     set({
@@ -1069,14 +1209,14 @@ export const useStore = create<AppState>((set, get) => ({
       issues: SEED_ISSUES,
       kris: SEED_KRIS,
       complianceItems: COMPLIANCE_ITEMS,
-      tasks: SEED_TASKS_LINKED
+      tasks: SEED_TASKS_LINKED,
     });
     await Promise.all([
-      api.saveData('risks', SEED_RISKS),
-      api.saveData('issues', SEED_ISSUES),
-      api.saveData('kris', SEED_KRIS),
-      api.saveData('complianceItems', COMPLIANCE_ITEMS),
-      api.saveData('tasks', SEED_TASKS_LINKED)
+      api.saveData("risks", SEED_RISKS),
+      api.saveData("issues", SEED_ISSUES),
+      api.saveData("kris", SEED_KRIS),
+      api.saveData("complianceItems", COMPLIANCE_ITEMS),
+      api.saveData("tasks", SEED_TASKS_LINKED),
     ]);
   },
   clearData: async () => {
@@ -1090,82 +1230,123 @@ export const useStore = create<AppState>((set, get) => ({
       activeProject: null,
       activeProgramme: null,
       activeProjectId: null,
-      activeProgrammeId: null
+      activeProgrammeId: null,
     });
     await Promise.all([
-      api.savePreference('activeProjectId', null),
-      api.savePreference('activeProgrammeId', null)
+      api.savePreference("activeProjectId", null),
+      api.savePreference("activeProgrammeId", null),
     ]);
   },
   loadProjectData: async (projectId, persist = true) => {
     const { projects } = get();
-    let project = projects.find(p => p.id === projectId);
-    
+    let project = projects.find((p) => p.id === projectId);
+
     if (!project) {
       // IF not immediately found due to Firestore index lag, explicitly fetch the document by ID
       try {
         const res = await api.getProjectById(projectId);
         if (res.success && res.data) {
           project = res.data;
-          set(state => {
-            const exists = state.projects.some(p => p.id === projectId);
+          set((state) => {
+            const exists = state.projects.some((p) => p.id === projectId);
             if (exists) {
-              return { projects: state.projects.map(p => p.id === projectId ? { ...p, ...res.data } : p) };
+              return {
+                projects: state.projects.map((p) =>
+                  p.id === projectId ? { ...p, ...res.data } : p,
+                ),
+              };
             }
             return { projects: [project as Project, ...state.projects] };
           });
         }
       } catch (err) {
-        console.error('Explicit project fetch failed:', err);
+        console.error("Explicit project fetch failed:", err);
       }
     }
 
     if (project) {
-      set({ 
+      set({
         activeProject: project,
         activeProjectId: projectId,
         activeProgramme: null,
-        activeProgrammeId: null
+        activeProgrammeId: null,
       });
     } else {
-      set({ 
+      set({
         activeProjectId: projectId,
         activeProject: null,
         activeProgramme: null,
-        activeProgrammeId: null 
+        activeProgrammeId: null,
       });
     }
 
     if (persist) {
       await Promise.all([
-        api.savePreference('activeProjectId', projectId),
-        api.savePreference('activeProgrammeId', null)
+        api.savePreference("activeProjectId", projectId),
+        api.savePreference("activeProgrammeId", null),
       ]);
     }
-    
+
     // FETCH LATEST data for this project to ensure we don't have stale "pre-fill" state
     // Stamp each item with projectId so the Calendar filter can match them by context.
     await Promise.all([
-      api.getData('risks', projectId).then(res => set({ risks: res.success ? (res.data || []).map((r: any) => ({ ...r, projectId })) : [] })),
-      api.getData('issues', projectId).then(res => set({ issues: res.success ? (res.data || []).map((i: any) => ({ ...i, projectId })) : [] })),
-      api.getData('kris', projectId).then(res => set({ kris: res.success ? (res.data || []) : [] })),
-      api.getData('complianceItems', projectId).then(res => set({ complianceItems: res.success ? (res.data || []).map((c: any) => ({ ...c, projectId })) : [] })),
-      api.getData('tasks', projectId).then(res => set({ tasks: res.success ? (res.data || []).map((t: any) => ({ ...t, projectId })) : [] })),
-      api.getData('customRegulations', projectId).then(res => set({ customRegulations: res.success ? (res.data || []) : [] })),
-      api.getData('complianceAnalysis', projectId).then(res => {
-        const data = res.success ? (res.data || null) : null;
-        set({ 
+      api.getData("risks", projectId).then((res) =>
+        set({
+          risks: res.success
+            ? (res.data || []).map(
+                (r: any) => normalizeRisk({ ...r, projectId }) as RiskItem,
+              )
+            : [],
+        }),
+      ),
+      api.getData("issues", projectId).then((res) =>
+        set({
+          issues: res.success
+            ? (res.data || []).map((i: any) => ({ ...i, projectId }))
+            : [],
+        }),
+      ),
+      api
+        .getData("kris", projectId)
+        .then((res) => set({ kris: res.success ? res.data || [] : [] })),
+      api.getData("complianceItems", projectId).then((res) =>
+        set({
+          complianceItems: res.success
+            ? (res.data || []).map((c: any) => ({ ...c, projectId }))
+            : [],
+        }),
+      ),
+      api.getData("tasks", projectId).then((res) =>
+        set({
+          tasks: res.success
+            ? (res.data || []).map((t: any) => ({ ...t, projectId }))
+            : [],
+        }),
+      ),
+      api
+        .getData("customRegulations", projectId)
+        .then((res) =>
+          set({ customRegulations: res.success ? res.data || [] : [] }),
+        ),
+      api.getData("complianceAnalysis", projectId).then((res) => {
+        const data = res.success ? res.data || null : null;
+        set({
           complianceAnalysis: data,
-          lastAnalysisResults: data // Keep both in sync
+          lastAnalysisResults: data, // Keep both in sync
         });
       }),
-      api.getData('projectInfo', projectId).then(res => {
-        if (res.success && res.data && typeof res.data === 'object' && Object.keys(res.data).length > 0) {
+      api.getData("projectInfo", projectId).then((res) => {
+        if (
+          res.success &&
+          res.data &&
+          typeof res.data === "object" &&
+          Object.keys(res.data).length > 0
+        ) {
           set({ projectInfo: res.data });
         } else {
           set({ projectInfo: {} });
         }
-      })
+      }),
     ]);
   },
   loadAggregateData: async () => {
@@ -1173,15 +1354,15 @@ export const useStore = create<AppState>((set, get) => ({
       activeProject: null,
       activeProjectId: null,
       activeProgramme: null,
-      activeProgrammeId: null
+      activeProgrammeId: null,
     });
-    console.log('Portfolio aggregate context activated. Fetching data...');
-    
+    console.log("Portfolio aggregate context activated. Fetching data...");
+
     try {
       const [portfolioRes] = await Promise.all([
         api.clientGetProjectData(),
-        api.savePreference('activeProjectId', null),
-        api.savePreference('activeProgrammeId', null)
+        api.savePreference("activeProjectId", null),
+        api.savePreference("activeProgrammeId", null),
       ]);
 
       if (portfolioRes.success && Array.isArray(portfolioRes.projects)) {
@@ -1192,25 +1373,37 @@ export const useStore = create<AppState>((set, get) => ({
           enrichedProjects.map(async (proj: any) => {
             try {
               const [risksRes, issuesRes, compRes] = await Promise.all([
-                api.getData('risks', proj.id),
-                api.getData('issues', proj.id),
-                api.getData('complianceItems', proj.id)
+                api.getData("risks", proj.id),
+                api.getData("issues", proj.id),
+                api.getData("complianceItems", proj.id),
               ]);
               return {
-                risks: (risksRes.success && Array.isArray(risksRes.data) ? risksRes.data : []).map((r: any) => ({ ...r, projectId: proj.id })),
-                issues: (issuesRes.success && Array.isArray(issuesRes.data) ? issuesRes.data : []).map((i: any) => ({ ...i, projectId: proj.id })),
-                complianceItems: (compRes.success && Array.isArray(compRes.data) ? compRes.data : []).map((c: any) => ({ ...c, projectId: proj.id }))
+                risks: (risksRes.success && Array.isArray(risksRes.data)
+                  ? risksRes.data
+                  : []
+                ).map(
+                  (r: any) =>
+                    normalizeRisk({ ...r, projectId: proj.id }) as RiskItem,
+                ),
+                issues: (issuesRes.success && Array.isArray(issuesRes.data)
+                  ? issuesRes.data
+                  : []
+                ).map((i: any) => ({ ...i, projectId: proj.id })),
+                complianceItems: (compRes.success && Array.isArray(compRes.data)
+                  ? compRes.data
+                  : []
+                ).map((c: any) => ({ ...c, projectId: proj.id })),
               };
             } catch {
               return { risks: [], issues: [], complianceItems: [] };
             }
-          })
+          }),
         );
 
         // Flatten all per-project arrays into aggregate store state
-        const allRisks = perProjectData.flatMap(d => d.risks);
-        const allIssues = perProjectData.flatMap(d => d.issues);
-        const allCompliance = perProjectData.flatMap(d => d.complianceItems);
+        const allRisks = perProjectData.flatMap((d) => d.risks);
+        const allIssues = perProjectData.flatMap((d) => d.issues);
+        const allCompliance = perProjectData.flatMap((d) => d.complianceItems);
 
         set({
           risks: allRisks,
@@ -1219,14 +1412,14 @@ export const useStore = create<AppState>((set, get) => ({
           portfolioInfo: {
             projectCount: enrichedProjects.length,
             programmeCount: get().programmes?.length || 0,
-            userCount: 0
-          }
+            userCount: 0,
+          },
         });
       }
-      
-      console.log('Portfolio aggregate data loaded.');
+
+      console.log("Portfolio aggregate data loaded.");
     } catch (error) {
-      console.error('Failed to load portfolio aggregate data:', error);
+      console.error("Failed to load portfolio aggregate data:", error);
     }
   },
 
@@ -1236,133 +1429,175 @@ export const useStore = create<AppState>((set, get) => ({
     const { tasks } = get();
     const next = [task, ...tasks];
     set({ tasks: next });
-    const contextId = task.projectId || task.programmeId || get().activeProjectId || get().activeProgrammeId;
-    await api.saveData('tasks', next, contextId);
+    const contextId =
+      task.projectId ||
+      task.programmeId ||
+      get().activeProjectId ||
+      get().activeProgrammeId;
+    await api.saveData("tasks", next, contextId);
   },
   updateTask: async (id, updates) => {
     const { tasks } = get();
-    const next = tasks.map(t => {
+    const next = tasks.map((t) => {
       if (t.id === id) {
-        const isNowCompleted = updates.status === 'Completed' && t.status !== 'Completed';
-        return { 
-          ...t, 
-          ...updates, 
-          completedAt: isNowCompleted ? new Date().toISOString() : (updates.status === 'Pending' ? undefined : t.completedAt)
+        const isNowCompleted =
+          updates.status === "Completed" && t.status !== "Completed";
+        return {
+          ...t,
+          ...updates,
+          completedAt: isNowCompleted
+            ? new Date().toISOString()
+            : updates.status === "Pending"
+              ? undefined
+              : t.completedAt,
         };
       }
       return t;
     });
     set({ tasks: next });
     const contextId = get().activeProjectId || get().activeProgrammeId;
-    await api.saveData('tasks', next, contextId);
+    await api.saveData("tasks", next, contextId);
   },
   deleteTask: async (id) => {
     const { tasks } = get();
-    const next = tasks.filter(t => t.id !== id);
+    const next = tasks.filter((t) => t.id !== id);
     set({ tasks: next });
     const contextId = get().activeProjectId || get().activeProgrammeId;
-    await api.saveData('tasks', next, contextId);
+    await api.saveData("tasks", next, contextId);
   },
-
 
   deleteIssue: async (id) => {
     const { issues } = get();
-    const next = issues.filter(i => i.id !== id);
+    const next = issues.filter((i) => i.id !== id);
     set({ issues: next });
     const contextId = get().activeProjectId || get().activeProgrammeId;
-    await api.saveData('issues', next, contextId);
+    await api.saveData("issues", next, contextId);
   },
   deleteProgramme: async (id) => {
     await api.deleteProgramme(id);
     const { programmes } = get();
-    set({ programmes: programmes.filter(p => p.id !== id) });
+    set({ programmes: programmes.filter((p) => p.id !== id) });
   },
   deleteProject: async (id) => {
     await api.deleteProject(id);
     const { projects, activeProjectId } = get();
     const wasActive = activeProjectId === id;
     set({
-      projects: projects.filter(p => p.id !== id),
-      ...(wasActive ? {
-        activeProjectId: null,
-        activeProject: null,
-        risks: [],
-        issues: [],
-        tasks: [],
-        complianceItems: [],
-        kris: [],
-        complianceAnalysis: null,
-        lastAnalysisResults: null,
-        projectInfo: {},
-      } : {}),
+      projects: projects.filter((p) => p.id !== id),
+      ...(wasActive
+        ? {
+            activeProjectId: null,
+            activeProject: null,
+            risks: [],
+            issues: [],
+            tasks: [],
+            complianceItems: [],
+            kris: [],
+            complianceAnalysis: null,
+            lastAnalysisResults: null,
+            projectInfo: {},
+          }
+        : {}),
     });
   },
   archiveProgramme: async (id) => {
     await api.updateProgramme(id, { isArchived: true });
     const { programmes } = get();
-    set({ programmes: programmes.map(p => p.id === id ? { ...p, isArchived: true } : p) });
+    set({
+      programmes: programmes.map((p) =>
+        p.id === id ? { ...p, isArchived: true } : p,
+      ),
+    });
   },
   unarchiveProgramme: async (id) => {
     await api.updateProgramme(id, { isArchived: false });
     const { programmes } = get();
-    set({ programmes: programmes.map(p => p.id === id ? { ...p, isArchived: false } : p) });
+    set({
+      programmes: programmes.map((p) =>
+        p.id === id ? { ...p, isArchived: false } : p,
+      ),
+    });
   },
   archiveProject: async (id) => {
     await api.updateProject(id, { isArchived: true });
     const { projects } = get();
-    set({ projects: projects.map(p => p.id === id ? { ...p, isArchived: true } : p) });
+    set({
+      projects: projects.map((p) =>
+        p.id === id ? { ...p, isArchived: true } : p,
+      ),
+    });
   },
   unarchiveProject: async (id) => {
     await api.updateProject(id, { isArchived: false });
     const { projects } = get();
-    set({ projects: projects.map(p => p.id === id ? { ...p, isArchived: false } : p) });
+    set({
+      projects: projects.map((p) =>
+        p.id === id ? { ...p, isArchived: false } : p,
+      ),
+    });
   },
   resetAllData: async () => {
-    set({ projects: [], programmes: [], risks: [], issues: [], kris: [], complianceItems: [] });
+    set({
+      projects: [],
+      programmes: [],
+      risks: [],
+      issues: [],
+      kris: [],
+      complianceItems: [],
+    });
   },
   adminDeleteProgramme: async (id) => {
     await api.adminDeleteProgramme(id);
     const { programmes } = get();
-    set({ programmes: programmes.filter(p => p.id !== id) });
+    set({ programmes: programmes.filter((p) => p.id !== id) });
   },
   adminDeleteProject: async (id) => {
     await api.adminDeleteProject(id);
     const { projects } = get();
-    set({ projects: projects.filter(p => p.id !== id) });
+    set({ projects: projects.filter((p) => p.id !== id) });
   },
   adminTransferProgramme: async (id, targetUser) => {
     await api.adminTransferProgramme(id, targetUser);
     const { programmes } = get();
-    set({ 
-      programmes: programmes.map(p => p.id === id ? { 
-        ...p, 
-        userId: targetUser.uid, 
-        pm: targetUser.email, 
-        clientId: targetUser.clientId || targetUser.uid 
-      } : p) 
+    set({
+      programmes: programmes.map((p) =>
+        p.id === id
+          ? {
+              ...p,
+              userId: targetUser.uid,
+              pm: targetUser.email,
+              clientId: targetUser.clientId || targetUser.uid,
+            }
+          : p,
+      ),
     });
   },
   adminTransferProject: async (id, targetUser) => {
     await api.adminTransferProject(id, targetUser);
     const { projects } = get();
-    set({ 
-      projects: projects.map(p => p.id === id ? { 
-        ...p, 
-        userId: targetUser.uid, 
-        pm: targetUser.email, 
-        clientId: targetUser.clientId || targetUser.uid 
-      } : p) 
+    set({
+      projects: projects.map((p) =>
+        p.id === id
+          ? {
+              ...p,
+              userId: targetUser.uid,
+              pm: targetUser.email,
+              clientId: targetUser.clientId || targetUser.uid,
+            }
+          : p,
+      ),
     });
   },
-  
-  setFcmToken: (token) => console.log('FCM Token set:', token),
-  setNotifications: (ns) => set({ 
-    notifications: (Array.isArray(ns) ? ns : []).map(n => ({
-      ...n,
-      time: isValidDateString(n.time) ? n.time : new Date().toISOString()
-    }))
-  }),
-  installPWA: () => console.log('Install PWA triggered'),
+
+  setFcmToken: (token) => console.log("FCM Token set:", token),
+  setNotifications: (ns) =>
+    set({
+      notifications: (Array.isArray(ns) ? ns : []).map((n) => ({
+        ...n,
+        time: isValidDateString(n.time) ? n.time : new Date().toISOString(),
+      })),
+    }),
+  installPWA: () => console.log("Install PWA triggered"),
   setIsMarketingDarkMode: (isDark) => set({ isMarketingDarkMode: isDark }),
   setComplianceAnalysis: (data) => set({ complianceAnalysis: data }),
   addConditionalItems: (items) => {
@@ -1374,7 +1609,7 @@ export const useStore = create<AppState>((set, get) => ({
     set({ complianceItems: next });
     const contextId = get().activeProjectId || get().activeProgrammeId;
     if (contextId) {
-      api.saveData('complianceItems', next, contextId).catch(console.error);
+      api.saveData("complianceItems", next, contextId).catch(console.error);
     }
   },
   setLastAnalysisResults: (results) => set({ lastAnalysisResults: results }),
@@ -1389,13 +1624,13 @@ export const useStore = create<AppState>((set, get) => ({
     if (isInitialized) return;
 
     try {
-      console.log('Synchronizing store state...');
-      
+      console.log("Synchronizing store state...");
+
       const currentUser = auth.currentUser;
       if (!currentUser) {
         // Wait a bit for auth to initialize if it hasn't
-        await new Promise(resolve => {
-          const unsubscribe = auth.onAuthStateChanged(user => {
+        await new Promise((resolve) => {
+          const unsubscribe = auth.onAuthStateChanged((user) => {
             unsubscribe();
             resolve(user);
           });
@@ -1411,9 +1646,9 @@ export const useStore = create<AppState>((set, get) => ({
       // 1. Get profile first to establish role/clientId context
       const profileResult = await api.getProfile();
       if (profileResult.success && profileResult.profile) {
-        set({ 
+        set({
           user: profileResult.profile,
-          clientId: profileResult.profile.clientId || null
+          clientId: profileResult.profile.clientId || null,
         });
       }
 
@@ -1421,10 +1656,13 @@ export const useStore = create<AppState>((set, get) => ({
       const [preferencesRes] = await Promise.all([
         api.getPreferences(),
         get().fetchProjects(),
-        get().fetchProgrammes()
+        get().fetchProgrammes(),
       ]);
 
-      console.log('Store hydration complete. Restoring preferences...', preferencesRes);
+      console.log(
+        "Store hydration complete. Restoring preferences...",
+        preferencesRes,
+      );
 
       // 3. Restore user's last active context from preferences, then load its data
       // FIX: Backend returns { success, preferences: {...} }, NOT { success, data: {...} }
@@ -1433,60 +1671,55 @@ export const useStore = create<AppState>((set, get) => ({
       const restoredProgrammeId = prefs.activeProgrammeId;
 
       if (restoredProjectId) {
-        console.log('Restoring active project context:', restoredProjectId);
+        console.log("Restoring active project context:", restoredProjectId);
         await get().loadProjectData(restoredProjectId, false);
       } else if (restoredProgrammeId) {
-        console.log('Restoring active programme context:', restoredProgrammeId);
+        console.log("Restoring active programme context:", restoredProgrammeId);
         await get().loadProgrammeData(restoredProgrammeId, false);
       }
 
       // 4. Mark initialization complete AFTER data is fully loaded
       set({ isInitialized: true });
-
     } catch (e) {
-      console.error('Store sync failed:', e);
+      console.error("Store sync failed:", e);
       set({ isInitialized: true });
     }
   },
 
   loadAllData: async () => {
     try {
-      await Promise.all([
-        get().fetchProjects(),
-        get().fetchProgrammes(),
-      ]);
+      await Promise.all([get().fetchProjects(), get().fetchProgrammes()]);
 
-      const [
-        risksRes,
-        issuesRes,
-        krisRes,
-        complianceRes,
-        tasksRes
-      ] = await Promise.all([
-        api.getData('risks'),
-        api.getData('issues'),
-        api.getData('kris'),
-        api.getData('complianceItems'),
-        api.getData('tasks')
-      ]);
+      const [risksRes, issuesRes, krisRes, complianceRes, tasksRes] =
+        await Promise.all([
+          api.getData("risks"),
+          api.getData("issues"),
+          api.getData("kris"),
+          api.getData("complianceItems"),
+          api.getData("tasks"),
+        ]);
 
       set({
-        risks: risksRes.success ? (risksRes.data || []) : [],
-        issues: issuesRes.success ? (issuesRes.data || []) : [],
-        kris: krisRes.success ? (krisRes.data || []) : [],
-        complianceItems: complianceRes.success ? (complianceRes.data || []) : [],
-        tasks: tasksRes.success ? (tasksRes.data || []) : []
+        risks: risksRes.success
+          ? (risksRes.data || []).map((r: any) => normalizeRisk(r) as RiskItem)
+          : [],
+        issues: issuesRes.success ? issuesRes.data || [] : [],
+        kris: krisRes.success ? krisRes.data || [] : [],
+        complianceItems: complianceRes.success ? complianceRes.data || [] : [],
+        tasks: tasksRes.success ? tasksRes.data || [] : [],
       });
       console.log(`Store initialized with other data.`);
     } catch (error) {
-      console.error('Failed to load data:', error);
+      console.error("Failed to load data:", error);
     }
   },
 
   wipeAllCurrentData: async () => {
     const { projects, programmes } = get();
-    console.log(`Wiping ${projects.length} projects and ${programmes.length} programmes...`);
-    
+    console.log(
+      `Wiping ${projects.length} projects and ${programmes.length} programmes...`,
+    );
+
     // Clear local state
     set({
       projects: [],
@@ -1499,58 +1732,64 @@ export const useStore = create<AppState>((set, get) => ({
       activeProject: null,
       activeProgramme: null,
       activeProjectId: null,
-      activeProgrammeId: null
+      activeProgrammeId: null,
     });
-    
+
     // Clear preferences
     await Promise.all([
-      api.savePreference('activeProjectId', null),
-      api.savePreference('activeProgrammeId', null)
+      api.savePreference("activeProjectId", null),
+      api.savePreference("activeProgrammeId", null),
     ]);
   },
   loadProgrammeData: async (programmeId, persist = true) => {
     const { programmes } = get();
-    let programme = programmes.find(p => p.id === programmeId);
-    
+    let programme = programmes.find((p) => p.id === programmeId);
+
     if (!programme) {
       // Fetch explicitly to bypass Firestore index lag
       try {
         const res = await api.getProgrammeById(programmeId);
         if (res.success && res.data) {
           programme = res.data;
-          set(state => {
-            const exists = state.programmes.some(p => p.id === programmeId);
+          set((state) => {
+            const exists = state.programmes.some((p) => p.id === programmeId);
             if (exists) {
-              return { programmes: state.programmes.map(p => p.id === programmeId ? { ...p, ...res.data } : p) };
+              return {
+                programmes: state.programmes.map((p) =>
+                  p.id === programmeId ? { ...p, ...res.data } : p,
+                ),
+              };
             }
-            return { programmes: [programme as Programme, ...state.programmes] };
+            return {
+              programmes: [programme as Programme, ...state.programmes],
+            };
           });
         }
       } catch (err) {
-        console.error('Explicit programme fetch failed:', err);
+        console.error("Explicit programme fetch failed:", err);
       }
     }
 
     if (programme) {
-      set({ 
+      set({
         activeProgramme: programme,
         activeProgrammeId: programmeId,
         activeProject: null,
-        activeProjectId: null
+        activeProjectId: null,
       });
     } else {
-       set({ 
+      set({
         activeProgrammeId: programmeId,
         activeProgramme: null,
         activeProject: null,
-        activeProjectId: null 
+        activeProjectId: null,
       });
     }
 
     if (persist) {
       await Promise.all([
-        api.savePreference('activeProgrammeId', programmeId),
-        api.savePreference('activeProjectId', null)
+        api.savePreference("activeProgrammeId", programmeId),
+        api.savePreference("activeProjectId", null),
       ]);
     }
 
@@ -1558,26 +1797,63 @@ export const useStore = create<AppState>((set, get) => ({
     // Programme data is stored under projects/{programmeId}/data/... path (same as project data)
     // Stamp each item with programmeId so the Calendar filter can match them by context.
     await Promise.all([
-      api.getData('risks', programmeId).then(res => set({ risks: res.success ? (res.data || []).map((r: any) => ({ ...r, programmeId })) : [] })),
-      api.getData('issues', programmeId).then(res => set({ issues: res.success ? (res.data || []).map((i: any) => ({ ...i, programmeId })) : [] })),
-      api.getData('kris', programmeId).then(res => set({ kris: res.success ? (res.data || []) : [] })),
-      api.getData('complianceItems', programmeId).then(res => set({ complianceItems: res.success ? (res.data || []).map((c: any) => ({ ...c, programmeId })) : [] })),
-      api.getData('tasks', programmeId).then(res => set({ tasks: res.success ? (res.data || []).map((t: any) => ({ ...t, programmeId })) : [] })),
-      api.getData('customRegulations', programmeId).then(res => set({ customRegulations: res.success ? (res.data || []) : [] })),
-      api.getData('complianceAnalysis', programmeId).then(res => {
-        const data = res.success ? (res.data || null) : null;
-        set({ 
+      api.getData("risks", programmeId).then((res) =>
+        set({
+          risks: res.success
+            ? (res.data || []).map(
+                (r: any) => normalizeRisk({ ...r, programmeId }) as RiskItem,
+              )
+            : [],
+        }),
+      ),
+      api.getData("issues", programmeId).then((res) =>
+        set({
+          issues: res.success
+            ? (res.data || []).map((i: any) => ({ ...i, programmeId }))
+            : [],
+        }),
+      ),
+      api
+        .getData("kris", programmeId)
+        .then((res) => set({ kris: res.success ? res.data || [] : [] })),
+      api.getData("complianceItems", programmeId).then((res) =>
+        set({
+          complianceItems: res.success
+            ? (res.data || []).map((c: any) => ({ ...c, programmeId }))
+            : [],
+        }),
+      ),
+      api.getData("tasks", programmeId).then((res) =>
+        set({
+          tasks: res.success
+            ? (res.data || []).map((t: any) => ({ ...t, programmeId }))
+            : [],
+        }),
+      ),
+      api
+        .getData("customRegulations", programmeId)
+        .then((res) =>
+          set({ customRegulations: res.success ? res.data || [] : [] }),
+        ),
+      api.getData("complianceAnalysis", programmeId).then((res) => {
+        const data = res.success ? res.data || null : null;
+        set({
           complianceAnalysis: data,
-          lastAnalysisResults: data // Keep both in sync
+          lastAnalysisResults: data, // Keep both in sync
         });
       }),
-      api.getData('projectInfo', programmeId).then(res => {
-        if (res.success && res.data && typeof res.data === 'object' && Object.keys(res.data).length > 0) {
+      api.getData("projectInfo", programmeId).then((res) => {
+        if (
+          res.success &&
+          res.data &&
+          typeof res.data === "object" &&
+          Object.keys(res.data).length > 0
+        ) {
           set({ projectInfo: res.data });
         } else {
           set({ projectInfo: {} });
         }
-      })
+      }),
     ]);
   },
   fetchProjects: async () => {
@@ -1596,24 +1872,26 @@ export const useStore = create<AppState>((set, get) => ({
             try {
               const retryRes = await api.getProjects();
               if (retryRes?.projects?.length > 0) {
-                console.log(`fetchProjects retry: received ${retryRes.projects.length} projects`);
+                console.log(
+                  `fetchProjects retry: received ${retryRes.projects.length} projects`,
+                );
                 set({ projects: retryRes.projects });
               }
             } catch (retryErr) {
-              console.error('fetchProjects retry failed', retryErr);
+              console.error("fetchProjects retry failed", retryErr);
             }
           }, 2500);
         }
       } else {
-        console.warn('fetchProjects: no projects field in response', res);
+        console.warn("fetchProjects: no projects field in response", res);
       }
     } catch (e) {
-      console.error('Failed to fetch projects', e);
+      console.error("Failed to fetch projects", e);
     }
   },
   fetchProgrammes: async () => {
     try {
-      const res = await api.getData('programmes');
+      const res = await api.getData("programmes");
       const data = res?.data || res;
       const programmes = Array.isArray(data) ? data : [];
       console.log(`fetchProgrammes: received ${programmes.length} programmes`);
@@ -1623,25 +1901,29 @@ export const useStore = create<AppState>((set, get) => ({
       if (programmes.length === 0) {
         setTimeout(async () => {
           try {
-            const retryRes = await api.getData('programmes');
+            const retryRes = await api.getData("programmes");
             const retryData = retryRes?.data || retryRes;
             const retryProgrammes = Array.isArray(retryData) ? retryData : [];
             if (retryProgrammes.length > 0) {
-              console.log(`fetchProgrammes retry: received ${retryProgrammes.length} programmes`);
+              console.log(
+                `fetchProgrammes retry: received ${retryProgrammes.length} programmes`,
+              );
               set({ programmes: retryProgrammes });
             }
           } catch (retryErr) {
-            console.error('fetchProgrammes retry failed', retryErr);
+            console.error("fetchProgrammes retry failed", retryErr);
           }
         }, 2500);
       }
     } catch (e) {
-      console.error('Failed to fetch programmes', e);
+      console.error("Failed to fetch programmes", e);
     }
   },
   updateProject: async (id, updates) => {
     const { projects } = get();
-    const updated = projects.map(p => p.id === id ? { ...p, ...updates } : p);
+    const updated = projects.map((p) =>
+      p.id === id ? { ...p, ...updates } : p,
+    );
     set({ projects: updated });
     if (get().activeProject?.id === id) {
       set({ activeProject: { ...get().activeProject!, ...updates } });
@@ -1650,7 +1932,9 @@ export const useStore = create<AppState>((set, get) => ({
   },
   updateProgramme: async (id, updates) => {
     const { programmes } = get();
-    const updated = programmes.map(p => p.id === id ? { ...p, ...updates } : p);
+    const updated = programmes.map((p) =>
+      p.id === id ? { ...p, ...updates } : p,
+    );
     set({ programmes: updated });
     if (get().activeProgramme?.id === id) {
       set({ activeProgramme: { ...get().activeProgramme!, ...updates } });
@@ -1665,80 +1949,81 @@ export const useStore = create<AppState>((set, get) => ({
     const next = [lesson, ...lessonsLearned];
     set({ lessonsLearned: next });
     const contextId = get().activeProjectId || get().activeProgrammeId;
-    await api.saveData('lessonsLearned', next, contextId);
+    await api.saveData("lessonsLearned", next, contextId);
   },
 
   // Conversions & Escalations
   convertToIssue: async (riskId: string) => {
-    const risk = get().risks.find(r => r.id === riskId);
+    const risk = get().risks.find((r) => r.id === riskId);
     if (!risk) return;
 
     const newIssue: IssueItem = {
-      id: generateId('ISS'),
+      id: generateId("ISS"),
       projectId: risk.projectId,
       programmeId: risk.programmeId,
       project: risk.project,
       linkedRisk: risk.id,
-      dateAdded: new Date().toISOString().split('T')[0],
+      dateAdded: new Date().toISOString().split("T")[0],
       desc: risk.desc,
       impact: "Converted from risk: " + risk.title,
       owner: risk.owner,
       priority: 3,
-      severity: (risk.grossL * risk.grossI) || 3,
+      severity: risk.grossL * risk.grossI || 3,
       response: "Resolve",
       status: "1. Investigating",
     };
 
-    const updatedRisks = get().risks.map(r => 
-      r.id === riskId ? { ...r, status: 'Closed', convertedToIssue: true } : r
+    const updatedRisks = get().risks.map((r) =>
+      r.id === riskId ? { ...r, status: "Closed", convertedToIssue: true } : r,
     );
 
-    set(state => ({
+    set((state) => ({
       issues: [newIssue, ...state.issues],
-      risks: updatedRisks
+      risks: updatedRisks,
     }));
 
     const contextId = get().activeProjectId || get().activeProgrammeId;
-    await api.saveData('risks', updatedRisks, contextId);
-    await api.saveData('issues', [newIssue, ...get().issues], contextId);
+    await api.saveData("risks", updatedRisks, contextId);
+    await api.saveData("issues", [newIssue, ...get().issues], contextId);
   },
   escalateRisk: async (riskId: string, _projectId: string) => {
     const { risks } = get();
-    const risk = risks.find(r => r.id === riskId);
+    const risk = risks.find((r) => r.id === riskId);
     if (!risk) return;
 
     const escalatedRisk: RiskItem = {
       ...risk,
-      id: generateId('RSK-ESC'),
+      id: generateId("RSK-ESC"),
       isProgrammeLevel: true,
       escalated: true,
-      dateAdded: new Date().toISOString().split('T')[0],
-      status: 'Open'
+      dateAdded: new Date().toISOString().split("T")[0],
+      status: "Open",
     };
 
-    const updatedRisks = risks.map(r => 
-      r.id === riskId ? { ...r, escalated: true, status: 'Escalated' } : r
+    const updatedRisks = risks.map((r) =>
+      r.id === riskId ? { ...r, escalated: true, status: "Escalated" } : r,
     );
 
     set({ risks: [escalatedRisk, ...updatedRisks] });
     const contextId = get().activeProjectId || get().activeProgrammeId;
-    await api.saveData('risks', [escalatedRisk, ...updatedRisks], contextId);
+    await api.saveData("risks", [escalatedRisk, ...updatedRisks], contextId);
 
     get().addNotification({
-      id: generateId('NOTIF'),
-      type: 'risk',
-      title: 'Risk Escalated',
+      id: generateId("NOTIF"),
+      type: "risk",
+      title: "Risk Escalated",
       message: `Risk "${risk.title}" has been escalated to programme level.`,
-      status: 'Unread',
-      time: 'Just now',
-      severity: 'High'
+      status: "Unread",
+      time: "Just now",
+      severity: "High",
     });
   },
 
   // Helpers
   canEditCompliance: () => {
     const { user, isComplianceLocked } = get();
-    if (isComplianceLocked) return isAtLeastClientAdmin(user?.role || user?.profile?.role);
+    if (isComplianceLocked)
+      return isAtLeastClientAdmin(user?.role || user?.profile?.role);
     return true;
   },
 
@@ -1746,11 +2031,11 @@ export const useStore = create<AppState>((set, get) => ({
   pricingConfig: null,
   fetchPricingConfig: async () => {
     try {
-      const config = await api.getData('pricingConfig');
+      const config = await api.getData("pricingConfig");
       // If no config found, or it's missing fields, the components will merge it with DEFAULT_PRICING
-      set({ pricingConfig: config || null }); 
+      set({ pricingConfig: config || null });
     } catch (e) {
-      console.error('Failed to fetch pricing config', e);
+      console.error("Failed to fetch pricing config", e);
     }
   },
   updatePricingConfig: async (updates) => {
@@ -1758,13 +2043,13 @@ export const useStore = create<AppState>((set, get) => ({
     const next = { ...current, ...updates } as PricingConfig;
     set({ pricingConfig: next });
     const contextId = get().activeProjectId || get().activeProgrammeId;
-    await api.saveData('pricingConfig', next, contextId);
+    await api.saveData("pricingConfig", next, contextId);
   },
 
   canManageContext: () => {
     const { user, activeProject, activeProgramme } = get();
     if (!user) return false;
-    
+
     // Admins and Client Admins can manage everything
     const role = user.role || user.profile?.role;
     if (isAtLeastClientAdmin(role)) return true;
@@ -1787,5 +2072,5 @@ export const useStore = create<AppState>((set, get) => ({
     }
 
     return false;
-  }
+  },
 }));

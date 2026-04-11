@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useLocation } from 'react-router';
 import {
   Settings,
   RefreshCw,
@@ -19,6 +19,8 @@ import { clsx } from 'clsx';
 
 export const ServiceManagementBar: React.FC<{ className?: string }> = ({ className }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const pathname = location.pathname;
   const {
     activeProject,
     activeProgramme,
@@ -66,7 +68,31 @@ export const ServiceManagementBar: React.FC<{ className?: string }> = ({ classNa
     );
   };
 
-  // Task #6 — real Excel export
+
+  // Detect which page we're on to make export context-aware
+  const isRiskPage       = pathname.startsWith('/risk');
+  const isTrackerPage    = pathname === '/compliance/tracker';
+  const isCompliancePage = pathname.startsWith('/compliance') && !isTrackerPage;
+
+  const exportLabel = isExporting
+    ? 'Exporting...'
+    : isRiskPage
+    ? 'Export Risk Data (Excel)'
+    : isTrackerPage
+    ? 'Export Tracker Data (Excel)'
+    : isCompliancePage
+    ? 'Export Compliance Data (Excel)'
+    : 'Export Data (Excel)';
+
+  const exportDescription = isRiskPage
+    ? 'Download all risk register data as .xlsx.'
+    : isTrackerPage
+    ? 'Download compliance tracker data as .xlsx.'
+    : isCompliancePage
+    ? 'Download compliance items as .xlsx.'
+    : 'Download compliance, risk and issue data as .xlsx.';
+
+  // Task #6 — real Excel export, page-aware
   const handleExportExcel = async () => {
     if (isExporting) return;
     setIsExporting(true);
@@ -85,7 +111,43 @@ export const ServiceManagementBar: React.FC<{ className?: string }> = ({ classNa
         isProject ? i.projectId === contextId : i.programmeId === contextId
       );
 
-      if (ctxCompliance.length > 0) {
+      // ── Risk-only export ────────────────────────────────────────────────
+      if (isRiskPage) {
+        const rows = ctxRisks.map((r) => ({
+          'Ref': r.id,
+          'Workstream': r.workstream || '—',
+          'Linked KRI': r.kri || '—',
+          'Date Added': r.dateAdded ? new Date(r.dateAdded).toLocaleDateString() : '—',
+          'Risk Title': r.title || '',
+          'Risk Desc': r.desc || '',
+          'Gross L': r.grossL ?? '',
+          'Gross I': r.grossI ?? '',
+          'Gross Rating': r.grossRating ?? '',
+          'Response': r.response || '—',
+          'Controls': r.controls || '—',
+          'Residual L': r.residualL ?? '',
+          'Residual I': r.residualI ?? '',
+          'Residual Rating': r.residualRating ?? '',
+          'Appetite': r.appetite || '—',
+          'Further Action': r.furtherAction || '—',
+          'Status': r.status || '',
+          'Gross Impact (£)': r.grossImpact || 0,
+          'Gross ALE (£)': Math.round(r.grossALE || 0),
+          'Residual Impact (£)': r.residualImpact || 0,
+          'Residual ALE (£)': Math.round(r.residualALE || 0),
+          'Reduction (£)': Math.round((r.grossALE || 0) - (r.residualALE || 0)),
+          'Indicator': r.escalated ? 'ESC' : r.convertedToIssue ? 'ISSUE' : '—',
+          'Owner': r.owner || '',
+          'Escalated': r.escalated ? 'Yes' : 'No',
+        }));
+        if (rows.length > 0) {
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Risk Register');
+        } else {
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([{ Note: 'No risk data for this context.' }]), 'Risk Register');
+        }
+
+      // ── Tracker / Compliance-only export ────────────────────────────────
+      } else if (isTrackerPage || isCompliancePage) {
         const rows = ctxCompliance.map((c) => ({
           'ID': c.id,
           'Regulation': c.reg || '',
@@ -97,47 +159,64 @@ export const ServiceManagementBar: React.FC<{ className?: string }> = ({ classNa
           'Authority': (c as any).auth || '',
           'Trigger': (c as any).trigger || '',
         }));
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Compliance Items');
-      }
+        if (rows.length > 0) {
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), isTrackerPage ? 'Compliance Tracker' : 'Compliance Items');
+        } else {
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([{ Note: 'No compliance data for this context.' }]), 'Compliance Items');
+        }
 
-      if (ctxRisks.length > 0) {
-        const rows = ctxRisks.map((r) => ({
-          'ID': r.id,
-          'Title': r.title || '',
-          'Category': r.category || '',
-          'Workstream': r.workstream || '',
-          'Status': r.status || '',
-          'Gross Likelihood': r.grossL ?? '',
-          'Gross Impact': r.grossI ?? '',
-          'Gross Rating': r.grossRating ?? (r.grossL && r.grossI ? r.grossL * r.grossI : ''),
-          'Owner': r.owner || '',
-          'Due Date': r.dueDate || '',
-          'Escalated': r.escalated ? 'Yes' : 'No',
-        }));
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Risk Register');
-      }
-
-      if (ctxIssues.length > 0) {
-        const rows = ctxIssues.map((i) => ({
-          'ID': i.id,
-          'Title': (i as any).title || i.desc?.substring(0, 60) || '',
-          'Description': i.desc || '',
-          'Status': i.status || '',
-          'Impact': i.impact || '',
-          'Owner': i.owner || '',
-          'Priority': i.priority ?? '',
-          'Deadline': (i as any).deadline || '',
-        }));
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Issues');
-      }
-
-      // Always create at least one sheet so the workbook is valid
-      if (ctxCompliance.length === 0 && ctxRisks.length === 0 && ctxIssues.length === 0) {
-        XLSX.utils.book_append_sheet(
-          wb,
-          XLSX.utils.json_to_sheet([{ Note: 'No data available for this context yet.' }]),
-          'Summary'
-        );
+      // ── Full multi-sheet export (all other pages) ────────────────────────
+      } else {
+        if (ctxCompliance.length > 0) {
+          const rows = ctxCompliance.map((c) => ({
+            'ID': c.id,
+            'Regulation': c.reg || '',
+            'Domain': c.domain || '',
+            'Requirement': c.req || '',
+            'Stage': (c as any).stage || 'Not Started',
+            'Status': c.status || 'applicable',
+            'Risk Level': c.risk || 'Medium',
+            'Authority': (c as any).auth || '',
+            'Trigger': (c as any).trigger || '',
+          }));
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Compliance Items');
+        }
+        if (ctxRisks.length > 0) {
+          const rows = ctxRisks.map((r) => ({
+            'ID': r.id,
+            'Title': r.title || '',
+            'Category': r.category || '',
+            'Workstream': r.workstream || '',
+            'Status': r.status || '',
+            'Gross Likelihood': r.grossL ?? '',
+            'Gross Impact': r.grossI ?? '',
+            'Gross Rating': r.grossRating ?? (r.grossL && r.grossI ? r.grossL * r.grossI : ''),
+            'Owner': r.owner || '',
+            'Due Date': r.dueDate || '',
+            'Escalated': r.escalated ? 'Yes' : 'No',
+          }));
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Risk Register');
+        }
+        if (ctxIssues.length > 0) {
+          const rows = ctxIssues.map((i) => ({
+            'ID': i.id,
+            'Title': (i as any).title || i.desc?.substring(0, 60) || '',
+            'Description': i.desc || '',
+            'Status': i.status || '',
+            'Impact': i.impact || '',
+            'Owner': i.owner || '',
+            'Priority': i.priority ?? '',
+            'Deadline': (i as any).deadline || '',
+          }));
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Issues');
+        }
+        if (ctxCompliance.length === 0 && ctxRisks.length === 0 && ctxIssues.length === 0) {
+          XLSX.utils.book_append_sheet(
+            wb,
+            XLSX.utils.json_to_sheet([{ Note: 'No data available for this context yet.' }]),
+            'Summary'
+          );
+        }
       }
 
       const fileName = `${(name || 'CedarGuard').replace(/\s+/g, '_')}_Export_${new Date().toISOString().slice(0, 10)}.xlsx`;
@@ -174,10 +253,10 @@ export const ServiceManagementBar: React.FC<{ className?: string }> = ({ classNa
       category: 'Context Actions',
     },
     {
-      label: isExporting ? 'Exporting...' : 'Export Data (Excel)',
+      label: isExporting ? 'Exporting...' : exportLabel,
       icon: isExporting ? Loader2 : FileSpreadsheet,
       onClick: handleExportExcel,
-      description: 'Download compliance, risk and issue data as .xlsx.',
+      description: exportDescription,
       category: 'Data Tools',
     },
     // Download Templates — available in a future release

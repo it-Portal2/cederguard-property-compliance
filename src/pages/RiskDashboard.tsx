@@ -1,17 +1,18 @@
-import React, { useState } from 'react';
-import { useStore, type RiskItem, type IssueItem, type Project, type Programme } from '../store/useStore';
+import React, { useState, useRef } from 'react';
+import { useStore, type RiskItem, type IssueItem } from '../store/useStore';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
 } from 'recharts';
-import { Shield, ShieldAlert, Briefcase, ArrowRight, Loader2, ShieldCheck, ArrowLeft, CheckCircle2, Target, AlertTriangle, Binoculars } from 'lucide-react';
+import { Shield, Briefcase, ArrowRight, ShieldCheck, CheckCircle2, Target, AlertTriangle, Binoculars, Loader2 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Link, useSearchParams } from 'react-router';
 import { stripMarkdown } from '../lib/utils';
 import { analyzeStrategicInsights } from '../services/aiService';
 import { differenceInMonths } from 'date-fns';
-import { isAtLeastClientAdmin, canCreateProject, canCreateProgramme, isSuperAdmin, UserRole } from '../lib/roles';
-import { ShieldAlert as AlertCircle, ScanSearch, RefreshCcw, Plus, PlusCircle, Layers, Building2, ChevronDown } from 'lucide-react'; 
+import { isAtLeastClientAdmin, isSuperAdmin, UserRole } from '../lib/roles';
+import { ScanSearch, RefreshCcw } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { AIInquiryPopup } from '../components/AIInquiryPopup';
 import { PremiumAIBanner } from '../components/common/PremiumAIBanner';
 import { ServiceManagementBar } from '../components/ServiceManagementBar';
@@ -29,13 +30,6 @@ const PIE_COLORS: Record<string, string> = {
   Unassigned: '#94a3b8',
 };
 
-const RISK_SEVERITY_COLORS: Record<string, string> = {
-  Insignificant: '#94a3b8',
-  Minor: '#fbbf24',
-  Moderate: '#f97316',
-  Major: '#ef4444',
-  Severe: '#7f1d1d',
-};
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
@@ -153,7 +147,10 @@ const StrategicInsightItem: React.FC<{ text: string }> = ({ text }) => {
 };
 
 export function RiskDashboard() {
-  const { risks, issues, projects, activeProgrammeId, activeProjectId, programmes, user } = useStore();
+  const {
+    risks, issues, projects, activeProgrammeId, activeProjectId, programmes, user,
+    complianceItems, setActiveProject, setActiveProgramme,
+  } = useStore();
   const [searchParams] = useSearchParams();
   const fromInitiation = searchParams.get('from') === 'initiation';
   const userRole = (user?.role || user?.profile?.role) as UserRole | undefined;
@@ -170,6 +167,7 @@ export function RiskDashboard() {
   const [generatingAI, setGeneratingAI] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [isAIInquiryOpen, setIsAIInquiryOpen] = useState(false);
+  const generatingRef = useRef(false);
 
   const safeRisks = Array.isArray(risks) ? risks : [];
   const safeIssues = Array.isArray(issues) ? issues : [];
@@ -190,14 +188,15 @@ export function RiskDashboard() {
   });
 
   const filteredRisks = safeRisks.filter(r => {
-    const rProjectId = r.projectId || r.project;
-    const rProgrammeId = r.programmeId || r.programme;
+    // Bug 8 fix: use only ID fields — r.project and r.programme are name strings, not IDs
+    const rProjectId = r.projectId;
+    const rProgrammeId = r.programmeId;
 
     if (activeProjectId) return rProjectId === activeProjectId;
     if (activeProgrammeId) return rProgrammeId === activeProgrammeId;
 
     // Detailed visibility check for Portfolio Aggregate
-    return visibleProjects.some(p => p.id === rProjectId) || 
+    return visibleProjects.some(p => p.id === rProjectId) ||
            visibleProgrammes.some(pr => pr.id === rProgrammeId);
   });
 
@@ -211,27 +210,52 @@ export function RiskDashboard() {
   });
 
   const handleGenerateStrategicInsights = async () => {
+    // Bug 6 fix: useRef double-submit guard
+    if (generatingRef.current) return;
+    generatingRef.current = true;
     setGeneratingAI(true);
     setAiError(null);
     try {
       const activeProject = safeProjects.find(p => p.id === activeProjectId);
       const activeProg = safeProgrammes.find(p => p.id === activeProgrammeId);
-      
+
+      // Bug 4 fix: compute real compliance posture from store data
+      const safeComplianceItems = Array.isArray(complianceItems) ? complianceItems : [];
+      const activeCompliance = safeComplianceItems.filter(c => {
+        if (activeProjectId) return c.projectId === activeProjectId && c.status === 'applicable';
+        if (activeProgrammeId) return c.programmeId === activeProgrammeId && c.status === 'applicable';
+        return c.status === 'applicable';
+      });
+      const complianceComplete = activeCompliance.filter(
+        c => c.stage === 'Live' || c.stage === 'Archived'
+      ).length;
+
       const result = await analyzeStrategicInsights({
-        compliance: { 
-          total: 100, 
-          completed: 75,
-          context: activeProject?.name || activeProg?.name || 'Portfolio'
+        compliance: {
+          total: activeCompliance.length,
+          completed: complianceComplete,
+          context: activeProject?.name || activeProg?.name || 'Portfolio',
         },
         risks: filteredRisks,
         issues: filteredIssues,
-        projects: activeProjectId ? [activeProject] : safeProjects
+        // Bug 5 fix: filter out undefined if project not found
+        // Programme context: pass only projects belonging to that programme
+        projects: activeProjectId
+          ? [activeProject].filter(Boolean)
+          : activeProgrammeId
+            ? safeProjects.filter(p => p.programmeId === activeProgrammeId)
+            : safeProjects,
       }, user);
       setStrategicInsights(result);
-    } catch (err) {
-      setAiError('Failed to generate strategic insights. Please try again.');
+    } catch (err: any) {
+      // Bug 7 fix: console.error + toast.error
+      console.error('Strategic insights generation failed:', err);
+      const msg = 'Failed to generate strategic insights. Please try again.';
+      setAiError(msg);
+      toast.error(msg);
     } finally {
       setGeneratingAI(false);
+      generatingRef.current = false;
     }
   };
 
@@ -239,9 +263,6 @@ export function RiskDashboard() {
     setStrategicInsights(null);
     setAiError(null);
   };
-
-  const { setActiveProject, setActiveProgramme } = useStore();
-  const [, setSearchParams] = useSearchParams();
 
   React.useEffect(() => {
     const pId = searchParams.get('projectId');
@@ -361,10 +382,18 @@ export function RiskDashboard() {
     };
   }).filter(d => d.gross > 0 || d.residual > 0).slice(0, 6);
 
-  const allActions = [...filteredRisks, ...filteredIssues];
-
   return (
     <>
+    {/* Bug 10 fix: full-screen overlay during strategic outlook generation */}
+    {generatingAI && (
+      <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex flex-col items-center justify-center gap-6">
+        <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-500 rounded-full animate-spin shadow-xl" />
+        <div className="text-center space-y-1">
+          <p className="text-white font-black text-sm uppercase tracking-widest">Generating Strategic Outlook</p>
+          <p className="text-slate-400 text-xs font-medium">Analysing all risks, issues and compliance posture…</p>
+        </div>
+      </div>
+    )}
     <div className="max-w-7xl mx-auto space-y-5 px-4 md:px-0 pb-12 pb-safe">
       <ServiceManagementBar className="mb-4" />
 
@@ -777,7 +806,8 @@ export function RiskDashboard() {
           <div className="p-3">
             {filteredRisks.filter(r => (r.residualRating || 0) >= 12).length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {[...filteredRisks].sort((a, b) => (b.residualRating || 0) - (a.residualRating || 0)).slice(0, 6).map(r => (
+                {/* Bug 9 fix: filter to ≥12 before sorting — prevents non-critical risks appearing here */}
+                {filteredRisks.filter(r => (r.residualRating || 0) >= 12).sort((a, b) => (b.residualRating || 0) - (a.residualRating || 0)).slice(0, 6).map(r => (
                   <div key={r.id} className="border border-slate-200 rounded-lg p-3 hover:shadow-md transition-all bg-slate-50 hover:bg-white">
                     <div className="flex justify-between items-start mb-1.5">
                       <span className="text-[10px] font-bold text-slate-400 whitespace-nowrap">{r.id}</span>

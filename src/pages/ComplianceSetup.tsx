@@ -1544,7 +1544,6 @@ export function ComplianceSetup() {
               <AIErrorAlert
                 error={error}
                 onRetry={runAnalysis}
-                onClear={() => setError(null)}
               />
             </div>
           )}

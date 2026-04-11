@@ -265,7 +265,7 @@ export function Projects() {
     setIsDeleting(true);
     try {
       await deleteProject(id);
-      toast.success(`Project "${name}" deleted successfully`, { icon: "🗑️" });
+      toast.success(`Project "${name}" deleted successfully`);
       setDeleteModal(null);
       if (wasActive) {
         navigate("/dashboard");
@@ -300,14 +300,10 @@ export function Projects() {
     try {
       if (isArchived) {
         await unarchiveProject(id);
-        toast.success(`Project "${name}" restored from archive`, {
-          icon: "📂",
-        });
+        toast.success(`Project "${name}" restored from archive`);
       } else {
         await archiveProject(id);
-        toast.success(`Project "${name}" archived successfully`, {
-          icon: "📦",
-        });
+        toast.success(`Project "${name}" archived successfully`);
       }
     } catch (err) {
       console.error(
@@ -1023,7 +1019,9 @@ export function Projects() {
                 const count = visibleProjects.filter(
                   (p) =>
                     (p.riba || "").includes(stageCode) ||
-                    (p.milestones || []).some((m: any) => m.stage === stageCode),
+                    (p.milestones || []).some(
+                      (m: any) => m.stage === stageCode,
+                    ),
                 ).length;
                 return (
                   <button
