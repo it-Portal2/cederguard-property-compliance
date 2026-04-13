@@ -283,21 +283,43 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
                                 <div className="flex flex-col gap-1.5">
                                   <span className="font-black text-slate-900 text-sm tracking-tight">{item.reg}</span>
                                   <span className="text-slate-500 text-xs leading-relaxed max-w-2xl font-medium mb-1">{stripMarkdown(item.req)}</span>
-                                  <div className="flex items-start gap-1.5 p-3 bg-amber-50/50 rounded-lg border border-amber-100/50 mt-1">
-                                    <AlertCircle className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
-                                    <span className="text-amber-700 text-[11px] leading-relaxed font-semibold">{stripMarkdown(reason) || item.trigger}</span>
+                                  <div className={clsx(
+                                    "flex items-start gap-2 p-3 rounded-xl border mt-2 shadow-xs transition-all",
+                                    type === 'conditional' 
+                                      ? "bg-amber-50/80 border-amber-100 text-amber-900" 
+                                      : "bg-slate-50 border-slate-200 text-slate-600"
+                                  )}>
+                                    <div className="mt-0.5">
+                                      {type === 'conditional' 
+                                        ? <CheckCircle2 className="w-3.5 h-3.5 text-amber-500" />
+                                        : <AlertCircle className="w-3.5 h-3.5 text-slate-400" />
+                                      }
+                                    </div>
+                                    <div className="flex flex-col gap-0.5">
+                                      <span className="text-[9px] font-black uppercase tracking-wider opacity-60">
+                                        {type === 'conditional' ? 'AI Suggestion Reason' : 'AI Exclusion Logic'}
+                                      </span>
+                                      <span className="text-[11px] leading-relaxed font-bold">
+                                        {stripMarkdown(reason) || (type === 'conditional' ? item.trigger : "Does not meet regulatory trigger criteria based on project profile.")}
+                                      </span>
+                                    </div>
                                   </div>
                                 </div>
                               </td>
                               <td className="px-8 py-6">
-                                <span className={clsx(
-                                  'px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border',
-                                  type === 'conditional'
-                                    ? 'bg-amber-50 text-amber-600 border-amber-200/50'
-                                    : 'bg-slate-100 text-slate-500 border-slate-200/50'
-                                )}>
-                                  {type === 'conditional' ? 'Conditional' : 'Excluded'}
-                                </span>
+                                <div className="flex flex-col gap-1.5">
+                                  <span className={clsx(
+                                    'px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border w-fit shadow-xs',
+                                    type === 'conditional'
+                                      ? 'bg-amber-100/50 text-amber-700 border-amber-200/50'
+                                      : 'bg-slate-200/50 text-slate-500 border-slate-300/50'
+                                  )}>
+                                    {type === 'conditional' ? 'Conditional' : 'Excluded'}
+                                  </span>
+                                  <span className="text-[9px] font-bold text-slate-400 pl-1 uppercase tracking-tighter italic">
+                                    Ref: {item.id}
+                                  </span>
+                                </div>
                               </td>
                               <td className="px-8 py-6 text-right">
                                 <button

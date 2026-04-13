@@ -97,9 +97,14 @@ MANDATORY VERIFICATION WORKFLOW:
 We are implementing a "Yes/No" verification workflow for your suggestions.
 1. 'applicableIds': Use this for items that DEFINITELY apply based on the profile. These will be marked as 'Verified' automatically.
 2. 'conditionalIds': Use this for items that MIGHT apply. For example, if the user mentions "potential development", include planning requirements here. These will be placed in a 'Pending' queue for the user to verify.
-3. BE AGGRESSIVE with 'conditionalIds'. If there is any chance a regulation applies but it's not 100% certain from the answers, put it in 'conditionalIds' with a clear explanation in the 'condition' field.
+3. BE EXTREMELY AGGRESSIVE with 'conditionalIds'. If there is even a 5% chance a regulation applies based on the answers or the project type (e.g. any residential refurb might trigger Damp & Mould or Accessibility), put it in 'conditionalIds' with a clear, specific explanation in the 'condition' field.
 
-EVALUATE ALL ITEMS: You must evaluate EVERY SINGLE compliance item provided in the list below. Return ALL applicable compliance requirements. Do not limit your output to a small number of items. If 40 items apply based on the UK law, return all 40 IDs in the 'applicableIds' array. Never limit your responses to just Health & Safety or Fire Safety.
+EVALUATE ALL ITEMS: You must evaluate EVERY SINGLE compliance item provided in the list below. Return ALL applicable compliance requirements. Do not limit your output to a small number of items. If 60 items apply based on the UK law, return all 60 IDs in the 'applicableIds' array. Never limit your responses to just Health & Safety or Fire Safety.
+
+EXCLUSION TRANSPARENCY (CRITICAL):
+For EVERY item that you do NOT include in 'applicableIds' or 'conditionalIds', you MUST provide a specific reason in 'notApplicableIds'. 
+- Do NOT provide generic reasons like "Not applicable".
+- DO provide technical or legal reasons, e.g., "Excluded as project is below 11m and does not involve cladding remediation" or "Procurement regulations do not apply as this is a private entity project below the PCR threshold".
 
 PLANNING REQUIREMENT FILTERING:
 The user has previously noted that sometimes 'Planning' requirements are triggered even when they shouldn't be (e.g., if they already have permissions).

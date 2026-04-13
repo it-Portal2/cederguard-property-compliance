@@ -39,7 +39,16 @@ export const ServiceManagementBar: React.FC<{ className?: string }> = ({ classNa
   const [isOpen, setIsOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
-  const isProject = !!activeProject;
+  const activeProjectId = useStore(state => state.activeProjectId);
+  const activeProgrammeId = useStore(state => state.activeProgrammeId);
+
+  // Determine context from the URL type param first (most explicit),
+  // falling back to store state. This prevents stale activeProjectId
+  // from overriding an explicit programme context.
+  const urlType = new URLSearchParams(location.search).get('type');
+  const isProject = urlType
+    ? urlType === 'project'
+    : !!activeProjectId;
   const context = activeProject || activeProgramme;
 
   if (!context) return null;
@@ -295,11 +304,14 @@ export const ServiceManagementBar: React.FC<{ className?: string }> = ({ classNa
       icon: (isTrackerPage || isCompliancePage) ? ShieldCheck : AlertCircle,
       onClick: () => {
         if (isTrackerPage) {
-          navigate('/compliance/tracker?action=add-compliance');
+          const params = new URLSearchParams(location.search);
+          params.set('action', 'add-compliance');
+          navigate(`${pathname}?${params.toString()}`);
         } else if (isCompliancePage) {
           navigate('/compliance/tracker');
         } else {
-          navigate(isProject ? '/risk/register' : '/risk/programme-register');
+          const contextParam = isProject ? `?projectId=${activeProject?.id}` : activeProgramme ? `?programmeId=${activeProgramme?.id}` : "";
+          navigate((isProject ? '/risk/register' : '/risk/programme-register') + contextParam);
         }
       },
       description: isTrackerPage
@@ -325,7 +337,10 @@ export const ServiceManagementBar: React.FC<{ className?: string }> = ({ classNa
         : RefreshCw,
       onClick: (isTrackerPage || isCompliancePage) 
         ? (isTrackerPage 
-            ? () => navigate(isProject ? '/risk/register' : '/risk/programme-register')
+            ? () => {
+                const contextParam = isProject ? `?projectId=${activeProject?.id}` : activeProgramme ? `?programmeId=${activeProgramme?.id}` : "";
+                navigate((isProject ? '/risk/register' : '/risk/programme-register') + contextParam);
+              }
             : handleRerunCompliance)
         : handleRerunCompliance,
       description: (isTrackerPage || isCompliancePage)
@@ -387,7 +402,8 @@ export const ServiceManagementBar: React.FC<{ className?: string }> = ({ classNa
                     if (location.search.includes('projectId') || location.search.includes('type')) {
                       const params = new URLSearchParams(location.search);
                       params.delete('projectId');
-                      params.delete('type');
+                      params.delete('programmeId');
+                      params.set('type', isProject ? 'project' : 'programme');
                       navigate({ pathname: location.pathname, search: params.toString() }, { replace: true });
                     }
                   }}

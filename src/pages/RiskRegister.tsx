@@ -134,6 +134,7 @@ export function RiskRegister() {
     projects,
     programmes,
     activeProjectId,
+    setActiveProject,
     activeProgrammeId,
     user,
     addNotification,
@@ -143,6 +144,14 @@ export function RiskRegister() {
   } = useStore();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const urlProjectId = searchParams.get('projectId');
+
+  // Sync URL param to store
+  useEffect(() => {
+      if (urlProjectId && urlProjectId !== activeProjectId) {
+          setActiveProject(urlProjectId);
+      }
+  }, [urlProjectId, activeProjectId, setActiveProject]);
   const fromInitiation = searchParams.get("from") === "initiation";
   const userRole = (user?.role || user?.profile?.role) as UserRole | undefined;
   const userIsSuperAdmin = isSuperAdmin(user?.email, userRole);
@@ -822,7 +831,7 @@ export function RiskRegister() {
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center flex-wrap gap-2">
                           <span
-                            className="font-bold text-slate-900 leading-snug text-xs truncate max-w-[400px]"
+                            className="font-bold text-slate-900 leading-tight text-[11px] line-clamp-1 hover:line-clamp-none transition-all cursor-help"
                             title={stripMarkdown(r.title)}
                           >
                             {stripMarkdown(r.title)}
@@ -843,7 +852,7 @@ export function RiskRegister() {
                           )}
                         </div>
                         <span
-                          className="text-[10px] text-slate-400 font-normal leading-relaxed"
+                          className="text-[10px] text-slate-400 font-normal leading-relaxed line-clamp-2 hover:line-clamp-none transition-all"
                           title={stripMarkdown(r.desc)}
                         >
                           {stripMarkdown(r.desc)}

@@ -850,15 +850,14 @@ export function ComplianceSetup() {
       const filteredLibrary = allLibraryItems.filter((item) => {
         const id = item.id.toLowerCase();
         // Only skip HRB-gateway-specific items (bs-1 to bs-5) if not an HRB.
-        // Non-gateway BS items (bs-6 cladding, bs-7 remediation) apply to all buildings.
+        // Non-gateway BS items (bs-6 cladding, bs-7 remediation, etc.) may apply to any building.
         if (id.startsWith("bs-") && !isHRB) {
           const bsNum = parseInt(id.replace("bs-", ""), 10);
           if (!isNaN(bsNum) && bsNum <= 5) return false;
         }
-        // Skip Social Housing items if not relevant
-        if (id.startsWith("sh-") && !isSocialHousing) return false;
-        // Skip Retrofit if not relevant
-        if (id.startsWith("rf-") && !isRetrofit) return false;
+
+        // We used to skip sh- and rf- items here, but we will now let the AI handle it
+        // so that the AI can explain WHY they are excluded, providing better transparency.
         return true;
       });
 
@@ -1224,12 +1223,12 @@ export function ComplianceSetup() {
           typeof c === "string"
             ? {
                 id: c,
-                reason: "Conditionally matched.",
+                reason: "Conditionally matched based on project profile.",
                 type: "conditional" as const,
               }
             : {
                 id: c.id,
-                reason: c.reason || c.condition || "Conditionally matched.",
+                reason: c.condition || c.reason || "Conditionally matched.",
                 type: "conditional" as const,
               },
         )

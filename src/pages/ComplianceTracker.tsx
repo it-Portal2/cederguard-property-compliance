@@ -147,6 +147,8 @@ export function ComplianceTracker() {
   useEffect(() => {
       const action = searchParams.get('action');
       if (action === 'add-compliance') {
+          setEditingItem(null);
+          setNewReq({ domain: 'General', reg: '', auth: '', risk: 'Medium', req: '' });
           setIsAddModalOpen(true);
           // Clean up the URL
           setSearchParams(prev => {

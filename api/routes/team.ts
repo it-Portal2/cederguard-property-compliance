@@ -144,10 +144,8 @@ export const teamRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
   },
 
   getAssignablePMs: async (req, res, ctx) => {
-    const { db, uid, email, userData, isAdmin } = ctx;
+    const { db, uid, email, userData, isAdmin, primaryUid } = ctx;
     const isClientAdmin = userData?.role === 'client_admin' || userData?.role === 'enterprise';
-
-    if (!isAdmin && !isClientAdmin) return res.status(403).json({ error: 'Forbidden' });
 
     // Include all roles that can manage projects
     const pmRoles = [
@@ -158,9 +156,9 @@ export const teamRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
 
     let query = db.collection('users').where('role', 'in', pmRoles);
 
-    // If client admin, only show PMs from their company, BUT also include themselves
-    if (isClientAdmin && !isAdmin) {
-      query = query.where('clientId', '==', uid);
+    // Filter to just this organisation
+    if (!isAdmin) {
+      query = query.where('clientId', '==', primaryUid);
     }
 
     const snap = await query.get();
@@ -171,14 +169,24 @@ export const teamRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
       displayName: doc.data().displayName || doc.data().companyName || doc.data().email
     }));
 
-    // If client admin, make sure they are in the list so they can assign to themselves
-    if (isClientAdmin && !users.find(u => u.uid === uid)) {
-      users.push({
-        uid,
-        email,
-        role: userData.role,
-        displayName: userData.displayName || userData.companyName || email
-      });
+    // Ensure the Client Admin themselves is in the assignable list
+    if (!users.find(u => u.uid === primaryUid)) {
+      const adminDoc = await db.collection('users').doc(primaryUid).get();
+      if (adminDoc.exists) {
+        users.push({
+          uid: primaryUid,
+          email: adminDoc.data()?.email,
+          role: adminDoc.data()?.role,
+          displayName: adminDoc.data()?.displayName || adminDoc.data()?.companyName || adminDoc.data()?.email
+        });
+      } else if (isClientAdmin && !users.find(u => u.uid === uid)) {
+        users.push({
+          uid,
+          email,
+          role: userData.role,
+          displayName: userData.displayName || userData.companyName || email
+        });
+      }
     }
 
     return res.status(200).json({ success: true, users });

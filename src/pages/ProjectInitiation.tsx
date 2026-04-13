@@ -980,6 +980,34 @@ export function ProjectInitiation() {
                     />
                   </div>
                 </div>
+
+                <div className="flex justify-end pt-8 mt-8 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={(e) => handleSubmit(e as any)}
+                    disabled={loading || !requiredDone || (!!activeProjectId && !isDirty)}
+                    className={clsx(
+                      "flex items-center gap-2 px-8 py-3.5 font-black rounded-xl text-sm uppercase tracking-widest transition-all shadow-lg active:scale-95",
+                      requiredDone && (!activeProjectId || isDirty)
+                        ? "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200 hover:shadow-indigo-300 transform hover:-translate-y-0.5"
+                        : "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200 shadow-none"
+                    )}
+                  >
+                    {loading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Working…
+                      </>
+                    ) : activeProjectId ? (
+                      <>
+                        <Save className="w-5 h-5 text-indigo-200" /> Save Details
+                      </>
+                    ) : (
+                      <>
+                        <Rocket className="w-5 h-5 text-indigo-200" /> Create Project
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </form>
           </div>

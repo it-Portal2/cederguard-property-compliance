@@ -56,11 +56,20 @@ function StatusBadge({ status }: { status: string }) {
 export function ProgrammeRiskRegister() {
     const { 
         risks, updateRisk, deleteRisk, addRisk, addRisks, 
-        programmes, projects, activeProgrammeId, user, addNotification,
+        programmes, projects, activeProgrammeId, setActiveProgramme, user, addNotification,
         getPendingRisks, approveRisk, dismissRisk 
     } = useStore();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+    const urlProgrammeId = searchParams.get('programmeId');
+
+    // Sync URL param to store
+    useEffect(() => {
+        if (urlProgrammeId && urlProgrammeId !== activeProgrammeId) {
+            setActiveProgramme(urlProgrammeId);
+        }
+    }, [urlProgrammeId, activeProgrammeId, setActiveProgramme]);
+
     const fromInitiation = searchParams.get('from') === 'initiation';
     const userRole = (user?.role || user?.profile?.role) as UserRole | undefined;
     const userIsSuperAdmin = isSuperAdmin(user?.email, userRole);
@@ -101,8 +110,12 @@ export function ProgrammeRiskRegister() {
         }
     }, [searchParams, navigate]);
 
-    const escalatedFromProjects = (Array.isArray(risks) ? risks : []).filter(r => r.escalated).map(r => ({ ...r, _source: 'project' as const }));
-    const progRisks = (Array.isArray(risks) ? risks : []).filter(r => (r as any).isProgrammeLevel).map(r => ({ ...r, _source: 'programme' as const }));
+    const safeRisks = Array.isArray(risks) ? risks : [];
+    const safeProjects = Array.isArray(projects) ? projects : [];
+    // Scope to active programme: include escalated risks from projects in this programme + programme-level risks
+    const progProjectIds = new Set(safeProjects.filter(p => p.programmeId === activeProgrammeId).map(p => p.id));
+    const escalatedFromProjects = safeRisks.filter(r => r.escalated && (progProjectIds.has(r.projectId || '') || (r as any).programmeId === activeProgrammeId)).map(r => ({ ...r, _source: 'project' as const }));
+    const progRisks = safeRisks.filter(r => (r as any).isProgrammeLevel && ((r as any).programmeId === activeProgrammeId)).map(r => ({ ...r, _source: 'programme' as const }));
     const allProg = [...escalatedFromProjects, ...progRisks];
 
     const filtered = allProg.filter(r => {
@@ -589,12 +602,12 @@ export function ProgrammeRiskRegister() {
                                     <td className="px-3 py-3 font-medium text-slate-800 min-w-[350px] whitespace-normal leading-relaxed">
                                         <div className="flex flex-col gap-1.5">
                                           <div className="flex items-center flex-wrap gap-2">
-                                              <span className="font-black text-slate-900 text-[12px] tracking-tight">{r.title}</span>
+                                              <span className="font-black text-slate-900 text-[11px] tracking-tight line-clamp-1 hover:line-clamp-none transition-all cursor-help" title={stripMarkdown(r.title)}>{r.title}</span>
                                               {differenceInDays(new Date(), new Date(r.dateAdded || '')) < 1 && (
-                                                  <span className="px-1.5 py-0.5 bg-indigo-600 text-white text-[7px] font-black uppercase rounded shadow-sm animate-pulse shrink-0">New</span>
+                                                  <span className="px-1.5 py-0.5 bg-indigo-600 text-white text-[7px] font-black uppercase rounded shadow-sm shrink-0">New</span>
                                               )}
                                           </div>
-                                          <span className="text-[10px] text-slate-500 italic font-normal line-clamp-2 max-w-[400px] leading-relaxed" title={stripMarkdown(r.desc || '')}>{stripMarkdown(r.desc || '')}</span>
+                                          <span className="text-[10px] text-slate-500 italic font-normal line-clamp-2 hover:line-clamp-none transition-all" title={stripMarkdown(r.desc || '')}>{stripMarkdown(r.desc || '')}</span>
                                         </div>
                                     </td>
                                     <td className="px-3 py-3 text-slate-500 whitespace-nowrap font-medium">{r.owner || '—'}</td>

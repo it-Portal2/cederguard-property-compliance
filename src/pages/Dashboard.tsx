@@ -269,6 +269,7 @@ export function Dashboard() {
                     await loadProgrammeData(id);
                     navigate(`/dashboard?programmeId=${id}`);
                   } else if (type === 'project') {
+                    setActiveProgramme(null);
                     setActiveProject(id);
                     await loadProjectData(id);
                     navigate(`/dashboard?projectId=${id}`);
@@ -1005,7 +1006,7 @@ export function Dashboard() {
                 </div>
                 <div className="px-6 py-4 bg-slate-50/30 border-t border-slate-100 text-center">
                    <Link 
-                    to="/risk/register" 
+                    to={activeProjectId ? '/risk/register' : activeProgrammeId ? '/risk/programme-register' : '/risk/register'} 
                     className="text-[10px] font-black text-indigo-600 hover:text-indigo-700 uppercase tracking-widest flex items-center justify-center gap-2"
                   >
                     Investigate Full Portfolio Risk Matrix <ArrowRight className="w-3 h-3" />
@@ -1158,7 +1159,7 @@ export function Dashboard() {
                         <BarChart className="w-4 h-4 text-indigo-500" />
                         <h3 className="text-xs font-bold text-slate-600 uppercase tracking-widest">Top 5 Critical Risks</h3>
                       </div>
-                      <Link to="/risk/register" className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 uppercase tracking-wider">View Full Register</Link>
+                      <Link to={activeProjectId ? '/risk/register' : activeProgrammeId ? '/risk/programme-register' : '/risk/register'} className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 uppercase tracking-wider">View Full Register</Link>
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-sm">
