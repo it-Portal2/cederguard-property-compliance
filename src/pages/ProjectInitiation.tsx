@@ -217,6 +217,13 @@ export function ProjectInitiation() {
     if (user && !isAtLeastPM(userRole)) navigate("/projects");
   }, [user, userRole, navigate]);
 
+  // Ensure PM receives a non-empty PM id on blank initiation
+  useEffect(() => {
+    if (user?.email && !formData.projectManagerId && !activeProjectId) {
+      setFormData(prev => ({ ...prev, projectManagerId: user.email! }));
+    }
+  }, [user?.email, formData.projectManagerId, activeProjectId]);
+
   useEffect(() => {
     const fetchPMs = async () => {
       setLoadingPMs(true);

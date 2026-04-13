@@ -294,7 +294,9 @@ export const ServiceManagementBar: React.FC<{ className?: string }> = ({ classNa
       label: isTrackerPage ? 'Add Requirement' : (isCompliancePage ? 'Main Compliance Tracker' : 'Add Risk'),
       icon: (isTrackerPage || isCompliancePage) ? ShieldCheck : AlertCircle,
       onClick: () => {
-        if (isTrackerPage || isCompliancePage) {
+        if (isTrackerPage) {
+          navigate('/compliance/tracker?action=add-compliance');
+        } else if (isCompliancePage) {
           navigate('/compliance/tracker');
         } else {
           navigate(isProject ? '/risk/register' : '/risk/programme-register');

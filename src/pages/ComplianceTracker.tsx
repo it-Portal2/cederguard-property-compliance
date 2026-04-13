@@ -1194,7 +1194,8 @@ export function ComplianceTracker() {
                                                 onKeyDown={async (e) => {
                                                   if (e.key === 'Enter' && !e.shiftKey) {
                                                     e.preventDefault();
-                                                    const val = e.currentTarget.value.trim();
+                                                    const input = e.currentTarget;
+                                                    const val = input.value.trim();
                                                     if (!val) return;
                                                     const updateObj = {
                                                       id: `upd-${Date.now()}`,
@@ -1204,7 +1205,7 @@ export function ComplianceTracker() {
                                                     };
                                                     try {
                                                       await addComplianceUpdate(item.id, updateObj);
-                                                      e.currentTarget.value = '';
+                                                      input.value = '';
                                                     } catch (err: any) {
                                                       toast.error(err?.message || 'Something went wrong. Please check your connection.');
                                                     }
