@@ -99,6 +99,8 @@ We are implementing a "Yes/No" verification workflow for your suggestions.
 2. 'conditionalIds': Use this for items that MIGHT apply. For example, if the user mentions "potential development", include planning requirements here. These will be placed in a 'Pending' queue for the user to verify.
 3. BE AGGRESSIVE with 'conditionalIds'. If there is any chance a regulation applies but it's not 100% certain from the answers, put it in 'conditionalIds' with a clear explanation in the 'condition' field.
 
+EVALUATE ALL ITEMS: You must evaluate EVERY SINGLE compliance item provided in the list below. Return ALL applicable compliance requirements. Do not limit your output to a small number of items. If 40 items apply based on the UK law, return all 40 IDs in the 'applicableIds' array. Never limit your responses to just Health & Safety or Fire Safety.
+
 PLANNING REQUIREMENT FILTERING:
 The user has previously noted that sometimes 'Planning' requirements are triggered even when they shouldn't be (e.g., if they already have permissions).
 YOU MUST PERFORM A TRIPLE-CHECK:
@@ -106,8 +108,7 @@ YOU MUST PERFORM A TRIPLE-CHECK:
 2. Interrogate each requirement against the project profile: "Does this SPECIFIC answer (e.g. No Planning needed or Works under Permitted Development) explicitly rule this out?"
 3. Validate and exclude any false positives. DO NOT include Planning requirements in 'applicableIds' if the user has indicated they are not needed. If uncertain, put them in 'conditionalIds'.
 
-Ensure at least 10 highly critical compliance risks and 10 urgent compliance actions are provided for a robust, production-grade assessment.
-For every risk and action, you must be extremely detailed and address:
+For the risks and actions, you must be extremely detailed and address:
 - WHAT: The specific requirement, risk, or action.
 - WHO: The responsible party, stakeholder, or regulatory body.
 - WHEN: The trigger point, deadline, or frequency.

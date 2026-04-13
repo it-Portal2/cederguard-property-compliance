@@ -821,14 +821,31 @@ export function ComplianceSetup() {
 
       const isHRB =
         projectInfo.q2_1?.toLowerCase().includes("hrb") ||
-        projectInfo.q2_1?.toLowerCase().includes("higher-risk");
+        projectInfo.q2_1?.toLowerCase().includes("higher-risk") ||
+        projectInfo.p2_hrb === "Yes" ||
+        projectInfo.p2_hrb === "true" ||
+        String(projectInfo.storeys || "").includes("7") ||
+        String(projectInfo.storeys || "").includes("8-15") ||
+        String(projectInfo.storeys || "").includes("16-30") ||
+        String(projectInfo.storeys || "").includes("30+") ||
+        String(projectInfo.p2_storeys || "").includes("7") ||
+        String(projectInfo.p2_storeys || "").includes("8-15") ||
+        String(projectInfo.p2_storeys || "").includes("16-30") ||
+        String(projectInfo.p2_storeys || "").includes("30+");
+        
       const isSocialHousing =
         projectInfo.q2_2?.toLowerCase().includes("social") ||
         projectInfo.type?.toLowerCase().includes("social") ||
-        projectInfo.scope?.toLowerCase().includes("social");
+        projectInfo.scope?.toLowerCase().includes("social") ||
+        projectInfo.p2_use?.some((u: string) => u.toLowerCase().includes("social") || u.toLowerCase().includes("affordable")) ||
+        projectInfo.p1_client?.toLowerCase().includes("housing association") ||
+        projectInfo.p1_client?.toLowerCase().includes("local authority");
+        
       const isRetrofit =
         projectInfo.q2_6 === "Yes" ||
-        projectInfo.scope?.toLowerCase().includes("retrofit");
+        projectInfo.scope?.toLowerCase().includes("retrofit") ||
+        projectInfo.p1_type?.toLowerCase().includes("retrofit") ||
+        projectInfo.p1_type?.toLowerCase().includes("refurb");
 
       const filteredLibrary = allLibraryItems.filter((item) => {
         const id = item.id.toLowerCase();
