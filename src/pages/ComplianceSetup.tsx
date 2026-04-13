@@ -173,6 +173,7 @@ export function ComplianceSetup() {
   const [showAnalysisExists, setShowAnalysisExists] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isDataLoading, setIsDataLoading] = useState(false); // non-AI loading (select/restart)
+  const [isRestarting, setIsRestarting] = useState(false); // restart-specific loader
   const [error, setError] = useState<string | ApiError | null>(null);
   const [searchParams] = useSearchParams();
   const fromInitiation = searchParams.get("from") === "initiation";
@@ -401,8 +402,8 @@ export function ComplianceSetup() {
           )
     ) as any;
 
-    // Show overlay if compliance setup is already done for this entity
-    // OR if we already have compliance items for this project/programme
+    // "Already Complete" means the framework has been published (complianceSetupDone flag).
+    // Having compliance items in the tracker does NOT mean published — it means mid-analysis.
     const isSetupDone = !!currentEntity?.complianceSetupDone;
     const hasComplianceItems = activeProjectId
       ? (Array.isArray(complianceItems) ? complianceItems : []).some(
@@ -412,7 +413,6 @@ export function ComplianceSetup() {
           (item) => item.programmeId === activeProgrammeId,
         );
 
-    const alreadyComplete = isSetupDone || hasComplianceItems;
     const restart = searchParams.get("restart") === "true";
 
     if (isResetting) {
@@ -420,11 +420,17 @@ export function ComplianceSetup() {
       return;
     }
 
-    if (alreadyComplete && !restart && phase === 1) {
+    if (isSetupDone && !restart && phase === 1) {
+      // Framework was published — show the "already complete" overlay
       setShowAnalysisExists(true);
+    } else if (hasComplianceItems && !isSetupDone && lastAnalysisResults && phase === 1 && !restart) {
+      // Mid-analysis resume after page refresh — skip the modal and go straight to review
+      setShowAnalysisExists(false);
+      setPhase(3);
+      setSubPhase("review");
     } else {
       setShowAnalysisExists(false);
-      // Clear stale results if we are starting fresh on a new entity
+      // Clear stale results only when switching to a brand-new entity with no data at all
       if (!isSetupDone && !hasComplianceItems && lastAnalysisResults) {
         setLastAnalysisResults(null);
       }
@@ -584,8 +590,23 @@ export function ComplianceSetup() {
     setLoading(true);
     setIsDataLoading(true);
     try {
-      // Clear stale AI results when switching context
-      setLastAnalysisResults(null);
+      // Immediately zero out all compliance state for the previous context so no
+      // stale data flashes while the new programme's data loads asynchronously.
+      useStore.setState({
+        lastAnalysisResults: null,
+        complianceAnalysis: null,
+        complianceItems: [],
+        projectInfo: {},
+      });
+      setPhase(1);
+      setSubPhase("review");
+      setPathChoice("none");
+      setIsQuestionnaireActive(false);
+      setLastAnalyzedAnswers(null);
+      setActiveQuestionId(null);
+      setExpandedPhases([]);
+      setCurrentQuestionPhase(0);
+      setError(null);
 
       await loadProgrammeData(progId);
 
@@ -652,8 +673,23 @@ export function ComplianceSetup() {
     setLoading(true);
     setIsDataLoading(true);
     try {
-      // Clear stale AI results when switching context
-      setLastAnalysisResults(null);
+      // Immediately zero out all compliance state for the previous context so no
+      // stale data flashes while the new project's data loads asynchronously.
+      useStore.setState({
+        lastAnalysisResults: null,
+        complianceAnalysis: null,
+        complianceItems: [],
+        projectInfo: {},
+      });
+      setPhase(1);
+      setSubPhase("review");
+      setPathChoice("none");
+      setIsQuestionnaireActive(false);
+      setLastAnalyzedAnswers(null);
+      setActiveQuestionId(null);
+      setExpandedPhases([]);
+      setCurrentQuestionPhase(0);
+      setError(null);
 
       await loadProjectData(projId);
 
@@ -978,7 +1014,10 @@ export function ComplianceSetup() {
 
       setComplianceItems(itemsToSet);
 
-      // Persist analysis results immediately so data survives refresh before Finalise
+      // Save analysis to DB so phase 3 restores correctly after a page refresh.
+      // complianceItems are also auto-saved by the store setter, so both sides
+      // of the resume state are persisted. Neither write sets complianceSetupDone —
+      // that only happens on Publish, keeping the "already complete" modal silent.
       const analysisPayload = {
         summary: analysis.summary,
         applicableIds: analysis.applicableIds || [],
@@ -990,7 +1029,7 @@ export function ComplianceSetup() {
         keyRisks: analysis.keyRisks || [],
         category: determineProjectCategory(fullInfo).category,
       };
-      await api.saveData("complianceAnalysis", analysisPayload, contextId);
+      api.saveData("complianceAnalysis", analysisPayload, contextId).catch(console.error);
 
       // Unlock tracker so user can review
       setComplianceLocked(false);
@@ -1022,54 +1061,32 @@ export function ComplianceSetup() {
   const handleRestart = async () => {
     if (
       window.confirm(
-        "Are you sure you want to restart the analysis? All current progress will be lost.",
+        "Are you sure you want to restart the analysis? All current compliance data and results will be cleared.",
       )
     ) {
       const contextId = activeProjectId || activeProgrammeId;
       if (!contextId) return;
 
-      setLoading(true);
-      setIsDataLoading(true);
+      setIsRestarting(true);
       setIsResetting(true);
+      setShowAnalysisExists(false);
       try {
-        // 1. Reset setup status in store to prevent the 'Existing Analysis' loop
+        // 1. Clear all compliance-related data from Firestore in parallel
+        const clearOps: Promise<any>[] = [
+          api.saveData("complianceItems", [], contextId),
+          api.saveData("complianceAnalysis", null, contextId),
+        ];
+
+        // 2. Reset complianceSetupDone flag on the project/programme
         if (activeType === "project") {
-          await updateProject(contextId, { complianceSetupDone: false });
-          setComplianceItems(
-            (Array.isArray(complianceItems) ? complianceItems : []).filter(
-              (c) => c.projectId !== contextId,
-            ),
-          );
-          await api.saveData("complianceItems", [], contextId);
-          await api.saveData("complianceAnalysis", null, contextId);
+          clearOps.push(updateProject(contextId, { complianceSetupDone: false }));
         } else {
-          await updateProgramme(contextId, { complianceSetupDone: false });
-          setComplianceItems(
-            (Array.isArray(complianceItems) ? complianceItems : []).filter(
-              (c) => c.programmeId !== contextId,
-            ),
-          );
-          await api.saveData("complianceItems", [], contextId);
-          await api.saveData("complianceAnalysis", null, contextId);
+          clearOps.push(updateProgramme(contextId, { complianceSetupDone: false }));
         }
 
-        // 2. Clear results and close popup
-        setLastAnalysisResults(null);
-        setComplianceAnalysis(null);
-        setPhase(1);
-        setShowAnalysisExists(false);
-
-        // 3. Reset and Activate questionnaire
-        setIsQuestionnaireActive(true);
-        setActiveQuestionId(null);
-        setExpandedPhases(
-          activeType === "programme" ? ["prog_org"] : ["proj_scope"],
-        );
-
-        // 4. Clear question answers but keep core project details (name, type, etc.)
+        // 3. Clear questionnaire answers from projectInfo, keep core details
         const newInfo = { ...projectInfo };
         Object.keys(newInfo).forEach((key) => {
-          // New question IDs start with q (e.g. q1_1), legacy with pg_, pj_, etc.
           if (
             key.startsWith("q") ||
             key.startsWith("pg_") ||
@@ -1084,87 +1101,64 @@ export function ComplianceSetup() {
           }
         });
         if ((newInfo as any).chars) delete (newInfo as any).chars;
-        setProjectInfo(newInfo);
+        clearOps.push(api.saveData("projectInfo", newInfo, contextId));
 
-        // 5. Update URL with restart=true for persistence and useEffect safety
-        const params = new URLSearchParams(searchParams);
-        params.set("restart", "true");
-        navigate(`?${params.toString()}`, { replace: true });
+        await Promise.all(clearOps);
+
+        // 4. Sync store state after successful backend clear
+        if (activeType === "project") {
+          setComplianceItems(
+            (Array.isArray(complianceItems) ? complianceItems : []).filter(
+              (c) => c.projectId !== contextId,
+            ),
+          );
+        } else {
+          setComplianceItems(
+            (Array.isArray(complianceItems) ? complianceItems : []).filter(
+              (c) => c.programmeId !== contextId,
+            ),
+          );
+        }
+        setLastAnalysisResults(null);
+        setComplianceAnalysis(null);
+        // Update projectInfo in store (also persists, but already saved above)
+        useStore.setState({ projectInfo: newInfo });
+
+        // 5. Navigate cleanly to step 1 of setup, stripping all stale params
+        const preservedParams = new URLSearchParams();
+        if (activeProjectId) preservedParams.set("projectId", activeProjectId);
+        if (activeProgrammeId) preservedParams.set("programmeId", activeProgrammeId);
+        if (activeType) preservedParams.set("type", activeType);
+        preservedParams.set("restart", "true");
+        navigate(`/compliance/setup?${preservedParams.toString()}`, { replace: true });
       } catch (err) {
         console.error("Failed to restart analysis:", err);
         setError("Failed to reset compliance data. Please try again.");
+        setIsResetting(false);
       } finally {
-        setLoading(false);
-        setIsDataLoading(false);
+        setIsRestarting(false);
         if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
         resetTimerRef.current = setTimeout(() => {
           if (isMountedRef.current) setIsResetting(false);
-        }, 500);
+        }, 800);
       }
     }
   };
 
-  const handleFinalise = async () => {
-    setLoading(true);
-    try {
-      const contextId = activeProjectId || activeProgrammeId;
-      if (!contextId) throw new Error("No context ID");
-
-      const categoryData = determineProjectCategory(projectInfo);
-
-      // Prepare all parallel backend operations
-      const operations: Promise<any>[] = [];
-
-      // 1. Update Project/Programme completion status
-      if (activeType === "project") {
-        operations.push(
-          updateProject(contextId, {
-            complianceSetupDone: true,
-            category: categoryData.category,
-          }),
-        );
-      } else {
-        operations.push(
-          updateProgramme(contextId, {
-            complianceSetupDone: true,
-            category: categoryData.category,
-          }),
-        );
-      }
-
-      // 2. Persist Tracker Items
-      operations.push(api.saveData("complianceItems", complianceItems, contextId));
-
-      // 3. Persist Analysis Results
-      let analysisPayload = null;
-      if (lastAnalysisResults) {
-        analysisPayload = {
-          ...lastAnalysisResults,
-          category: categoryData.category,
-        };
-        operations.push(api.saveData("complianceAnalysis", analysisPayload, contextId));
-      }
-
-      // Execute all operations in parallel to minimize latency round-trips
-      await Promise.all(operations);
-
-      // Update local state after successful persistence
-      if (analysisPayload) {
-        setComplianceAnalysis(analysisPayload);
-      }
-
-      setPhase(4);
-
-      // Scroll to top for the final summary
-      const main = document.querySelector("main");
-      if (main) {
-        main.scrollTo({ top: 0, behavior: "smooth" });
-      }
-    } catch (err) {
-      console.error("Failed to finalise:", err);
-      setError("Failed to save compliance configuration.");
-    } finally {
-      setLoading(false);
+  const handleFinalise = () => {
+    // No backend writes here — all data is persisted only when the user publishes.
+    // This just advances the UI to the summary/publish step.
+    const categoryData = determineProjectCategory(projectInfo);
+    if (lastAnalysisResults) {
+      setComplianceAnalysis({
+        ...lastAnalysisResults,
+        category: categoryData.category,
+      });
+    }
+    setPhase(4);
+    const main = document.querySelector("main");
+    if (main) {
+      main.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
@@ -1172,24 +1166,43 @@ export function ComplianceSetup() {
     setLoading(true);
     try {
       const contextId = activeProjectId || activeProgrammeId;
-      if (contextId) {
-        // Final sanity save to backend
-        await api.saveData("complianceItems", complianceItems, contextId);
-        if (lastAnalysisResults) {
-          await api.saveData(
-            "complianceAnalysis",
-            lastAnalysisResults,
-            contextId,
-          );
-          setComplianceAnalysis(lastAnalysisResults);
-        }
-        // Ensure setup status is synced in store before navigation
-        if (activeType === "project") {
-          await updateProject(contextId, { complianceSetupDone: true });
-        } else {
-          await updateProgramme(contextId, { complianceSetupDone: true });
-        }
+      if (!contextId) throw new Error("No context ID");
+
+      const categoryData = determineProjectCategory(projectInfo);
+      const analysisPayload = lastAnalysisResults
+        ? { ...lastAnalysisResults, category: categoryData.category }
+        : null;
+
+      // Persist everything to the database — this is the single write point
+      const publishOps: Promise<any>[] = [
+        api.saveData("complianceItems", complianceItems, contextId),
+      ];
+      if (analysisPayload) {
+        publishOps.push(api.saveData("complianceAnalysis", analysisPayload, contextId));
       }
+      if (activeType === "project") {
+        publishOps.push(
+          updateProject(contextId, {
+            complianceSetupDone: true,
+            category: categoryData.category,
+          }),
+        );
+      } else {
+        publishOps.push(
+          updateProgramme(contextId, {
+            complianceSetupDone: true,
+            category: categoryData.category,
+          }),
+        );
+      }
+      await Promise.all(publishOps);
+
+      // Keep complianceItems and complianceAnalysis in the store so the compliance
+      // dashboard renders immediately without a blank flash.
+      // Store cleanup (items, analysis, projectInfo answers) happens naturally when
+      // the user later switches project/programme (handleProjectSelect/handleProgrammeSelect)
+      // or clicks Restart Analysis. No eager wipe needed here.
+      useStore.setState({ lastAnalysisResults: null });
 
       const target = fromInitiation
         ? "/compliance/dashboard?from=initiation"
@@ -1200,7 +1213,6 @@ export function ComplianceSetup() {
       setError(
         "Failed to complete publication. Your progress is saved locally, but may not have reached the server.",
       );
-      // Navigate anyway as the user's progress is in the store
       const target = fromInitiation
         ? "/compliance/dashboard?from=initiation"
         : "/compliance/dashboard";
@@ -1297,8 +1309,19 @@ export function ComplianceSetup() {
             </div>
           </div>
         )}
-        {isDataLoading && !loadingStep && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+        {isRestarting && (
+          <div className="fixed inset-0 z-110 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-4 max-w-xs w-full mx-4">
+              <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
+              <div className="text-center">
+                <p className="text-sm font-black text-slate-800 uppercase tracking-wider">Clearing Analysis Data</p>
+                <p className="text-xs text-slate-500 mt-1">Removing all previous compliance results...</p>
+              </div>
+            </div>
+          </div>
+        )}
+        {isDataLoading && !loadingStep && !isRestarting && (
+          <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-white rounded-2xl shadow-xl p-8 flex flex-col items-center gap-4 max-w-xs w-full mx-4">
               <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
               <p className="text-sm font-bold text-slate-600 uppercase tracking-wider">Loading...</p>

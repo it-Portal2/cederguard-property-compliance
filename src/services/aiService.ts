@@ -94,33 +94,39 @@ The programme/project is in the UK housing and built environment sector, and may
 - Social housing delivery
 - Decarbonisation and retrofit programmes
 
-You must determine which legislation, regulatory frameworks and statutory obligations apply based on the answers provided. 
-
-You also suggest what is excluded and why it was excluded and give the user the opportunity to read about the requirements and add it to the suggested.
+You must determine which legislation, regulatory frameworks and statutory obligations apply based on the answers provided.
 
 NOTE: THIS APPLIES TO BOTH THE PROJECT AND PROGRAMME.
 
-MANDATORY OUTPUT SCHEMA:
-You must provide your analysis in valid JSON format only, including:
-1. 'applicableIds': List of IDs that apply or are highly likely to apply based on the general nature of the programme/project. If the programme involves ANY construction, refurbishment, or social housing, assume standard regulations in those domains (e.g., Planning, Building Control, CDM, Procurement, Fire Safety, Social Housing Regs) ARE APPLICABLE unless explicitly ruled out by the profile.
-2. 'conditionalIds': List of IDs that MIGHT apply. These must include a 'reason' explaining why they are suggested but pending verification.
-3. 'excludedIds': List of IDs that were specifically considered based on the context but EXCLUDED because the profile definitively rules them out. These MUST include an 'exclusionReason' explaining why.
+UNDERSTANDING THE COMPLIANCE LIBRARY (CRITICAL — READ FIRST):
+Every item in the compliance library below has already been pre-screened and scoped to the UK housing and built environment sector. These are not generic regulations — they are precisely the obligations that apply to organisations operating in this sector. This means the correct starting assumption for every item is that it applies. Your job is not to find reasons to exclude items. Your job is to confirm applicability based on the project profile and only exclude items where the profile provides a clear, explicit, factual reason that directly rules the item out.
 
-IMPORTANT CONTEXT:
-The project/programme profile is structured into 10 phases.
-Question IDs:
-- 'q[PHASE]_[QUESTION]' for Programme Profilers.
-- 'p[PHASE]_[QUESTION]' for Project Profilers.
+CLASSIFICATION RULES — THREE CATEGORIES ONLY:
+
+1. 'applicableIds' — Place an item here when:
+   - Its domain is relevant to the project or programme type (construction, refurbishment, social housing, retrofit, mixed-use, etc.)
+   - The profile does not contain a specific answer that directly and unambiguously rules it out
+   - The regulation is a standard legal obligation for UK housing/construction projects of this type
+   - You are uncertain — defaulting to applicable is legally safer and correct
+   This will be the largest category in your output. Primary legislation such as CDM 2015, Building Regulations 2010, Fire Safety Order 2005, Building Safety Act 2022, Procurement Regs, Environmental duties, Social Housing standards and Health & Safety law applies broadly to all qualifying projects and must be placed here unless a specific profile answer explicitly rules a specific item out.
+
+2. 'conditionalIds' — Place an item here ONLY when:
+   - The item applies exclusively based on a specific project characteristic (e.g. building height, tenure type, funding source, procurement route or threshold) AND
+   - That specific characteristic is genuinely ambiguous or unknown from the profile answers provided
+   - Example: Building Safety Act HRB gateways are conditional only if building height or number of storeys has not been confirmed
+   - Example: GLA / Homes England funding conditions are conditional only if the funding source is not confirmed
+   This must be a small category. Do not use it as a holding area for items you are unsure about — if in doubt, use applicableIds.
+
+3. 'excludedIds' — Place an item here ONLY when:
+   - A specific profile answer directly and unambiguously rules this exact item out
+   - You can cite the specific answer that excludes it in the exclusionReason field
+   - Example: User confirmed planning permission already granted → exclude pre-commencement planning conditions
+   - Example: User confirmed works are under Permitted Development → exclude Town & Country Planning Act application items
+   - Example: User confirmed no listed building involvement → exclude Listed Building Consent
+   Do not exclude items simply because they seem less relevant or because the project is not yet at that stage. Do not exclude items due to absence of information — absence of information means applicable or conditional, never excluded.
 
 EVALUATE ALL DOMAINS AND ITEMS (CRITICAL INSTRUCTION):
-You MUST evaluate EVERY SINGLE compliance item provided in the list below across ALL DOMAINS (Environmental, Planning, Building Safety, Data & Security, Social Value, etc) and not just Health & Safety. Return ALL applicable compliance requirements. Do not artificially limit your output. If many items apply based on UK law, return all their IDs in the 'applicableIds' array. NEVER limit your responses to just one domain.
-
-PLANNING REQUIREMENT FILTERING:
-The user has previously noted that sometimes 'Planning' requirements are triggered even when they shouldn't be (e.g., if they already have permissions).
-YOU MUST PERFORM A TRIPLE-CHECK:
-1. Identify potential requirements.
-2. Interrogate each requirement against the project profile: "Does this SPECIFIC answer (e.g. No Planning needed or Works under Permitted Development) explicitly rule this out?"
-3. Validate and exclude any false positives. DO NOT include Planning requirements in 'applicableIds' if the user has indicated they are not needed. If uncertain, put them in 'conditionalIds'.
+You MUST evaluate EVERY SINGLE compliance item provided in the list below across ALL DOMAINS and return ALL applicable requirements. Do not artificially limit your output. NEVER limit your responses to just one domain. Ensure full coverage of: Health & Safety, Building Safety, Fire Safety, Building Control, Planning, Environmental, Procurement, Social Housing, Energy Efficiency, Accessibility, Digital Records, Funding Conditions, Quality Assurance, Utilities, Party Wall, Damp & Mould, and any other domains present in the library.
 
 For the risks and actions, you must be extremely detailed and address:
 - WHAT: The specific requirement, risk, or action.
@@ -144,9 +150,9 @@ Your response must be valid JSON following the schema provided in the configurat
 Summarize the regulatory landscape highlighting the most critical obligations, authorities involved, and key risks.
 
 MANDATORY IDENTIFICATION:
-1. 'regulatoryAuthorities': You MUST identify and list specific regulatory bodies involved (e.g. Building Safety Regulator (BSR), Regulator of Social Housing (RSH), Local Authority Planning, HSE, EA, Fire & Rescue Service) based on the project profile. 
+1. 'regulatoryAuthorities': You MUST identify and list specific regulatory bodies involved (e.g. Building Safety Regulator (BSR), Regulator of Social Housing (RSH), Local Authority Planning, HSE, EA, Fire & Rescue Service) based on the project profile.
 2. 'requiredApprovals': You MUST identify and list specific mandatory approvals, consents, or gateway milestones (e.g. Gateway 2 Approval, Planning Permission, Fire Statement, S106, Section 20 Notice, Building Control Approval) required for this project/programme.
-3. COMPREHENSIVE COVERAGE: You MUST ensure every UK regulation triggered by the profile answers is included. Do not prioritize briefness over legal compliance. If a chosen area (e.g. Retrofit, Social Housing) is mentioned, map its specific legislative requirements fully.
+3. COMPREHENSIVE COVERAGE: You MUST ensure every UK regulation triggered by the profile answers is included. Do not prioritise brevity over legal compliance. If a chosen area (e.g. Retrofit, Social Housing) is mentioned, map its specific legislative requirements fully.
 
 FORMATTING (STRICT): ABSOLUTELY NO MARKDOWN. ANY IDENTIFIER OR ID MUST BE ON THE SAME LINE AS ITS LABEL.
 `;

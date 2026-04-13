@@ -22,7 +22,7 @@ interface AnalysisSummaryProps {
   activeProjectId?: string | null;
   activeProgrammeId?: string | null;
   dispName: string;
-  handleFinalise: () => Promise<void>;
+  handleFinalise: () => void;
   loading?: boolean;
 }
 
@@ -398,9 +398,9 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
                     pw: 'Party Wall',
                   };
 
-                  // Count items per domain, then take the top 4 by count
+                  // Count only AI-confirmed applicable items per domain (not pending/conditional)
                   const counts: Record<string, number> = {};
-                  complianceItems.forEach((i: any) => {
+                  complianceItems.filter((i: any) => i.status === "applicable").forEach((i: any) => {
                     if (i.domain) counts[i.domain] = (counts[i.domain] || 0) + 1;
                   });
 
