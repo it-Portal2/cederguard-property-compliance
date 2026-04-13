@@ -251,7 +251,7 @@ export function Sidebar() {
           <NavItem to={`/risk/setup${activeProjectId ? '?type=project' : activeProgrammeId ? '?type=programme' : ''}`} icon={Brain} label="Risk Setup" />
           <NavItem to={`/risk/dashboard${activeProjectId ? '?type=project' : activeProgrammeId ? '?type=programme' : ''}`} icon={LayoutDashboard} label="Dashboard" />
           <NavItem to={`${activeProjectId ? '/risk/register?type=project' : activeProgrammeId ? '/risk/programme-register?type=programme' : '/risk/register'}`} icon={Layers} label="Risk Register" />
-          <NavItem to={`${activeProjectId ? '/risk/issues?type=project' : activeProgrammeId ? '/risk/programme-issues?type=programme' : '/risk/issues'}`} icon={FileWarning} label="Issues Log" />
+          <NavItem to={`/risk/issues?type=${activeProgrammeId ? 'programme' : 'project'}`} icon={FileWarning} label="Issues Log" />
           <NavItem to={`/risk/alerts${activeProjectId ? '?type=project' : activeProgrammeId ? '?type=programme' : ''}`} icon={ShieldAlert} label="Risk Alerts" />
           <NavItem to="/lessons-learned" icon={FileBarChart} label="Lessons Learned" />
         </NavGroup>

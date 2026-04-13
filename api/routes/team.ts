@@ -192,6 +192,28 @@ export const teamRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
     return res.status(200).json({ success: true, users });
   },
 
+  clientGetProgrammeManagers: async (req, res, ctx) => {
+    const { db, isAdmin, primaryUid } = ctx;
+    
+    // Programme Managers and Client Admins can manage programmes
+    const roles = ['programme_manager', 'client_admin', 'enterprise'];
+    let query = db.collection('users').where('role', 'in', roles);
+
+    if (!isAdmin) {
+      query = query.where('clientId', '==', primaryUid);
+    }
+
+    const snap = await query.get();
+    const users = snap.docs.map(doc => ({
+      uid: doc.id,
+      email: doc.data().email,
+      role: doc.data().role,
+      displayName: doc.data().displayName || doc.data().companyName || doc.data().email
+    }));
+
+    return res.status(200).json({ success: true, users });
+  },
+
   clientGetInvoices: async (req, res, ctx) => {
     const { db, uid } = ctx;
     

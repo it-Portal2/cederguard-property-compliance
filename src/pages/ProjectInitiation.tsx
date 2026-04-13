@@ -57,6 +57,7 @@ export function ProjectInitiation() {
       description: "",
       status: "Active",
       programmeId: activeProgrammeId || "",
+      programmeManagerId: "",
       projectManagerId: user?.email || "",
       riba: "",
       employersAgent: "",
@@ -84,6 +85,7 @@ export function ProjectInitiation() {
     status: "Active",
     programmeId: activeProgrammeId || "",
     projectManagerId: user?.email || "",
+    programmeManagerId: "",
     riba: "",
     employersAgent: "",
     architect: "",
@@ -210,8 +212,42 @@ export function ProjectInitiation() {
   }, []);
 
   const [assignablePMs, setAssignablePMs] = useState<any[]>([]);
+  const [programmeManagers, setProgrammeManagers] = useState<any[]>([]);
+  const [filteredProgrammes, setFilteredProgrammes] = useState<any[]>([]);
   const [loadingPMs, setLoadingPMs] = useState(false);
   const userRole = (user as any)?.role;
+
+  // Fetch Programme Managers for the Supervisor dropdown
+  useEffect(() => {
+    const fetchManagers = async () => {
+      try {
+        const res = await api.clientGetProgrammeManagers();
+        if (res.success) setProgrammeManagers(res.users || []);
+      } catch (err) {
+        console.error("Failed to fetch programme managers:", err);
+      }
+    };
+    fetchManagers();
+  }, []);
+
+  // Sync filtered programmes when supervisor selection changes
+  useEffect(() => {
+    const syncProgrammes = async () => {
+      if (formData.programmeManagerId) {
+        try {
+          const res = await api.clientGetProgrammesByManager(formData.programmeManagerId);
+          if (res.success) setFilteredProgrammes(res.data || []);
+        } catch (err) {
+          console.error("Failed to fetch filtered programmes:", err);
+          setFilteredProgrammes([]);
+        }
+      } else {
+        // If no supervisor selected, fallback to global store programmes (which are gated by PM access anyway)
+        setFilteredProgrammes(Array.isArray(programmes) ? programmes : []);
+      }
+    };
+    syncProgrammes();
+  }, [formData.programmeManagerId, programmes]);
 
   useEffect(() => {
     if (user && !isAtLeastPM(userRole)) navigate("/projects");
@@ -751,6 +787,22 @@ export function ProjectInitiation() {
                     </div>
 
                     <div>
+                      <label className={labelCls}>Programme Supervisor / Director</label>
+                      <select
+                        className={inputCls}
+                        value={formData.programmeManagerId}
+                        onChange={(e) => set("programmeManagerId", e.target.value)}
+                      >
+                        <option value="">— Select Supervisor —</option>
+                        {programmeManagers.map((m) => (
+                          <option key={m.uid || m.email} value={m.uid}>
+                            {m.displayName} ({m.role?.replace('_', ' ')})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
                       <label className={labelCls}>Associated Programme</label>
                       <select
                         className={inputCls}
@@ -758,7 +810,7 @@ export function ProjectInitiation() {
                         onChange={(e) => set("programmeId", e.target.value)}
                       >
                         <option value="">— Independent Project —</option>
-                        {(Array.isArray(programmes) ? programmes : []).map(
+                        {filteredProgrammes.map(
                           (p) => (
                             <option key={p.id} value={p.id}>
                               {p.name}

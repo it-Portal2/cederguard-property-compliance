@@ -84,20 +84,30 @@ export const dataRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
       const doc = await pathRef.get();
       return res.status(200).json({ success: true, data: doc.exists ? doc.data()?.data : null });
     } else if (collection === 'programmes') {
-      if (isAdmin) {
-        const allSnap = await db.collection('programmes').get();
+      const pmFilter = req.body.pmFilter; // Optional filter for fetching a specific manager's programmes
+
+      if (isClientAdmin && !pmFilter) {
+        // Client Admins and Enterprise users see all programmes in their organisation by default
+        const allSnap = await db.collection('programmes').where('clientId', '==', primaryUid).get();
         return res.status(200).json({ success: true, data: allSnap.docs.map(d => ({ id: d.id, ...d.data() })) });
       }
 
-      // Fetch from top-level collection gated by clientId, userId, or pm
-      const queries = [
-        db.collection('programmes').where('clientId', '==', primaryUid).get(),
-        db.collection('programmes').where('userId', '==', uid).get(),
-        db.collection('programmes').where('creatorId', '==', uid).get()
-      ];
-      if (email) {
-        queries.push(db.collection('programmes').where('pm', '==', email).get());
-        queries.push(db.collection('programmes').where('userId', '==', email).get());
+      // Fetch from top-level collection gated by clientId (scoped), userId, or pm
+      // For PMs/Programme Managers, we ONLY want their own or the filtered ones.
+      const queries = [];
+
+      if (pmFilter) {
+        // Fetch programmes where the specified filter matches creator or manager
+        queries.push(db.collection('programmes').where('clientId', '==', primaryUid).where('userId', '==', pmFilter).get());
+        queries.push(db.collection('programmes').where('clientId', '==', primaryUid).where('creatorId', '==', pmFilter).get());
+      } else {
+        // Default: just my own programmes
+        queries.push(db.collection('programmes').where('userId', '==', uid).get());
+        queries.push(db.collection('programmes').where('creatorId', '==', uid).get());
+        if (email) {
+          queries.push(db.collection('programmes').where('pm', '==', email).get());
+          queries.push(db.collection('programmes').where('userId', '==', email).get());
+        }
       }
       
       const snaps = await Promise.all(queries);

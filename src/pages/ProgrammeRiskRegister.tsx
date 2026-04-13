@@ -508,9 +508,8 @@ export function ProgrammeRiskRegister() {
             <div className="bg-white rounded-2xl border border-slate-200 shadow-xl shadow-slate-200/50 overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200">
                 <table className="w-full text-left text-[11px] border-collapse min-w-[1700px]">
                     <thead>
-                        {/* Group headers */}
-                        <tr className="bg-slate-50/80 backdrop-blur-sm border-b border-slate-200 text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] h-12">
-                            <th className="px-3 py-1 w-10 text-center sticky left-0 bg-slate-50 z-30 border-r border-slate-200" rowSpan={2}>
+                        <tr className="bg-slate-50/50 text-slate-500 uppercase tracking-[0.15em] border-b border-slate-200 text-[9px] font-black sticky top-0 z-30 backdrop-blur-md">
+                            <th className="px-3 py-3 w-10 text-center sticky left-0 bg-slate-50/90 z-40 border-r border-slate-100/60">
                                 <input 
                                     type="checkbox" 
                                     className="rounded-lg border-slate-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4 shadow-sm"
@@ -518,51 +517,13 @@ export function ProgrammeRiskRegister() {
                                     onChange={toggleSelectAll}
                                 />
                             </th>
-                            <th className="px-3 py-1" colSpan={8}></th>
-                            <th className="px-3 py-1 text-center border-x border-slate-200/60 bg-red-50/50 text-red-700 font-black shadow-[inset_0_-2px_0_rgba(185,28,28,0.1)]" colSpan={3}>Gross Risk Rating</th>
-                            <th className="px-3 py-1" colSpan={3}></th>
-                            <th className="px-3 py-1 text-center border-x border-slate-200/60 bg-emerald-50/50 text-emerald-700 font-black shadow-[inset_0_-2px_0_rgba(5,150,105,0.1)]" colSpan={3}>Residual Risk Rating</th>
-                            <th className="px-3 py-1" colSpan={4}></th>
-                            <th className="px-3 py-1 text-center border-x border-slate-200/60 bg-blue-50/50 text-blue-700 font-black shadow-[inset_0_-2px_0_rgba(29,78,216,0.1)]" colSpan={3}>Gross ALE</th>
-                            <th className="px-3 py-1 text-center border-x border-slate-200/60 bg-indigo-50/50 text-indigo-700 font-black shadow-[inset_0_-2px_0_rgba(67,56,202,0.1)]" colSpan={3}>Residual ALE</th>
-                            <th className="px-3 py-1" colSpan={3}></th>
-                        </tr>
-                        <tr className="bg-slate-50/50 text-slate-500 uppercase tracking-[0.15em] border-b border-slate-200 text-[9px] font-black sticky top-12 z-20 backdrop-blur-md">
-                            <th className="px-3 py-3 sticky left-10 bg-slate-50/90 border-r border-slate-100/60 z-30 whitespace-nowrap shadow-[4px_0_8px_-4px_rgba(0,0,0,0.05)]">Risk Ref</th>
-                            <th className="px-3 py-3 whitespace-nowrap">Source</th>
-                            <th className="px-3 py-3 whitespace-nowrap">Programme / Project</th>
+                            <th className="px-3 py-3 sticky left-10 bg-slate-50/90 border-r border-slate-100/60 z-30 whitespace-nowrap shadow-[4px_0_8px_-4px_rgba(0,0,0,0.05)]">Ref</th>
                             <th className="px-3 py-3 whitespace-nowrap">Workstream</th>
                             <th className="px-3 py-3 whitespace-nowrap">Linked KRI</th>
                             <th className="px-3 py-3 whitespace-nowrap">Date Added</th>
-                            <th className="px-3 py-3 min-w-[350px]">Risk Title & Description</th>
-                            <th className="px-3 py-3 whitespace-nowrap">Risk Owner</th>
-                            {/* Gross */}
-                            <th className="px-2 py-3 text-center border-l border-slate-200/60 bg-red-50/20 font-black">I</th>
-                            <th className="px-2 py-3 text-center bg-red-50/20 font-black">L</th>
-                            <th className="px-2 py-3 text-center border-r border-slate-200/60 bg-red-50/20 font-black">Rating</th>
-                            {/* Post Gross */}
-                            <th className="px-3 py-3 whitespace-nowrap">Response</th>
-                            <th className="px-3 py-3 whitespace-nowrap">Controls (Mitigation)</th>
-                            <th className="px-3 py-3 whitespace-nowrap">Control Owner</th>
-                            {/* Residual */}
-                            <th className="px-2 py-3 text-center border-l border-slate-200/60 bg-emerald-50/20 font-black">I</th>
-                            <th className="px-2 py-3 text-center bg-emerald-50/20 font-black">L</th>
-                            <th className="px-2 py-3 text-center border-r border-slate-200/60 bg-emerald-50/20 font-black">Rating</th>
-                            {/* Post Current */}
-                            <th className="px-3 py-3 whitespace-nowrap">Appetite</th>
-                            <th className="px-3 py-3 min-w-[150px]">Risk Review Plan</th>
-                            <th className="px-3 py-3 whitespace-nowrap text-center">Status</th>
-                            <th className="px-3 py-3 whitespace-nowrap">Last Review</th>
-                            {/* ALE */}
-                            <th className="px-3 py-3 text-right border-l border-slate-200/60 bg-blue-50/20 whitespace-nowrap font-black">Impact</th>
-                            <th className="px-3 py-3 text-center bg-blue-50/20 whitespace-nowrap font-black">Prob</th>
-                            <th className="px-3 py-3 text-right border-r border-slate-200/60 bg-blue-50/20 whitespace-nowrap font-black">ALE</th>
-                            <th className="px-3 py-3 text-right border-l border-slate-200/60 bg-indigo-50/20 whitespace-nowrap font-black">Impact</th>
-                            <th className="px-3 py-3 text-center bg-indigo-50/20 whitespace-nowrap font-black">Prob</th>
-                            <th className="px-3 py-3 text-right border-r border-slate-200/60 bg-indigo-50/20 whitespace-nowrap font-black">ALE</th>
-                            {/* Tail */}
-                            <th className="px-3 py-3 text-right whitespace-nowrap font-black">Reduction</th>
-                            <th className="px-3 py-3 text-center whitespace-nowrap font-black">Red%</th>
+                            <th className="px-3 py-3 whitespace-nowrap">Source Project</th>
+                            <th className="px-3 py-3 min-w-[400px]">Risk Title & Description</th>
+                            <th className="px-3 py-3 text-center border-x border-slate-200/60 bg-red-50/20 font-black">Gross Rating</th>
                             <th className="px-3 py-3 text-center whitespace-nowrap sticky right-0 bg-slate-50 border-l border-slate-200 z-30 font-black shadow-[-4px_0_10px_-3px_rgba(0,0,0,0.1)]">Actions</th>
                         </tr>
                     </thead>
@@ -581,25 +542,31 @@ export function ProgrammeRiskRegister() {
 
                             return (
                                 <tr key={r.id} className={clsx('hover:bg-slate-50/80 transition-all group border-b border-slate-100 items-center', isEsc ? 'bg-orange-50/30' : 'bg-purple-50/10', selectedIds.includes(r.id) && 'bg-indigo-50/40')}>
-                                    <td className="px-3 py-3 text-center sticky left-0 bg-white group-hover:bg-slate-50 z-20 border-r border-slate-100 transition-colors">
+                                    <td className="px-3 py-3 w-10 text-center sticky left-0 bg-white group-hover:bg-slate-50 z-20 border-r border-slate-100 transition-colors">
                                         <input 
                                             type="checkbox" 
-                                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 shadow-sm transition-all group-hover:scale-110"
+                                            className="rounded-lg border-slate-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4 shadow-sm"
                                             checked={selectedIds.includes(r.id)}
                                             onChange={() => toggleSelectOne(r.id)}
+                                            onClick={(e) => e.stopPropagation()}
                                         />
                                     </td>
-                                    <td className="px-3 py-3 whitespace-nowrap">
-                                        {isEsc
-                                            ? <span className="px-2 py-1 bg-orange-100 text-orange-700 border border-orange-200 rounded-lg text-[9px] font-black uppercase tracking-wider">↑ Project</span>
-                                            : <span className="px-2 py-1 bg-purple-100 text-purple-700 border border-purple-200 rounded-lg text-[9px] font-black uppercase tracking-wider">Programme</span>
-                                        }
+                                    <td className="px-3 py-3 sticky left-10 bg-white group-hover:bg-slate-50 z-20 border-r border-slate-100 transition-colors shadow-[4px_0_8px_-4px_rgba(0,0,0,0.05)]">
+                                        <div className="font-bold text-indigo-600 hover:underline cursor-pointer" onClick={() => { setEditingRisk(r); setIsModalOpen(true); }}>{r.id}</div>
                                     </td>
-                                    <td className="px-3 py-3 text-slate-600 max-w-[150px] truncate whitespace-nowrap font-medium" title={displayContext}>{displayContext}</td>
                                     <td className="px-3 py-3 text-slate-500 whitespace-nowrap font-medium">{r.workstream || '—'}</td>
                                     <td className="px-3 py-3 text-slate-500 whitespace-nowrap font-medium">{r.kri || '—'}</td>
                                     <td className="px-3 py-3 text-slate-400 whitespace-nowrap font-medium">{fDate(r.dateAdded)}</td>
-                                    <td className="px-3 py-3 font-medium text-slate-800 min-w-[350px] whitespace-normal leading-relaxed">
+                                    <td className="px-3 py-3 text-slate-600 max-w-[150px] truncate whitespace-nowrap font-medium" title={displayContext}>
+                                        {isEsc 
+                                          ? <span className="flex flex-col">
+                                              <span className="text-[10px] font-black text-orange-600 uppercase tracking-tighter">Escalated</span>
+                                              <span className="truncate">{projectName}</span>
+                                            </span>
+                                          : <span className="text-slate-400 italic">Programme Level</span>
+                                        }
+                                    </td>
+                                    <td className="px-3 py-3 font-medium text-slate-800 min-w-[400px] whitespace-normal leading-relaxed">
                                         <div className="flex flex-col gap-1.5">
                                           <div className="flex items-center flex-wrap gap-2">
                                               <span className="font-black text-slate-900 text-[11px] tracking-tight line-clamp-1 hover:line-clamp-none transition-all cursor-help" title={stripMarkdown(r.title)}>{r.title}</span>
@@ -610,39 +577,15 @@ export function ProgrammeRiskRegister() {
                                           <span className="text-[10px] text-slate-500 italic font-normal line-clamp-2 hover:line-clamp-none transition-all" title={stripMarkdown(r.desc || '')}>{stripMarkdown(r.desc || '')}</span>
                                         </div>
                                     </td>
-                                    <td className="px-3 py-3 text-slate-500 whitespace-nowrap font-medium">{r.owner || '—'}</td>
 
-                                    {/* Gross */}
-                                    <td className="px-2 py-3 text-center border-l border-slate-100 bg-red-50/20"><span className={clsx('inline-flex items-center justify-center w-6 h-6 rounded-lg text-[10px] font-black shadow-sm ring-1 ring-black/5', rsScore(r.grossRating))}>{r.grossI}</span></td>
-                                    <td className="px-2 py-3 text-center bg-red-50/20"><span className={clsx('inline-flex items-center justify-center w-6 h-6 rounded-lg text-[10px] font-black shadow-sm ring-1 ring-black/5', rsScore(r.grossRating))}>{r.grossL}</span></td>
-                                    <td className="px-2 py-3 text-center border-r border-slate-100 bg-red-50/20"><span className={clsx('inline-flex items-center justify-center w-7 h-7 rounded-lg text-[11px] font-black shadow-md ring-1 ring-black/5', rsScore(r.grossRating))}>{r.grossRating}</span></td>
-
-                                    <td className="px-3 py-3 text-slate-500 whitespace-nowrap italic font-medium">{r.response || '—'}</td>
-                                    <td className="px-3 py-3 text-slate-500 max-w-[150px] truncate whitespace-nowrap font-medium" title={r.controls}>{r.controls?.split('\n')[0] || '—'}</td>
-                                    <td className="px-3 py-3 text-slate-500 whitespace-nowrap font-medium">{(r as any).controlOwner || r.owner || '—'}</td>
-
-                                    {/* Residual */}
-                                    <td className="px-2 py-3 text-center border-l border-slate-100 bg-emerald-50/20"><span className={clsx('inline-flex items-center justify-center w-6 h-6 rounded-lg text-[10px] font-black shadow-sm ring-1 ring-black/5', rsScore(r.residualRating))}>{r.residualI}</span></td>
-                                    <td className="px-2 py-3 text-center bg-emerald-50/20"><span className={clsx('inline-flex items-center justify-center w-6 h-6 rounded-lg text-[10px] font-black shadow-sm ring-1 ring-black/5', rsScore(r.residualRating))}>{r.residualL}</span></td>
-                                    <td className="px-2 py-3 text-center border-r border-slate-100 bg-emerald-50/20"><span className={clsx('inline-flex items-center justify-center w-7 h-7 rounded-lg text-[11px] font-black shadow-md ring-1 ring-black/5', rsScore(r.residualRating))}>{r.residualRating}</span></td>
-
-                                    <td className="px-3 py-3 text-slate-500 whitespace-nowrap font-black text-[10px] uppercase tracking-wider">{r.appetite || '—'}</td>
-                                    <td className="px-3 py-3 text-slate-500 min-w-[150px] whitespace-normal leading-relaxed text-[10px] font-medium">{stripMarkdown(r.furtherAction) || '—'}</td>
-                                    <td className="px-3 py-3 whitespace-nowrap text-center"><StatusBadge status={r.status} /></td>
-                                    <td className="px-3 py-3 text-slate-400 whitespace-nowrap font-medium">{fDate((r as any).lastReviewDate)}</td>
-
-                                    {/* Gross ALE */}
-                                    <td className="px-3 py-3 text-right border-l border-slate-100 text-slate-600 whitespace-nowrap font-bold">{fGBP(r.grossImpact)}</td>
-                                    <td className="px-3 py-3 text-center text-slate-600 whitespace-nowrap font-bold">{r.grossProb ? Math.round(r.grossProb * 100) + '%' : '—'}</td>
-                                    <td className="px-3 py-3 text-right border-r border-slate-100 font-black text-slate-900 whitespace-nowrap">{fGBP(Math.round(gALE))}</td>
-
-                                    {/* Residual ALE */}
-                                    <td className="px-3 py-3 text-right border-l border-slate-100 text-slate-600 whitespace-nowrap font-bold">{fGBP(r.residualImpact)}</td>
-                                    <td className="px-3 py-3 text-center text-slate-600 whitespace-nowrap font-bold">{r.residualProb ? Math.round(r.residualProb * 100) + '%' : '—'}</td>
-                                    <td className="px-3 py-3 text-right border-r border-slate-100 font-black text-indigo-700 whitespace-nowrap">{fGBP(Math.round(rALE))}</td>
-
-                                    <td className="px-3 py-3 text-right font-black text-emerald-600 whitespace-nowrap text-[12px]">{reduction > 0 ? fGBP(Math.round(reduction)) : '—'}</td>
-                                    <td className="px-3 py-3 text-center font-black text-emerald-600 whitespace-nowrap text-[12px]">{redPct > 0 ? redPct + '%' : '—'}</td>
+                                    {/* Gross Rating */}
+                                    <td className="px-3 py-3 text-center border-x border-slate-100 bg-red-50/20">
+                                        <div className="flex justify-center">
+                                            <span className={clsx('flex items-center justify-center w-8 h-8 rounded-full text-[12px] font-black shadow-md ring-2 ring-white', rsScore(r.grossRating))}>
+                                                {r.grossRating}
+                                            </span>
+                                        </div>
+                                    </td>
 
                                     <td className="px-3 py-3 sticky right-0 bg-white group-hover:bg-slate-50 z-20 border-l border-slate-100 transition-colors shadow-[-4px_0_10px_-3px_rgba(0,0,0,0.1)]">
                                          <div className="flex items-center gap-1.5">
@@ -679,22 +622,6 @@ export function ProgrammeRiskRegister() {
                             );
                         })}
                     </tbody>
-                    {/* ALE Summary Footer */}
-                    {filtered.length > 0 && (
-                        <tfoot className="bg-slate-50/80 backdrop-blur-md border-t-2 border-slate-200">
-                            <tr className="h-14">
-                                <td className="px-4"></td>
-                                <td colSpan={21} className="px-4 text-right font-black text-[11px] text-slate-500 uppercase tracking-[0.2em]">Portfolio Aggregate Totals</td>
-                                <td className="px-4 text-right font-black text-slate-900 border-l border-slate-200 bg-slate-100/30">{fGBP(Math.round(totalGALE))}</td>
-                                <td colSpan={2} />
-                                <td className="px-4 text-right font-black text-indigo-700 border-l border-slate-200 bg-indigo-50/30">{fGBP(Math.round(totalRALE))}</td>
-                                <td colSpan={2} />
-                                <td className="px-4 text-right font-black text-emerald-700 bg-emerald-50/30">{fGBP(Math.round(totalGALE - totalRALE))}</td>
-                                <td className="px-4 text-center font-black text-emerald-700 bg-emerald-50/30">{pctReduction}%</td>
-                                <td />
-                            </tr>
-                        </tfoot>
-                    )}
                 </table>
                 {filtered.length === 0 && (
                     <EmptyState title="No programme risks found. Escalated project risks will appear here automatically." />

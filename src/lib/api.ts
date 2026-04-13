@@ -120,6 +120,8 @@ export const api = {
     callApi("saveData", { collection, data, projectId }),
   getData: (collection: string, projectId?: string | null) =>
     callApi("getData", { collection, projectId }),
+  clientGetProgrammesByManager: (pmFilter: string) =>
+    callApi("getData", { collection: "programmes", pmFilter }),
   getSystemMappings: () => callApi("getSystemMappings"),
 
   getEvidence: (projectId: string) => callApi("getEvidence", { projectId }),
@@ -142,6 +144,7 @@ export const api = {
   adminGetProjects: () => callApi("adminGetProjects"),
   adminGetProgrammes: () => callApi("adminGetProgrammes"),
   getAssignablePMs: () => callApi("getAssignablePMs"),
+  clientGetProgrammeManagers: () => callApi("clientGetProgrammeManagers"),
 
   adminGetMappings: () => callApi("adminGetMappings"),
   adminSaveMapping: (mapping: any) => callApi("adminSaveMapping", { mapping }),

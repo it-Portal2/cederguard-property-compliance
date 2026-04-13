@@ -120,15 +120,35 @@ export const projectRoutes: Record<
         );
       }
     } else {
+      // Regular user (Project Manager or Programme Manager)
       queries.push(db.collection("projects").where("userId", "==", uid).get());
-      queries.push(
-        db.collection("projects").where("creatorId", "==", uid).get(),
-      );
+      queries.push(db.collection("projects").where("creatorId", "==", uid).get());
       if (email) {
         queries.push(db.collection("projects").where("pm", "==", email).get());
-        queries.push(
-          db.collection("projects").where("userId", "==", email).get(),
-        );
+        queries.push(db.collection("projects").where("userId", "==", email).get());
+      }
+
+      // Programme Manager: Fetch projects associated with their managed programmes
+      if (userData.role === ROLE_STRINGS.PROGRAMME_MANAGER) {
+        const progQueries = [
+          db.collection('programmes').where('userId', '==', uid).get(),
+          db.collection('programmes').where('creatorId', '==', uid).get()
+        ];
+        if (email) {
+          progQueries.push(db.collection('programmes').where('pm', '==', email).get());
+        }
+        
+        const progSnapshots = await Promise.all(progQueries);
+        const managedProgIds = new Set<string>();
+        progSnapshots.forEach(snap => snap.docs.forEach(doc => managedProgIds.add(doc.id)));
+        
+        const progIds = Array.from(managedProgIds);
+        if (progIds.length > 0) {
+          for (let i = 0; i < progIds.length; i += 10) {
+            const chunk = progIds.slice(i, i + 10);
+            queries.push(db.collection("projects").where("programmeId", "in", chunk).get());
+          }
+        }
       }
     }
 
@@ -292,15 +312,37 @@ export const projectRoutes: Record<
       return res.status(200).json({ success: true, projects: allProjects });
     }
 
-    // --- Aggregation Logic ---
-    // 1. Projects where clientId matches organization
-    // 2. Projects where user is the owner/manager
-    // 3. Projects where user is the creator
-    const queries = [
-      db.collection("projects").where("clientId", "==", primaryUid).get(),
-      db.collection("projects").where("userId", "==", uid).get(),
-      db.collection("projects").where("creatorId", "==", uid).get()
-    ];
+    const queries = [];
+
+    if (userData.role === ROLE_STRINGS.CLIENT_ADMIN || userData.role === ROLE_STRINGS.ENTERPRISE) {
+      queries.push(db.collection("projects").where("clientId", "==", primaryUid).get());
+    } else {
+      queries.push(db.collection("projects").where("userId", "==", uid).get());
+      queries.push(db.collection("projects").where("creatorId", "==", uid).get());
+      if (email) {
+        queries.push(db.collection("projects").where("pm", "==", email).get());
+        queries.push(db.collection("projects").where("userId", "==", email).get());
+      }
+      
+      // Programme Manager: Aggregate projects via managed programmes
+      if (userData.role === ROLE_STRINGS.PROGRAMME_MANAGER) {
+        const progQueries = [
+          db.collection('programmes').where('userId', '==', uid).get(),
+          db.collection('programmes').where('creatorId', '==', uid).get()
+        ];
+        if (email) {
+          progQueries.push(db.collection('programmes').where('pm', '==', email).get());
+        }
+        const progSnaps = await Promise.all(progQueries);
+        const progIds = Array.from(new Set(progSnaps.flatMap(s => s.docs.map(d => d.id))));
+        
+        if (progIds.length > 0) {
+          for (let i = 0; i < progIds.length; i += 10) {
+            queries.push(db.collection("projects").where("programmeId", "in", progIds.slice(i, i + 10)).get());
+          }
+        }
+      }
+    }
 
     // 4. Fetch from team members as a safety net
     const pmsSnap = await db.collection("users").where("clientId", "==", primaryUid).get();
