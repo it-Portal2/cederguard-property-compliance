@@ -157,8 +157,8 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
             <div className="px-4 sm:px-8 pt-6 sm:pt-8 pb-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 bg-slate-50/30">
               <div className="flex p-1 sm:p-1.5 bg-slate-200/50 rounded-2xl w-full sm:w-fit overflow-x-auto scrollbar-hide">
                 {[
-                  { id: 'review', label: 'Framework Scope', subtitle: 'AI-selected requirements', count: complianceItems.length },
-                  { id: 'additions', label: 'AI Suggestions', subtitle: 'Conditional & excluded items', count: addableItems.length }
+                  { id: 'review', label: 'AI Applicable', subtitle: 'Automatically selected requirements', count: complianceItems.length },
+                  { id: 'additions', label: 'Conditional & Excluded', subtitle: 'AI flagged & non-applicable items', count: addableItems.length }
                 ].map((t) => (
                   <button
                     key={t.id}
