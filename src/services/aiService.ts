@@ -154,8 +154,17 @@ FORMATTING (STRICT): ABSOLUTELY NO MARKDOWN. ANY IDENTIFIER OR ID MUST BE ON THE
         },
         notApplicableIds: {
           type: "array",
-          items: { type: "string" },
-          description: "IDs of compliance items that definitely do not apply.",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
+              reason: {
+                type: "string",
+                description: "Why this regulation does not apply.",
+              },
+            },
+          },
+          description: "Items that definitely do not apply with reasoning.",
         },
         conditionalIds: {
           type: "array",

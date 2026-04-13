@@ -230,7 +230,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
                             <td className="px-4 sm:px-8 py-4 sm:py-6">
                               <div className="flex flex-col gap-1.5">
                                 <span className="font-black text-slate-900 text-sm tracking-tight">{item.reg}</span>
-                                <span className="text-slate-500 text-xs leading-relaxed max-w-md line-clamp-2 font-medium">{stripMarkdown(item.req)}</span>
+                                <span className="text-slate-500 text-xs leading-relaxed max-w-2xl font-medium">{stripMarkdown(item.req)}</span>
                               </div>
                             </td>
                             <td className="px-4 sm:px-8 py-4 sm:py-6">
@@ -270,10 +270,10 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
                           const isAdded = complianceItems.some((i: any) => i.id === id);
                           return (
                             <tr key={id} className="group hover:bg-slate-50/50 transition-colors cursor-pointer" onClick={(e) => toggleSelectOne(id, e as any)}>
-                              <td className="px-8 py-6">
+                              <td className="px-8 py-6 align-top">
                                 <input
                                   type="checkbox"
-                                  className="w-4 h-4 rounded-lg border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                  className="w-4 h-4 rounded-lg border-slate-300 text-indigo-600 focus:ring-indigo-500 mt-1"
                                   checked={selectedIds.includes(id)}
                                   onChange={() => {}}
                                   onClick={(e) => e.stopPropagation()}
@@ -282,7 +282,11 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
                               <td className="px-8 py-6">
                                 <div className="flex flex-col gap-1.5">
                                   <span className="font-black text-slate-900 text-sm tracking-tight">{item.reg}</span>
-                                  <span className="text-amber-600 text-[10px] italic font-bold">Reason: {stripMarkdown(reason) || item.trigger}</span>
+                                  <span className="text-slate-500 text-xs leading-relaxed max-w-2xl font-medium mb-1">{stripMarkdown(item.req)}</span>
+                                  <div className="flex items-start gap-1.5 p-3 bg-amber-50/50 rounded-lg border border-amber-100/50 mt-1">
+                                    <AlertCircle className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
+                                    <span className="text-amber-700 text-[11px] leading-relaxed font-semibold">{stripMarkdown(reason) || item.trigger}</span>
+                                  </div>
                                 </div>
                               </td>
                               <td className="px-8 py-6">

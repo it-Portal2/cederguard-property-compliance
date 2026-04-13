@@ -1229,7 +1229,7 @@ export function ComplianceSetup() {
               }
             : {
                 id: c.id,
-                reason: c.reason || "Conditionally matched.",
+                reason: c.reason || c.condition || "Conditionally matched.",
                 type: "conditional" as const,
               },
         )
@@ -1243,6 +1243,17 @@ export function ComplianceSetup() {
     );
     const conditionalIdSet = new Set(conditionalObjs.map((c) => c.id));
 
+    const notApplicableMap = new Map<string, string>();
+    if (Array.isArray(lastAnalysisResults.notApplicableIds)) {
+      lastAnalysisResults.notApplicableIds.forEach((item: any) => {
+        if (typeof item === "string") {
+          notApplicableMap.set(item, "Excluded by AI analysis.");
+        } else if (item && item.id) {
+          notApplicableMap.set(item.id, item.reason || "Excluded by AI analysis.");
+        }
+      });
+    }
+
     const excludedItems = COMPLIANCE_ITEMS.filter(
       (item) =>
         !aiApplicable.has(item.id) &&
@@ -1250,7 +1261,7 @@ export function ComplianceSetup() {
         !alreadyInTracker.has(item.id),
     ).map((item) => ({
       id: item.id,
-      reason: "Excluded by AI analysis.",
+      reason: notApplicableMap.get(item.id) || "Excluded due to technical characteristics logic.",
       type: "excluded" as const,
     }));
 
