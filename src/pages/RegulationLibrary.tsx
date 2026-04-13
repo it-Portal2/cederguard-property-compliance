@@ -11,7 +11,8 @@ import { AIWriter } from '../components/AIWriter';
 import { generateId } from '../lib/utils';
 import toast from 'react-hot-toast';
 
-const CATS = [...new Set(REGULATIONS.map(r => r.cat))].sort();
+// These will be recalculated inside the component to include custom items
+const STATIC_CATS = [...new Set(REGULATIONS.map(r => r.cat))].sort();
 
 const StatBox = ({ value, label, valueColor, sublabel }: { value: number | string, label: string, valueColor: string, sublabel?: string }) => (
   <div className="bg-white border border-slate-200 rounded-lg p-3">
@@ -21,7 +22,7 @@ const StatBox = ({ value, label, valueColor, sublabel }: { value: number | strin
   </div>
 );
 
-function RegulationCard({ item, key }: { item: any; key?: string }) {
+function RegulationCard({ item, catIdx, regIdx }: { item: any; catIdx: number; regIdx: number }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'process' | 'evidence' | 'owners'>('overview');
   const [isAddingUpdate, setIsAddingUpdate] = useState(false);
@@ -88,12 +89,14 @@ function RegulationCard({ item, key }: { item: any; key?: string }) {
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="text-[9px] md:text-[10px] font-black text-indigo-600 bg-indigo-50 border border-indigo-200 rounded text-center px-2 py-1 whitespace-nowrap shrink-0">
-          {item.cat}
+          {catIdx}.{regIdx}
         </div>
         
         <div className="flex-1 min-w-0">
           <div className="text-xs md:text-sm font-bold mb-0.5 md:mb-1 leading-snug truncate text-slate-900" title={item.name}>{item.name}</div>
           <div className="text-[10px] md:text-[11px] text-slate-400 flex gap-2 items-center flex-wrap">
+            <span className="font-semibold text-indigo-500/80">{item.cat}</span>
+            <span className="opacity-30">·</span>
             <span className="font-medium">{item.reg}</span>
             <span className="opacity-30">·</span>
             <span className="truncate max-w-[150px] md:max-w-[300px]" title={item.when}>{item.when}</span>
@@ -158,8 +161,8 @@ function RegulationCard({ item, key }: { item: any; key?: string }) {
                 <div className="space-y-2.5">
                   {item.process.split('|').map((step: string, idx: number) => (
                     <div key={idx} className="flex gap-3 items-start">
-                      <div className="w-5 h-5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-[11px] font-semibold shrink-0 mt-0.5">
-                        {idx + 1}
+                      <div className="bg-blue-50 text-blue-600 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5 px-1.5 py-0.5 rounded">
+                        {catIdx}.{regIdx}.{idx + 1}
                       </div>
                       <div className="text-[13px] text-slate-700 leading-relaxed pt-0.5">{step}</div>
                     </div>
@@ -171,8 +174,14 @@ function RegulationCard({ item, key }: { item: any; key?: string }) {
                 <div className="space-y-0">
                   {item.evidence.split('|').map((ev: string, idx: number) => (
                     <div key={idx} className="flex gap-2 items-start py-2 border-b border-slate-100 last:border-0">
-                      <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
-                      <div className="text-[13px] text-slate-800">{ev}</div>
+                      <div className="flex flex-col gap-1 flex-1">
+                        <div className="flex items-start gap-2">
+                          <div className="text-[9px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded shrink-0">
+                            {catIdx}.{regIdx}.{idx + 1}
+                          </div>
+                          <div className="text-[13px] text-slate-800">{ev}</div>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -314,12 +323,18 @@ function RegulationCard({ item, key }: { item: any; key?: string }) {
 
 export function RegulationLibrary() {
   const { user, customRegulations, addCustomRegulation, activeProject, activeProgramme, activeProjectId, activeProgrammeId } = useStore();
+  const allCats = useMemo(() => {
+    const cats = new Set(REGULATIONS.map(r => r.cat));
+    customRegulations.forEach((r: any) => { if (r.cat) cats.add(r.cat); });
+    return [...cats].sort();
+  }, [customRegulations]);
+
   const [activeView, setActiveView] = useState<'all' | 'new'>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAIInquiryOpen, setIsAIInquiryOpen] = useState(false);
   const [isSavingEntry, setIsSavingEntry] = useState(false);
   const [newReg, setNewReg] = useState<Partial<RegulationItem>>({
-    cat: CATS[0] || 'General',
+    cat: allCats[0] || 'General',
     risk: 'Medium',
     status: 'Not Started',
     tag: 'Manual'
@@ -360,7 +375,7 @@ export function RegulationLibrary() {
                           item.reg.toLowerCase().includes(search.toLowerCase());
       const matchCat = activeCat === 'All' || item.cat === activeCat;
       const matchRisk = activeRisks.size === 0 || activeRisks.has(item.risk);
-      const matchView = activeView === 'all' || item.tag === 'NEW';
+      const matchView = activeView === 'all' || item.tag === 'NEW' || item.tag === 'Manual';
       return matchSearch && matchCat && matchRisk && matchView;
     });
   }, [search, activeCat, activeRisks, activeView, allItems]);
@@ -451,7 +466,7 @@ export function RegulationLibrary() {
               </span>
             </button>
             
-            {CATS.map(cat => {
+            {allCats.map(cat => {
               const count = allItems.filter(r => r.cat === cat).length;
               const isActive = activeCat === cat;
               return (
@@ -466,7 +481,7 @@ export function RegulationLibrary() {
                   onClick={() => setActiveCat(cat)}
                 >
                   <span className="truncate pr-2 text-left">{cat}</span>
-                  <span className={clsx("text-[10px] px-1.5 py-0.5 rounded-full font-bold shrink-0", isActive ? "bg-indigo-100 text-indigo-700" : "bg-slate-50 text-slate-400")}>
+                  <span className={clsx("text-[10px] px-1.5 py-0.5 rounded-full font-bold", isActive ? "bg-indigo-100 text-indigo-700" : "bg-slate-50 text-slate-400")}>
                     {count}
                   </span>
                 </button>
@@ -688,9 +703,21 @@ export function RegulationLibrary() {
                 <p className="text-sm text-slate-400 mt-1 max-w-xs">Adjust your filters to see more results.</p>
               </div>
             ) : (
-              filteredItems.map(item => (
-                <RegulationCard key={`${item.cat}-${item.name}`} item={item} />
-              ))
+              filteredItems.map((item, index) => {
+                const catIdx = allCats.indexOf(item.cat) + 1;
+                // Find index within the group of same category items in the current filtered list
+                const itemsInSameCat = filteredItems.filter(r => r.cat === item.cat);
+                const regIdx = itemsInSameCat.indexOf(item) + 1;
+                
+                return (
+                  <RegulationCard 
+                    key={`${item.cat}-${item.name}-${index}`} 
+                    item={item} 
+                    catIdx={catIdx}
+                    regIdx={regIdx}
+                  />
+                );
+              })
             )}
           </div>
         </div>
@@ -732,7 +759,7 @@ export function RegulationLibrary() {
                       value={newReg.cat}
                       onChange={e => setNewReg({ ...newReg, cat: e.target.value })}
                     >
-                      {CATS.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                      {allCats.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                       <option value="Custom">Custom / Other</option>
                     </select>
                   </div>
@@ -842,7 +869,7 @@ export function RegulationLibrary() {
                       });
                       toast.success('Regulation added successfully');
                       setIsAddModalOpen(false);
-                      setNewReg({ cat: CATS[0] || 'General', risk: 'Medium', status: 'Not Started', tag: 'Manual' });
+                      setNewReg({ cat: allCats[0] || 'General', risk: 'Medium', status: 'Not Started', tag: 'Manual' });
                     } catch (err) {
                       toast.error('Failed to add regulation. Please try again.');
                     } finally {
@@ -869,7 +896,7 @@ export function RegulationLibrary() {
           `You are CedarGuard AI assisting with the Regulation Library.`,
           activeProject ? `Active Project: ${activeProject.name} (Type: ${(activeProject as any).type || 'N/A'}, Location: ${(activeProject as any).loc || 'N/A'}).` : '',
           activeProgramme ? `Active Programme: ${(activeProgramme as any).name}.` : '',
-          `The library contains ${allItems.length} regulations across categories: ${CATS.join(', ')}.`,
+          `The library contains ${allItems.length} regulations across categories: ${allCats.join(', ')}.`,
           `Provide specific, project-relevant regulatory guidance based on the active project context.`
         ].filter(Boolean).join(' ')}
       />

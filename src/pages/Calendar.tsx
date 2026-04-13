@@ -402,7 +402,7 @@ export function Calendar() {
                 )}
               >
                 <Layers className="w-4 h-4" />
-                {compareMode ? 'Exit Compare' : 'Compare Mode'}
+                {compareMode ? 'Exit Comparison' : 'Diary Comparison'}
               </button>
               {compareMode && (
                 <button

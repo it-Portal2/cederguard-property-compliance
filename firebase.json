@@ -17,8 +17,8 @@
     "providers": {
       "emailPassword": true,
       "googleSignIn": {
-        "oAuthBrandDisplayName": "Newlifenetpro",
-        "supportEmail": "admin@newlifenetpro.com"
+        "oAuthBrandDisplayName": "Cedar Property Compliance",
+        "supportEmail": "admin@cedarguard.co.uk"
       }
     }
   }

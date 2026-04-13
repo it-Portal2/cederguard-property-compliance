@@ -22,10 +22,23 @@ import { useStore, TaskItem, ComplianceItem } from "../store/useStore";
 import { clsx } from "clsx";
 import toast from "react-hot-toast";
 
-const EmptyState = ({ title }: { title: string }) => (
-  <div className="flex flex-col items-center justify-center py-12 text-slate-400 space-y-2 opacity-60">
-    <Info className="w-8 h-8" />
-    <p className="text-xs font-medium">{title}</p>
+const EmptyState = ({ title, onAdd }: { title: string; onAdd?: () => void }) => (
+  <div className="flex flex-col items-center justify-center py-12 text-slate-400 space-y-4 opacity-60">
+    <div className="bg-slate-50 p-4 rounded-full">
+      <Info className="w-8 h-8 text-slate-300" />
+    </div>
+    <div className="text-center">
+      <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{title}</p>
+      {onAdd && (
+        <button
+          onClick={onAdd}
+          className="mt-4 flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 mx-auto"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Add Your First Task
+        </button>
+      )}
+    </div>
   </div>
 );
 
@@ -281,6 +294,8 @@ export function MyTasks() {
     statusFilter,
     contextFilter,
     user,
+    projects,
+    programmes,
   ]);
 
   // KPI Calculation
@@ -302,8 +317,8 @@ export function MyTasks() {
 
     const completedThisWeek = allItems.filter((i) => {
       if (i.status !== "Completed") return false;
-      if (!i.completedAt) return true; // Fallback for old data: count all completed if no date
-      const date = new Date(i.completedAt);
+      if (!(i as any).completedAt) return true; // Fallback for old data: count all completed if no date
+      const date = new Date((i as any).completedAt);
       return date >= lastWeek;
     });
 
@@ -497,6 +512,16 @@ export function MyTasks() {
               ))}
             </optgroup>
           </select>
+        </div>
+
+        <div className="ml-auto flex items-center">
+          <button
+            onClick={openAddModal}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-all flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Add Task
+          </button>
         </div>
 
         <div className="h-6 w-px bg-slate-200 ml-auto hidden md:block"></div>
@@ -717,7 +742,18 @@ export function MyTasks() {
             </tbody>
           </table>
         ) : (
-          <EmptyState title="No active items in your workspace. Add a new task or review compliance requirements to get started." />
+          <EmptyState 
+            title="No active items in your workspace. Add a new task or review compliance requirements to get started." 
+            onAdd={() => {
+              setModalMode('add');
+              setCurrentTask({
+                owner: user?.id || user?.uid || user?.email || '',
+                status: 'Pending',
+                priority: 'Medium'
+              });
+              setShowModal(true);
+            }}
+          />
         )}
       </div>
 

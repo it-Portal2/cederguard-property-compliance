@@ -69,7 +69,7 @@ export function Support() {
             >
               <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
               <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center mb-8 border border-white/5 shadow-inner group-hover:scale-110 transition-transform duration-500 relative z-10">
-                {React.cloneElement(option.icon as React.ReactElement, { className: "w-8 h-8 text-cyan-400" })}
+                {React.cloneElement(option.icon as React.ReactElement<any>, { className: "w-8 h-8 text-cyan-400" })}
               </div>
               <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-4 font-display tracking-tight relative z-10">{option.title}</h3>
               <p className="text-slate-500 dark:text-slate-400 mb-8 leading-relaxed text-lg relative z-10">{option.description}</p>

@@ -126,6 +126,8 @@ export const api = {
   addEvidence: (projectId: string, document: any) =>
     callApi("addEvidence", { projectId, document }),
   deleteEvidence: (docId: string) => callApi("deleteEvidence", { docId }),
+  updateEvidence: (docId: string, updates: any) =>
+    callApi("updateEvidence", { docId, updates }),
 
   saveProfile: (profile: any) => callApi("saveProfile", { profile }),
   getProfile: () => callApi("getProfile"),

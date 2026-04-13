@@ -102,15 +102,10 @@ export function ComplianceTracker() {
 
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load data when active context changes.
-  // Skip the fetch if complianceItems already has data for this context (e.g. loaded by initStore).
   useEffect(() => {
+    // Load data when active context changes.
+    // Skip the fetch if complianceItems already has data for this context (e.g. loaded by initStore).
     if (!activeProjectId && !activeProgrammeId) return;
-    const contextId = activeProjectId || activeProgrammeId!;
-    const alreadyLoaded = complianceItems.some(i =>
-      activeProjectId ? i.projectId === contextId : i.programmeId === contextId
-    );
-    if (alreadyLoaded) return;
     let cancelled = false;
     setIsLoading(true);
     const loadFn = activeProjectId
@@ -143,6 +138,7 @@ export function ComplianceTracker() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showFullQueue, setShowFullQueue] = useState(false);
   const [showDismissed, setShowDismissed] = useState(false);
+  const [activeRiskFilter, setActiveRiskFilter] = useState<string | null>(null);
   const [selectedDomainId, setSelectedDomainId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [activeTab, setActiveTab] = useState<'tracker' | 'dashboard' | 'analytics'>('tracker');
@@ -320,9 +316,12 @@ export function ComplianceTracker() {
     return showDismissed ? dismissedItems : activeItems;
   }, [showDismissed, dismissedItems, activeItems]);
 
-  // Statistics calculation
+  // Statistics calculation — total = applicable + pending (full framework scope)
   const stats = useMemo(() => {
-    const total = activeItems.length;
+    const allScopeItems = [...activeItems, ...pendingItems];
+    const total = allScopeItems.length;
+    const applicable = activeItems.length;
+    const pending = pendingItems.length;
     const completed = activeItems.filter(i => i.stage === 'Live' || i.stage === 'Archived').length;
     const upcoming = activeItems.filter(i => {
       if (!i.dueDate) return false;
@@ -335,28 +334,38 @@ export function ComplianceTracker() {
 
     return {
       total,
+      applicable,
+      pending,
       completed,
       upcoming,
       critical,
-      percent: total > 0 ? Math.round((completed / total) * 100) : 0
+      percent: applicable > 0 ? Math.round((completed / applicable) * 100) : 0
     };
-  }, [activeItems]);
+  }, [activeItems, pendingItems]);
 
   // Filter items by selected domain and search term
   const filteredItems = useMemo(() => {
+    const term = searchTerm.toLowerCase();
     return displayItems.filter(item => {
-      const matchesSearch = item.req?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.domain?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.risk?.toLowerCase().includes(searchTerm.toLowerCase());
+      // Resolve the domain label for search so users can type "Health & Safety" etc.
+      const domainLabel = DOMAINS.find(d => d.id === item.domain)?.label || item.domain || '';
+      const matchesSearch = !term ||
+        item.req?.toLowerCase().includes(term) ||
+        item.reg?.toLowerCase().includes(term) ||
+        item.domain?.toLowerCase().includes(term) ||
+        domainLabel.toLowerCase().includes(term) ||
+        item.risk?.toLowerCase().includes(term);
 
       const domainObj = selectedDomainId ? DOMAINS.find(d => d.id === selectedDomainId) : null;
       const matchesDomain = !selectedDomainId ||
         item.domain === selectedDomainId ||
         item.domain === domainObj?.label;
 
-      return matchesSearch && matchesDomain;
+      const matchesRisk = !activeRiskFilter || item.risk === activeRiskFilter;
+
+      return matchesSearch && matchesDomain && matchesRisk;
     });
-  }, [displayItems, searchTerm, selectedDomainId]);
+  }, [displayItems, searchTerm, selectedDomainId, activeRiskFilter]);
 
   // Group items for category cards
   const domainStats = useMemo(() => {
@@ -514,8 +523,11 @@ export function ComplianceTracker() {
             <Badge variant="indigo">{stats.percent}% Overall</Badge>
           </div>
           <div>
-            <p className="text-3xl font-bold text-slate-900">{stats.completed} / {stats.total}</p>
+            <p className="text-3xl font-bold text-slate-900">{stats.completed} / {stats.applicable}</p>
             <p className="text-slate-500 text-sm">Active Compliance Items</p>
+            {stats.pending > 0 && (
+              <p className="text-indigo-500 text-[10px] font-bold mt-1">+{stats.pending} pending verification</p>
+            )}
           </div>
           <Progress value={stats.percent} />
         </motion.div>
@@ -533,9 +545,9 @@ export function ComplianceTracker() {
             <p className="text-3xl font-bold text-slate-900">{stats.critical}</p>
             <p className="text-slate-500 text-sm">Critical Risks Identified</p>
           </div>
-          <div className="flex items-center gap-2 text-rose-600 text-sm font-medium">
-            <ScanSearch className="w-4 h-4 text-indigo-400 shrink-0" />
-            Action required immediately
+          <div className={`flex items-center gap-2 text-sm font-medium ${stats.critical > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+            <ScanSearch className={`w-4 h-4 shrink-0 ${stats.critical > 0 ? 'text-rose-400' : 'text-emerald-400'}`} />
+            {stats.critical > 0 ? 'Action required immediately' : 'No critical issues'}
           </div>
         </motion.div>
 
@@ -552,9 +564,9 @@ export function ComplianceTracker() {
             <p className="text-3xl font-bold text-slate-900">{stats.upcoming}</p>
             <p className="text-slate-500 text-sm">Renewals in next 30 days</p>
           </div>
-          <div className="flex items-center gap-2 text-amber-600 text-sm font-medium">
+          <div className={`flex items-center gap-2 text-sm font-medium ${stats.upcoming > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
             <Calendar className="w-4 h-4" />
-            Plan upcoming inspections
+            {stats.upcoming > 0 ? 'Plan upcoming inspections' : 'No upcoming deadlines'}
           </div>
         </motion.div>
 
@@ -563,17 +575,17 @@ export function ComplianceTracker() {
           className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4"
         >
           <div className="flex items-center justify-between">
-            <div className="p-2.5 bg-emerald-50 border border-emerald-100 rounded-xl">
-              <TrendingUp className="w-6 h-6 text-emerald-600" />
+            <div className={`p-2.5 border rounded-xl ${stats.applicable - stats.completed > 0 ? 'bg-indigo-50 border-indigo-100' : 'bg-emerald-50 border-emerald-100'}`}>
+              <TrendingUp className={`w-6 h-6 ${stats.applicable - stats.completed > 0 ? 'text-indigo-600' : 'text-emerald-600'}`} />
             </div>
           </div>
           <div>
-            <p className="text-3xl font-bold text-slate-900">+12%</p>
-            <p className="text-slate-500 text-sm">Compliance vs Last Month</p>
+            <p className="text-3xl font-bold text-slate-900">{stats.applicable - stats.completed}</p>
+            <p className="text-slate-500 text-sm">Items Not Yet Complete</p>
           </div>
-          <div className="flex items-center gap-2 text-emerald-600 text-sm font-medium">
+          <div className={`flex items-center gap-2 text-sm font-medium ${stats.applicable - stats.completed === 0 ? 'text-emerald-600' : 'text-indigo-600'}`}>
             <TrendingUp className="w-4 h-4" />
-            Positive trajectory
+            {stats.applicable - stats.completed === 0 ? 'All items complete' : `${stats.percent}% complete`}
           </div>
         </motion.div>
       </div>
@@ -658,10 +670,20 @@ export function ComplianceTracker() {
             {isComplianceLocked ? "Locked" : "Unlocked"}
           </button>
 
-          <button className="flex items-center gap-2 px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-xl border border-slate-200 font-bold text-[10px] uppercase tracking-widest transition-all">
-            <Filter className="w-4 h-4" />
-            Filters
-          </button>
+          <div className="relative group">
+            <select
+              value={activeRiskFilter || ''}
+              onChange={(e) => setActiveRiskFilter(e.target.value || null)}
+              className="flex items-center gap-2 pl-4 pr-10 py-2 text-slate-600 hover:bg-slate-50 rounded-xl border border-slate-200 font-bold text-[10px] uppercase tracking-widest transition-all appearance-none cursor-pointer outline-none focus:ring-2 focus:ring-indigo-500/20"
+            >
+              <option value="">All Risks</option>
+              <option value="Critical">Critical</option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
+            <Filter className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+          </div>
           
           <button 
             onClick={handleToggleHistory}
@@ -841,9 +863,29 @@ export function ComplianceTracker() {
             ))}
           </motion.div>
         ) : (
-          <div className="flex flex-col lg:flex-row gap-8 items-start">
-            {/* Sidebar */}
-            <aside className="w-full lg:w-72 shrink-0 space-y-6 lg:sticky lg:top-24">
+          <motion.div 
+            key="list"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            className="space-y-6"
+          >
+            {/* Back to Overview button when domain filter is active */}
+            {selectedDomainId && (
+              <div className="w-full">
+                <button
+                  onClick={() => { setSelectedDomainId(null); setViewMode('grid'); }}
+                  className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-600 rounded-xl font-bold text-xs hover:bg-slate-200 transition-all active:scale-95 w-fit"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Back to Overview
+                </button>
+              </div>
+            )}
+            
+            <div className="flex flex-col lg:flex-row gap-8 items-start">
+              {/* Sidebar */}
+              <aside className="w-full lg:w-72 shrink-0 space-y-6 lg:sticky lg:top-24">
               <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Domains</h3>
@@ -923,14 +965,8 @@ export function ComplianceTracker() {
             </aside>
 
             {/* Main Content Area */}
-            <div className="flex-1 min-w-0 space-y-6">
-              <motion.div
-                key="list"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
-              >
+              <div className="flex-1 min-w-0 space-y-6">
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200" style={{ maxWidth: '100%' }}>
                   <table className="w-full text-left min-w-[1000px]">
                     <thead>
@@ -1097,7 +1133,14 @@ export function ComplianceTracker() {
                                     exit={{ height: 0, opacity: 0 }}
                                     className="overflow-hidden"
                                   >
-                                    <div className="p-8 grid grid-cols-1 md:grid-cols-3 gap-12">
+                                    <div className="p-8 grid grid-cols-1 md:grid-cols-3 gap-12 relative">
+                                      {/* Close/collapse expanded detail */}
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); setExpandedId(null); }}
+                                        className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-slate-200 hover:text-slate-700 transition-all z-10"
+                                      >
+                                        <X className="w-3 h-3" /> Close
+                                      </button>
                                       {/* Expanded content remains similar but styled better ... */}
                                       <div className="space-y-6">
                                         <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
@@ -1162,8 +1205,8 @@ export function ComplianceTracker() {
                                                     try {
                                                       await addComplianceUpdate(item.id, updateObj);
                                                       e.currentTarget.value = '';
-                                                    } catch {
-                                                      toast.error('Something went wrong. Please try again.');
+                                                    } catch (err: any) {
+                                                      toast.error(err?.message || 'Something went wrong. Please check your connection.');
                                                     }
                                                   }
                                                 }}
@@ -1303,9 +1346,10 @@ export function ComplianceTracker() {
                     </tbody>
                   </table>
                 </div>
-              </motion.div>
+              </div>
             </div>
-          </div>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
       {/* Add Requirement Modal */}

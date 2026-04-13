@@ -147,7 +147,8 @@ export function Dashboard() {
   });
 
   // Only count 'applicable' items for stats — same as ComplianceDashboard's getActiveItems()
-  const contextCompliance = allContextCompliance.filter(i => i.status === 'applicable');
+  // Treat items without an explicit status (or unrecognised status) as 'applicable'
+  const contextCompliance = allContextCompliance.filter(i => !i.status || i.status === 'applicable');
   const pendingComplianceCount = allContextCompliance.filter(i => i.status === 'pending').length;
 
   const contextRisks = safeRisks.filter(r => {
@@ -181,12 +182,13 @@ export function Dashboard() {
   const compIsOpen      = (s?: string) => s === 'Information Gap' || s === 'Risk Identified';
   const compIsHighRisk  = (r?: string) => r === 'High' || r === 'Critical';
 
-  const compTotal      = contextCompliance.length;
+  const compTotal      = contextCompliance.length + pendingComplianceCount; // Full framework scope
+  const compApplicable = contextCompliance.length;
   const compComplete   = contextCompliance.filter(i => compIsComplete(i.stage)).length;
   const compInProgress = contextCompliance.filter(i => i.stage === 'In Progress').length;
   const compNotStarted = contextCompliance.filter(i => compIsOpen(i.stage)).length;
   const compHighRisk   = contextCompliance.filter(i => compIsHighRisk(i.risk) && !compIsComplete(i.stage)).length;
-  const compPct        = compTotal ? Math.round((compComplete / compTotal) * 100) : 0;
+  const compPct        = compApplicable ? Math.round((compComplete / compApplicable) * 100) : 0;
 
   // Risk Stats
   const riskTotal = contextRisks.length;
@@ -631,8 +633,8 @@ export function Dashboard() {
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                     <div className="md:col-span-3 space-y-6">
                       <div className="relative pl-6">
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]" />
-                        <p className="text-slate-200 leading-relaxed font-medium italic text-sm">
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-500 to-indigo-600 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.6)]" />
+                        <p className="text-slate-200 leading-relaxed font-semibold italic text-base bg-white/5 p-4 rounded-xl border border-white/10 backdrop-blur-md">
                           "{stripMarkdown(strategicInsights.outlook)}"
                         </p>
                       </div>
@@ -643,10 +645,10 @@ export function Dashboard() {
                             <ShieldAlert className="w-3 h-3 text-red-500" /> Critical Blindspots
                           </h4>
                           <div className="space-y-2">
-                            {strategicInsights.criticalBlindspots?.map((s: string, i: number) => (
-                              <div key={i} className="flex items-start gap-2 bg-red-500/5 p-3 rounded-xl border border-red-500/10 transition-all hover:bg-red-500/10">
-                                <span className="text-red-500 font-bold mt-0.5">•</span>
-                                <p className="text-xs text-slate-300 leading-normal">{stripMarkdown(s)}</p>
+                            {strategicInsights.criticalBlindspots?.slice(0, 3).map((s: string, i: number) => (
+                              <div key={i} className="flex items-start gap-3 bg-red-500/5 p-4 rounded-xl border border-red-500/10 transition-all hover:bg-red-500/10 hover:translate-x-1 duration-300">
+                                <ShieldAlert className="w-3.5 h-3.5 text-red-500 shrink-0 mt-0.5" />
+                                <p className="text-xs text-slate-300 leading-normal font-medium">{stripMarkdown(s)}</p>
                               </div>
                             ))}
                           </div>
@@ -656,10 +658,12 @@ export function Dashboard() {
                             <Milestone className="w-3 h-3 text-indigo-400" /> Strategic Priorities
                           </h4>
                           <div className="space-y-2">
-                            {strategicInsights.strategicPriorities?.map((s: string, i: number) => (
-                              <div key={i} className="flex items-start gap-2 bg-indigo-500/5 p-3 rounded-xl border border-indigo-500/10 transition-all hover:bg-indigo-500/10">
-                                <span className="text-indigo-400 font-bold text-[10px] bg-indigo-500/20 w-5 h-5 rounded flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
-                                <p className="text-xs text-slate-200 font-medium leading-normal">{stripMarkdown(s)}</p>
+                            {strategicInsights.strategicPriorities?.slice(0, 3).map((s: string, i: number) => (
+                              <div key={i} className="flex items-start gap-3 bg-indigo-500/5 p-4 rounded-xl border border-indigo-500/10 transition-all hover:bg-indigo-500/10 hover:translate-x-1 duration-300">
+                                <div className="shrink-0 w-6 h-6 rounded-lg bg-indigo-500/20 flex items-center justify-center border border-indigo-500/20 group-hover:scale-105 transition-transform">
+                                  <span className="text-indigo-400 font-black text-[10px]">{i + 1}</span>
+                                </div>
+                                <p className="text-xs text-slate-200 font-semibold leading-normal mt-0.5">{stripMarkdown(s)}</p>
                               </div>
                             ))}
                           </div>
@@ -669,63 +673,19 @@ export function Dashboard() {
                         {/* Detailed Suggestions */}
                         {strategicInsights.detailedSuggestions && strategicInsights.detailedSuggestions.length > 0 && (
                           <div className="mt-8 pt-8 border-t border-white/10">
-                            <div className="flex items-center justify-between mb-4">
-                              <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Executive Detailed Recommendations
-                              </h4>
-                              <button 
-                                onClick={() => setShowFullDetails(!showFullDetails)}
-                                className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 hover:bg-white/5 px-2 py-1 rounded transition-colors"
-                              >
-                                {showFullDetails ? 'Show Less' : 'Show All Details'}
-                              </button>
-                            </div>
-                            <div className={clsx(
-                              "grid grid-cols-1 md:grid-cols-2 gap-3 pb-2 transition-all duration-300 overflow-hidden",
-                              !showFullDetails && "max-h-[300px] relative"
-                            )}>
-                              {!showFullDetails && (
-                                <div className="absolute inset-x-0 bottom-0 h-24 bg-linear-to-t from-slate-900 via-slate-900/80 to-transparent z-10 pointer-events-none flex items-end justify-center pb-2">
-                                  <button 
-                                    onClick={() => setShowFullDetails(true)}
-                                    className="text-[9px] font-black text-indigo-400 uppercase tracking-widest pointer-events-auto hover:text-indigo-300"
-                                  >
-                                    View full analysis
-                                  </button>
-                                </div>
-                              )}
-                              {Array.isArray(strategicInsights.detailedSuggestions) && strategicInsights.detailedSuggestions.map((rawS: any, i: number) => {
+                            <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2 mb-4">
+                              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Executive Recommendations
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              {Array.isArray(strategicInsights.detailedSuggestions) && strategicInsights.detailedSuggestions.slice(0, 3).map((rawS: any, i: number) => {
                                 const s = typeof rawS === 'string' ? rawS : (rawS?.content || rawS?.text || JSON.stringify(rawS));
-                                const labels = ['WHAT:', 'WHO:', 'WHEN:', 'HOW:', 'WHERE:', 'WHY:'];
-                                const hasLabels = labels.some(l => s.includes(l));
-                                const parts = parseAISuggestion(s);
-                                
                                 return (
-                                  <div key={i} className="flex flex-col gap-3 bg-emerald-500/5 p-4 rounded-xl border border-emerald-500/10 transition-all hover:bg-emerald-500/10 group">
-                                    <div className="flex items-start gap-3">
-                                      <div className="shrink-0 w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 group-hover:scale-105 transition-transform">
-                                        <span className="text-emerald-400 font-bold text-xs">{i + 1}</span>
+                                  <div key={i} className="flex flex-col gap-4 bg-emerald-500/5 p-5 rounded-2xl border border-emerald-500/10 transition-all hover:bg-emerald-500/10 hover:-translate-y-1 duration-300 shadow-sm hover:shadow-emerald-500/5 group">
+                                    <div className="flex items-start gap-4">
+                                      <div className="shrink-0 w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 group-hover:scale-110 group-hover:bg-emerald-500/20 transition-all duration-500">
+                                        <ShieldCheck className="w-5 h-5 text-emerald-400" />
                                       </div>
-                                      <div className="space-y-4 flex-1">
-                                        {hasLabels && Array.isArray(parts) ? (
-                                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
-                                            {parts.map((part, pIdx) => (
-                                              <div key={pIdx} className="space-y-1">
-                                                {part.label && (
-                                                  <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest block">
-                                                    {part.label}
-                                                  </span>
-                                                )}
-                                                <p className="text-[11px] text-slate-300 font-medium leading-relaxed">
-                                                  {stripMarkdown(part.content)}
-                                                </p>
-                                              </div>
-                                            ))}
-                                          </div>
-                                        ) : (
-                                          <p className="text-xs text-slate-300 font-medium leading-relaxed">{stripMarkdown(s)}</p>
-                                        )}
-                                      </div>
+                                      <p className="text-[11px] text-slate-300 font-bold leading-relaxed mt-1">{stripMarkdown(s)}</p>
                                     </div>
                                   </div>
                                 );
@@ -1125,11 +1085,12 @@ export function Dashboard() {
             </>
           ) : isComplianceSetup ? (
             <>
-              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-                <StatCard label="Total Requirements" value={compTotal} color="blue" border="border-l-blue-500" info={`Total number of compliance requirements identified for this ${isProjectManager && !activeProjectId ? 'portfolio' : 'project'}.`} />
+              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                <StatCard label="Total Scope" value={compTotal} color="blue" border="border-l-blue-500" info={`Total framework scope (${compApplicable} applicable + ${pendingComplianceCount} pending) for this ${isProjectManager && !activeProjectId ? 'portfolio' : 'project'}.`} />
                 <StatCard label="Complete" value={compComplete} color="green" border="border-l-emerald-500" info={`Requirements fully satisfied for this ${isProjectManager && !activeProjectId ? 'portfolio' : 'project'}.`} />
                 <StatCard label="In Progress" value={compInProgress} color="amber" border="border-l-amber-500" info={`Requirements currently being addressed in this ${isProjectManager && !activeProjectId ? 'portfolio' : 'project'}.`} />
                 <StatCard label="Not Started" value={compNotStarted} color="slate" border="border-l-slate-500" info={`Requirements yet to be reviewed for this ${isProjectManager && !activeProjectId ? 'portfolio' : 'project'}.`} />
+                <StatCard label="Pending Review" value={pendingComplianceCount} color="indigo" border="border-l-indigo-500" info={`Conditional items awaiting verification for this ${isProjectManager && !activeProjectId ? 'portfolio' : 'project'}.`} />
                 <StatCard label="High Risk Open" value={compHighRisk} color="red" border="border-l-red-500" info={`Open compliance items that carry a high risk of regulatory breach or severe penalty for this ${isProjectManager && !activeProjectId ? 'portfolio' : 'project'}.`} />
               </div>
 

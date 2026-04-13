@@ -417,7 +417,7 @@ export function ProjectReport() {
                                     <RechartsBarChart data={categoryData} layout="vertical">
                                         <CartesianGrid strokeDasharray="3 3" horizontal={false} opacity={0.1} />
                                         <XAxis type="number" hide />
-                                        <YAxis dataKey="name" type="category" tick={{fontSize: 10, fontWeight: 900, fill: '#64748b', textTransform: 'uppercase'}} width={100} />
+                                        <YAxis dataKey="name" type="category" tick={{fontSize: 10, fontWeight: 900, fill: '#64748b'}} width={100} />
                                         <Tooltip cursor={{fill: '#f8fafc'}} contentStyle={{fontSize: 10, borderRadius: 16, border: 'none', fontWeight: 800, color: '#111827'}} />
                                         <Bar dataKey="value" fill="#6366f1" radius={[0, 8, 8, 0]} barSize={24} />
                                     </RechartsBarChart>

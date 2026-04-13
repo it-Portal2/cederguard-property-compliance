@@ -71,19 +71,19 @@ export function ProjectsTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
                     const clientAdmin = projectPM?.clientId ? users.find((u: any) => u.uid === projectPM.clientId) : projectPM;
                     return {
                         ...p,
-                        rag: p.rag || (['Red', 'Amber', 'Green'][Math.floor(Math.random() * 3)]),
-                        riba: p.riba || RIBA_STAGES[Math.floor(Math.random() * (RIBA_STAGES.length - 1)) + 1].id,
-                        programme: p.programme || PROGRAMMES[Math.floor(Math.random() * (PROGRAMMES.length - 1)) + 1],
-                        schemeType: p.schemeType || SCHEME_TYPES[Math.floor(Math.random() * (SCHEME_TYPES.length - 1)) + 1],
-                        alertsCount: p.alertsCount ?? Math.floor(Math.random() * 5),
+                        rag: p.rag || 'Green',
+                        riba: p.riba || '',
+                        programme: p.programme || '',
+                        schemeType: p.schemeType || p.type || '',
+                        alertsCount: p.alertsCount ?? 0,
                         referenceId: p.referenceId || generateId('P'),
                         clientName: p.clientName || clientAdmin?.companyName || clientAdmin?.displayName || 'Private Client',
-                        openRisks: p.riskTotal ?? Math.floor(Math.random() * 10) + 1,
-                        severeRisks: p.riskHigh ?? Math.floor(Math.random() * 4),
-                        openIssues: p.issueTotal ?? Math.floor(Math.random() * 5),
-                        nonCompliant: p.compHighRisk ?? Math.floor(Math.random() * 8),
-                        posturePct: p.compPct ?? Math.floor(Math.random() * 40) + 40,
-                        overdueCount: Math.floor(Math.random() * 5),
+                        openRisks: p.riskTotal ?? 0,
+                        severeRisks: p.riskHigh ?? 0,
+                        openIssues: p.issueTotal ?? 0,
+                        nonCompliant: p.compHighRisk ?? 0,
+                        posturePct: p.compPct ?? 0,
+                        overdueCount: p.overdueCount ?? 0,
                     };
                 });
                 setProjects(enriched);
@@ -303,7 +303,7 @@ export function ProjectsTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
                                     <span className="text-sm font-medium text-slate-600 group-hover:text-slate-900 transition-colors">HRB schemes</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-400 rounded-full font-bold">2</span>
+                                    <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-400 rounded-full font-bold">{projects.filter(p => p.isHRB).length}</span>
                                     <input type="checkbox" checked={flags.hrb} onChange={e => setFlags({ ...flags, hrb: e.target.checked })} className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 hidden" />
                                 </div>
                             </label>
@@ -313,7 +313,7 @@ export function ProjectsTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
                                     <span className="text-sm font-medium text-slate-600 group-hover:text-slate-900 transition-colors">Overdue actions</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-400 rounded-full font-bold">1</span>
+                                    <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-400 rounded-full font-bold">{projects.filter(p => p.isOverdue || (p.overdueCount || 0) > 0).length}</span>
                                     <input type="checkbox" checked={flags.overdue} onChange={e => setFlags({ ...flags, overdue: e.target.checked })} className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 hidden" />
                                 </div>
                             </label>
@@ -323,7 +323,7 @@ export function ProjectsTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
                                     <span className="text-sm font-medium text-slate-600 group-hover:text-slate-900 transition-colors">Leaseholders</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-400 rounded-full font-bold">2</span>
+                                    <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-400 rounded-full font-bold">{projects.filter(p => p.hasLeaseholders).length}</span>
                                     <input type="checkbox" checked={flags.leaseholders} onChange={e => setFlags({ ...flags, leaseholders: e.target.checked })} className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 hidden" />
                                 </div>
                             </label>

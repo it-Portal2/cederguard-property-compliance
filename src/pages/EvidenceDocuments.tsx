@@ -3,7 +3,7 @@ import { useStore, ComplianceItem } from '../store/useStore';
 import {
   UploadCloud, File, Trash2, CheckCircle2, X, AlertCircle, Clock,
   ExternalLink, Shield, Link as LinkIcon, Search, ChevronDown,
-  ChevronLeft, ChevronRight, Loader2, FileText, Globe,
+  ChevronLeft, ChevronRight, Loader2, FileText, Globe, Pencil
 } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { storage } from '../lib/firebase';
@@ -38,6 +38,7 @@ export function EvidenceDocuments() {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; storagePath: string; name: string } | null>(null);
+  const [editData, setEditData] = useState<{ id: string; name: string; relatedRequirementId: string } | null>(null);
 
   const contextId = activeProjectId || activeProgrammeId || 'all';
   const isPortfolioView = !activeProjectId && !activeProgrammeId;
@@ -200,6 +201,28 @@ export function EvidenceDocuments() {
       setError('Could not remove document.'); toast.error('Could not remove document.');
     } finally {
       setDeleteTarget(null);
+    }
+  };
+
+  const handleUpdateEvidence = async () => {
+    if (!editData || !editData.id) return;
+    setUploading(true);
+    try {
+      const res = await api.updateEvidence(editData.id, {
+        name: editData.name,
+        relatedRequirementId: editData.relatedRequirementId || null
+      });
+      if (res.success) {
+        toast.success('Document updated successfully.');
+        await fetchDocuments();
+        setEditData(null);
+      } else {
+        throw new Error(res.error || 'Update failed');
+      }
+    } catch (err: any) {
+      toast.error(`Failed to update: ${err.message}`);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -461,6 +484,10 @@ export function EvidenceDocuments() {
                       </td>
                       <td className="px-5 py-4 text-right">
                         <div className="flex items-center justify-end gap-1">
+                          <button onClick={() => setEditData({ id: file.id, name: file.name, relatedRequirementId: file.relatedRequirementId || '' })}
+                            className="p-2 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors" title="Edit">
+                            <Pencil className="h-4 w-4" />
+                          </button>
                           <a href={file.url} target="_blank" rel="noreferrer"
                             className="p-2 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors" title="Open">
                             <ExternalLink className="h-4 w-4" />
@@ -505,6 +532,9 @@ export function EvidenceDocuments() {
                       )}
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
+                      <button onClick={() => setEditData({ id: file.id, name: file.name, relatedRequirementId: file.relatedRequirementId || '' })} className="p-2 rounded-lg text-gray-400 hover:text-indigo-600 transition-colors">
+                        <Pencil className="h-4 w-4" />
+                      </button>
                       <a href={file.url} target="_blank" rel="noreferrer" className="p-2 rounded-lg text-gray-400 hover:text-indigo-600 transition-colors">
                         <ExternalLink className="h-4 w-4" />
                       </a>
@@ -602,6 +632,42 @@ export function EvidenceDocuments() {
               className="flex-1 rounded-lg bg-indigo-600 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">
               {uploading && <Loader2 className="h-4 w-4 animate-spin" />}
               {uploading ? 'Processing…' : 'Confirm Upload'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit Modal */}
+      <Modal open={!!editData} onClose={() => setEditData(null)} title="Edit Document Details" description="Update the name or target requirement for this document.">
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="block text-xs font-medium text-gray-500">Document Name</label>
+            <input 
+              value={editData?.name || ''} 
+              onChange={e => setEditData(prev => prev ? { ...prev, name: e.target.value } : null)}
+              placeholder="Enter document name..."
+              className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" 
+            />
+          </div>
+          <RequirementSelector 
+            value={editData?.relatedRequirementId || ''} 
+            onChange={val => setEditData(prev => prev ? { ...prev, relatedRequirementId: val } : null)} 
+            label="Linked Requirement" 
+          />
+          <div className="flex gap-3 pt-2">
+            <button 
+              onClick={() => setEditData(null)}
+              className="flex-1 rounded-lg border border-gray-200 bg-gray-50 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={handleUpdateEvidence} 
+              disabled={!editData?.name || uploading}
+              className="flex-1 rounded-lg bg-indigo-600 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+            >
+              {uploading && <Loader2 className="h-4 w-4 animate-spin" />}
+              {uploading ? 'Updating…' : 'Save Changes'}
             </button>
           </div>
         </div>

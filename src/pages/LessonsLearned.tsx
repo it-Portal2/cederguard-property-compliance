@@ -278,9 +278,8 @@ export function LessonsLearned() {
                     <div className="flex items-center justify-between mb-1">
                       <label className="text-xs font-black text-slate-400 uppercase tracking-wider">What happened? (The Problem)</label>
                       <AIWriter 
-                        type="lesson"
                         context={`Briefly describe a project problem or risk event for the project: ${newLesson.project}. Title: ${newLesson.title}`}
-                        onSuggestion={(val) => setNewLesson({...newLesson, problem: val})}
+                        onSuggest={(val) => setNewLesson({...newLesson, problem: val})}
                         className="scale-90"
                       />
                     </div>
@@ -298,9 +297,8 @@ export function LessonsLearned() {
                       <div className="flex items-center justify-between mb-1">
                         <label className="text-xs font-black text-slate-400 uppercase tracking-wider">How was it resolved?</label>
                         <AIWriter 
-                          type="lesson"
                           context={`Suggest an effective resolution for the problem: ${newLesson.problem}. Project: ${newLesson.project}`}
-                          onSuggestion={(val) => setNewLesson({...newLesson, resolution: val})}
+                          onSuggest={(val) => setNewLesson({...newLesson, resolution: val})}
                           className="scale-90"
                         />
                       </div>
@@ -315,9 +313,8 @@ export function LessonsLearned() {
                       <div className="flex items-center justify-between mb-1">
                         <label className="text-xs font-black text-slate-400 uppercase tracking-wider">Future Prevention</label>
                         <AIWriter 
-                          type="lesson"
                           context={`Based on the problem: ${newLesson.problem} and resolution: ${newLesson.resolution}, what should be done to prevent this from happening again?`}
-                          onSuggestion={(val) => setNewLesson({...newLesson, prevention: val})}
+                          onSuggest={(val) => setNewLesson({...newLesson, prevention: val})}
                           className="scale-90"
                         />
                       </div>

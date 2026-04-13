@@ -98,7 +98,7 @@ export function MicrolearningSlideshow({ moduleId, onComplete }: Props) {
     exit: { opacity: 0, x: -20 }
   };
 
-  const containerVariants = {
+  const containerVariants: import('framer-motion').Variants = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
@@ -108,7 +108,7 @@ export function MicrolearningSlideshow({ moduleId, onComplete }: Props) {
     }
   };
 
-  const itemVariants = {
+  const itemVariants: import('framer-motion').Variants = {
     hidden: { opacity: 0, y: 15 },
     show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
   };

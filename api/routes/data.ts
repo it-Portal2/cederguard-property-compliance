@@ -269,6 +269,27 @@ export const dataRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
     return res.status(200).json({ success: true });
   },
 
+  updateEvidence: async (req, res, ctx) => {
+    const { db, isAuthorizedForContext } = ctx;
+    const { docId, updates } = req.body;
+    if (!docId || !updates) return res.status(400).json({ error: 'Missing data' });
+    
+    const evidenceDoc = await db.collection('evidence').doc(docId).get();
+    if (!evidenceDoc.exists) return res.status(404).json({ error: 'Document not found' });
+    
+    const evidenceData = evidenceDoc.data();
+    if (!(await isAuthorizedForContext(evidenceData?.project))) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    
+    await db.collection('evidence').doc(docId).set({
+      ...updates,
+      updatedAt: FieldValue.serverTimestamp()
+    }, { merge: true });
+    
+    return res.status(200).json({ success: true });
+  },
+
   getSystemMappings: async (req, res, ctx) => {
     const { db, primaryUid } = ctx;
     const doc = await db.collection('systemMappings').doc(primaryUid).get();

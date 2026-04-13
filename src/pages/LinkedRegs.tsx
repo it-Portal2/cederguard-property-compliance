@@ -113,16 +113,10 @@ export function LinkedRegs() {
       {activeTab === 'projects' && (
         <div className="space-y-4">
           {linkedProjects.length === 0 ? (
-            <div className="bg-white border border-dashed border-slate-300 rounded-2xl p-10 text-center">
-              <FolderKanban className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-              <h3 className="text-sm font-bold text-slate-600 mb-1">No Projects Linked</h3>
-              <p className="text-xs text-slate-400 mb-4">Link projects to this programme from the Programme Context page to see their milestones here.</p>
-              <button
-                onClick={() => navigate('/risk/programme-context')}
-                className="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition"
-              >
-                Go to Programme Context
-              </button>
+            <div className="bg-slate-50/50 border-2 border-dashed border-slate-200 rounded-2xl p-12 text-center">
+              <FolderKanban className="w-10 h-10 text-slate-300 mx-auto mb-4 opacity-50" />
+              <h3 className="text-sm font-bold text-slate-600 mb-2 italic">Waiting for Portfolio Data</h3>
+              <p className="text-xs text-slate-400 font-medium max-w-xs mx-auto">No projects are currently linked to this programme. Once projects are added, their milestones will automatically aggregate here.</p>
             </div>
           ) : (
             linkedProjects.map(proj => {

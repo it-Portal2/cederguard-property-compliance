@@ -717,7 +717,7 @@ export function ComplianceSetup() {
   };
 
   const loadDemo = () => {
-    setActiveProgramme("demo-prog-123");
+    // Only populate demo questionnaire data — do NOT override the active context
     setProjectInfo({
       name: "UK Strategic Housing Programme 2025-2029",
       type: "Programme of New Builds & Retrofits",
@@ -832,8 +832,12 @@ export function ComplianceSetup() {
 
       const filteredLibrary = allLibraryItems.filter((item) => {
         const id = item.id.toLowerCase();
-        // Skip HRB items if the project is definitely not an HRB
-        if (id.startsWith("bs-") && !isHRB) return false;
+        // Only skip HRB-gateway-specific items (bs-1 to bs-5) if not an HRB.
+        // Non-gateway BS items (bs-6 cladding, bs-7 remediation) apply to all buildings.
+        if (id.startsWith("bs-") && !isHRB) {
+          const bsNum = parseInt(id.replace("bs-", ""), 10);
+          if (!isNaN(bsNum) && bsNum <= 5) return false;
+        }
         // Skip Social Housing items if not relevant
         if (id.startsWith("sh-") && !isSocialHousing) return false;
         // Skip Retrofit if not relevant

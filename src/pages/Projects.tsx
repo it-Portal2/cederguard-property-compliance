@@ -29,6 +29,38 @@ import {
 } from "../lib/roles";
 import toast from "react-hot-toast";
 
+// ─── CSV Export Helper ───────────────────────────────────────────────────────
+
+function exportProjectsCSV(projects: any[], programmes: any[]) {
+  const headers = ['Name', 'Reference', 'RAG Status', 'Scheme Type', 'RIBA Stage', 'PM', 'Programme', 'Units', 'HRB', 'Start Date', 'End Date', 'Updated'];
+  const rows = projects.map(p => {
+    const prog = (Array.isArray(programmes) ? programmes : []).find((pr: any) => pr.id === p.programmeId);
+    return [
+      p.name || 'Untitled',
+      p.reference || p.id || '',
+      p.rag || 'Green',
+      p.type || p.schemeType || '',
+      p.riba || '',
+      p.pmName || '',
+      prog?.name || '',
+      p.units || '',
+      p.isHRB ? 'Yes' : 'No',
+      p.startDate || '',
+      p.endDate || '',
+      p.updatedAt || '',
+    ].map(v => `"${String(v).replace(/"/g, '""')}"`);
+  });
+  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `cedarguard-projects-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(link.href);
+}
+
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 function timeAgo(dateStr: string | undefined): string {
@@ -343,7 +375,11 @@ export function Projects() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-700 shadow-sm transition-transform active:scale-95">
+              <button
+                onClick={() => { exportProjectsCSV(filtered, programmes); toast.success(`Exported ${filtered.length} projects to CSV`); }}
+                className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-700 shadow-sm transition-transform active:scale-95"
+                title="Export CSV"
+              >
                 <Download className="w-4 h-4 text-slate-400" />
               </button>
               <button
@@ -456,8 +492,11 @@ export function Projects() {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <button className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm">
-                <Download className="w-4 h-4 text-slate-400" /> Export Data
+              <button
+                onClick={() => { exportProjectsCSV(filtered, programmes); toast.success(`Exported ${filtered.length} projects to CSV`); }}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
+              >
+                <Download className="w-4 h-4 text-slate-400" /> Export CSV
               </button>
               {canCreate && (
                 <button

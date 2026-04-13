@@ -886,12 +886,15 @@ export const useStore = create<AppState>((set, get) => ({
   },
   getActiveItems: () => {
     const { complianceItems, activeProjectId, activeProgrammeId } = get();
+    // Items are "active" if their status is "applicable" OR if status is
+    // missing/unrecognised (backwards-compat for items saved before status was introduced).
+    const isActive = (s: string | undefined) => !s || s === "applicable";
     return complianceItems.filter((i) => {
       if (activeProjectId)
-        return i.projectId === activeProjectId && i.status === "applicable";
+        return i.projectId === activeProjectId && isActive(i.status);
       if (activeProgrammeId)
-        return i.programmeId === activeProgrammeId && i.status === "applicable";
-      return i.status === "applicable";
+        return i.programmeId === activeProgrammeId && isActive(i.status);
+      return isActive(i.status);
     });
   },
   getPendingItems: () => {
@@ -1242,31 +1245,28 @@ export const useStore = create<AppState>((set, get) => ({
       api.savePreference("activeProgrammeId", null),
     ]);
   },
-  loadProjectData: async (projectId, persist = true) => {
-    const { projects } = get();
-    let project = projects.find((p) => p.id === projectId);
+  loadProjectData: async (projectId: string, persist: boolean = true) => {
+    let project = get().projects.find((p) => p.id === projectId);
 
-    if (!project) {
-      // IF not immediately found due to Firestore index lag, explicitly fetch the document by ID
-      try {
-        const res = await api.getProjectById(projectId);
-        if (res.success && res.data) {
-          project = res.data;
-          set((state) => {
-            const exists = state.projects.some((p) => p.id === projectId);
-            if (exists) {
-              return {
-                projects: state.projects.map((p) =>
-                  p.id === projectId ? { ...p, ...res.data } : p,
-                ),
-              };
-            }
-            return { projects: [project as Project, ...state.projects] };
-          });
-        }
-      } catch (err) {
-        console.error("Explicit project fetch failed:", err);
+    // ALWAYS fetch by ID to ensure milestones and deep metadata are hydrated
+    try {
+      const res = await api.getProjectById(projectId);
+      if (res.success && res.data) {
+        project = res.data;
+        set((state) => {
+          const exists = state.projects.some((p) => p.id === projectId);
+          if (exists) {
+            return {
+              projects: state.projects.map((p) =>
+                p.id === projectId ? { ...p, ...res.data } : p,
+              ),
+            };
+          }
+          return { projects: [project as Project, ...state.projects] };
+        });
       }
+    } catch (err) {
+      console.error("Explicit project fetch failed:", err);
     }
 
     if (project) {
@@ -1335,7 +1335,12 @@ export const useStore = create<AppState>((set, get) => ({
       api.getData("complianceItems", projectId).then((res) =>
         set({
           complianceItems: res.success
-            ? (res.data || []).map((c: any) => ({ ...c, projectId }))
+            ? (res.data || []).map((c: any) => ({
+                ...c,
+                projectId,
+                // Normalise status — items saved without a status default to "applicable"
+                status: c.status || "applicable",
+              }))
             : [],
         }),
       ),
@@ -1626,7 +1631,10 @@ export const useStore = create<AppState>((set, get) => ({
   addConditionalItems: (items) => {
     const existing = get().complianceItems;
     const existingIds = new Set(existing.map((i: any) => i.id));
-    const deduped = items.filter((i: any) => !existingIds.has(i.id));
+    // Ensure every added item has a status — default to "applicable"
+    const deduped = items
+      .filter((i: any) => !existingIds.has(i.id))
+      .map((i: any) => ({ ...i, status: i.status || "applicable" }));
     if (deduped.length === 0) return;
     const next = [...existing, ...deduped];
     set({ complianceItems: next });
@@ -1764,33 +1772,30 @@ export const useStore = create<AppState>((set, get) => ({
       api.savePreference("activeProgrammeId", null),
     ]);
   },
-  loadProgrammeData: async (programmeId, persist = true) => {
-    const { programmes } = get();
-    let programme = programmes.find((p) => p.id === programmeId);
+  loadProgrammeData: async (programmeId: string, persist: boolean = true) => {
+    let programme = get().programmes.find((p) => p.id === programmeId);
 
-    if (!programme) {
-      // Fetch explicitly to bypass Firestore index lag
-      try {
-        const res = await api.getProgrammeById(programmeId);
-        if (res.success && res.data) {
-          programme = res.data;
-          set((state) => {
-            const exists = state.programmes.some((p) => p.id === programmeId);
-            if (exists) {
-              return {
-                programmes: state.programmes.map((p) =>
-                  p.id === programmeId ? { ...p, ...res.data } : p,
-                ),
-              };
-            }
+    // ALWAYS fetch by ID to ensure milestones and deep metadata are hydrated
+    try {
+      const res = await api.getProgrammeById(programmeId);
+      if (res.success && res.data) {
+        programme = res.data;
+        set((state) => {
+          const exists = state.programmes.some((p) => p.id === programmeId);
+          if (exists) {
             return {
-              programmes: [programme as Programme, ...state.programmes],
+              programmes: state.programmes.map((p) =>
+                p.id === programmeId ? { ...p, ...res.data } : p,
+              ),
             };
-          });
-        }
-      } catch (err) {
-        console.error("Explicit programme fetch failed:", err);
+          }
+          return {
+            programmes: [programme as Programme, ...state.programmes],
+          };
+        });
       }
+    } catch (err) {
+      console.error("Explicit programme fetch failed:", err);
     }
 
     if (programme) {
@@ -1946,7 +1951,12 @@ export const useStore = create<AppState>((set, get) => ({
       api.getData("complianceItems", programmeId).then((res) =>
         set({
           complianceItems: res.success
-            ? (res.data || []).map((c: any) => ({ ...c, programmeId }))
+            ? (res.data || []).map((c: any) => ({
+                ...c,
+                programmeId,
+                // Normalise status — items saved without a status default to "applicable"
+                status: c.status || "applicable",
+              }))
             : [],
         }),
       ),

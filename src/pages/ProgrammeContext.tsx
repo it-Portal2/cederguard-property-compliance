@@ -12,43 +12,14 @@ export function ProgrammeContext() {
     const { user, programmes, activeProgrammeId, projects, risks, issues, setProjects, loadProjectData, addNotification } = useStore();
     const activeProgramme = Array.isArray(programmes) ? (programmes.find(p => p.id === activeProgrammeId) || {} as any) : {} as any;
 
-    const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
-    const [selectedProjectId, setSelectedProjectId] = useState('');
-    const [linking, setLinking] = useState(false);
-
     const userRole = user?.role || (user as any)?.profile?.role || 'user';
     const isClientAdmin = userRole === 'admin' || isSystemAdmin((user as any)?.email) || ['pro', 'enterprise', 'client_admin'].includes(userRole);
-
-    const handleLinkProject = async () => {
-        if (!selectedProjectId) return;
-        setLinking(true);
-        try {
-            await api.updateProject(selectedProjectId, { programmeId: activeProgrammeId });
-
-            const fetchFn = ['admin', 'pro', 'enterprise', 'client_admin'].includes(userRole)
-                ? api.clientGetProjects
-                : api.getProjects;
-            const res = await fetchFn();
-            const projectsRes = Array.isArray(res) ? res : (res?.projects || res?.data || []);
-            const uniqueProjects = Array.from(new Map(projectsRes.map((item: any) => [item.id, item])).values());
-            setProjects(uniqueProjects as any);
-            setIsLinkModalOpen(false);
-            setSelectedProjectId('');
-        } catch (err) {
-            console.error('Failed to link project:', err);
-            addNotification({ title: 'Link Failed', body: 'Failed to link project. Please try again.', type: 'system' });
-        } finally {
-            setLinking(false);
-        }
-    };
 
     const safeProjects = Array.isArray(projects) ? projects : [];
     const safeRisks = Array.isArray(risks) ? risks : [];
     const safeIssues = Array.isArray(issues) ? issues : [];
 
     const linkedProjects = safeProjects.filter(p => p.programmeId === activeProgrammeId);
-    const unlinkedProjects = safeProjects.filter(p => p.programmeId !== activeProgrammeId);
-    
     // Aggregated Metrics
     const programmeRisks = safeRisks.filter(r => linkedProjects.some(p => p.id === (r as any).project) || (r as any).programme === activeProgrammeId);
     const programmeIssues = safeIssues.filter(i => linkedProjects.some(p => p.id === i.project));
@@ -135,24 +106,10 @@ export function ProgrammeContext() {
                     </button>
                     <button
                         onClick={() => navigate('/projects/new')}
-                        className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-bold hover:bg-slate-50 shadow-sm transition-all flex items-center gap-2"
+                        className="px-4 py-2 bg-indigo-600 border border-transparent text-white rounded-xl text-sm font-bold hover:bg-indigo-700 shadow-sm transition-all flex items-center gap-2"
                     >
                         <Plus className="w-4 h-4" />
                         Create Project
-                    </button>
-                    <button
-                        onClick={() => setIsLinkModalOpen(true)}
-                        disabled={!activeProgrammeId}
-                        className={clsx(
-                            "px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2",
-                            activeProgrammeId 
-                                ? "bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-md" 
-                                : "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
-                        )}
-                        title={!activeProgrammeId ? "Select a programme first to link projects" : "Link an existing project to this programme"}
-                    >
-                        <ExternalLink className="w-4 h-4" />
-                        Link Project
                     </button>
                 </div>
             </div>
@@ -380,64 +337,6 @@ export function ProgrammeContext() {
                 </div>
             </div>
 
-            {isLinkModalOpen && (
-                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
-                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                            <h3 className="text-lg font-bold text-slate-900">Link Existing Project</h3>
-                            <button
-                                onClick={() => setIsLinkModalOpen(false)}
-                                className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg transition-colors"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-                        <div className="p-6 space-y-4">
-                            {unlinkedProjects.length === 0 ? (
-                                <p className="text-sm text-slate-500">No unlinked projects available to link.</p>
-                            ) : (
-                                <div>
-                                    <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-                                        Select Project
-                                    </label>
-                                    <select
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                        value={selectedProjectId}
-                                        onChange={(e) => setSelectedProjectId(e.target.value)}
-                                    >
-                                        <option value="">— Select a project —</option>
-                                        {unlinkedProjects.map(p => (
-                                            <option key={p.id} value={p.id}>{p.name} ({p.loc || 'No location'})</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            )}
-                        </div>
-                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
-                            <button
-                                onClick={() => setIsLinkModalOpen(false)}
-                                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleLinkProject}
-                                disabled={!selectedProjectId || linking}
-                                className="px-4 py-2 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-                            >
-                                {linking ? (
-                                    <>
-                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                        Linking...
-                                    </>
-                                ) : (
-                                    'Link Project'
-                                )}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

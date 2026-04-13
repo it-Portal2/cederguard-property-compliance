@@ -25,7 +25,7 @@ export function WorkspaceSettings() {
     const [pending, setPending] = useState<any[]>([]);
     const [newPmEmail, setNewPmEmail] = useState('');
     const [newPmName, setNewPmName] = useState('');
-    const [newPmRole, setNewPmRole] = useState<'project_manager' | 'user'>('project_manager');
+    const [newPmRole, setNewPmRole] = useState<string>('project_manager');
     const [inviting, setInviting] = useState(false);
     const [inviteMsg, setInviteMsg] = useState('');
     const [loadingTeam, setLoadingTeam] = useState(false);

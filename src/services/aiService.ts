@@ -63,7 +63,7 @@ export async function analyzeCompliance(projectInfo: any, allItems: any[]) {
   const itemSummary = safeItems
     .map(
       (i) =>
-        `${i.id}|${i.domain || "N/A"}|${i.reg || "N/A"}|${(i.req || "").slice(0, 60)}`,
+        `${i.id}|${i.domain || "N/A"}|${i.reg || "N/A"}|${(i.req || "").slice(0, 300)}`,
     )
     .join("\n");
 
@@ -131,6 +131,7 @@ Summarize the regulatory landscape highlighting the most critical obligations, a
 MANDATORY IDENTIFICATION:
 1. 'regulatoryAuthorities': You MUST identify and list specific regulatory bodies involved (e.g. Building Safety Regulator (BSR), Regulator of Social Housing (RSH), Local Authority Planning, HSE, EA, Fire & Rescue Service) based on the project profile. 
 2. 'requiredApprovals': You MUST identify and list specific mandatory approvals, consents, or gateway milestones (e.g. Gateway 2 Approval, Planning Permission, Fire Statement, S106, Section 20 Notice, Building Control Approval) required for this project/programme.
+3. COMPREHENSIVE COVERAGE: You MUST ensure every UK regulation triggered by the profile answers is included. Do not prioritize briefness over legal compliance. If a chosen area (e.g. Retrofit, Social Housing) is mentioned, map its specific legislative requirements fully.
 
 FORMATTING (STRICT): ABSOLUTELY NO MARKDOWN. ANY IDENTIFIER OR ID MUST BE ON THE SAME LINE AS ITS LABEL.
 `;
@@ -634,24 +635,16 @@ DATA OVERVIEW:
 ${Array.isArray(context.projects) ? `- Portfolio Scale: ${context.projects.length} projects` : ""}
 
 Provide a "Strategic Outlook" that synthesizes this information. Focus on:
-1. Identify the 10 most critical blindspots or intersectional threats (where a risk and compliance failure overlap). 
-2. A "Portfolio Health Score" recommendation based on regulatory compliance, risk velocity, and lifecycle maturity.
-3. At least 10 Urgent Strategic Priorities and 10 detailed Suggestions for the Executive Board. 
-4. EVERY ITEM in these lists (Blindspots, Priorities, and Suggestions) must be highly detailed and address the "Five W's and One H":
-   - WHAT: The specific action, threat, or requirement.
-   - WHO: The responsible parties and affected stakeholders.
-   - WHERE: The specific projects, assets, or process areas involved.
-   - WHEN: Clear timelines, deadlines, or trigger points.
-   - WHY: The regulatory, financial, or safety driver and the impact of non-compliance.
-   - HOW: The exact method, process, or control for implementation.
-5. Qualitative assessment of 'Reporting Sentiment' (is the data showing a proactive or reactive culture?).
-6. Compliance Lifecycle Maturity: How well is the organization managing the transition between RIBA stages/Gateways?
+1. Identify EXACTLY 3 critical blindspots or intersectional threats. Keep each to ONE brief sentence.
+2. A "Portfolio Health Score" recommendation based on regulatory compliance and risk velocity.
+3. EXACTLY 3 Urgent Strategic Priorities and EXACTLY 3 Suggestions for the Executive Board. ONE brief sentence each. 
+4. Maintain a highly concise, punchy style. Make it readable at a glance.
+5. Qualitative assessment of 'Reporting Sentiment' (proactive vs reactive).
 
 INSTRUCTIONS (STRICT COMPLIANCE REQUIRED):
 1. ABSOLUTELY NO MARKDOWN in any string field. No **bold**, no # headers, no _italics_, no \`code\`.
-2. ANY IDENTIFIER OR ID MUST BE ON THE SAME LINE AS ITS LABEL. Example: "ID: ABC-123" (NOT on a new line).
-3. Keep the tone extremely professional, objective, and authoritative. Avoid fluff. 
-4. Provide at least 10 detailed suggestions in the 'detailedSuggestions' array.
+2. ANY IDENTIFIER OR ID MUST BE ON THE SAME LINE AS ITS LABEL.
+3. Keep the tone extremely professional, objective, and authoritative. AVOUD fluff and unnecessary adjectives.
 `;
 
   const config = {
@@ -668,18 +661,18 @@ INSTRUCTIONS (STRICT COMPLIANCE REQUIRED):
         criticalBlindspots: {
           type: "array",
           items: { type: "string" },
-          description: "Provide at least 10 critical blindspots.",
+          description: "Provide exactly 3 critical blindspots. Maximum 1 sentence each.",
         },
         strategicPriorities: {
           type: "array",
           items: { type: "string" },
-          description: "Provide at least 10 urgent strategic priorities.",
+          description: "Provide exactly 3 urgent strategic priorities. Maximum 1 sentence each.",
         },
         detailedSuggestions: {
           type: "array",
           items: { type: "string" },
           description:
-            "Provide at least 10 highly detailed suggestions covering the What, Who, When, How, Where and Why for each item.",
+            "Provide exactly 3 suggestions. Maximum 1 sentence each.",
         },
       },
       required: [

@@ -1,0 +1,2289 @@
+﻿CedarGuard — AI Risk & Compliance Management System  |  Feature Specification v3.0 (Programme & Project Level)
+
+
+
+
+
+
+CEDARGUARD
+AI-Powered Risk & Compliance Management System
+for Social Housing Delivery
+Full Feature Specification Document — v3.0 (Programme & Project Level)
+Document Version
+	3.0 — Programme & Project Level (supersedes v2.0)
+	Date
+	March 2026
+	Platform
+	CedarGuard (www.cedarguard.co.uk)
+	Section Scope
+	Programme Level (primary operational layer)
+	Audience
+	Product, Engineering, QA, Stakeholders
+	Classification
+	Confidential — Internal Use Only
+	Previous Versions
+	v1.0 (21 gaps), v2.0 (site-verified). v3.0 adds Project Initiation, Regulations Library, Calendar, My Tasks, CPD Training, Risk Alerts, Developer/API, Help
+	
+
+
+
+This document is the authoritative Feature Specification for the CedarGuard platform, covering both Programme and Project contexts. v3.0 adds Project Initiation, RIBA Project Plan, Calendar, My Tasks, Regulations Library, CPD Training, Risk Alerts, Developer/API, and Help — reflecting the full verified sidebar navigation structure.
+________________
+
+
+
+
+
+
+________________
+
+
+PART 1 — PRODUCT OVERVIEW & SYSTEM ARCHITECTURE
+	
+
+1. Product Overview
+CedarGuard is an enterprise-grade, cloud-hosted AI-powered Risk and Compliance Management System built for social housing delivery organisations operating in the United Kingdom. The platform is powered by the Cedar Intelligence Engine, which automates identification, tracking, management, and financial quantification of compliance obligations and project risks across the full delivery lifecycle.
+The platform is accessed at www.cedarguard.co.uk. All users sign in at the same login page. Upon signing in, each user is taken directly into their own primary working layer — determined by their role. Project Managers are taken into the Project Management layer where they see and manage their assigned projects. Programme Managers are taken into the Programme layer. Portfolio-level users are taken into the Portfolio aggregate view. Every user works within their own layer as their default — this is not a shared starting point. There are no separate sub-applications or separate portals — it is one unified product with role-based layers.
+
+
+1.1 Core Value Proposition
+* AI-driven compliance identification mapped to current UK social housing regulations via the Cedar Intelligence Engine
+* Automated risk identification and mitigation strategy generation across 7 structured risk profiling phases
+* Financial risk quantification through Annual Loss Expectancy (ALE) — Gross and Residual — across all workstreams
+* Risk Appetite Management — alignment tracking (Aligned / Misaligned / Pending) against stated organisational appetite
+* Real-time dashboards aggregating data across all projects in a programme
+* Full audit trail and evidence repository for regulatory defensibility
+* Proactive alerting: Critical, KRI Breaches, and Statutory alert categories with push notification dispatch
+* Structured lifecycle management: Risk → Managed/Mitigated/Tolerated/Closed; Issue: Investigating → Escalated → Implementing Fix → Resolved
+* Lessons Learned repository with Cost Avoidance (£) tracking and knowledge hub export
+
+
+1.2 Platform Scope
+Module
+	Sub-pages
+	Purpose
+	Overview
+	Dashboard, Calendar, My Tasks, All Projects
+	Project/programme status, milestones, tasks and calendar view
+	Project Initiation
+	Project Initiation, Project Plan (RIBA-linked)
+	Create and configure projects; plan RIBA-stage milestones with dates — available at project context
+	Compliance
+	Setup, Dashboard, Tracker, Alerts, Evidence & Documents
+	AI-driven compliance identification and lifecycle management
+	Regulations Library
+	Regulations browser
+	UK social housing regulatory reference repository
+	Risk Management
+	Risk Setup, Dashboard, Risk Register, Issues Log, Risk Alerts, Lessons Learned
+	Full risk lifecycle with ALE, appetite, and KRI linkage
+	Automated Intelligence
+	AI Risk Inquiry, Mitigation & Control Strategy, Compliance Posture Outlook
+	AI-powered analytical tools accessible across modules
+	Monitoring & Reporting
+	KRI Tracker, Alerts & Thresholds, Risk Aggregation, Trends & Heatmaps
+	Continuous monitoring, financial exposure tracking, heatmaps by workstream
+	Reports
+	Executive One-Pager, Programme Report, Project Reports
+	Generated reports for stakeholder and board consumption
+	Developer / API
+	API Keys, API Documentation
+	Integration and developer access
+	Help
+	Support and guidance
+	In-platform help
+	
+
+2. System Architecture — Role-Based Layers & Active Context
+CedarGuard is a single application with a single sign-in. Upon login, the platform detects the user's role and loads their primary layer automatically — a Project Manager is taken into their project context, a Programme Manager into their programme context, a Portfolio user into the portfolio aggregate view. The Active Context switcher is always available in the header and allows users with the appropriate permissions to switch scope — but each user's starting point (their primary layer) is determined by their role, not by manual selection. This means Project Managers are introduced to the platform through the Project Management layer, not through a programme or portfolio view.
+
+
+2.1 Active Context Switcher
+The Active Context dropdown is displayed in the persistent top header bar, always visible regardless of which page the user is on. On login, the platform automatically sets the Active Context to the user's primary layer (project for Project Managers, programme for Programme Managers, portfolio for Portfolio users). The context can then be changed by users with appropriate permissions — changing it shifts the scope of all data displayed across modules (dashboards, registers, trackers, reports, and alerts all respond to the selected context).
+
+
+Context Option
+	Data Scope
+	Typical User
+	Portfolio Aggregate
+	All programmes and projects — organisation-wide view
+	Portfolio User / Executive — this is their primary layer on login
+	[Programme Name]
+	All projects within the selected programme
+	Programme Manager — this is their primary layer on login
+	[Project Name]
+	Single project data only
+	Project Manager — this is their primary layer on login
+	
+
+* The 'Initiate New Programme' button is persistently displayed in the context bar — accessible from any page
+* Context selection persists across navigation — changing page does not reset context
+* All data displayed on dashboards, registers, trackers, and reports reflects the active context
+* URL parameters (?type=programme) indicate context scope but the context switcher is the primary control
+
+
+2.2 Hierarchy & Data Flow
+The interface is unified — same application, same login. Data is structured in a three-tier hierarchy. Each user's role determines which tier they land in on login (their primary layer). Data flows upward from project to programme to portfolio aggregate — never downward. The Active Context switcher allows authorised users to navigate across layers.
+Tier
+	Description
+	Data Direction
+	Project
+	Operational delivery unit. Source of all base records (risks, compliance items, milestones).
+	Upward → Programme
+	Programme
+	Grouping of related projects. Aggregates project data for programme-level visibility.
+	Upward → Portfolio Aggregate
+	Portfolio Aggregate
+	Organisation-wide view. Aggregates all programme and project data.
+	Read-only aggregation
+	
+
+* Every project must belong to a programme — orphan projects are not permitted
+* Risk Register allows filtering between 'Programme Level Only' and 'All Projects' within a programme
+* Risk Aggregation Data page provides a dedicated cross-project consolidated view
+
+
+3. User Roles & Access
+Role
+	Primary Context
+	Core Capabilities
+	Portfolio User / Executive
+	Logs in → lands in Portfolio Aggregate layer
+	View organisation-wide dashboard, executive one-pager, all programmes and projects, portfolio risk and compliance posture
+	Programme Manager
+	Logs in → lands in Programme layer (their assigned programmes)
+	Create/manage programmes, run compliance and risk setup, manage registers, generate programme reports, access all AI tools
+	Project Manager
+	Logs in → lands in Project Management layer (their assigned projects)
+	Manage assigned projects, run project-level compliance and risk setup, manage registers, generate project reports
+	Developer / Integration Engineer
+	Logs in → accesses Developer / API section
+	Generate API keys, access API documentation, integrate external systems
+	Admin
+	Logs in → full workspace access across all layers
+	Manage workspace settings, invite and assign team members, configure roles and permissions
+	
+
+Note: All roles access the same application via the same sign-in at www.cedarguard.co.uk. Upon login, the platform loads each user's primary working layer automatically based on their role — Project Managers land in the Project Management layer, Programme Managers in the Programme layer, Portfolio users in the Portfolio aggregate view. The Active Context switcher remains available for users who have permission to view other scopes. There is one product, one login — role determines the layer you start in and what actions you can take.
+
+
+4. Platform Onboarding & Publication Workflow
+Before a programme or project is active and visible in dashboards and reports, it must complete a mandatory 4-step publication workflow. This workflow is enforced by the system — each step must be completed before the next is enabled. The publication gate ensures data quality and AI analysis completeness before any programme or project enters the live delivery environment.
+
+
+Step
+	Action
+	Description
+	Gate Condition
+	1
+	Create Project/Programme
+	Initial creation with core metadata (name, type, dates, team, RIBA alignment)
+	Mandatory fields completed
+	2
+	Complete Compliance Setup
+	Run AI compliance analysis — Cedar Intelligence Engine identifies applicable regulations and populates the Compliance Tracker
+	Compliance Setup confirmed by user
+	3
+	Complete Risk Setup
+	Run AI risk identification — Cedar Intelligence Engine identifies risks across 7 profiling phases. Minimum 3 strategic risks must be registered
+	≥3 risks confirmed in Risk Register
+	4
+	Publish
+	'PUBLISH PROJECT' button enabled. Programme/Project becomes active and data flows to dashboards, reports, and aggregation views
+	Steps 1–3 all completed
+	
+
+* The Setup Progress sidebar tracks completion of all 4 steps with visual status indicators
+* An 'AI Readiness' indicator shows model readiness before AI analysis is run
+* 'Load Demo Strategy Template' and 'Load Demo' buttons are available for onboarding and testing
+* 'PUBLISH PROJECT' button remains locked (greyed out) until all 3 preceding steps are complete
+
+
+________________
+
+
+PART 2 — NAVIGATION STRUCTURE & VERIFIED URL MAP
+	
+
+5. Sidebar Navigation Structure
+The left sidebar contains the full platform navigation, organised into expandable sections. The sidebar is persistent across all pages. Navigation items and their verified URLs are listed below.
+
+
+Section
+	Sub-item
+	Verified URL
+	Overview
+	Dashboard
+	/dashboard
+	Overview
+	Calendar
+	/calendar
+	Overview
+	My Tasks
+	/my-tasks
+	Overview
+	All Projects
+	/projects
+	Project Initiation
+	Project Initiation
+	/project/initiation
+	Project Initiation
+	Project Plan (RIBA Plan of Works)
+	/project/plan
+	Compliance
+	Setup
+	/compliance/setup?type=programme
+	Compliance
+	Dashboard
+	/compliance/dashboard?type=programme
+	Compliance
+	Tracker
+	/compliance/tracker?type=programme
+	Compliance
+	Alerts
+	/compliance/alerts?type=programme
+	Compliance
+	Evidence & Documents
+	/compliance/evidence?type=programme
+	Regulations Library
+	Regulations Library
+	/regulations
+	Regulations Library
+	CPD Training (Beta)
+	/regulations/cpd
+	Risk Management
+	Risk Setup
+	/risk/setup?type=programme
+	Risk Management
+	Dashboard
+	/risk/dashboard?type=programme
+	Risk Management
+	Risk Register
+	/risk/register?type=programme
+	Risk Management
+	Issues Log
+	/risk/issues?type=programme
+	Risk Management
+	Risk Alerts
+	/risk/alerts?type=programme
+	Risk Management
+	Lessons Learned
+	/lessons-learned
+	Automated Intelligence
+	AI Risk Inquiry
+	/risk/ai
+	Automated Intelligence
+	Mitigation & Control Strategy
+	/ai/controls
+	Automated Intelligence
+	Compliance Posture Outlook
+	/ai/compliance
+	Monitoring & Reporting
+	KRI Tracker
+	/monitoring/kri
+	Monitoring & Reporting
+	Alerts & Thresholds
+	/monitoring/alerts
+	Monitoring & Reporting
+	Risk Aggregation Data
+	/monitoring/aggregation
+	Monitoring & Reporting
+	Trends & Heatmaps
+	/monitoring/heatmaps
+	Reports
+	Executive Reports
+	/reporting/executive
+	Reports
+	Programme Report
+	/reporting/programme
+	Reports
+	Projects Reports
+	/reporting/project
+	Account
+	Workspace
+	(URL TBC)
+	Developer / API
+	API Keys
+	/developer/keys
+	Developer / API
+	API Documentation
+	/developer/docs
+	Help
+	Help & Support
+	/help
+	
+
+Additional URLs confirmed during site audit:
+* New Programme creation: /programmes/new
+* AI Risk ID (batch run): /risk/id?type=programme
+
+
+5.1 Bottom Bar Navigation (Mobile / Compact)
+A secondary bottom navigation bar provides quick access to the most frequently used sections: Home (/dashboard), Compliance (/compliance/dashboard?type=programme), Risks (/risk/dashboard?type=programme), AI (/risk/ai), Projects (/projects).
+
+
+________________
+
+
+PART 3 — OVERVIEW MODULE
+	
+
+6. Overview Module
+6.1 Dashboard
+6.1 — Dashboard
+	Description
+	The Dashboard is the primary landing page. It provides a programme-level aggregated view of compliance and risk status across all projects, with quick access to key actions and AI setup triggers.
+	Business Rules
+	* Dashboard responds to the Active Context — context set to a programme shows programme-level aggregation; context set to a project shows project-level view
+* Dashboard displays Compliance Portfolio status and Risk & Issues Overview
+* If Compliance Setup has not been run, the dashboard shows 'Compliance Setup Pending' with a 'Start AI Setup' CTA
+* If Risk Setup has not been run, the dashboard shows 'Risk Identification Pending' with a 'Launch AI Risk ID' CTA
+* The context selector on the dashboard allows quick switching between 'My Projects (Aggregate)' and individual projects
+* Quick links to /monitoring/aggregation and /reporting/programme are available from the dashboard
+* Ai Strategic Outlook 
+The dashboard provides distinct levels of oversight:
+* Portfolio Aggregate: Displays the comprehensive status of all programs and projects with AI Strategic Generator option to provide insight
+* Programme View: Focuses on the overall status, register, and compliance posture of the programme with AI Strategic Generator option to provide insight.
+* Individual Project View: Details the specific risks and compliance status for each project with the AI Strategic Generator option to provide insight.
+	Inputs / Fields
+	* Active Context (from header switcher)
+* Project/programme context selector (within dashboard)
+* Compliance Setup status
+* Risk Setup status
+	Outputs / Results
+	* Key figures to show overall status, register, and compliance posture for the project, programme and portfolio
+* Compliance Portfolio summary panel
+* Risk & Issues Overview panel
+* Quick action CTAs (Start AI Setup, Launch AI Risk ID)
+* Links to Aggregation and Programme Report
+* 'Initiate New Programme' button (via context bar)
+	Acceptance Criteria
+	* Dashboard loads within 3 seconds of context selection
+* Compliance Setup Pending state shows when compliance analysis has not been run
+* Risk Identification Pending state shows when risk analysis has not been run
+* Quick action CTAs navigate to the correct setup pages
+* Dashboard data reflects the active context selection
+	
+
+6.2 Calendar
+6.2 — Calendar (/calendar)
+	Description
+	The Calendar provides a unified timeline view of all scheduled events across the active context: project plan milestones from the Project Plan, compliance due dates from the Compliance Tracker, and risk review dates from the Risk Register. Available to both Programme and Project Managers — scope follows the Active Context.
+	Business Rules
+	* Calendar scope follows Active Context — programme shows all projects; project shows the selected project only
+* Event types: Project Plan Milestones, Compliance Due Dates, Risk Review Dates
+* Events are colour-coded by type and by RAG/urgency status — overdue events are highlighted in red
+* Clicking an event navigates to the source record (milestone, compliance item, or risk)
+* Calendar does not create events — events are managed in their source modules
+* View modes: Month, Week, Day, List
+* Filter by event type: All Events | Milestones | Compliance | Risk Reviews
+	Inputs / Fields
+	* Active Context (from header switcher)
+* Event type filter (All / Milestones / Compliance / Risk Reviews)
+* View mode selector (Month / Week / Day / List)
+* Date navigation (forward / back / Today)
+	Outputs / Results
+	* Calendar grid / list with all in-scope events — colour-coded by type and urgency
+* Click-through to source record for each event
+* Summary count: events this week, overdue events
+* Empty state when no events exist in the selected date range
+	Acceptance Criteria
+	* Calendar loads within 3 seconds with all events for the active context
+* Filter by Milestones returns only milestone events — no compliance or risk events shown
+* Overdue events display in red on all view modes
+* Clicking a compliance event navigates correctly to the Compliance Tracker item
+* Clicking a milestone event navigates correctly to the Project Plan milestone record
+	
+
+6.3 My Tasks
+6.3 — My Tasks (/my-tasks)
+	Description
+	My Tasks is a personal task board aggregating all action items assigned to the currently logged-in user across the platform — from the Compliance Tracker, Risk Register, and Issues Log. Users see a single prioritised list of all their outstanding responsibilities, regardless of module or project origin.
+	Business Rules
+	* Tasks are pulled from: (1) Compliance Tracker items where Owner = current user, (2) Risk Register items where Owner = current user, (3) Issues Log items assigned to current user
+* Tasks are not created in My Tasks — they are managed in their source modules
+* My Tasks is personal — each user sees only their own tasks
+* Overdue tasks are pinned to the top of the list with a red overdue badge
+* Clicking a task navigates to the source record in the originating module
+* Status changes in source modules are reflected in My Tasks within 5 minutes
+	Inputs / Fields
+	* Status filter: All | Overdue | Due This Week | Upcoming | Completed
+* Source type filter: All | Compliance | Risks | Issues
+* Programme / Project filter
+	Outputs / Results
+	* KPI Header: Tasks Due Today | Overdue Tasks | Completed This Week
+* Task list sorted by due date (soonest first), overdue items pinned to top
+* Task cards: task title, source type badge (Compliance / Risk / Issue), source reference, due date, status, project name
+* Click-through to source record
+	Acceptance Criteria
+	* KPI: Overdue Tasks correctly counts tasks where due date has passed and status is not complete
+* Filter by Overdue returns only overdue tasks
+* Compliance task click navigates to the correct Compliance Tracker item
+* Risk task click navigates to the correct Risk Register record
+* Tasks completed in source modules are removed from active view within 5 minutes
+	
+
+6.4 All Projects Page
+6.4 — All Projects Page (/projects)
+	Description
+	The All Projects page provides a comprehensive list of all projects accessible to the current user, with a detailed filter panel, RAG status indicators, and project card view.
+	Business Rules
+	* Projects are displayed as cards in a grid or list layout
+* Each project card shows: short reference code, project name, RAG status badge (Red/Amber/Green), Scheme Type, RIBA Stage, last updated timestamp
+* Filter panel is persistent on the left side of the page
+* Admin View toggle provides administrative oversight mode with additional data visibility
+* Show Archived toggle reveals archived projects
+* Quick Access section at the top pins recently accessed or favourited projects
+	Inputs / Fields
+	* RAG Status filter (All / Red / Amber / Green)
+* RIBA Stages filter (S0–S7 with count per stage): S0 Strategic Definition, S1 Preparation & Briefing, S2 Concept Design, S3 Spatial Coordination, S4 Technical Design, S5 Manufacturing & Construction, S6 Handover, S7 Use
+* Scheme Types filter: Retrofit / Decarbonisation, Refurbishment, New Build – Higher-Risk Building (HRB), Damp & Mould Remediation, New Build – General Needs
+* Flags filter: HRB Schemes (count), Overdue Actions (count), Leaseholders (count)
+* Programme filter (All Programmes / individual programmes)
+* Export Data button
+	Outputs / Results
+	* Filtered project card list matching active filters
+* Project count summary
+* RAG distribution (0 Red, 0 Amber, N Green)
+* Export data file
+	Acceptance Criteria
+	* Filter by RIBA Stage returns only projects at that stage with correct count
+* HRB flag filter returns only projects with Higher-Risk Building designation
+* Leaseholders flag surfaces projects with leasehold units
+* Export Data produces a file containing all visible project records
+* Admin View shows additional administrative data fields
+* Project card click navigates to the project dashboard
+	
+
+________________
+
+
+PART 4 — PROJECT INITIATION MODULE
+	
+
+The Project Initiation module provides the two core pages for creating and planning a project: the Project Initiation form (to register and configure the project) and the Project Plan (to schedule RIBA-aligned milestones and key delivery dates). These apply at the project context level — each project gets its own initiation record and plan.
+
+
+7. Project Initiation Module
+7.1 Project Initiation
+7.1 — Project Initiation — Project Creation & Configuration
+	Description
+	The Project Initiation page is used to create and configure a new project within CedarGuard. It captures all essential project metadata: programme linkage, scheme type, RIBA stage, HRB designation, assigned PM, and key dates. Once created the project enters the 4-step publication workflow before going live.
+	Business Rules
+	* Every project must be linked to a parent programme — orphan projects are not permitted
+* Reference Code is auto-generated by the system (format: PRJ-XXXX) — read-only
+* HRB (Higher-Risk Building) flag triggers additional Building Safety Act 2022 compliance requirements via Cedar Intelligence Engine
+* RIBA Stage sets the current delivery phase — used by the All Projects filter panel and Project Plan
+* Assigned PM must be an existing platform user
+* Project cannot be published until all 4 steps in the publication workflow are complete
+* A 'Load Demo' button populates the form with sample data for onboarding
+* Editing an existing project updates metadata and may trigger re-analysis if HRB flag or Scheme Type changes
+	Inputs / Fields
+	* Project Name (text, required)
+* Reference Code (auto-generated, read-only)
+* Parent Programme (dropdown — required)
+* Scheme Type: New Build – Higher-Risk Building (HRB) | New Build – General Needs | Retrofit & Decarbonisation | Refurbishment | Estate Regeneration | Damp & Mould Remediation
+* RIBA Stage: S0 Strategic Definition | S1 Preparation & Briefing | S2 Concept Design | S3 Spatial Coordination | S4 Technical Design | S5 Manufacturing & Construction | S6 Handover | S7 Use
+* Location / Address (text)
+* HRB Flag (checkbox: Higher-Risk Building designation)
+* Assigned Project Manager (user selector)
+* Project Start Date (date picker)
+* Expected Completion Date (date picker)
+* Project Description / Scope (text area)
+* Additional Flags: Brownfield Site | S106 Obligations | Leasehold Units | BIM / Digital Thread | SHDF Funding | PCR 2015 / Procurement Act
+	Outputs / Results
+	* Project record created and saved
+* Project appears in All Projects page under the linked programme
+* Project available in Active Context switcher
+* 4-step publication workflow initiated
+* HRB flag: Building Safety Act compliance requirements queued for Compliance Setup
+* Project Plan scaffold created (empty RIBA stage structure)
+	Acceptance Criteria
+	* Project Name required — form blocks submission without it
+* Parent Programme required — form blocks submission without it
+* Reference Code is unique across the workspace
+* HRB flag change on edit shows confirmation: 'This will update applicable compliance requirements'
+* Project appears in All Projects within 60 seconds of creation
+* Project available in Active Context switcher immediately after creation
+	
+
+7.2 Project Plan — RIBA Plan of Works
+7.2 — Project Plan (/project/plan) — RIBA-Aligned Milestone Scheduling
+	Description
+	The Project Plan provides a RIBA Plan of Works-aligned project schedule structured around all 8 RIBA stages (S0–S7). Users plan, track, and update key milestone dates across all delivery phases. Milestones feed into the Calendar module and are used to track programme delivery progress against the baseline. Supports planned and actual dates to measure performance.
+	Business Rules
+	* Plan is structured around 8 RIBA stages: S0 Strategic Definition | S1 Preparation & Briefing | S2 Concept Design | S3 Spatial Coordination | S4 Technical Design | S5 Manufacturing & Construction | S6 Handover | S7 Use
+* Each RIBA stage has: planned start/end dates, actual start/end dates (updated during delivery), Stage Lead, and Notes
+* Users can add unlimited custom milestones within any RIBA stage
+* Milestones automatically appear in the Calendar module once created
+* Stage status is auto-calculated: Planned | In Progress | Complete | Overdue
+* The current RIBA stage set in Project Initiation is highlighted on the plan
+* Plan can be exported as PDF or Excel schedule
+* RIBA stage completion prompts user to update RIBA Stage in Project Initiation
+* Programme Managers can view Project Plans for all projects via context switching
+	Inputs / Fields
+	* RIBA Stage accordion (expand each stage to add/edit milestones and stage dates)
+* Stage-level fields: Planned Start | Planned End | Actual Start | Actual End | Stage Lead (user selector) | Stage Notes
+* Milestone fields per milestone: Name (required) | Planned Date (required) | Actual Date | Status (auto-calculated) | Owner | Priority (High / Medium / Low) | Notes
+* Add Milestone button (within each RIBA stage)
+* Export Plan (PDF / Excel)
+* Timeline / Gantt view toggle
+	Outputs / Results
+	* RIBA-structured plan with all 8 stages as expandable sections
+* Milestone list per stage with planned vs actual dates and status badges
+* Stage-level progress indicator (% milestones complete in stage)
+* Overall plan progress indicator (% of all milestones complete)
+* Timeline / Gantt view — visual horizontal representation of all stages and milestones
+* Calendar integration — all milestones appear in Calendar module
+* Exported plan document (PDF or Excel)
+	Acceptance Criteria
+	* All 8 RIBA stages display in correct sequence (S0 through S7)
+* Milestone added to any stage appears in Calendar on the planned date within 5 minutes
+* Milestone status auto-updates to Overdue when planned date passes without Actual Date entered
+* Stage status auto-updates to Complete when Actual End Date is entered
+* Stage progress % = milestones complete / total milestones in stage × 100
+* Export PDF renders all stages and milestones in a correctly formatted printable layout
+* Timeline view displays all stages and milestones proportionally on horizontal axis
+	
+
+________________
+
+
+PART 5 — COMPLIANCE MODULE
+	
+
+The Compliance Module manages the full lifecycle of regulatory compliance requirements from AI-driven identification through to evidenced compliance. It is one of the two core AI-powered modules on the platform (alongside Risk Management).
+
+
+7. Compliance Module
+7.1 Compliance Setup (AI-Driven) — v4.0
+7.1 — Compliance Setup (/compliance/setup?type=programme) — Cedar Intelligence Engine v4.0
+	Description
+	The Compliance Setup is the entry point for all compliance management. The user completes a 2-phase structured form. The Cedar Intelligence Engine processes the inputs, maps them against the UK Regulations Library, and generates a tailored set of compliance requirements for the programme or project. This is a mandatory step before the Compliance Tracker and Dashboard are activated.
+	Business Rules
+	* Compliance Setup is a mandatory step in the 4-step Publication Workflow (Step 2)
+* The setup targets either Programme Compliance or Project Compliance — selected in Phase 1
+* All generated compliance requirements reference the specific regulation they are derived from
+* User must review and confirm AI-generated requirements before the Compliance Tracker is activated
+* Re-running setup creates a new version and preserves the previous version in history
+* A 'Load Demo Strategy Template' button is available to pre-populate the form with a demonstration dataset
+* The AI Context Hint panel reminds users that more detail in Phase 2 produces more accurate AI output
+* Current system version: v4.0 (as displayed on the page)
+* Two CTAs are available: 'Conduct Detailed Assessment' (questionnaire-driven) and 'Consult CedarGuard AI' (AI-assisted)
+	Inputs / Fields
+	* PHASE 1 — Context Selection:
+* Assessment Target (radio/select: Programme Compliance / Project Compliance)
+* Select Registered Programme (dropdown — lists all registered programmes)
+   * Once selected programme happens all details should automatically populate the differents fields
+
+
+* PHASE 2 — Programme Delivery Profile:
+* Reference Name (text field, e.g. 'Northeast Regeneration Phase II')
+* Assessment Type (dropdown): New Build Development / Retrofit & Decarbonisation / Estate Regeneration / Asset Management & Compliance / Mixed Use Scheme
+* Location / Region (text field, e.g. 'Manchester, UK')
+* Strategic Objectives / Scope (text area — scale, purpose, key deliverables)
+* Technical Characteristics (checkbox group): Higher-Risk (HRB), Brownfield Site, S106 Obligations, Major Demolition, BIM / Digital Thread, PCR 2015 Procurement, SHDF Funding, Leasehold Units
+	Conduct Detailed Assessment 
+	* Predetermined programme level sets of questions to understand the full context, situation and setup of the programme
+	Outputs / Results
+	* Compliance requirement list — each record contains: ID, regulation reference, requirement description, due date, responsible owner, status, priority
+* Compliance Tracker auto-populated with all generated requirements
+* Compliance Dashboard activated with RAG status
+* Compliance Alerts configured
+* Setup summary available for review
+	Acceptance Criteria
+	* Cedar Intelligence Engine generates a minimum of 5 compliance requirements for any valid form submission
+* Every requirement references at least one regulation from the UK Regulations Library
+* Requirements appear in the Compliance Tracker within 60 seconds of AI processing completing
+* User can add, edit, or remove AI-generated requirements before confirming
+* Re-run creates a new version — previous setup is preserved in history
+* Both CTAs ('Conduct Detailed Assessment' and 'Consult CedarGuard AI') are functional from Phase 2
+	
+
+7.2 Compliance Dashboard
+7.2 — Compliance Dashboard (/compliance/dashboard?type=programme)
+	Description
+	The Compliance Dashboard provides a visual overview of the programme's overall compliance posture. It is only accessible after Compliance Setup has been completed and confirmed.
+	Business Rules
+	* Dashboard is locked until Compliance Setup is complete — shows 'Setup Incomplete' state with a CTA to go to Compliance Setup
+* RAG indicators reflect the worst-case status of any item in the tracker for each regulation domain
+* Dashboard responds to Active Context — programme context shows programme-level aggregation
+	Inputs / Fields
+	* Compliance Setup output (requirements, statuses, due dates)
+* Evidence upload status per requirement
+	Outputs / Results
+	* Overall compliance posture (RAG)
+* Compliance items by status
+* Overdue items count
+* Upcoming renewals (next 30 days)
+* Compliance trend vs last month
+	Acceptance Criteria
+	* Dashboard shows 'Setup Incomplete' with correct CTA when setup has not been run
+* RAG indicators update within 5 minutes of a status change in the tracker
+* Compliance posture reflects live tracker data — no manual refresh required
+	
+
+7.3 Compliance Tracker
+7.3 — Compliance Tracker (/compliance/tracker?type=programme)
+	Description
+	The Compliance Tracker is the central operational tool for managing all compliance requirements. It includes embedded AI assistance, multiple view modes, and a full KPI header bar. It tracks every compliance item from identification through to evidenced compliance.
+	Business Rules
+	* Every compliance item must have a status at all times
+* Status cannot be set to Compliant without evidence being attached
+* Breach status is auto-applied within 24 hours of due date passing if status is not Compliant
+* All status changes are logged in the audit trail with timestamp and user
+* Items can be added manually ('Add Manual Requirement') in addition to AI-generated items
+* History view (Show History toggle) reveals all past status changes for each item
+* Deep Compliance Inquiry AI assistant is embedded within the Tracker page — it scans the entire tracker and project context to provide instant compliance insights
+	Inputs / Fields
+	* Grid or List view toggle (user preference)
+* Filter panel (Unlocked state): filter by status, regulation domain, due date, owner
+* Show History toggle: reveals audit trail of all status changes
+* Export Data: exports all visible tracker records
+* Add Manual Requirement: add a compliance item not generated by AI
+* Clear All Filters: resets all active filters
+* Search field (if applicable)
+* CedarGuard AI Assistant panel: 'Deep Compliance Inquiry' with 'Launch AI Advisor' button
+	Outputs / Results
+	* KPI Header Bar: Overall Compliance % | Active Compliance Items | Critical Risks Identified (action required immediately) | Renewals in next 30 days | +/-% Compliance vs Last Month (trend)
+* Tracker table with all requirement records (Grid or List view)
+* Filtered and searchable record set
+* Exported data file (on request)
+* AI Compliance Inquiry response (on request)
+	Acceptance Criteria
+	* KPI header displays correct values — Overall % matches the ratio of Compliant items to total items
+* Renewals in next 30 days count matches items with due dates in the next 30 calendar days
+* Compliance vs Last Month trend shows positive or negative % change
+* Compliant status cannot be set without evidence upload — system blocks this action
+* Breach status is auto-applied within 24 hours of due date passing
+* Export produces accurate data matching the on-screen tracker
+* AI Advisor provides a response within 15 seconds referencing live tracker data
+	
+
+7.4 Compliance Alerts
+7.4 — Compliance Alerts (/compliance/alerts?type=programme)
+	Description
+	Compliance Alerts provides a filtered view of all compliance-related alerts triggered by approaching due dates, breaches, or threshold conditions. It is the compliance-specific alert view (separate from the central Alert Board in Monitoring & Reporting).
+	Business Rules
+	* Alerts are triggered automatically by the system based on due date proximity and status
+* Alert escalation timeline: T-30 days (amber advisory), T-14 days (red warning), T-0 (breach — critical)
+* Alerts cannot be deleted — they can only be acknowledged or resolved by updating the underlying compliance item
+	Inputs / Fields
+	* Compliance tracker due dates
+* Compliance item statuses
+* Active breach conditions
+	Outputs / Results
+	* Alert list with type, regulation reference, due date, owner, and current status
+* Overdue item count
+* Acknowledged alert tracking
+	Acceptance Criteria
+	* Amber alert fires at exactly T-30 days from the compliance item due date
+* Red alert fires at exactly T-14 days
+* Critical breach alert fires when due date passes without Compliant status
+* Acknowledging an alert records the user and timestamp
+* Alert list is filterable by alert type and regulation domain
+	
+
+7.5 Evidence & Documents Repository
+7.5 — Evidence & Documents (/compliance/evidence?type=programme)
+	Description
+	The Evidence & Documents Repository is a structured, version-controlled file store linked directly to compliance tracker items. Every uploaded document is associated with a specific compliance requirement and contributes to the audit trail and Audit Readiness score.
+	Business Rules
+	* Evidence files must be linked to a specific compliance item — standalone unlinked uploads are not permitted
+* Accepted file formats: PDF, DOCX, XLSX, JPEG, PNG, MSG, EML
+* Maximum file size: 50MB per file
+* Version control: uploading a new version retains the previous version
+* Documents linked to a Compliant item cannot be deleted
+* Access is restricted to users with access to the parent programme or project
+* Evidence upload status is reflected on the Compliance Tracker (boolean: evidence attached / not attached)
+	Inputs / Fields
+	* File upload (drag-and-drop or file picker)
+* Document Title (text, required)
+* Document Type (dropdown: Certificate / Inspection Report / Survey / Approval Letter / Policy / Correspondence / Other)
+* Compliance Item Link (auto-populated from context, editable)
+* Version Number (auto-incremented on re-upload)
+* Description / Notes (text area, optional)
+	Outputs / Results
+	* Document record stored in database
+* File stored in secure cloud storage
+* Compliance item evidence status updated to TRUE
+* Document visible in evidence tab
+* Audit log entry created
+	Acceptance Criteria
+	* File uploads complete within 30 seconds for files up to 50MB
+* Unsupported file types are rejected with an error listing accepted formats
+* Uploaded document appears immediately in the linked compliance item evidence tab
+* Compliance item evidence status updates to TRUE on successful upload
+* Version history shows all previous uploads for the same document
+	
+
+________________
+
+
+PART 6 — REGULATIONS LIBRARY MODULE
+	
+
+The Regulations Library is a standalone module providing direct access to the UK social housing regulatory reference repository underpinning the Cedar Intelligence Engine. It includes a CPD Training section (Beta) for structured professional development linked to those regulations.
+
+
+9. Regulations Library Module
+9.1 Regulations Library
+9.1 — Regulations Library (/regulations)
+	Description
+	The Regulations Library page provides a browsable, filterable reference view of all UK social housing regulations in the CedarGuard regulatory database — the same library used by the Cedar Intelligence Engine for compliance mapping. Users can browse, filter, and view full regulation detail. Where Compliance Setup has been run, each regulation shows how many active compliance requirements in the tracker are derived from it.
+	Business Rules
+	* Regulations Library is read-only for standard users — content is maintained by CedarGuard administrators
+* The library is version-controlled — each record has a Last Updated date and version indicator
+* Updates to the library trigger re-mapping in the Compliance AI pipeline for programmes where Compliance Setup has been run
+* Each regulation record: Name, Domain, Key Compliance Trigger, Applicability flags (HRB, Brownfield, Retrofit, Leasehold), Mandatory/Advisory status
+* Clicking a regulation opens a full-detail panel: statutory reference, scope, enforcement body, thresholds, evidence requirements, and linked compliance requirement types
+* Where Active Context has completed Compliance Setup, regulations show a badge: active compliance items derived from them
+* Library holds 18+ regulations covering: Building Safety, Fire Safety, Planning, Housing Standards, Health & Safety, Environment, Data Protection, Procurement, Decarbonisation, Leasehold, and Funding
+	Inputs / Fields
+	* Domain filter: Building Safety | Fire Safety | Planning | Housing Standards | Health & Safety | Environment | Legal/Regulatory | Data Protection | Procurement | Decarbonisation | Leasehold | Funding
+* Scheme Type applicability filter: HRB | Retrofit | New Build | Refurbishment | Mixed Use
+* Mandatory / Advisory toggle
+* Free text search (name or keyword)
+* Active Requirements toggle: show only regulations with active compliance items in current context
+	Outputs / Results
+	* Regulation cards: Name, Domain badge, Key Trigger summary, Applicability flags, Last Updated
+* Expanded detail panel (on click): statutory reference, enforcement body, thresholds, evidence requirements, compliance requirement types
+* Active compliance items count per regulation (when context has completed Compliance Setup)
+* Total regulations in library (count)
+	Acceptance Criteria
+	* Library loads all regulations within 3 seconds
+* Filter by Domain returns only regulations in that domain
+* Free text search returns regulations where the term appears in name or trigger description
+* Expanded detail panel shows complete regulation info without navigating away
+* Active Requirements badge count matches tracker items linked to that regulation in current context
+	
+
+9.2 CPD Training (Beta)
+9.2 — CPD Training (/regulations/cpd) — Beta Feature
+	Description
+	CPD Training provides structured Continuing Professional Development modules linked directly to the Regulations Library. Modules help social housing delivery professionals understand and apply the regulatory requirements relevant to their projects. Beta label indicates the feature is in active development with limited initial content — expanded regularly.
+	Business Rules
+	* Feature is Beta — limited content at launch; expanded on a rolling basis
+* Modules are linked to specific regulations in the Regulations Library
+* Module types: Video (streamed in-platform) | Article (text-based) | Quiz (multiple choice — marks competency)
+* Completion tracked per user — each user has their own CPD record
+* Quiz pass mark: 70%. Unlimited retakes allowed
+* Completed modules contribute to a user's exportable CPD log
+* Module availability is workspace-wide — role and context do not restrict access
+* Beta badge displayed on module cards and section header
+	Inputs / Fields
+	* Module type filter: All | Video | Article | Quiz
+* Domain / Regulation filter
+* Status filter: All | Not Started | In Progress | Completed
+	Outputs / Results
+	* Module library: Title, Type badge, Regulation(s) linked, Duration, CPD credits, Completion status
+* In-module player/reader (Video: embedded; Article: formatted text; Quiz: question set)
+* User CPD summary: Modules Completed | CPD Hours | Quizzes Passed
+* Export CPD Log (PDF or CSV)
+* Beta feedback button on each module
+	Acceptance Criteria
+	* Completing a Video module (watching to end) marks it Complete
+* Completing an Article (reaching the end) marks it Complete
+* Passing a Quiz (70%+) marks it Complete and records the pass date
+* Failed Quiz shows score and allows immediate retake
+* Export CPD Log generates a correctly formatted document with all completed modules and dates
+* Module completion is per-user — one user completing a module does not affect another's status
+	
+
+________________
+
+
+PART 9 — RISK INTELLIGENCE, MONITORING & ANALYTICS
+	
+
+8. Risk Management Module
+The Risk Management Module provides a full risk lifecycle management system from AI-driven identification through to financial quantification, appetite management, issue escalation, and lessons capture. It is underpinned by the Cedar Intelligence Engine and uses a structured 7-phase questionnaire for risk identification.
+
+
+8.0 - Risk register Actions
+* Edit
+* Move to issue (line background colour changes)
+* Delete 
+
+
+8.1 Risk Rating Scale
+IMPORTANT: The CedarGuard platform uses a 5-tier risk rating scale based on a Probability × Impact (PxI) score of 1–25. This is different from simpler Low/Medium/High/Critical scales. All risk-related features, database fields, UI labels, and reports must use this scale.
+
+
+Rating Label
+	Score Range
+	Escalation Level
+	Dashboard Highlight
+	Insignificant
+	1 – 5
+	Routine management
+	None / Grey
+	Minor
+	6 – 8
+	Routine management
+	Light indicator
+	Moderate
+	9 – 11
+	Active management required
+	Amber indicator
+	Major
+	12 – 15
+	Senior management attention
+	Orange / Red indicator
+	Severe
+	16 – 25
+	Immediate action required (flagged as High/Severe in KPIs)
+	Red / Critical
+	
+
+* Gross Risk Rating = Probability Score (1–5) × Impact Score (1–5) = 1–25
+* Residual Risk Rating = Post-mitigation Probability × Post-mitigation Impact
+* Risk Reduction % = ((Gross ALE − Residual ALE) / Gross ALE) × 100
+* Severe risks (≥16) are surfaced in the 'High/Severe' KPI on all dashboards
+
+
+8.2 Risk Status Values
+Status
+	Description
+	System Behaviour
+	Open
+	Risk is identified and active — no mitigation in place
+	Default status on creation. Included in Open risk counts.
+	Managed
+	Active management underway — mitigation actions initiated but not complete
+	Included in Open risk counts. Requires review date.
+	Mitigated
+	Mitigation strategy implemented — residual risk reduced
+	Residual risk rating recorded. Triggers Lesson Learned prompt.
+	Tolerated
+	Risk accepted within appetite — no further action taken
+	Risk Appetite field set to ALIGNED. Recorded with justification.
+	Closed
+	Risk is resolved and no further action required
+	Terminal state. Cannot be re-opened. Triggers Lesson Learned prompt.
+	
+
+8.3 Issue Status Lifecycle
+Issues are created by escalating a risk from Open or Managed status. Issues follow a numbered lifecycle:
+Status
+	Description
+	1. Investigating
+	Issue has been escalated from risk. Root cause under investigation.
+	2. Escalated
+	Issue escalated to senior stakeholder or programme level.
+	3. Implementing Fix
+	Resolution actions are actively being implemented.
+	4. Resolved
+	Issue has been resolved. Resolution summary required before closing.
+	5. Unassigned
+	Issue created but not yet assigned to an owner.
+	
+
+8.4 Risk Setup — 7-Phase AI Questionnaire
+The Risk Setup is the AI risk identification engine entry point. It uses a structured 7-phase questionnaire. The Cedar Intelligence Engine processes all responses to identify contextually relevant risks, assign initial Probability × Impact scores, and generate mitigation strategies. This is a mandatory step in the Publication Workflow (Step 3) — a minimum of 3 strategic risks must be registered before the programme/project can be published.
+
+
+8.4 — Risk Setup (/risk/setup?type=programme) — Cedar Intelligence Engine
+	Description
+	A 7-phase structured questionnaire drives the AI risk identification process. Each phase covers a specific risk domain. The user's responses are processed by the Cedar Intelligence Engine to produce a contextual risk profile. A Setup Progress sidebar tracks completion of all 7 phases. An AI Readiness indicator confirms model readiness before running the analysis.
+	Business Rules
+	* Risk Setup is mandatory — Step 3 of the 4-step Publication Workflow
+* Minimum 3 strategic risks must be registered and confirmed before publication is enabled
+* All 7 phases should be completed for maximum AI accuracy — phases can be saved and returned to
+* Setup Progress sidebar tracks completion status of each phase
+* AI Readiness indicator confirms the model is ready to run analysis
+* CTA: 'Run AI Risk Analysis' triggers the Cedar Intelligence Engine
+* 'Load Demo Strategy Template' available for onboarding and demonstration
+* Re-running setup creates a new version — previous risk register is preserved
+	Inputs / Fields
+	* PHASE 1 — Strategic Governance & Programme Scale:
+* Programme governance structure (Dedicated Programme Board / Sub-committee of Main Board / Informal working group / No formal programme governance)
+* Programme Director / SRO formally appointed (Yes — appointed and active / Informally identified but not confirmed / Not yet appointed)
+* Organisation holding regulatory accountability (Local Authority / Registered Provider / JV governance / Private developer-led / Not defined)
+* Primary strategic driver (Housing supply targets / Estate regeneration / Building safety remediation / Decarbonisation / Policy commitment / Mixed)
+* Number of projects in programme (Single / 2–5 / 6–15 / 15+)
+* Multiple project types (Single / Limited variation 2 types / Multiple complex)
+* Sites spread (Single site / Multiple in one area / Multiple across region)
+* * PHASE 2 — Delivery Capacity & Supply Chain:
+* Internal resource capacity (Fully resourced / Mostly resourced / Partially resourced / Significant gaps / Not yet established)
+* Specialist expertise required (toggle group: Fire engineering / Retrofit/decarbonisation / Building safety / Complex structural / None)
+* Organisational delivery experience (Extensive / Moderate / Limited / None)
+* Supply chain strategy (Framework secured / Strategic partners / Open procurement / Hybrid / Not defined)
+* Contractor market conditions (Highly competitive / Moderate / Limited availability / Specialist only)
+* Market volatility risks (toggle: Inflation / Material supply / Labour shortages / Energy cost)
+* * PHASE 3 — Land, Site & Planning Risk:
+* Land ownership status (Fully secured / Majority secured / Partial issues / Assembly required)
+* Site constraints (toggle: Ground conditions / Access / Utility limitations / Neighbouring property / None known)
+* Environmental site conditions (toggle: Brownfield/contaminated / Flood risk / Protected habitats / Archaeological)
+* Planning status (Permission secured / Application submitted / Pre-application / Not defined)
+* Heritage and conservation (toggle: Listed building / Conservation area / Heritage protection / None)
+* Regulatory approvals required (toggle: Building Safety Regulator / EIA / Highway / Utility authority)
+* * PHASE 4 — Construction & Technical Risk:
+* Construction complexity (toggle: Demolition / High-rise >18m / Structural alterations / Mixed-use / Phased)
+* Site construction risks (toggle: Asbestos/hazardous / Contaminated ground / Complex temporary works / Construction in occupied buildings)
+* Construction delivery strategy (Single contractor / Multiple contractors / Framework / Development partner)
+* * PHASE 5 — Residents, Stakeholders & Funding:
+* Resident occupancy position (Vacant possession / Residents remain / Partial decant / Full decant)
+* Resident vulnerability profile (General needs / Families / Elderly / Supported housing / Mixed)
+* Stakeholder risk factors (toggle: Community opposition / Political sensitivity / Displacement concerns / Heritage concerns)
+* Funding certainty (Fully funded / Majority secured / Partial / Strategy in development)
+* Grant funding dependencies (toggle: Homes England / GLA / Decarbonisation funding / None)
+* Cost certainty (Well defined with contingency / Moderate uncertainty / Significant uncertainty)
+* * PHASE 6 — Dependencies, Integration & Schedule Pressure:
+* Cross-programme dependencies (toggle: Grant cross-project milestones / Shared contractor / Masterplanning / BSR Gateway / Infrastructure upgrades)
+* Infrastructure dependencies (toggle: Utility upgrades / Transport changes / Third-party delivery / None)
+* Schedule pressure profile (None / Moderate / Significant / Critical deadlines)
+* External delivery drivers (toggle: Political commitments / Grant deadlines / Safety remediation / Regulatory compliance / None)
+* * PHASE 7 — Information, Data & Design Readiness:
+* Programme information/data certainty (Comprehensive / Partial with gaps / Significant gaps / Unknown)
+* Design and survey data position (Detailed complete / Partial / Not commenced)
+* Information risk factors (toggle: Asbestos surveys outstanding / Structural surveys / EPC data gaps / Legal/title gaps / Resident data not profiled)
+	Outputs / Results
+	* AI-generated risk register: each risk contains — Risk ID, Title, Description, Category, Workstream, Gross Probability (1–5), Gross Impact (1–5), Gross Rating (1–25, mapped to Insignificant–Severe), Suggested Mitigation Strategy, Suggested Owner Role
+* Risk Register auto-populated on user confirmation
+* Risk Dashboard activated
+* Risk Alerts configured
+* Minimum 3 risks required for publication gate to pass
+	Acceptance Criteria
+	* Cedar Intelligence Engine generates risks within 60 seconds of 'Run AI Risk Analysis' being triggered
+* Each generated risk has all mandatory fields populated
+* Minimum 3 risks are generated for any complete questionnaire submission
+* User can edit, add, or remove risks before confirming
+* Risk Register activates immediately on confirmation
+* Setup Progress sidebar correctly shows all 7 phases as complete before AI is run
+* Re-run creates a new version — prior register is accessible in history
+	
+
+8.5 Risk Dashboard
+8.5 — Risk Dashboard (/risk/dashboard?type=programme)
+	Description
+	The Risk Dashboard provides a comprehensive programme-level view of all risk data, financial exposure (ALE), appetite alignment, issue status, and AI-driven strategic intelligence. It is the analytical hub of the Risk Management Module.
+	Business Rules
+	* Dashboard is context-sensitive — programme context shows all risks across all projects in the programme
+* All data is live — no manual refresh required
+* Filters available: All Portfolios, Select Project (to narrow to a specific project's risks)
+* Two AI panels are embedded: Deep Risk Inquiry and Strategic Intelligence Engine
+* ALE figures are in GBP (£)
+* 'Consult CedarGuard AI' persistent CTA at bottom of page
+* 'New Programme' link accessible from risk dashboard header
+	Inputs / Fields
+	* All risk register records in scope (filtered by active context)
+* Issue log records
+* ALE data (Gross and Residual)
+* Risk appetite settings
+	Outputs / Results
+	* HEADLINE KPIs (6): Total Risks | Open | High/Severe | Escalated | Risk Reduction % | Residual ALE (£)
+* * DEEP RISK INQUIRY panel (Premium AI): 'Analyse project risks, identify strategic blindspots, or seek guidance on mitigation strategies.' CTA: 'Launch AI Risk Advisor'
+* * STRATEGIC INTELLIGENCE ENGINE panel (Neural Analysis): 'Advanced neural model analysing N risks and N issues to generate cross-functional strategic intelligence.' CTA: 'Generate Strategic Outlook'
+* * RESIDUAL RISK SUMMARY table: Risk Category (Insignificant / Minor / Moderate / Major / Severe) | Count | Notes
+* * RISK REGISTER STATUS UPDATES table: Status (Closed / Managed / Mitigated / Open / Tolerated) | Count
+* * RISK APPETITE ALIGNMENT chart: MISALIGNED (risk exceeds stated appetite) | ALIGNED (within appetite) | Pending (not yet determined)
+* * ISSUE STATUS UPDATES table: Status categories (4. Resolved / 3. Implementing Fix / 2. Escalated / 1. Investigating / 5. Unassigned) | Count | Total issues / Open issues shown
+* * OPEN RISKS BY AGE BUCKET chart: 0–3 Months | 3–6 Months | 6–12 Months | >1 Year | >2 Years
+* * OVERALL PROGRAMME HEALTH SUMMARY table: Critical Issues | Risk Register — Open | Issues Log — Open | High/Severe Risks | Escalated to Programme | Closed/Resolved
+* * RISK CATEGORY PERFORMANCE section: performance breakdown by risk category
+* * ALE BY WORKSTREAM chart: Gross ALE (£) vs Residual ALE (£) per workstream — bar chart
+* * IMMEDIATE FOCUS — CRITICAL RISKS section: top critical risk items requiring action, with link to Risk Register
+	Acceptance Criteria
+	* All 6 KPI values are accurate and update within 5 minutes of a risk record change
+* Risk Reduction % = ((Gross ALE − Residual ALE) / Gross ALE) × 100 and is calculated correctly
+* Deep Risk Inquiry returns a response within 10 seconds of launch
+* Strategic Outlook generates within 20 seconds
+* Risk Appetite Alignment chart correctly categorises all risks
+* Age Bucket chart correctly categorises risks by number of days since creation
+* ALE by Workstream chart renders correctly when risks have financial impact and probability values entered
+* Critical Risks section shows correct top risks in order of residual rating
+	
+
+8.6 Risk Register
+8.6 — Risk Register (/risk/register?type=programme)
+	Description
+	The Risk Register is the authoritative record of all identified risks. It provides a comprehensive, multi-column, filterable and searchable view of every risk at programme level, with financial quantification (ALE), workstream classification, appetite alignment, KRI linkage, and age tracking. It is the most data-rich view in the Risk Management Module.
+	Business Rules
+	* Risk Register displays all risks in scope — filterable between 'Programme Level Only' and 'All Projects'
+* Gross Risk Rating = Probability × Impact (raw score 1–25, displayed as Insignificant/Minor/Moderate/Major/Severe)
+* Residual Risk Rating = Post-mitigation Probability × Impact
+* ALE (Annual Loss Expectancy) = Impact (£) × Probability (%) — calculated for both Gross and Residual
+* Risk Reduction % = ((Gross ALE − Residual ALE) / Gross ALE) × 100
+* Each risk can be directly linked to a KRI from the KRI Tracker
+* Risk Appetite field determines ALIGNED / MISALIGNED / Pending status
+* All changes to risk records are audit-logged with user and timestamp
+* Risks can be escalated to the Issues Log directly from the register
+* 'Consult CedarGuard AI' button is persistent at the bottom of the register
+	Inputs / Fields
+	* FILTERS: Project (All Projects / Programme Level Only / Individual Project), Status (All / Open / Closed / Managed / Mitigated / Tolerated), Category (12 categories), Workstream (12 workstreams), Free text search
+* * RISK RECORD FIELDS (full column set):
+* Ref — system-generated unique risk reference
+* Workstream — Resourcing | Finance | Programme Delivery | Building Safety | Fire Safety | Planning | Procurement | Environmental | Stakeholder | Technical | Quality | Legal
+* Linked KRI — direct link to a KRI in the KRI Tracker
+* Date Added — date the risk was created
+* Source Project — which project the risk originated from
+* Risk Title & Description — full text (click ID to open full risk details panel)
+* GROSS RISK RATING group: Rating (score 1–25 → label), Response (risk response type), Controls (list of control actions)
+* RESIDUAL RISK RATING group: Rating (post-mitigation score/label), Label, Appetite (ALIGNED/MISALIGNED/Pending), Further Action
+* Status — Open / Closed / Managed / Mitigated / Tolerated
+* GROSS ALE group: Impact (£), Probability (%), ALE (£)
+* RESIDUAL ALE group: Impact (£), Probability (%), ALE (£), Reduction (%)
+* Ind — risk indicator / flag icon
+* Age — calculated field: days since risk was created
+* Actions — edit, escalate to issue, link KRI, delete
+	Outputs / Results
+	* Risk Register table with all records in scope, filterable by 4 dimensions
+* Headline KPIs above table: Total | Open | High/Severe | Escalated | Residual ALE (£)
+* Full risk details panel (on record click)
+* Export to Excel / CSV / PDF
+* Risk history log per record
+	Acceptance Criteria
+	* Risk Rating label (Insignificant–Severe) is auto-calculated when Probability and Impact scores are entered
+* Gross ALE is auto-calculated when Impact (£) and Probability (%) are entered
+* Risk Reduction % auto-calculates when both Gross and Residual ALE are populated
+* Risk Appetite shows MISALIGNED when Residual Risk Rating exceeds the programme's stated appetite threshold
+* Escalate to Issue creates a linked Issues Log entry within 5 seconds
+* Linked KRI field shows KRI name and navigates to KRI Tracker on click
+* Age field increments daily and is accurate to the day
+* Export produces data matching all visible columns in the on-screen register
+	
+
+8.7 Issues Log
+8.7 — Issues Log (/risk/issues?type=programme)
+	Description
+	The Issues Log captures risks that have escalated into active delivery issues. Issues are created exclusively by escalating a risk from the Risk Register — standalone issue creation is not permitted. Issues follow a numbered lifecycle from Investigating through to Resolved.
+	Business Rules
+	* Issues can only be created by escalating a risk — the originating risk ID is always linked
+* Issue priority: P1 (Critical) / P2 (High) / P3 (Medium) / P4 (Low)
+* P1 and P2 issues trigger immediate alert to Programme Manager
+* Issue status follows the numbered lifecycle: 1. Investigating → 2. Escalated → 3. Implementing Fix → 4. Resolved | 5. Unassigned
+* Issues cannot be closed without a documented resolution summary
+* Closing an issue triggers a Lessons Learned creation prompt
+* Issues are visible in the Risk Dashboard Issue Status Updates table and Overall Programme Health Summary
+	Inputs / Fields
+	* Issue ID (auto-generated, linked to parent Risk ID)
+* Issue Title (inherited from risk title, editable)
+* Issue Description (text area, required)
+* Priority (P1 / P2 / P3 / P4)
+* Owner (user selector, required)
+* Date Raised (auto — date of escalation from risk register)
+* Target Resolution Date (date picker, required)
+* Resolution Actions (text list — individual action items)
+* Status (dropdown: 1. Investigating / 2. Escalated / 3. Implementing Fix / 4. Resolved / 5. Unassigned)
+* Resolution Summary (text area — required before status can be set to Resolved)
+	Outputs / Results
+	* Issues Log table with all active and resolved issues
+* P1/P2 alert to Programme Manager on creation
+* Linked risk record accessible from each issue
+* Lessons Learned prompt on resolution
+	Acceptance Criteria
+	* Issue is created in Issues Log within 5 seconds of escalation action in Risk Register
+* P1/P2 alert is sent within 1 minute of issue creation
+* Issue record shows linked risk ID with navigation to originating risk
+* Resolution status requires Resolution Summary field to be completed
+* Resolving an issue triggers a Lessons Learned prompt
+* Issues Log data contributes to Risk Dashboard 'Issue Status Updates' table and KPI counts
+	
+
+8.8 Lessons Learned
+8.8 — Lessons Learned (/lessons-learned)
+	Description
+	The Lessons Learned Repository is a shared, organisation-wide knowledge base for capturing insights from resolved issues and closed/mitigated risks. It tracks both qualitative lessons and quantified Cost Avoidance savings. The repository is accessible from the sidebar as a standalone page — not nested within a specific programme or project URL.
+	Business Rules
+	* Lessons are created via the 'Capture Lesson' button or triggered by resolving an issue / closing a risk
+* Categories: Safety | Contractual | Technical | Compliance | Budget
+* Cost Avoidance (£) is a mandatory or optional financial field tracking documented savings resulting from the lesson
+* Lessons are organisation-wide — visible to all users regardless of programme context
+* 'Export Knowledge Hub' exports all lessons to a structured file
+* 'Download PDF Report' generates a formatted PDF of the lessons library
+	Inputs / Fields
+	* Lesson Title (text, required)
+* Lesson Description (text area: what happened, what was learned, what should be done differently)
+* Category (Safety / Contractual / Technical / Compliance / Budget)
+* Source Reference (linked Risk or Issue ID — auto-populated if triggered from Risk Register / Issues Log)
+* Programme (auto-populated from context)
+* Cost Avoidance (£) — financial saving documented as a result of this lesson
+* Submitted By (auto — current user)
+* Date (auto)
+	Outputs / Results
+	* KPI Header: Total Insights (this month) | Safety Wins count | Cost Avoidance — £ documented savings
+* Lessons table filtered by category (All / Safety / Contractual / Technical / Compliance / Budget)
+* Export Knowledge Hub — structured data export
+* Download PDF Report — formatted PDF of lessons library
+	Acceptance Criteria
+	* Lesson created via 'Capture Lesson' button appears in repository within 60 seconds
+* Triggered lessons (from issue resolution or risk closure) pre-populate Source Reference correctly
+* Cost Avoidance total in KPI header accurately sums all entered Cost Avoidance (£) values
+* Category filter returns only lessons in that category
+* PDF Report generates within 30 seconds and is correctly formatted
+* Organisation-wide visibility confirmed — lessons visible regardless of active context
+	
+
+________________
+
+
+PART 8 — AUTOMATED INTELLIGENCE MODULE
+	
+
+The Automated Intelligence module contains three AI-powered tools accessible from the sidebar. Each tool has a distinct mode of operation — AI Risk Inquiry is a batch analysis run, Mitigation & Control Strategy has two modes (idea generator and auto-analysis), and Compliance Posture Outlook uses natural language input. A persistent 'Consult CedarGuard AI' button also appears on the Risk Dashboard, Risk Register, and Compliance Tracker pages for contextual AI access.
+
+
+9. Automated Intelligence Module
+9.1 AI Risk Inquiry
+9.1 — AI Risk Inquiry (/risk/ai)
+	Description
+	AI Risk Inquiry uses the Cedar Intelligence Engine to evaluate project metadata against standard risk taxonomies and generate a contextual risk profile. This is a batch analysis run — not a conversational interface. The user initiates the analysis and the engine returns a structured risk profile for review.
+	Business Rules
+	* AI Risk Inquiry is a batch run — it processes all project/programme metadata in scope
+* The engine evaluates against standard risk taxonomies relevant to social housing delivery
+* Results show identified risks with count: 'AI analysis complete — Portfolio — N risks identified'
+* User can 'Run again' to re-run the analysis (results are additive — new risks are identified and presented for review)
+* Analysis results feed into the Risk Register on user confirmation
+* Context is set by the Active Context switcher — portfolio aggregate or individual project
+	Inputs / Fields
+	* Active Context (portfolio or project)
+* Project/programme metadata
+* Existing risk register data (to inform deduplication)
+	Outputs / Results
+	* AI analysis complete status with risk count
+* 'Run again' option
+* Risk profile for review and import to Risk Register
+	Acceptance Criteria
+	* Analysis completes within 60 seconds of 'Run AI Risk Inquiry' being triggered
+* Results display risk count accurately
+* Identified risks are presented for user review before being added to the register
+* Re-run produces updated results without duplicating previously confirmed risks
+	
+
+9.2 Mitigation & Control Strategy
+9.2 — Mitigation & Control Strategy (/ai/controls)
+	Description
+	The Mitigation & Control Strategy tool generates industrial-grade mitigation strategies for project risks. It operates in two distinct modes: an AI Idea Generator (user describes a specific concern) and Programme Auto-Analysis (system automatically evaluates high-rated open risks). Both modes produce specific, actionable mitigation tactics.
+	Business Rules
+	* Mode 1 — AI Idea Generator: User describes a specific concern or situation in a sentence; AI generates targeted mitigation controls
+* Mode 2 — Programme Auto-Analysis: System automatically evaluates all high-rated open risks across the portfolio and formulates specific mitigation tactics — no user input required for this mode
+* Auto-Analysis is triggered only when high-rated open risks exist — shows 'No High Risks to Analyse' when none are present
+* Generated controls can be accepted, edited, or rejected
+* Accepted controls are linked to the relevant risk record in the Risk Register
+	Inputs / Fields
+	* Mode 1 (AI Idea Generator): Free-text description of a specific concern or situation
+* Mode 2 (Programme Auto-Analysis): System-driven — evaluates all HIGH/SEVERE open risks automatically
+* Active Context determines scope of auto-analysis
+	Outputs / Results
+	* Mode 1: Targeted mitigation control set generated from the described concern
+* Mode 2: 'Specific mitigation tactics for N high-rated open risks across this portfolio'
+* Accepted controls linked to risk records
+	Acceptance Criteria
+	* AI Idea Generator produces a response within 15 seconds of 'Generate Ideas' being triggered
+* Auto-Analysis correctly identifies all HIGH/SEVERE open risks in the active context
+* Auto-Analysis shows 'No High Risks to Analyse' when no HIGH/SEVERE open risks exist
+* Generated controls are specific to the risk context — not generic advice
+* Accepted controls appear on the linked risk record
+	
+
+9.3 Compliance Posture Outlook
+9.3 — Compliance Posture Outlook (/ai/compliance)
+	Description
+	The Compliance Posture Outlook uses Natural Language Processing (NLP) to generate statutory compliance requirements and strategic outlooks from a simple plain-English description of a project or programme. It is an 'Automated Compliance Identifier' — the user writes a sentence and the AI identifies applicable regulations and compliance considerations.
+	Business Rules
+	* Input is a natural language sentence — no structured form required
+* The AI uses NLP to parse the description and identify applicable UK social housing regulations
+* Output includes: applicable regulation list, compliance ideas, and strategic posture outlook
+* This tool can be used independently of the main Compliance Setup — it is a quick-lookup and ideation tool
+* Results are informational — they do not automatically populate the Compliance Tracker (user must take action)
+	Inputs / Fields
+	* Natural language description of a project or programme (free text — one or more sentences)
+* Active Context (scope)
+	Outputs / Results
+	* Applicable regulation list identified from the description
+* Compliance ideas and considerations
+* Strategic compliance posture outlook
+* CTA: 'Generate Compliance Outlook'
+	Acceptance Criteria
+	* AI processes input and returns results within 20 seconds of 'Generate Compliance Outlook' being triggered
+* Results reference specific UK social housing regulations relevant to the description
+* Output is clearly labelled as informational — not a replacement for the full Compliance Setup
+* Results can be used as input to the Compliance Setup process
+	
+
+________________
+
+
+PART 7 — MONITORING & REPORTING MODULE
+	
+
+10. Monitoring & Reporting Module
+10.1 KRI Tracker
+10.1 — KRI Tracker (/monitoring/kri)
+	Description
+	The KRI Tracker provides a portfolio-level view of all Key Risk Indicators, linking each KRI to associated risks in the Risk Register. It tracks financial exposure (Exp £), risk reduction, overdue percentages, and average risk age. It also provides a Compliance Delta panel and a Performance Insight narrative for trend context.
+	Business Rules
+	* Each KRI is linked to risks via the 'Linked KRI' field on risk records in the Risk Register — this is a bidirectional relationship
+* KRI data aggregates from all risk records linked to each KRI
+* Financial exposure (Exp £) is derived from ALE data on linked risks
+* Reduction % shows the aggregate risk reduction achieved across risks linked to each KRI
+* Overdue % = count of overdue risks linked to KRI / total risks linked to KRI × 100
+* Average Risk Age is calculated from the Date Added field on all linked risks
+* Dispatch Push Notifications sends alerts to all KRI Owners with active threshold breaches
+	Inputs / Fields
+	* KRI Name (text)
+* Owner (user selector)
+* KRI columns (auto-calculated from linked risks): Total Risks | High Risks | Overdue | % Overdue | Avg Age (days) | % Projects | Exp (£) | Reduction % | Status | Escalation
+* Actions (edit KRI, view linked risks, dispatch notification)
+	Outputs / Results
+	* HEADLINE KPIs: Portfolio Risks | Critical Density | High Priority | Immediate Action | Avg KRI Delay | Momentum (% MoM change) | Aggregation count | Active Monitoring count
+* KRI table with all active KRIs and their calculated metrics
+* COMPLIANCE DELTA panel: narrative on correlation between active mitigations and overall KRI health
+* PERFORMANCE INSIGHT panel: trend narrative with % change metric and next review date
+* Dispatch Push Notifications button — sends web app notifications to all KRI Owners with active alerts
+	Acceptance Criteria
+	* KRI metrics update within 5 minutes of a change to a linked risk record
+* Exp (£) correctly sums Residual ALE of all linked risks
+* Reduction % correctly reflects the aggregate ALE reduction across linked risks
+* Dispatch Push Notifications sends to all KRI Owners with active alerts and confirms count sent
+* Performance Insight shows % change in Average Risk Age vs previous period
+* Compliance Delta narrative reflects current mitigation-to-KRI correlation accurately
+	
+
+10.2 Alerts & Thresholds (Alert Board)
+10.2 — Alert Board (/monitoring/alerts)
+	Description
+	The Alert Board is a standalone full-page alert management interface. It shows all active alerts across three categories (Critical, KRI Breaches, Statutory), enables bulk push notification dispatch to KRI owners, and provides acknowledge and reset controls.
+	Business Rules
+	* Alert categories: Critical (risk or compliance), KRI Breaches (KRI threshold exceeded), Statutory (regulatory deadline)
+* Alerts cannot be deleted — they can be acknowledged or cleared by resolving the underlying condition
+* Dispatch Push Notifications sends secure web app notifications to all KRI Owners with active alerts
+* Reset All clears all acknowledged alerts from the view
+* Alert count shown in headline KPIs and broken down by category
+	Inputs / Fields
+	* Active risk alerts
+* Active compliance alerts
+* KRI threshold breach conditions
+* Statutory deadline alerts
+	Outputs / Results
+	* HEADLINE KPIs: Total Active | Critical | KRI Breaches | Statutory | Cleared
+* Alert list filtered by category — All / Critical / KRI Breaches / Statutory
+* Acknowledge control per alert
+* Reset All button
+* Dispatch Push Notifications: 'Push N Active Alerts' button — sends web app push to KRI Owners
+	Acceptance Criteria
+	* All 5 KPI counts are accurate — Total Active = Critical + KRI Breaches + Statutory
+* Filter by category returns only alerts in that category
+* Acknowledge records the user and timestamp
+* Dispatch Push Notifications successfully sends to all KRI Owners with active alerts
+* Cleared alerts are not shown in the active view but remain in history
+* 'All Clear' state displays correctly when no active alerts match the current filter
+	
+
+10.3 Risk Aggregation Data
+10.3 — Risk Aggregation Data (/monitoring/aggregation)
+	Description
+	The Risk Aggregation Data page provides a consolidated, cross-project view of all risks within the programme. It shows summary tables by project and by category, a full aggregated risk table with financial data, and supports filtering and export. It is the primary cross-project risk intelligence view for Programme Managers.
+	Business Rules
+	* Aggregation scope is determined by Active Context — programme context shows all projects in the programme
+* Summary by Project shows risk distribution per project including Residual ALE
+* Open Rate = Open risks / Total risks for each project × 100
+* Inherent Risk uses Probability × Impact (PxI) notation
+* Risk Value is a calculated field (may differ from ALE — represents a broader risk value metric)
+* All risks in the aggregated table can be filtered and searched
+	Inputs / Fields
+	* Project filter (All Projects / individual project dropdown)
+* Status filter (All / Open / Closed / Managed / Mitigated / Tolerated)
+* Category filter (all 12 categories)
+* Free text search
+	Outputs / Results
+	* HEADLINE KPIs: Total Risks | Open | High/Severe | Residual ALE (£)
+* SUMMARY BY PROJECT table: Project | Total | Open | High | Escalated | Residual ALE | Open Rate
+* SUMMARY BY CATEGORY table: Category | Count | Residual ALE
+* ALL AGGREGATED RISKS table: Project | Date Added | Workstream | Risk Description & Impact | KRI & Owner | Inherent (PxI) | Residual (PxI) | Risk Value | Status | Escalated | Actions
+* Risk count label: 'N RISKS' above the full table
+	Acceptance Criteria
+	* All KPI figures match the sum of underlying risk records in scope
+* Open Rate per project = Open risks / Total risks, displayed as percentage
+* Residual ALE per project sums correctly from individual risk ALE values
+* Summary by Category accurately groups risks into the 12 categories
+* Full aggregated table is searchable and returns accurate results
+* Clicking a project in Summary by Project filters the full table to that project's risks
+	
+
+10.4 Trends & Heatmaps
+10.4 — Trends & Heatmaps (/monitoring/heatmaps)
+	Description
+	The Trends & Heatmaps page provides enterprise risk intelligence through a workstream-based risk heatmap. The heatmap is organised by workstream (not a traditional likelihood × impact matrix) and uses the 5-tier rating scale (Insignificant through Severe) driven by live field data from the Risk Register.
+	Business Rules
+	* Heatmap is organised BY WORKSTREAM — each workstream has a risk score derived from its linked risks
+* Heatmap uses the 5-tier rating scale: 1–5 Low, 6–8 Minor, 9–11 Moderate, 12–15 Major, 16–25 Severe
+* Score is derived from actual Probability × Impact scores on risk records linked to each workstream
+* Heatmap is described as a 'Live Analytics Layer' — data is real-time
+* Severe risks (≥16) are tracked as a headline KPI
+* Purpose: 'Enterprise risk intelligence overview across strategic workstreams. Aggregate heatmaps driven by live field data'
+	Inputs / Fields
+	* Risk Register records (all in scope)
+* Workstream assignments on each risk
+* Gross Probability × Impact scores
+	Outputs / Results
+	* HEADLINE KPIs: Severe Risks (≥16) | Open Risks | Total Risks
+* RISK HEATMAP — BY WORKSTREAM: visual heatmap where each cell represents a workstream's aggregate risk score, coloured by rating tier
+* SCORE LEGEND: 1–5 Low (grey/green) | 6–8 Minor | 9–11 Moderate | 12–15 Major | 16–25 Severe (red)
+* Empty state: 'No risk data yet. Add risks in the Risk Register to populate this heatmap.'
+	Acceptance Criteria
+	* Heatmap populates within 5 minutes of risks being added to the Risk Register with workstream assignments
+* Severe Risks KPI correctly counts risks with score ≥16
+* Score Legend displays correctly on all screen sizes
+* Empty state renders correctly when no risks exist
+* Workstream cells are coloured according to the correct rating tier
+	
+
+________________
+
+
+PART 10 — REPORTS MODULE
+	
+
+11. Reports Module
+11.1 Executive One-Pager
+11.1 — Executive One-Pager (/reporting/executive)
+	Description
+	The Executive One-Pager is a single-page strategic oversight summary intended for board and executive consumption. It provides a real-time snapshot of the entire portfolio's risk inventory, financial exposure, compliance posture, and AI-generated strategic intelligence — all in a single compact view. It includes an Internal Audit section for administrative oversight.
+	Business Rules
+	* Described as 'Programme Risk & Compliance: Executive One-Pager — Strategic Oversight Summary — Confidentially Issued'
+* Filters: All Programmes dropdown, Drill into Project dropdown
+* Export options: Print, Export PDF
+* AI section ('Cognitive Programme Health') is populated when sufficient risk and project data exists
+* Priority Directives are AI-generated recommended actions (e.g. 'Review Critical Financial Exposures', 'Validate Compliance Evidence Gaps')
+* Volatility Indicators are system-calculated performance metrics
+* Compliance Posture includes Audit Readiness % and Regulatory Trajectory narrative
+* Executive Internal Audit section: 'Initiate deep-dive administrative oversight into the active portfolio context — Access PM Backdoor' — internal audit/administrative feature
+* Ref code generated per report: format EXE-YYYY-XXXX
+	Inputs / Fields
+	* All programme and project records in scope
+* Risk Register (all)
+* Compliance Tracker (all)
+* ALE data
+* AI analysis parameters
+	Outputs / Results
+	* HEADLINE KPIs (4): Total Risk Inventory | Active Mitigations | Terminal Priority Items | Total Portfolio Exposure (£)
+* AI ANALYSIS — COGNITIVE PROGRAMME HEALTH: AI-generated strategic health narrative
+* PRIORITY DIRECTIVES: AI-recommended actions list
+* VOLATILITY INDICATORS: Project Review Velocity Lag | Escalation Response Times | Health Velocity %
+* TOP 5 PORTFOLIO ITEMS — CRITICAL RISK PROFILE: table of Ref | Description | Impact
+* COMPLIANCE POSTURE: Aggregate Achievement % | Portfolio Completion % | Audit Readiness % | Regulatory Trajectory narrative
+* MASTER AUDITOR attribution: Cehpoint AI Engine | Time of Issue
+* EXECUTIVE INTERNAL AUDIT section: Access PM Backdoor (administrative deep-dive)
+* Export: Print, Export PDF
+	Acceptance Criteria
+	* One-Pager renders correctly with all sections populated when sufficient data exists
+* Total Portfolio Exposure (£) correctly sums all Gross ALE values in scope
+* Active Mitigations count accurately reflects mitigated risks
+* Priority Directives are specific (not generic) and reference actual data conditions
+* Compliance Posture Aggregate Achievement % matches the Compliance Tracker overall % metric
+* Audit Readiness % reflects the proportion of compliance items with evidence attached
+* Export PDF generates a correctly formatted printable document
+* Report reference code (EXE-YYYY-XXXX) is unique per generation
+	
+
+11.2 Programme Strategic Dashboard
+11.2 — Programme Strategic Dashboard (/reporting/programme)
+	Description
+	The Programme Strategic Dashboard provides an aggregated programme-level view of all projects with RAG status filtering, compliance averages, risk counts, and performance metrics. It serves as an operational reporting view for Programme Managers and senior stakeholders.
+	Business Rules
+	* Described as 'Programme Risk & Compliance: Strategic Dashboard — Aggregate Portfolio Performance — Confidential Insight'
+* Filter by Programme (All Programmes dropdown)
+* RAG Status buttons: All / Red / Amber / Green
+* Free text search: 'Search specific project, PM, or type'
+* Sync, CSV, Export PDF, New Programme action buttons
+* Health State indicators: Grey, Red, Amber, Green
+	Inputs / Fields
+	* All active project records in scope
+* Risk count, compliance %, PM name, scheme type per project
+	Outputs / Results
+	* HEADLINE KPIs: Health State | Live Projects | Active PMs | Avg Compliance | Critical (Red) | Warning (Amber) | High Risks | Open Issues
+* Project list filtered by RAG status and search
+* Sync: refreshes data
+* CSV: exports project data
+* Export PDF: generates PDF report
+* New Programme button
+	Acceptance Criteria
+	* Avg Compliance % is the arithmetic mean of all project compliance % values in scope
+* Critical (Red) count matches projects with RAG status = Red
+* High Risks count matches total High/Severe risks across all projects in scope
+* RAG filter buttons correctly filter the project list
+* CSV export contains all projects in the current filter state
+* Sync refreshes all data values within 10 seconds
+	
+
+11.3 Project Reports
+11.3 — Project Reports (/reporting/project)
+	Description
+	Project Reports are generated, structured documents covering all key delivery, risk, and compliance data for individual projects. Accessible to users with project-level access and above.
+	Business Rules
+	* Project Report is context-sensitive — generated for the project selected in Active Context
+* Report content is drawn from live system data — no manual content input
+* Historical reports stored for minimum 24 months
+* Exportable as PDF and DOCX
+	Inputs / Fields
+	* Active project record
+* Milestone status
+* Risk Register summary
+* Compliance Tracker summary
+* Issues log
+* Evidence upload status
+* Lessons Learned (current period)
+	Outputs / Results
+	* Section 1: Project Summary
+* Section 2: Milestone Status
+* Section 3: Risk Summary (by rating and top risks)
+* Section 4: Compliance Summary (by status, overdue items)
+* Section 5: Issues & Escalations
+* Section 6: Lessons Learned
+* Export: PDF / DOCX
+	Acceptance Criteria
+	* Report generates within 30 seconds of request
+* All sections reflect live data at time of generation
+* PDF renders correctly on A4 paper
+* Report is accessible only to users with access to the project
+* Historical reports are retrievable from the report archive
+	
+
+________________
+
+
+PART 11 — DEVELOPER / API MODULE
+	
+
+The Developer / API module enables secure API key management and provides in-platform API reference documentation. API access allows external systems to read and write CedarGuard data programmatically — supporting integration with project management tools, data warehouses, and reporting platforms.
+
+
+15. Developer / API Module
+15.1 API Keys
+15.1 — API Keys (/developer/keys)
+	Description
+	The API Keys page allows users with Developer or Administrator access to generate, manage, and revoke API keys for programmatic access to CedarGuard. Each key is scoped with specific permissions. Keys are used as Bearer tokens in the Authorization header of all API requests.
+	Business Rules
+	* API key generation requires Developer role or Administrator access
+* API key value is displayed ONCE at generation — it cannot be retrieved again. Users must copy and store it securely
+* Keys can be given a human-readable label (e.g. 'Reporting Integration', 'Power BI Connector')
+* Permission scope: Read Only | Read & Write
+* Keys can have an optional expiry date — expired keys are automatically invalidated
+* Keys can be manually revoked at any time — revocation is immediate
+* Maximum 10 active API keys per workspace
+* Key table shows: Label, Scope, Created Date, Created By, Last Used, Expiry Date, Status (Active / Expired / Revoked)
+	Inputs / Fields
+	* Key Label (text, required — max 50 characters)
+* Permission Scope (Read Only / Read & Write)
+* Expiry Date (date picker, optional — blank = no expiry)
+* Generate Key button
+* Revoke button (per key, requires confirmation)
+	Outputs / Results
+	* New API key value displayed once in a copy-to-clipboard modal at generation
+* Key record added to the active keys table immediately
+* Key table: Label, Scope, Created Date, Last Used, Expiry, Status
+* Revoke confirmation dialog
+* Revocation confirmation (key removed from active table)
+	Acceptance Criteria
+	* Generated key is valid immediately and authenticates API requests
+* Key value is not retrievable after the generation modal is closed
+* Revoking a key invalidates it within 60 seconds — subsequent requests return 401 Unauthorised
+* Expired keys auto-invalidate at midnight on expiry date
+* Read Only key returns 403 on POST/PATCH/DELETE endpoints
+* Last Used date/time updates within 5 minutes of the key being used in an API call
+	
+
+15.2 API Documentation
+15.2 — API Documentation (/developer/docs)
+	Description
+	The API Documentation page provides in-platform reference documentation for the CedarGuard REST API. It covers authentication, all available endpoints, request/response schemas, error codes, rate limiting, and versioning — intended for developers building integrations.
+	Business Rules
+	* Documentation is hosted in-platform — no external developer portal required
+* API version: v1 (all endpoints prefixed /api/v1/)
+* Authentication: Bearer token (API key in Authorization header)
+* Rate limiting: 1,000 requests per hour per API key — 429 Too Many Requests returned on breach
+* All responses are JSON format
+* Pagination: standard page + per_page query parameters
+* Changelog tracks API version updates
+	Inputs / Fields
+	* Documentation is read-only — no user inputs required
+* Navigation sidebar: Quickstart | Authentication | Endpoints | Error Codes | Rate Limiting | Changelog
+	Outputs / Results
+	* Quickstart section: authentication example + first API call (cURL and JavaScript)
+* Endpoints: GET /projects | GET /projects/{id} | GET /risks | POST /risks | PATCH /risks/{id} | GET /compliance-items | POST /compliance-items | GET /reports/executive | GET /reports/programme
+* Per-endpoint docs: HTTP method, URL, parameters, request body schema, response schema, example request/response
+* Error codes: 400 Bad Request | 401 Unauthorised | 403 Forbidden | 404 Not Found | 429 Too Many Requests | 500 Internal Server Error
+* Rate limiting headers: X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset
+* Changelog with dated entries per API version update
+	Acceptance Criteria
+	* All documented endpoints are functional and match documented schemas
+* Quickstart examples are copy-pasteable and work without modification (with a valid key)
+* Error codes are returned as documented
+* Changelog is updated whenever an endpoint is added or modified
+	
+
+________________
+
+
+PART 12 — HELP
+	
+
+16. Help
+16 — Help (/help)
+	Description
+	The Help section provides in-platform support resources for all CedarGuard users. Includes a searchable knowledge base, video tutorials, support ticket submission, system status, and links to external documentation. Accessible from the bottom of the persistent sidebar on all pages.
+	Business Rules
+	* Help is accessible from all pages via the persistent sidebar link
+* Knowledge base articles are maintained by the CedarGuard support team
+* Support ticket SLA: 1 business day (standard), 4 hours (critical)
+* Video tutorials are streamed in-platform
+* System Status indicator: All Systems Operational | Degraded Performance | Partial Outage | Major Outage
+* Help content is not context-dependent — accessible regardless of Active Context or role
+	Inputs / Fields
+	* Search field (keyword search across knowledge base articles)
+* Category filter: Getting Started | Compliance | Risk Management | Reports | AI Features | API & Integrations | Account & Admin
+* Support Ticket form: Subject | Category | Priority (Low / Medium / High / Critical) | Description | Attachment (optional)
+* System Status indicator (auto-refreshed)
+	Outputs / Results
+	* Searchable knowledge base with categorised articles
+* Video tutorial library (embedded player)
+* Support ticket submission with confirmation email on submission
+* System status indicator (real-time)
+* Keyboard shortcuts reference
+	Acceptance Criteria
+	* Knowledge base search returns relevant articles within 2 seconds
+* Support ticket submission sends confirmation email to the submitting user
+* System Status reflects current platform status within 5 minutes of a change
+* Video tutorials play in-platform without external navigation
+* Help page loads within 3 seconds
+	
+
+________________
+
+
+PART 13 — KEY SYSTEM LOGIC
+	
+
+12. ALE — Annual Loss Expectancy
+Annual Loss Expectancy (ALE) is the primary financial risk quantification metric on the CedarGuard platform. It is calculated and tracked at both Gross (pre-mitigation) and Residual (post-mitigation) levels for every risk record. ALE data appears on the Risk Dashboard, Risk Register, Aggregation page, KRI Tracker, and Executive One-Pager.
+
+
+Metric
+	Formula
+	Where Used
+	Gross ALE
+	Impact (£) × Probability (%)
+	Risk Register (per risk), Risk Dashboard (ALE by Workstream chart), Aggregation page
+	Residual ALE
+	Residual Impact (£) × Residual Probability (%)
+	Risk Register, Risk Dashboard KPI, Aggregation page Summary by Project, KRI Tracker (Exp £)
+	Risk Reduction %
+	((Gross ALE − Residual ALE) / Gross ALE) × 100
+	Risk Register (per risk), Risk Dashboard KPI, KRI Tracker (Reduction %)
+	Total Portfolio Exposure (£)
+	Sum of all Gross ALE values in scope
+	Executive One-Pager
+	
+
+* ALE fields are displayed in GBP (£) throughout the platform
+* Risk Reduction % is auto-calculated — it updates when Gross or Residual ALE values change
+* ALE by Workstream chart groups Gross and Residual ALE by the Workstream field on each risk
+* Risks without Impact (£) or Probability (%) values entered will show £0 ALE — users should be prompted to complete these fields
+
+
+13. Risk Appetite Management
+Risk Appetite is a first-class feature on the CedarGuard platform. It determines whether individual risks are aligned with or misaligned with the organisation's stated risk appetite. Risk Appetite is set at the programme level and evaluated against each risk's Residual Risk Rating.
+
+
+Alignment State
+	Description
+	Dashboard Impact
+	ALIGNED
+	Residual risk is within the programme's stated appetite threshold
+	Shown as green in Risk Appetite Alignment chart
+	MISALIGNED
+	Residual risk exceeds the stated appetite threshold — further action required
+	Shown as red; contributes to Immediate Focus section on Risk Dashboard
+	Pending
+	Risk Appetite has not yet been determined for this risk
+	Shown as grey in chart; flags as incomplete governance
+	
+
+* Risk Appetite Alignment is a field within the Residual Risk Rating group on each risk record
+* The Risk Dashboard shows a Risk Appetite Alignment chart (doughnut/bar) with counts for ALIGNED / MISALIGNED / Pending
+* MISALIGNED risks are surfaced in the Immediate Focus — Critical Risks section of the Risk Dashboard
+* 'Further Action' field on each risk captures required steps when status is MISALIGNED
+
+
+14. Risk Lifecycle
+From Status
+	To Status
+	Conditions / Business Rules
+	OPEN
+	MANAGED
+	Active management actions initiated. Review date required.
+	OPEN / MANAGED
+	MITIGATED
+	Mitigation strategy implemented. Residual risk rating must be entered. Risk Reduction % auto-calculates. Lesson Learned prompt triggered.
+	OPEN / MANAGED
+	TOLERATED
+	Risk accepted within appetite. Risk Appetite field set to ALIGNED. Justification note required.
+	OPEN / MANAGED
+	ESCALATED → ISSUE
+	Triggers Issues Log entry. Issue inherits risk data. Priority must be assigned. Programme Manager alerted for P1/P2.
+	MITIGATED
+	OPEN
+	Mitigation found ineffective. Re-opened with justification note.
+	MITIGATED / TOLERATED
+	CLOSED
+	No further action required. Lesson Learned prompt triggered. Terminal state — cannot be re-opened.
+	ISSUE: Investigating
+	ISSUE: Escalated
+	Senior stakeholder or programme-level escalation.
+	ISSUE: Escalated
+	ISSUE: Implementing Fix
+	Resolution actions actively underway.
+	ISSUE: Implementing Fix
+	ISSUE: Resolved
+	Resolution summary required. Lesson Learned prompt triggered.
+	
+
+15. Compliance Lifecycle
+Status
+	Trigger
+	Rules
+	NOT STARTED
+	AI Setup complete or manual add
+	Initial status for all generated and manually added requirements.
+	IN PROGRESS
+	Owner updates status manually
+	Work underway to meet the requirement. No evidence required at this stage.
+	UNDER REVIEW
+	Owner submits for review
+	Evidence uploaded. Awaiting review by Programme Manager or designated reviewer.
+	COMPLIANT
+	Reviewer approves
+	Evidence must be attached. Cannot be set without evidence upload. Triggers audit readiness improvement.
+	AT RISK
+	System flag or manual
+	T-14 days or earlier with status not yet IN PROGRESS or above. Amber alert triggered.
+	BREACH
+	System auto-apply or manual
+	Due date passed without COMPLIANT status. Critical alert triggered. Shown in Compliance Tracker KPI as Critical Risks Identified.
+	
+
+16. Cedar Intelligence Engine — AI Pipelines
+16.1 Compliance AI Pipeline
+Stage
+	Description
+	1. Input
+	2-phase form data: Assessment Type, Location, Scope, Technical Characteristics (HRB, Brownfield, S106, BIM, PCR 2015, SHDF, Leasehold, Demolition)
+	2. Pre-processing
+	Normalise inputs. Map Assessment Type to applicable regulatory domains. Map HRB flag to Building Safety Act threshold conditions.
+	3. Regulation Mapping
+	Match normalised inputs to Regulations Library using rules-based + semantic matching. Each match produces: regulation ID, applicability score, mandatory flag.
+	4. Requirement Generation
+	For each matched regulation, generate a compliance requirement: title, description, regulation reference, due date formula, default priority, evidence type required.
+	5. Deduplication
+	Remove duplicate requirements (same regulation + same due date formula). Merge where applicable.
+	6. Output
+	Ordered compliance requirement list for user review. Inserted into Compliance Tracker on confirmation.
+	7. Audit Trail
+	Input payload, model version, regulation mapping results, and output records logged to AI processing audit log.
+	
+
+16.2 Risk AI Pipeline
+Stage
+	Description
+	1. Input
+	7-phase questionnaire responses (30+ questions across governance, supply chain, site, construction, residents, dependencies, data readiness)
+	2. Context Enrichment
+	Load Lessons Learned entries matching programme type, RIBA stage, and risk categories as contextual signals.
+	3. Risk Identification
+	Apply risk taxonomy across 12 categories and 12 workstreams to identify likely risks for the given programme context.
+	4. Scoring
+	Assign initial Gross Probability (1–5) and Impact (1–5) scores based on questionnaire responses and historical patterns.
+	5. ALE Initialisation
+	Set initial Gross Impact (£) estimate and Probability (%) to initialise Gross ALE calculation.
+	6. Mitigation Generation
+	For each identified risk, generate initial mitigation strategy with suggested controls and owner role.
+	7. Deduplication
+	Detect and merge conceptually duplicate risks before output.
+	8. Output
+	Ordered risk list (by Gross Rating, highest first) for user review. Inserted into Risk Register on confirmation.
+	9. Audit Trail
+	Input payload, model version, scoring rationale, and output records logged to AI processing audit log.
+	
+
+________________
+
+
+
+
+PART 14 — AGILE BACKLOG: EPICS, FEATURES & USER STORIES
+	
+
+This section presents the platform backlog structured as Epics, with associated Features and User Stories verified against the live CedarGuard system.
+
+
+Epic 1 — Programme Setup & Publication
+Enable Programme Managers to create programmes and projects, complete the 4-step mandatory publication workflow, and activate live delivery dashboards.
+
+
+US-001
+	As a
+	Programme Manager
+	I want to
+	create a programme record and link projects to it, with RIBA phase alignment and team assignments
+	So that
+	I can establish the structured container for all delivery activity before running compliance and risk setup
+	Acceptance Criteria
+	* Programme can be created with all mandatory fields
+* Programme appears in context switcher immediately after activation
+* Projects cannot be created without a parent programme
+	
+
+US-002
+	As a
+	Programme Manager
+	I want to
+	follow the 4-step publication workflow with clear progress indicators and locked gates
+	So that
+	I am guided through the correct setup sequence before my programme goes live and data flows to dashboards
+	Acceptance Criteria
+	* Setup Progress sidebar shows correct completion state for each of the 4 steps
+* PUBLISH button is disabled until all 3 prior steps are complete
+* Minimum 3 risks must be in the Risk Register before Step 3 is marked complete
+	
+
+Epic 2 — Compliance Module
+AI-driven identification of all applicable UK social housing compliance requirements, with full lifecycle tracking, evidence management, and proactive alerting.
+
+
+US-003
+	As a
+	Programme Manager
+	I want to
+	complete the 2-phase AI Compliance Setup form and have the Cedar Intelligence Engine generate my compliance requirements automatically
+	So that
+	I don't have to manually research regulations and can be confident no applicable requirements are missed
+	Acceptance Criteria
+	* Phase 1 and Phase 2 fields all render correctly with correct dropdown options
+* AI generates a minimum of 5 compliance requirements for any valid submission
+* Requirements appear in Compliance Tracker within 60 seconds
+* Both CTAs ('Conduct Detailed Assessment' and 'Consult CedarGuard AI') are functional
+	
+
+US-004
+	As a
+	Project Manager
+	I want to
+	view the Compliance Tracker with its 5-metric KPI header and embedded AI Advisor
+	So that
+	I can monitor compliance health at a glance and get instant AI analysis without leaving the tracker
+	Acceptance Criteria
+	* KPI header shows: Overall %, Active Items, Critical Risks, Renewals in 30 days, vs Last Month trend
+* Grid and List view toggle works correctly
+* AI Advisor launches and provides a response within 15 seconds
+* Add Manual Requirement allows entry of items not generated by AI
+	
+
+US-005
+	As a
+	Project Manager
+	I want to
+	receive automated compliance alerts at T-30 days (amber), T-14 days (red), and on breach (critical)
+	So that
+	I can take timely action before deadlines are missed
+	Acceptance Criteria
+	* Amber alert fires at exactly T-30 days
+* Red alert fires at exactly T-14 days
+* Breach alert fires within 24 hours of due date passing without Compliant status
+* Alerts appear on the Compliance Alerts page and the central Alert Board
+	
+
+US-006
+	As a
+	Project Manager
+	I want to
+	upload evidence documents against specific compliance items and have the system update evidence status automatically
+	So that
+	My compliance record is complete and auditable and I can mark items as Compliant with confidence
+	Acceptance Criteria
+	* Uploaded file appears in evidence tab within 60 seconds
+* Compliance item evidence status updates to TRUE on upload
+* Compliant status cannot be set without evidence upload — system blocks this action
+* Version history preserves previous uploads
+	
+
+Epic 3 — Risk Management Module
+AI-driven risk identification via 7-phase questionnaire, full Risk Register with ALE and appetite management, Issues Log with numbered lifecycle, and Lessons Learned with Cost Avoidance tracking.
+
+
+US-007
+	As a
+	Programme Manager
+	I want to
+	complete the 7-phase AI Risk Setup questionnaire and have the Cedar Intelligence Engine identify all relevant risks with initial scores and mitigation suggestions
+	So that
+	I can establish a comprehensive, context-specific risk register quickly without specialist risk expertise
+	Acceptance Criteria
+	* All 7 phases render with correct question types and answer options
+* Cedar Intelligence Engine identifies risks within 60 seconds
+* Each risk has: Title, Description, Category, Workstream, Gross P×I score, Rating label, Initial Mitigation Strategy
+* Minimum 3 risks generated for any complete submission
+	
+
+US-008
+	As a
+	Programme Manager
+	I want to
+	view and manage the Risk Register with the full column set including ALE, Workstream, Linked KRI, Risk Appetite, and Age
+	So that
+	I have full financial and governance visibility of my programme's risk profile
+	Acceptance Criteria
+	* All required columns are displayed: Ref, Workstream, Linked KRI, Date Added, Source Project, Rating, Response, Controls, Appetite, ALE (Gross and Residual), Reduction %, Age
+* ALE auto-calculates from Impact (£) and Probability (%)
+* Risk Reduction % auto-calculates from Gross and Residual ALE
+* Risk Appetite shows MISALIGNED when residual rating exceeds appetite threshold
+	
+
+US-009
+	As a
+	Project Manager
+	I want to
+	escalate a risk to the Issues Log and have the issue follow the numbered lifecycle (1. Investigating → 4. Resolved)
+	So that
+	active delivery problems are formally tracked and the Programme Manager is notified for P1/P2 issues
+	Acceptance Criteria
+	* Issues Log entry created within 5 seconds of escalation
+* P1/P2 alert sent to Programme Manager within 1 minute
+* Issue shows linked Risk ID with navigation to originating risk
+* Resolution Summary required before status can move to Resolved
+* Lesson Learned prompt triggered on resolution
+	
+
+US-010
+	As a
+	Project Manager
+	I want to
+	capture a Lesson Learned with a Cost Avoidance (£) value after resolving an issue or closing a risk
+	So that
+	the organisation benefits from the learning and documents the financial value of risk management
+	Acceptance Criteria
+	* Capture Lesson button and triggered lessons both create entries in the repository
+* Category dropdown shows: Safety / Contractual / Technical / Compliance / Budget
+* Cost Avoidance (£) field accepts a numeric value
+* Total Cost Avoidance KPI on the Lessons page sums all entries
+* Export Knowledge Hub produces a complete data file
+	
+
+Epic 4 — Risk Dashboard & Financial Intelligence
+Provide a comprehensive risk dashboard with ALE-based financial KPIs, risk appetite alignment, age analysis, and embedded AI strategic intelligence tools.
+
+
+US-011
+	As a
+	Programme Manager
+	I want to
+	view the Risk Dashboard with all 6 headline KPIs including Risk Reduction % and Residual ALE (£)
+	So that
+	I can assess the programme's risk position and the financial effectiveness of mitigations at a glance
+	Acceptance Criteria
+	* 6 KPIs render correctly: Total Risks, Open, High/Severe, Escalated, Risk Reduction %, Residual ALE (£)
+* Risk Reduction % = ((Gross ALE − Residual ALE) / Gross ALE) × 100
+* Residual ALE sums all residual ALE values in scope
+* KPIs update within 5 minutes of any risk record change
+	
+
+US-012
+	As a
+	Programme Manager
+	I want to
+	view the Risk Appetite Alignment chart showing MISALIGNED, ALIGNED, and Pending counts
+	So that
+	I can immediately identify risks that exceed our appetite threshold and require further action
+	Acceptance Criteria
+	* Chart shows correct counts for MISALIGNED / ALIGNED / Pending
+* MISALIGNED risks appear in Immediate Focus — Critical Risks section
+* Clicking MISALIGNED segment filters the Risk Register to misaligned risks
+	
+
+US-013
+	As a
+	Portfolio User
+	I want to
+	use the Strategic Intelligence Engine on the Risk Dashboard to generate a cross-functional strategic outlook
+	So that
+	I can get an AI-generated view of the programme's overall risk intelligence without building a manual report
+	Acceptance Criteria
+	* 'Generate Strategic Outlook' button triggers the neural analysis within 20 seconds
+* Outlook references actual risk and issue data in scope
+* Output is specific — not generic — and references programme context
+	
+
+Epic 5 — Monitoring & Reporting
+Continuous KRI monitoring with financial exposure tracking, a workstream-based heatmap, push notification alerting, and cross-project risk aggregation.
+
+
+US-014
+	As a
+	Programme Manager
+	I want to
+	view the KRI Tracker with financial exposure (Exp £), reduction %, overdue %, and average risk age per KRI
+	So that
+	I can monitor the financial impact of key risk indicators and identify which KRIs need immediate attention
+	Acceptance Criteria
+	* KRI table shows all required columns: KRI, Owner, Total Risks, High Risks, Overdue, % Overdue, Avg Age, % Projects, Exp (£), Reduction %, Status, Escalation
+* Exp (£) correctly sums Residual ALE of linked risks
+* Reduction % correctly reflects aggregate ALE reduction
+* Dispatch Push Notifications successfully sends to KRI Owners with active alerts
+	
+
+US-015
+	As a
+	Programme Manager
+	I want to
+	view the Trends & Heatmaps page with a workstream-based risk heatmap using the 5-tier rating scale
+	So that
+	I can see which delivery workstreams carry the highest aggregate risk score at a glance
+	Acceptance Criteria
+	* Heatmap is organised by workstream — not by likelihood vs impact
+* Score Legend displays: 1–5 Low | 6–8 Minor | 9–11 Moderate | 12–15 Major | 16–25 Severe
+* Severe Risks (≥16) KPI is accurate
+* Heatmap populates from Risk Register workstream assignments and Gross P×I scores
+	
+
+US-016
+	As a
+	Programme Manager
+	I want to
+	view the Risk Aggregation page with summary tables by project and category, plus the full aggregated risk table with Inherent (PxI), Residual (PxI), and Risk Value columns
+	So that
+	I have a single consolidated view of all risks across my programme with financial data
+	Acceptance Criteria
+	* Summary by Project table shows: Project, Total, Open, High, Escalated, Residual ALE, Open Rate
+* Open Rate = Open / Total × 100 per project
+* Full aggregated risks table shows all required columns including Inherent (PxI) and Residual (PxI)
+* Filters by project, status, and category all function correctly
+	
+
+Epic 6 — Automated Intelligence
+Three AI tools with distinct modes: batch risk profiling, dual-mode mitigation strategy generation, and NLP-driven compliance identification.
+
+
+US-017
+	As a
+	Programme Manager
+	I want to
+	run the AI Risk Inquiry batch analysis and receive a contextual risk profile evaluated against standard social housing risk taxonomies
+	So that
+	I can generate a risk profile for my programme quickly without manually completing the full Risk Setup questionnaire
+	Acceptance Criteria
+	* 'Run AI Risk Inquiry' triggers analysis within 60 seconds
+* Results display risk count: 'AI analysis complete — N risks identified'
+* 'Run again' option is available
+* Results are presented for user review before import to Risk Register
+	
+
+US-018
+	As a
+	Project Manager
+	I want to
+	use the AI Idea Generator in Mitigation & Control Strategy to describe a specific concern and receive targeted mitigation controls
+	So that
+	I can quickly generate mitigation tactics for a specific situation without running the full auto-analysis
+	Acceptance Criteria
+	* AI Idea Generator text input accepts a free-text description
+* 'Generate Ideas' produces controls within 15 seconds
+* Generated controls are specific to the described concern
+* Controls can be accepted and linked to a risk record
+	
+
+US-019
+	As a
+	Programme Manager
+	I want to
+	write a plain-English description of my programme in the Compliance Posture Outlook and receive applicable UK regulations and compliance ideas
+	So that
+	I can quickly identify relevant compliance obligations for a new project type without running the full Compliance Setup
+	Acceptance Criteria
+	* NLP input accepts plain-English descriptions
+* 'Generate Compliance Outlook' produces results within 20 seconds
+* Output lists specific UK social housing regulations relevant to the description
+* Output is clearly labelled as informational — not a replacement for full Compliance Setup
+	
+
+Epic 7 — Reports
+On-demand report generation at programme and executive level, with accurate financial data, compliance posture, and AI attribution.
+
+
+US-020
+	As a
+	Portfolio User
+	I want to
+	view the Executive One-Pager with Total Portfolio Exposure (£), Priority Directives, Volatility Indicators, and Compliance Audit Readiness %
+	So that
+	I can present an accurate, data-driven executive summary to the board without manual compilation
+	Acceptance Criteria
+	* Total Portfolio Exposure (£) = sum of all Gross ALE in scope
+* Priority Directives are AI-generated and specific
+* Volatility Indicators: Project Review Velocity Lag, Escalation Response Times, Health Velocity % all display
+* Compliance Audit Readiness % = compliant items with evidence / total items × 100
+* Export PDF generates correctly formatted document
+	
+
+US-021
+	As a
+	Programme Manager
+	I want to
+	generate the Programme Strategic Dashboard with RAG filtering, Live Projects count, Active PMs count, and Avg Compliance %
+	So that
+	I can produce a programme-wide performance view for stakeholder meetings without manual data gathering
+	Acceptance Criteria
+	* Avg Compliance % is the arithmetic mean of all project compliance % values
+* RAG filter buttons correctly filter the project list
+* CSV export contains all projects in current filter state
+* Sync refreshes data within 10 seconds
+	
+
+Epic 8 — Project Initiation & Planning
+Enable Project Managers to create, configure, and baseline projects with a RIBA-aligned project plan and milestone schedule that feeds the platform Calendar.
+
+
+US-022
+	As a
+	Project Manager
+	I want to
+	complete the Project Initiation form and create a project linked to a programme with all required metadata including HRB flag, Scheme Type, and RIBA Stage
+	So that
+	I can establish a fully configured project record that feeds the publication workflow and compliance/risk setup
+	Acceptance Criteria
+	* Project requires Parent Programme — cannot be created without it
+* Reference Code is auto-generated and unique
+* HRB flag triggers Building Safety Act compliance requirements in subsequent Compliance Setup
+* Project appears in All Projects and context switcher within 60 seconds of creation
+	
+
+US-023
+	As a
+	Project Manager
+	I want to
+	build a RIBA-aligned Project Plan with milestone dates across all 8 stages (S0–S7) and have milestones automatically appear in the Calendar
+	So that
+	I can plan and baseline my delivery schedule against the RIBA Plan of Works and share it with the team via a unified Calendar
+	Acceptance Criteria
+	* All 8 RIBA stages (S0–S7) display in correct sequence and are editable
+* Custom milestones can be added within any RIBA stage with Planned Date, Owner, and Priority
+* Milestone created in any stage appears in Calendar on the planned date within 5 minutes
+* Stage status auto-updates to Overdue when planned end date passes without Actual End Date
+* Export Plan generates a correctly formatted PDF schedule
+	
+
+Epic 9 — Overview: Calendar & My Tasks
+Give all users a unified view of their scheduled events and personal task obligations across all modules.
+
+
+US-024
+	As a
+	Project Manager
+	I want to
+	view the Calendar with all project plan milestones, compliance due dates, and risk review dates in one place, filterable by event type
+	So that
+	I never miss a deadline because I have a single source of truth for all scheduled events
+	Acceptance Criteria
+	* Calendar displays events from Project Plan milestones, Compliance Tracker due dates, and Risk Register review dates
+* Filter by Milestones returns only milestone events
+* Overdue events are highlighted in red on all view modes
+* Clicking a compliance event navigates to the correct Compliance Tracker item
+	
+
+US-025
+	As a
+	Programme Manager
+	I want to
+	view My Tasks and see all compliance items, risks, and issues assigned to me across all projects in a single prioritised list
+	So that
+	I can manage all my outstanding responsibilities without navigating across multiple modules and projects
+	Acceptance Criteria
+	* Tasks aggregated from Compliance Tracker, Risk Register, and Issues Log where Owner = current user
+* KPI: Tasks Due Today, Overdue Tasks, Completed This Week all display correctly
+* Filter by Overdue returns only overdue tasks
+* Task click navigates to the correct source record in the originating module
+	
+
+Epic 10 — Regulations Library & CPD Training
+Provide users with direct access to the UK regulatory reference database and structured CPD training modules.
+
+
+US-026
+	As a
+	Project Manager
+	I want to
+	browse and filter the Regulations Library to understand which UK regulations apply to my project type and see how many active compliance requirements I have from each regulation
+	So that
+	I can understand my regulatory landscape and trace compliance items back to their source regulations
+	Acceptance Criteria
+	* Library displays all 18+ regulations with Domain, Key Trigger, and Applicability flags
+* Filter by Domain returns only regulations in that domain
+* Active Requirements badge shows correct count of compliance tracker items linked to each regulation for the current context
+* Expanded detail panel shows full statutory reference, enforcement body, thresholds, and evidence requirements
+	
+
+US-027
+	As a
+	Project Manager
+	I want to
+	access CPD Training modules linked to regulations and have my completions tracked in a personal CPD log that I can export
+	So that
+	I can develop my regulatory knowledge and maintain a professional development record within the platform
+	Acceptance Criteria
+	* Module library shows Video, Article, and Quiz modules with correct completion status per user
+* Completing a Video module marks it Complete
+* Passing a Quiz (70%+) marks it Complete and records the pass date
+* Export CPD Log generates a correctly formatted document with all completed modules and dates
+	
+
+Epic 11 — Developer / API Integration
+Enable integration engineers to generate and manage API keys and access reference documentation to integrate CedarGuard with external systems.
+
+
+US-028
+	As a
+	Integration Engineer
+	I want to
+	generate an API key with a defined scope (Read Only or Read & Write), use it to authenticate API calls, and revoke it when no longer needed
+	So that
+	I can securely integrate external systems with CedarGuard and maintain full control over API access
+	Acceptance Criteria
+	* Generated key is displayed once and can be copied to clipboard
+* Read Only key returns 403 on POST/PATCH/DELETE endpoints
+* Key is immediately valid for authenticated API calls after generation
+* Revoking a key invalidates it within 60 seconds — subsequent requests return 401
+	
+
+________________
+
+
+APPENDIX A — UK REGULATIONS LIBRARY: KEY REGULATIONS
+	
+
+The following table provides an overview of key UK regulations in the CedarGuard Regulations Library. This list is not exhaustive — the library is maintained and updated by the platform administration team. It is version-controlled and updates trigger re-mapping in the Compliance AI pipeline.
+
+
+Regulation
+	Domain
+	Key Compliance Trigger
+	Building Safety Act 2022
+	Building Safety
+	Higher-Risk Buildings (HRB) — >18m or 7+ storeys. Building Safety Regulator Gateway approvals.
+	Fire Safety Act 2021
+	Fire Safety
+	All multi-occupied residential premises. External wall systems assessment.
+	Fire Safety (England) Regulations 2022
+	Fire Safety
+	Responsible Person duties — monthly checks, floor plans, resident engagement.
+	Housing and Planning Act 2016
+	Planning / Housing
+	Affordable housing delivery, starter homes, planning obligations.
+	Homes (Fitness for Human Habitation) Act 2018
+	Housing Standards
+	All rented social housing — habitability standards throughout tenancy.
+	Social Housing (Regulation) Act 2023
+	RSH Regulatory
+	Enhanced consumer standards, Competence & Conduct Standard, new Ombudsman powers.
+	Regulator of Social Housing — Regulatory Standards
+	RSH Regulatory
+	All registered providers — governance, financial viability, consumer standards compliance.
+	Decent Homes Standard
+	Housing Standards
+	All social housing stock — minimum condition requirements (HHSRS, modernisation, facilities).
+	Construction (Design & Management) Regulations 2015 (CDM 2015)
+	Health & Safety
+	All construction projects — Principal Designer and Principal Contractor duties.
+	Health and Safety at Work Act 1974
+	Health & Safety
+	All construction and maintenance activity — duty of care and safe systems of work.
+	Environmental Impact Assessment Regulations 2017
+	Environment
+	Developments requiring EIA screening — certain size and type thresholds.
+	Equality Act 2010
+	Equality & Access
+	Accessible design in new build and refurbishment. Reasonable adjustments duty.
+	Procurement Act 2023 (replaces PCR 2015)
+	Procurement
+	Public sector procurement — contracts above financial thresholds. PCR 2015 may still apply to transitional contracts.
+	Data Protection Act 2018 / UK GDPR
+	Data Protection
+	Processing of tenant, applicant, and resident personal data. Privacy by design.
+	Energy Efficiency (Private Rented Property) (England and Wales) Regulations
+	Decarbonisation
+	EPC rating requirements. SHDF and other retrofit funding compliance milestones.
+	Leasehold Reform (Ground Rent) Act 2022
+	Leasehold
+	New lease restrictions on ground rent. Leasehold compliance obligations.
+	Homes England Grant Funding Conditions
+	Funding
+	Homes England grant milestone compliance — output reporting, audit readiness.
+	GLA Affordable Homes Programme Conditions
+	Funding
+	GLA grant milestones, start on site, practical completion, affordability requirements.
+	
+
+APPENDIX B — RISK CATEGORIES & WORKSTREAMS (VERIFIED)
+	
+
+The following lists are verified from the live CedarGuard system. They must be used as the definitive reference for all Risk Register field definitions, filter implementations, and API schemas.
+
+
+B.1 Risk Categories (12)
+Category
+	Description / Relevance
+	Finance / Financial
+	Budget overruns, funding gaps, cost certainty issues, ALE-driven financial risks
+	Building Safety
+	Building Safety Act 2022 compliance, Higher-Risk Building gateway risks, cladding and structure
+	Health & Safety
+	CDM 2015 compliance, construction site safety, HAVS, manual handling, worker welfare
+	Procurement
+	Supply chain failure, contractor insolvency, framework compliance, PCR 2015 / Procurement Act 2023
+	Planning
+	Planning permission refusal, conditions, Section 106 obligations, planning appeals
+	Environmental
+	Contaminated land, flood risk, EIA requirements, habitat and ecology risks
+	Legal / Regulatory
+	RSH regulatory risk, Equality Act, GDPR, Leasehold Reform, statutory compliance
+	Reputational
+	Resident dissatisfaction, media risk, political sensitivity, community opposition
+	Technical
+	Design complexity, structural risk, technical specification gaps, BIM/digital thread issues
+	Operational
+	Delivery team capacity, programme dependency, resource risk, operational continuity
+	Strategic
+	Strategic alignment, policy change, partnership risk, governance structure weaknesses
+	Social Housing Regulation
+	RSH Consumer Standards, Decent Homes, Social Housing (Regulation) Act 2023, Ombudsman
+	
+
+B.2 Workstreams (12)
+Workstream
+	Primary Risk Types
+	Resourcing
+	Staff capacity, skill gaps, key person dependency, recruitment risk
+	Finance
+	Budget, cash flow, ALE, funding conditions, cost certainty
+	Programme Delivery
+	Schedule, dependency, milestone, programme dependency
+	Building Safety
+	HRB compliance, BSR gateway, fire and structural safety
+	Fire Safety
+	Fire Safety Act compliance, responsible person duties, external walls
+	Planning
+	Planning consent, S106, heritage, environmental constraints
+	Procurement
+	Supply chain, contractor, framework, market conditions
+	Environmental
+	Land contamination, ecology, flood, EIA
+	Stakeholder
+	Resident, community, political, media
+	Technical
+	Design, engineering, BIM, specification
+	Quality
+	Quality assurance, defects, inspection, standards compliance
+	Legal
+	Legal title, leasehold, regulatory, contractual
+	
+
+Confidential — Internal Use Only  |  v3.0 — March 2026Page  of

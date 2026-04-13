@@ -542,7 +542,7 @@ export function RiskRegister() {
               border: "border-l-amber-500",
             },
             {
-              label: "Residual ALE",
+              label: "Financial Exposure (ALE)",
               value: (() => {
                 const total = filtered.reduce(
                   (s, r) => s + (r.residualALE || 0),
@@ -554,8 +554,8 @@ export function RiskRegister() {
                     ? `£${Math.round(total / 1000)}k`
                     : fGBP(Math.round(total));
               })(),
-              color: "text-slate-700",
-              border: "border-l-slate-400",
+              color: "text-slate-900",
+              border: "border-l-slate-900",
             },
           ].map((s) => (
             <div
@@ -745,7 +745,7 @@ export function RiskRegister() {
                   Prob%
                 </th>
                 <th className="px-3 py-3 text-right border-r border-slate-200 bg-indigo-50/20 whitespace-nowrap">
-                  ALE
+                  ALE <InfoTooltip content="ALE = Financial Impact × Probability%" />
                 </th>
                 {/* Tail */}
                 <th className="px-3 py-3 text-right whitespace-nowrap">
@@ -780,7 +780,7 @@ export function RiskRegister() {
                     {r.escalated && (
                       <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-600 z-30" />
                     )}
-                    <td className="px-3 py-3 text-center sticky left-0 bg-white z-20 border-r border-slate-100 group-hover:bg-slate-50">
+                    <td className="px-3 py-2 text-center sticky left-0 bg-white z-20 border-r border-slate-100 group-hover:bg-slate-50">
                       <input
                         type="checkbox"
                         className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5"
@@ -789,7 +789,7 @@ export function RiskRegister() {
                       />
                     </td>
                     <td
-                      className="px-3 py-3 font-bold text-indigo-600 cursor-pointer hover:underline text-[11px] whitespace-nowrap"
+                      className="px-3 py-2 font-bold text-indigo-600 cursor-pointer hover:underline text-[11px] whitespace-nowrap"
                       onClick={() => {
                         if (canModify) {
                           setEditingRisk(r);
@@ -800,25 +800,25 @@ export function RiskRegister() {
                       {r.id}
                     </td>
                     <td
-                      className="px-3 py-3 text-slate-600 max-w-[100px] truncate whitespace-nowrap text-center"
+                      className="px-3 py-2 text-slate-600 max-w-[100px] truncate whitespace-nowrap text-center text-[10px] font-semibold"
                       title={r.workstream}
                     >
                       {stripMarkdown(r.workstream || "—")}
                     </td>
-                    <td className="px-3 py-3 text-slate-500 max-w-[200px] break-words">
+                    <td className="px-3 py-2 text-slate-500 max-w-[150px] break-words text-[10px]">
                       {r.kri || "—"}
                     </td>
-                    <td className="px-3 py-3 text-slate-400 whitespace-nowrap">
+                    <td className="px-3 py-2 text-slate-400 whitespace-nowrap text-[10px]">
                       {fDate(r.dateAdded)}
                     </td>
                     {!activeProjectId && (
-                      <td className="px-3 py-3 font-bold text-[9px] text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                      <td className="px-3 py-2 font-bold text-[9px] text-slate-500 uppercase tracking-wider whitespace-nowrap">
                         {(Array.isArray(projects) ? projects : []).find(
                           (p) => p.id === r.projectId,
                         )?.name || "Programme-Level"}
                       </td>
                     )}
-                    <td className="px-3 py-3 font-medium text-slate-800 min-w-[350px] whitespace-normal">
+                    <td className="px-3 py-2 font-medium text-slate-800 min-w-[300px] whitespace-normal">
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center flex-wrap gap-2">
                           <span
@@ -852,30 +852,30 @@ export function RiskRegister() {
                     </td>
 
                     {/* Gross */}
-                    <td className="px-2 py-3 text-center border-l border-slate-100 bg-rose-50/5">
+                    <td className="px-2 py-2 text-center border-l border-slate-100 bg-rose-50/5">
                       <div
                         className={clsx(
-                          "inline-flex items-center justify-center w-6 h-6 rounded text-[10px] font-black border",
+                          "inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-black border",
                           rsScore(r.grossRating || 0),
                         )}
                       >
                         {r.grossL}
                       </div>
                     </td>
-                    <td className="px-2 py-3 text-center bg-rose-50/5">
+                    <td className="px-2 py-2 text-center bg-rose-50/5">
                       <div
                         className={clsx(
-                          "inline-flex items-center justify-center w-6 h-6 rounded text-[10px] font-black border",
+                          "inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-black border",
                           rsScore(r.grossRating || 0),
                         )}
                       >
                         {r.grossI}
                       </div>
                     </td>
-                    <td className="px-2 py-3 text-center border-r border-slate-100 bg-rose-50/5">
+                    <td className="px-2 py-2 text-center border-r border-slate-100 bg-rose-50/5">
                       <div
                         className={clsx(
-                          "inline-flex items-center justify-center w-7 h-7 rounded text-[12px] font-black border flex-col leading-none shadow-sm",
+                          "inline-flex items-center justify-center w-6 h-6 rounded text-[11px] font-black border flex-col leading-none shadow-sm",
                           rsScore(r.grossRating || 0),
                         )}
                       >
@@ -884,13 +884,13 @@ export function RiskRegister() {
                     </td>
 
                     <td
-                      className="px-3 py-3 text-slate-600 max-w-[100px] truncate italic whitespace-nowrap"
+                      className="px-3 py-2 text-slate-600 max-w-[100px] truncate italic whitespace-nowrap text-[10px]"
                       title={r.response || ""}
                     >
                       {stripMarkdown(r.response || "—")}
                     </td>
                     <td
-                      className="px-3 py-3 text-slate-600 max-w-[150px] truncate whitespace-nowrap"
+                      className="px-3 py-2 text-slate-600 max-w-[150px] truncate whitespace-nowrap text-[10px]"
                       title={r.controls || ""}
                     >
                       <div className="flex items-center gap-2">
@@ -905,30 +905,30 @@ export function RiskRegister() {
                     </td>
 
                     {/* Residual */}
-                    <td className="px-2 py-3 text-center border-l border-slate-100 bg-emerald-50/5">
+                    <td className="px-2 py-2 text-center border-l border-slate-100 bg-emerald-50/5">
                       <div
                         className={clsx(
-                          "inline-flex items-center justify-center w-6 h-6 rounded text-[10px] font-black border",
+                          "inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-black border",
                           rsScore(r.residualRating || 0),
                         )}
                       >
                         {r.residualL}
                       </div>
                     </td>
-                    <td className="px-2 py-3 text-center bg-emerald-50/5">
+                    <td className="px-2 py-2 text-center bg-emerald-50/5">
                       <div
                         className={clsx(
-                          "inline-flex items-center justify-center w-6 h-6 rounded text-[10px] font-black border",
+                          "inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-black border",
                           rsScore(r.residualRating || 0),
                         )}
                       >
                         {r.residualI}
                       </div>
                     </td>
-                    <td className="px-2 py-3 text-center border-r border-slate-100 bg-emerald-50/5">
+                    <td className="px-2 py-2 text-center border-r border-slate-100 bg-emerald-50/5">
                       <div
                         className={clsx(
-                          "inline-flex items-center justify-center w-7 h-7 rounded text-[12px] font-black border flex-col leading-none shadow-sm",
+                          "inline-flex items-center justify-center w-6 h-6 rounded text-[11px] font-black border flex-col leading-none shadow-sm",
                           rsScore(r.residualRating || 0),
                         )}
                       >
@@ -936,7 +936,7 @@ export function RiskRegister() {
                       </div>
                     </td>
 
-                    <td className="px-3 py-3 whitespace-nowrap">
+                    <td className="px-3 py-2 whitespace-nowrap">
                       <span
                         className={clsx(
                           "px-1.5 py-0.5 rounded text-[10px] font-bold border",
@@ -946,39 +946,47 @@ export function RiskRegister() {
                         {c.l}
                       </span>
                     </td>
-                    <td className="px-3 py-3 text-slate-600 whitespace-nowrap font-medium text-[10px] uppercase tracking-tighter">
+                    <td className="px-3 py-2 text-slate-600 whitespace-nowrap font-medium text-[10px] uppercase tracking-tighter">
                       {stripMarkdown(r.appetite || "—")}
                     </td>
-                    <td className="px-3 py-3 text-slate-500 min-w-[150px] whitespace-normal leading-relaxed text-[10px]">
-                      {stripMarkdown(r.furtherAction || "") || "—"}
+                    <td className="px-3 py-2 text-slate-500 min-w-[150px] whitespace-normal leading-relaxed text-[10px]">
+                      {(() => {
+                        const action = stripMarkdown(r.furtherAction || "");
+                        if (action) return action;
+                        // Workstream-specific placeholders
+                        if (r.workstream?.includes("Financial")) return "Review financial controls & overspend measures";
+                        if (r.workstream?.includes("Compliance")) return "Audit regulatory adherence protocol";
+                        if (r.workstream?.includes("Operational")) return "Update operational risk mitigation plan";
+                        return "Define immediate mitigation steps";
+                      })()}
                     </td>
-                    <td className="px-3 py-3 whitespace-nowrap">
+                    <td className="px-3 py-2 whitespace-nowrap">
                       <StatusBadge status={r.status} />
                     </td>
 
                     {/* Gross ALE */}
-                    <td className="px-3 py-3 text-right border-l border-slate-100 text-slate-600 whitespace-nowrap font-medium">
+                    <td className="px-3 py-2 text-right border-l border-slate-100 text-slate-600 whitespace-nowrap font-medium text-[10px]">
                       {fGBP(r.grossImpact)}
                     </td>
-                    <td className="px-3 py-3 text-center text-slate-600 whitespace-nowrap font-medium">
+                    <td className="px-3 py-2 text-center text-slate-600 whitespace-nowrap font-medium text-[10px]">
                       {probDisplay(r.grossProb)}
                     </td>
-                    <td className="px-3 py-3 text-right border-r border-slate-100 font-bold text-slate-900 whitespace-nowrap">
+                    <td className="px-3 py-2 text-right border-r border-slate-100 font-bold text-slate-900 whitespace-nowrap text-[11px]">
                       {fGBP(Math.round(gALE))}
                     </td>
 
                     {/* Residual ALE */}
-                    <td className="px-3 py-3 text-right border-l border-slate-100 text-slate-600 whitespace-nowrap font-medium">
+                    <td className="px-3 py-2 text-right border-l border-slate-100 text-slate-600 whitespace-nowrap font-medium text-[10px]">
                       {fGBP(r.residualImpact)}
                     </td>
-                    <td className="px-3 py-3 text-center text-slate-600 whitespace-nowrap font-medium">
+                    <td className="px-3 py-2 text-center text-slate-600 whitespace-nowrap font-medium text-[10px]">
                       {probDisplay(r.residualProb)}
                     </td>
-                    <td className="px-3 py-3 text-right border-r border-slate-100 font-bold text-indigo-600 whitespace-nowrap">
+                    <td className="px-3 py-2 text-right border-r border-slate-100 font-bold text-indigo-600 whitespace-nowrap text-[11px]">
                       {fGBP(Math.round(rALE))}
                     </td>
 
-                    <td className="px-3 py-3 text-right font-bold text-emerald-600 whitespace-nowrap">
+                    <td className="px-3 py-2 text-right font-bold text-emerald-600 whitespace-nowrap text-[11px]">
                       {reduction > 0 ? fGBP(Math.round(reduction)) : "—"}
                     </td>
                     <td className="px-3 py-3 text-center whitespace-nowrap">

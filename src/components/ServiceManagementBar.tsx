@@ -12,6 +12,7 @@ import {
   Briefcase,
   FileSpreadsheet,
   Loader2,
+  ShieldCheck,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { differenceInDays } from 'date-fns';
@@ -288,16 +289,22 @@ export const ServiceManagementBar: React.FC<{ className?: string }> = ({ classNa
     }
   };
 
-  // Tasks #1 (removed New Programme, New Project, Add Requirement)
-  // Task #2 (Add Risk → risk register)
-  // Task #4 (Re-run AI Analysis → compliance setup)
-  // Task #5 (Download Templates commented out)
   const actions = [
     {
-      label: 'Add Risk',
-      icon: AlertCircle,
-      onClick: () => navigate(isProject ? '/risk/register' : '/risk/programme-register'),
-      description: 'Go to the risk register to log a new risk.',
+      label: isTrackerPage ? 'Add Requirement' : (isCompliancePage ? 'Main Compliance Tracker' : 'Add Risk'),
+      icon: (isTrackerPage || isCompliancePage) ? ShieldCheck : AlertCircle,
+      onClick: () => {
+        if (isTrackerPage || isCompliancePage) {
+          navigate('/compliance/tracker');
+        } else {
+          navigate(isProject ? '/risk/register' : '/risk/programme-register');
+        }
+      },
+      description: isTrackerPage
+        ? 'Add a new compliance requirement to this context.'
+        : isCompliancePage
+        ? 'Return to the primary compliance management view.'
+        : 'Go to the risk register to log a new risk.',
       category: 'Context Actions',
     },
     {
@@ -308,10 +315,20 @@ export const ServiceManagementBar: React.FC<{ className?: string }> = ({ classNa
       category: 'Context Actions',
     },
     {
-      label: 'Re-run AI Analysis',
-      icon: RefreshCw,
-      onClick: handleRerunCompliance,
-      description: 'Restart compliance setup and re-run AI analysis.',
+      label: (isTrackerPage || isCompliancePage) 
+        ? (isTrackerPage ? 'View Risk Register' : 'Compliance Settings') 
+        : 'Re-run AI Analysis',
+      icon: (isTrackerPage || isCompliancePage) 
+        ? (isTrackerPage ? AlertCircle : RefreshCw) 
+        : RefreshCw,
+      onClick: (isTrackerPage || isCompliancePage) 
+        ? (isTrackerPage 
+            ? () => navigate(isProject ? '/risk/register' : '/risk/programme-register')
+            : handleRerunCompliance)
+        : handleRerunCompliance,
+      description: (isTrackerPage || isCompliancePage)
+        ? (isTrackerPage ? 'Switch to the risk management module.' : 'Update compliance parameters.')
+        : 'Restart compliance setup and re-run AI analysis.',
       category: 'Context Actions',
     },
     {
@@ -364,6 +381,13 @@ export const ServiceManagementBar: React.FC<{ className?: string }> = ({ classNa
                     const id = e.target.value;
                     if (isProject) setActiveProject(id);
                     else setActiveProgramme(id);
+                    
+                    if (location.search.includes('projectId') || location.search.includes('type')) {
+                      const params = new URLSearchParams(location.search);
+                      params.delete('projectId');
+                      params.delete('type');
+                      navigate({ pathname: location.pathname, search: params.toString() }, { replace: true });
+                    }
                   }}
                   className="appearance-none bg-transparent border-none text-sm font-black text-slate-900 pr-6 py-0 focus:ring-0 cursor-pointer hover:text-indigo-600 transition-colors truncate max-w-[200px] md:max-w-xs"
                 >

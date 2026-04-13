@@ -38,6 +38,16 @@ export function ProjectInitiation() {
   const [draftToDelete, setDraftToDelete] = useState<string | null>(null);
   const [deletingDraft, setDeletingDraft] = useState(false);
 
+  const defaultMilestones: ProgrammeMilestone[] = RIBA_STAGES.map((stage, idx) => ({
+    id: `ms_${Date.now()}_${idx}`,
+    name: stage.label,
+    updatedBy: "System",
+    status: "Pending",
+    category: "RIBA Stage",
+    historicalUpdates: [],
+    stage: stage.id,
+  }));
+
   const resetForm = useCallback(() => {
     setIsDirty(false);
     setFormData({
@@ -60,7 +70,7 @@ export function ProjectInitiation() {
       numberOfStoreys: "",
       typeOfUnits: "",
       bedroomsPerProperty: "",
-      milestones: [] as ProgrammeMilestone[],
+      milestones: [...defaultMilestones],
       deliveryTeam: [],
       deliveryTeamDone: false,
     });
@@ -86,7 +96,7 @@ export function ProjectInitiation() {
     numberOfStoreys: "",
     typeOfUnits: "",
     bedroomsPerProperty: "",
-    milestones: [] as ProgrammeMilestone[],
+    milestones: [...defaultMilestones],
     deliveryTeam: [],
     deliveryTeamDone: false,
   });
