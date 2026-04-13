@@ -39,7 +39,7 @@ export function parseAISuggestion(text: string) {
     if (!text) return [];
     
     // Split by the markers and keep them
-    const parts = text.split(/\b(WHAT:|WHO:|WHEN:|HOW:|WHERE:|WHY:)\b/g).filter(Boolean);
+    const parts = text.split(/\b(WHAT:|WHO:|WHEN:|HOW:|WHERE:|WHY:)/g).filter(Boolean);
     const result: { label?: string; content: string }[] = [];
     
     for (let i = 0; i < parts.length; i++) {

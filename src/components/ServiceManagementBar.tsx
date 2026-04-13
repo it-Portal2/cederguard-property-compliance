@@ -81,10 +81,12 @@ export const ServiceManagementBar: React.FC<{ className?: string }> = ({ classNa
 
 
   // Detect which page we're on to make export context-aware
-  const isIssuesPage     = pathname === '/risk/issues' || pathname === '/risk/programme-issues';
-  const isRiskPage       = pathname.startsWith('/risk') && !isIssuesPage;
-  const isTrackerPage    = pathname === '/compliance/tracker';
-  const isCompliancePage = pathname.startsWith('/compliance') && !isTrackerPage;
+  const isIssuesPage        = pathname === '/risk/issues' || pathname === '/risk/programme-issues';
+  const isProjectIssuesPage = pathname === '/risk/issues';
+  const isRiskRegisterPage  = pathname === '/risk/register' || pathname === '/risk/programme-register';
+  const isRiskPage          = pathname.startsWith('/risk') && !isIssuesPage;
+  const isTrackerPage       = pathname === '/compliance/tracker';
+  const isCompliancePage    = pathname.startsWith('/compliance') && !isTrackerPage;
 
   const exportLabel = isExporting
     ? 'Exporting...'
@@ -300,7 +302,13 @@ export const ServiceManagementBar: React.FC<{ className?: string }> = ({ classNa
 
   const actions = [
     {
-      label: isTrackerPage ? 'Add Requirement' : (isCompliancePage ? 'Main Compliance Tracker' : 'Add Risk'),
+      label: isTrackerPage
+        ? 'Add Requirement'
+        : isCompliancePage
+        ? 'Main Compliance Tracker'
+        : isIssuesPage
+        ? 'Add Issue'
+        : 'Add Risk',
       icon: (isTrackerPage || isCompliancePage) ? ShieldCheck : AlertCircle,
       onClick: () => {
         if (isTrackerPage) {
@@ -309,7 +317,21 @@ export const ServiceManagementBar: React.FC<{ className?: string }> = ({ classNa
           navigate(`${pathname}?${params.toString()}`);
         } else if (isCompliancePage) {
           navigate('/compliance/tracker');
+        } else if (isProjectIssuesPage) {
+          // Trigger the Add Issue modal on the issues page via URL param
+          const params = new URLSearchParams(location.search);
+          params.set('action', 'add-issue');
+          navigate(`${pathname}?${params.toString()}`);
+        } else if (isIssuesPage) {
+          // Programme issues page — navigate to project issues where dialog lives
+          navigate('/risk/issues');
+        } else if (isRiskRegisterPage) {
+          // Already on register — trigger Add Risk modal via URL param
+          const params = new URLSearchParams(location.search);
+          params.set('action', 'add-risk');
+          navigate(`${pathname}?${params.toString()}`);
         } else {
+          // Other risk pages — navigate to the correct register
           const contextParam = isProject ? `?projectId=${activeProject?.id}` : activeProgramme ? `?programmeId=${activeProgramme?.id}` : "";
           navigate((isProject ? '/risk/register' : '/risk/programme-register') + contextParam);
         }
@@ -318,6 +340,10 @@ export const ServiceManagementBar: React.FC<{ className?: string }> = ({ classNa
         ? 'Add a new compliance requirement to this context.'
         : isCompliancePage
         ? 'Return to the primary compliance management view.'
+        : isIssuesPage
+        ? 'Log a new issue for this context.'
+        : isRiskRegisterPage
+        ? 'Open the new risk form for this context.'
         : 'Go to the risk register to log a new risk.',
       category: 'Context Actions',
     },

@@ -65,6 +65,9 @@ export function AIRiskID() {
       : programmes.find((p) => p.id === activeProgrammeId)) || ({} as any);
 
   const [showAnalysisExists, setShowAnalysisExists] = useState(false);
+  const [showRestartConfirm, setShowRestartConfirm] = useState(false);
+  const [isRestarting, setIsRestarting] = useState(false);
+  const [showEmptyConfirm, setShowEmptyConfirm] = useState(false);
 
   // Re-evaluate whenever the active project/programme changes
   useEffect(() => {
@@ -106,6 +109,7 @@ export function AIRiskID() {
         : programmes.find((p) => p.id === activeProgrammeId)) || ({} as any);
 
     const pi = {
+      ...projectInfo,
       name: projectInfo.name || activeDetails?.name,
       type: projectInfo.type || activeDetails?.type,
       loc:
@@ -154,7 +158,7 @@ export function AIRiskID() {
 
       if (!activeProjectId && activeProgrammeId) {
         // Strategic Programme Risk Discovery
-        strategicResult = await analyzeStrategicRisks(projectInfo);
+        strategicResult = await analyzeStrategicRisks(pi);
         const strategicProfile = Array.isArray(strategicResult?.riskProfile)
           ? strategicResult.riskProfile
           : [];
@@ -307,7 +311,7 @@ export function AIRiskID() {
       : programmes.find((p) => p.id === activeProgrammeId)?.name) ||
     "Portfolio";
 
-  const finalize = async () => {
+  const finalize = async (skipEmptyCheck = false) => {
     try {
       setIsFinalizing(true);
       let finalAccepted = acceptedRisks;
@@ -320,17 +324,13 @@ export function AIRiskID() {
       ) {
         finalAccepted = safeSuggestedRisks.filter((r) => !r.exists);
       } else if (
+        !skipEmptyCheck &&
         finalAccepted.length === 0 &&
         safeSuggestedRisks.filter((r) => !r.exists).length > 0
       ) {
-        if (
-          !window.confirm(
-            "You haven't accepted any risks. Proceed with an empty risk register?",
-          )
-        ) {
-          setIsFinalizing(false);
-          return;
-        }
+        setIsFinalizing(false);
+        setShowEmptyConfirm(true);
+        return;
       }
 
       // Add risks to store and wait for persistence
@@ -389,6 +389,50 @@ export function AIRiskID() {
     }
   };
 
+  const handleRestartConfirmed = async () => {
+    setShowRestartConfirm(false);
+    const contextId = activeProjectId || activeProgrammeId;
+    if (!contextId) return;
+    setIsRestarting(true);
+    setShowAnalysisExists(false);
+    try {
+      const clearOps: Promise<any>[] = [];
+
+      // 1. Only reset the AI discovery flag — keep riskSetupDone (questionnaire answers stay)
+      if (activeProjectId) {
+        clearOps.push(updateProject(activeProjectId, { aiRiskDiscoveryDone: false }));
+      } else if (activeProgrammeId) {
+        clearOps.push(updateProgramme(activeProgrammeId, { aiRiskDiscoveryDone: false }));
+      }
+
+      // 2. Clear only the risk register entries for this context from DB
+      clearOps.push(api.saveData('risks', [], contextId));
+
+      await Promise.all(clearOps);
+
+      // 3. Wipe risks for this context + all suggestion state from store
+      const currentRisks = useStore.getState().risks;
+      useStore.setState({
+        suggestedRisks: [],
+        risks: currentRisks.filter((r: any) =>
+          activeProjectId
+            ? r.projectId !== activeProjectId
+            : r.programmeId !== activeProgrammeId
+        ),
+      });
+
+      setAcceptedIds([]);
+      setRejectedIds([]);
+      setExpandedIds([]);
+      setError(null);
+    } catch (err: any) {
+      setError(err.message || "Failed to reset risk analysis.");
+    } finally {
+      setIsRestarting(false);
+      runAnalysis();
+    }
+  };
+
   const getRatingColor = (score: number) => {
     if (score >= 20) return "text-rose-600 bg-rose-50 border-rose-200";
     if (score >= 12) return "text-orange-600 bg-orange-50 border-orange-200";
@@ -424,6 +468,83 @@ export function AIRiskID() {
 
   return (
     <div className="max-w-[98%] lg:max-w-6xl mx-auto p-2 sm:p-4 lg:p-6 space-y-4 sm:space-y-6 pb-40">
+      {/* Restart Confirmation Dialog */}
+      {showRestartConfirm && (
+        <div className="fixed inset-0 z-120 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 border border-slate-100 animate-in zoom-in-95 duration-200">
+            <div className="flex items-start gap-4 mb-6">
+              <div className="w-12 h-12 bg-rose-100 rounded-2xl flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-6 h-6 text-rose-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-slate-900 mb-1">Restart Risk Analysis?</h3>
+                <p className="text-sm text-slate-500 leading-relaxed">
+                  This will clear the existing AI risk analysis results and re-run the discovery. Accepted risks already saved to your register will not be affected.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowRestartConfirm(false)}
+                className="flex-1 px-4 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-200 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRestartConfirmed}
+                className="flex-1 px-4 py-3 bg-rose-600 text-white rounded-xl font-bold text-sm hover:bg-rose-700 transition-all"
+              >
+                Yes, Restart
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Restarting Loading Overlay */}
+      {isRestarting && (
+        <div className="fixed inset-0 z-110 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm">
+          <Loader2 className="w-10 h-10 text-indigo-600 animate-spin mb-4" />
+          <p className="text-slate-700 font-bold text-sm uppercase tracking-widest">Clearing Analysis Data...</p>
+        </div>
+      )}
+
+      {/* Empty Accept Confirmation Dialog */}
+      {showEmptyConfirm && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 border border-slate-100 animate-in zoom-in-95 duration-200">
+            <div className="flex items-start gap-4 mb-6">
+              <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-6 h-6 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-slate-900 mb-1">No Risks Accepted</h3>
+                <p className="text-sm text-slate-500 leading-relaxed">
+                  You haven't accepted any risks. Proceed with an empty risk register?
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowEmptyConfirm(false)}
+                className="flex-1 px-4 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-200 transition-all"
+              >
+                Go Back
+              </button>
+              <button
+                onClick={() => {
+                  setShowEmptyConfirm(false);
+                  finalize(true);
+                }}
+                className="flex-1 px-4 py-3 bg-amber-600 text-white rounded-xl font-bold text-sm hover:bg-amber-700 transition-all"
+              >
+                Proceed Anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Existing Analysis Overlay */}
       {showAnalysisExists && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
@@ -460,18 +581,7 @@ export function AIRiskID() {
                   <div className="h-px bg-slate-100 flex-1" />
                 </div>
                 <button
-                  onClick={() => {
-                    // Force re-run logic
-                    if (activeProjectId) {
-                      updateProject(activeProjectId, { riskSetupDone: false });
-                    } else if (activeProgrammeId) {
-                      updateProgramme(activeProgrammeId, {
-                        riskSetupDone: false,
-                      });
-                    }
-                    setShowAnalysisExists(false);
-                    runAnalysis();
-                  }}
+                  onClick={() => setShowRestartConfirm(true)}
                   className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-white text-rose-600 border-2 border-rose-50 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-rose-50 hover:border-rose-100 transition-all active:scale-[0.98]"
                 >
                   <RefreshCw className="w-4 h-4" /> Restart Analysis
@@ -1141,7 +1251,7 @@ export function AIRiskID() {
                 remaining ({pendingRisks.filter((r) => !r.exists).length})
               </button>
               <button
-                onClick={finalize}
+                onClick={() => finalize()}
                 disabled={isFinalizing || isAcceptingAll}
                 className="flex-1 sm:flex-none justify-center px-2 sm:px-8 py-2.5 sm:py-3 bg-slate-900 text-white text-[10px] sm:text-sm font-black rounded-xl hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/40 active:scale-95 flex items-center gap-1.5 sm:gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed break-words text-center leading-tight"
               >

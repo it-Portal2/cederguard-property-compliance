@@ -99,7 +99,7 @@ export function ProjectInitiation() {
     typeOfUnits: "",
     bedroomsPerProperty: "",
     milestones: [...defaultMilestones],
-    deliveryTeam: [],
+    deliveryTeam: [] as TeamMember[],
     deliveryTeamDone: false,
   });
 
@@ -126,6 +126,7 @@ export function ProjectInitiation() {
           status: p.status || "Active",
           programmeId: p.programmeId || "",
           projectManagerId: p.projectManagerId || p.pmId || user?.email || "",
+          programmeManagerId: (p as any).programmeManagerId || "",
           riba: p.riba || "",
           employersAgent: p.employersAgent || "",
           architect: p.architect || "",
@@ -139,7 +140,7 @@ export function ProjectInitiation() {
           typeOfUnits: p.typeOfUnits || "",
           bedroomsPerProperty: p.bedroomsPerProperty || "",
           milestones: p.milestones || [],
-          deliveryTeam: Array.isArray(p.deliveryTeam) ? p.deliveryTeam : [],
+          deliveryTeam: Array.isArray(p.deliveryTeam) ? (p.deliveryTeam as TeamMember[]) : [] as TeamMember[],
           deliveryTeamDone: !!p.deliveryTeamDone,
         });
         setIsDirty(false);
@@ -161,6 +162,7 @@ export function ProjectInitiation() {
           status: p.status || "Active",
           programmeId: p.programmeId || "",
           projectManagerId: p.projectManagerId || p.pmId || user?.email || "",
+          programmeManagerId: (p as any).programmeManagerId || "",
           riba: p.riba || "",
           employersAgent: p.employersAgent || "",
           architect: p.architect || "",
@@ -174,7 +176,7 @@ export function ProjectInitiation() {
           typeOfUnits: p.typeOfUnits || "",
           bedroomsPerProperty: p.bedroomsPerProperty || "",
           milestones: p.milestones || [],
-          deliveryTeam: Array.isArray(p.deliveryTeam) ? p.deliveryTeam : [],
+          deliveryTeam: Array.isArray(p.deliveryTeam) ? (p.deliveryTeam as TeamMember[]) : [] as TeamMember[],
           deliveryTeamDone: !!p.deliveryTeamDone,
         });
         setIsDirty(false);
@@ -634,6 +636,7 @@ export function ProjectInitiation() {
                                   p.pmId ||
                                   user?.email ||
                                   "",
+                                programmeManagerId: (p as any).programmeManagerId || "",
                                 riba: p.riba || "",
                                 employersAgent: p.employersAgent || "",
                                 architect: p.architect || "",
@@ -650,8 +653,8 @@ export function ProjectInitiation() {
                                   p.bedroomsPerProperty || "",
                                 milestones: p.milestones || [],
                                 deliveryTeam: Array.isArray(p.deliveryTeam)
-                                  ? p.deliveryTeam
-                                  : [],
+                                  ? (p.deliveryTeam as TeamMember[])
+                                  : [] as TeamMember[],
                                 deliveryTeamDone: !!p.deliveryTeamDone,
                               });
                             }

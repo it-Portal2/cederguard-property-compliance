@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
-import { Briefcase, ScanSearch, Building2, ShieldAlert, FileWarning, ArrowRight, Settings, Check, Loader2, CheckCircle2 } from 'lucide-react';
+import { Briefcase, ScanSearch, Building2, ShieldAlert, FileWarning, AlertTriangle, ArrowRight, Settings, Check, Loader2, CheckCircle2 } from 'lucide-react';
 import { analyzeCompliance } from '../services/aiService';
 import { api } from '../lib/api';
 import { clsx } from 'clsx';
@@ -303,6 +303,8 @@ export function RiskSetup() {
     const [loading, setLoading] = useState(false);
     const [done, setDone] = useState(false);
     const [error, setError] = useState('');
+    const [showRestartConfirm, setShowRestartConfirm] = useState(false);
+    const [isRestarting, setIsRestarting] = useState(false);
     const [activePhase, setActivePhase] = useState(0);
     const navigate = useNavigate();
 
@@ -377,23 +379,20 @@ export function RiskSetup() {
             return;
         }
 
+        // "Risk Analysis Complete" means riskSetupDone was set — i.e. the user
+        // submitted the questionnaire and was sent to the AI page.
+        // Having risks in the register does NOT mean setup is done (they could be
+        // manually added or from a previous run) so we do NOT use hasRisks here.
         const hasExisting = contextType === 'project'
             ? !!project?.riskSetupDone
             : !!programme?.riskSetupDone;
 
-        // Only count risks that strictly belong to this specific project/programme 
-        // to avoid showing the "Analysis Already Complete" overlay using stale 
-        // risks from a previously viewed project.
-        const hasRisks = contextType === 'project'
-            ? !!(activeProjectId && Array.isArray(risks) && risks.some(r => r.projectId === activeProjectId))
-            : !!(activeProgrammeId && Array.isArray(risks) && risks.some(r => r.programmeId === activeProgrammeId));
-
-        if (hasExisting || hasRisks) {
+        if (hasExisting) {
             setShowAnalysisExists(true);
         } else {
             setShowAnalysisExists(false);
         }
-    }, [project?.riskSetupDone, programme?.riskSetupDone, risks, activeProjectId, activeProgrammeId, contextType]);
+    }, [project?.riskSetupDone, programme?.riskSetupDone, activeProjectId, activeProgrammeId, contextType]);
 
     // Sync selected project/programme back if store changes externally
     useEffect(() => {
@@ -538,11 +537,62 @@ export function RiskSetup() {
     };
 
     const handleRestart = () => {
-        const { setSuggestedRisks } = useStore.getState();
-        setSuggestedRisks([]);
-        setAnswers({});
-        setDone(false);
+        setShowRestartConfirm(true);
+    };
+
+    const handleRestartConfirmed = async () => {
+        setShowRestartConfirm(false);
+        const contextId = activeProjectId || activeProgrammeId;
+        if (!contextId) return;
+
+        setIsRestarting(true);
         setShowAnalysisExists(false);
+        try {
+            const clearOps: Promise<any>[] = [];
+
+            // 1. Clear flags from DB
+            if (activeProjectId) {
+                clearOps.push(updateProject(activeProjectId, { riskSetupDone: false, aiRiskDiscoveryDone: false }));
+            } else if (activeProgrammeId) {
+                clearOps.push(updateProgramme(activeProgrammeId, { riskSetupDone: false, aiRiskDiscoveryDone: false }));
+            }
+
+            // 2. Clear questionnaire answer keys from projectInfo, keep core fields
+            const currentInfo = { ...useStore.getState().projectInfo } as any;
+            const answerKeyPrefixes = ['g', 'pg', 'f', 's', 'r', 'p1', 'p2', 'p3', 'p4', 'p5', 'pc', 'pl', 'pr', 'pd', 'pi', 'pct'];
+            Object.keys(currentInfo).forEach((key) => {
+                if (answerKeyPrefixes.some(prefix => key.startsWith(prefix)) || key === 'notes' || key === 'chars' || key === 'scope' || key === 'orgtype' || key === 'funding' || key === 'proc') {
+                    delete currentInfo[key];
+                }
+            });
+            clearOps.push(api.saveData('projectInfo', currentInfo, contextId));
+
+            // 3. Clear the risk register for this context from DB
+            clearOps.push(api.saveData('risks', [], contextId));
+
+            await Promise.all(clearOps);
+
+            // 4. Sync store state — wipe risks for this context + all AI suggestion state
+            const currentRisks = useStore.getState().risks;
+            useStore.setState({
+                suggestedRisks: [],
+                projectInfo: currentInfo,
+                risks: currentRisks.filter((r: any) =>
+                    activeProjectId
+                        ? r.projectId !== activeProjectId
+                        : r.programmeId !== activeProgrammeId
+                ),
+            });
+
+            // 5. Reset local component state
+            setAnswers({});
+            setDone(false);
+            setError('');
+        } catch (err: any) {
+            setError(err.message || 'Failed to reset risk analysis. Please try again.');
+        } finally {
+            setIsRestarting(false);
+        }
     };
 
     const reset = () => {
@@ -552,6 +602,52 @@ export function RiskSetup() {
 
     return (
         <div className="min-h-screen bg-slate-50/50 pb-24 md:pb-12 pt-safe">
+            {/* Restart Confirmation Dialog */}
+            {showRestartConfirm && (
+                <div className="fixed inset-0 z-110 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-md w-full overflow-hidden animate-in zoom-in duration-300">
+                        <div className="p-8 text-center">
+                            <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-6 ring-4 ring-white shadow-lg shadow-red-100">
+                                <AlertTriangle className="w-8 h-8 text-red-500" />
+                            </div>
+                            <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-3">
+                                Restart Risk Analysis?
+                            </h3>
+                            <p className="text-slate-500 text-sm leading-relaxed font-medium mb-8">
+                                This will permanently clear all risk profiling answers and AI setup data for this {contextType}. This action cannot be undone.
+                            </p>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    onClick={() => setShowRestartConfirm(false)}
+                                    className="w-full px-6 py-4 bg-slate-100 text-slate-700 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all active:scale-95"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleRestartConfirmed}
+                                    className="w-full px-6 py-4 bg-red-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-700 transition-all hover:shadow-xl hover:shadow-red-200 active:scale-95"
+                                >
+                                    Yes, Restart
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Restart Loading Overlay */}
+            {isRestarting && (
+                <div className="fixed inset-0 z-110 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-4 max-w-xs w-full mx-4">
+                        <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
+                        <div className="text-center">
+                            <p className="text-sm font-black text-slate-800 uppercase tracking-wider">Clearing Risk Data</p>
+                            <p className="text-xs text-slate-500 mt-1">Removing all previous risk analysis data...</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Existing Analysis Overlay */}
             {showAnalysisExists && (
                 <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md">
@@ -901,6 +997,10 @@ export function RiskSetup() {
                                         onChange={async (e) => {
                                             const pid = e.target.value;
                                             setSelectedProjectId(pid);
+                                            setAnswers({});
+                                            setDone(false);
+                                            setError('');
+                                            useStore.setState({ suggestedRisks: [], projectInfo: {} });
                                             if (pid) await useStore.getState().loadProjectData(pid);
                                         }}
                                     >
@@ -918,6 +1018,10 @@ export function RiskSetup() {
                                                 const pid = e.target.value;
                                                 setSelectedProgrammeId(pid);
                                                 setSelectedProjectId('');
+                                                setAnswers({});
+                                                setDone(false);
+                                                setError('');
+                                                useStore.setState({ suggestedRisks: [], projectInfo: {} });
                                                 if (pid) await useStore.getState().loadProgrammeData(pid);
                                                 else useStore.getState().setActiveProgramme(null);
                                             }}
@@ -932,6 +1036,10 @@ export function RiskSetup() {
                                                 onChange={async (e) => {
                                                     const pid = e.target.value;
                                                     setSelectedProjectId(pid);
+                                                    setAnswers({});
+                                                    setDone(false);
+                                                    setError('');
+                                                    useStore.setState({ suggestedRisks: [], projectInfo: {} });
                                                     if (pid) await useStore.getState().loadProjectData(pid);
                                                 }}
                                             >

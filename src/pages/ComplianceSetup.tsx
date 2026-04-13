@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router";
-import { ClipboardList, ScanSearch, ShieldCheck, AlertCircle, Loader2, Check, ArrowRight, ArrowLeft, CheckCircle2, Info, Trash2, Lock, ChevronDown, ChevronUp, Layers, FolderKanban, Target } from 'lucide-react';
+import { ClipboardList, ScanSearch, ShieldCheck, AlertCircle, AlertTriangle, Loader2, Check, ArrowRight, ArrowLeft, CheckCircle2, Info, Trash2, Lock, ChevronDown, ChevronUp, Layers, FolderKanban, Target } from 'lucide-react';
 import { clsx } from "clsx";
 import { useStore } from "../store/useStore";
 import { analyzeCompliance } from "../services/aiService";
@@ -174,6 +174,7 @@ export function ComplianceSetup() {
   const [loading, setLoading] = useState(false);
   const [isDataLoading, setIsDataLoading] = useState(false); // non-AI loading (select/restart)
   const [isRestarting, setIsRestarting] = useState(false); // restart-specific loader
+  const [showRestartConfirm, setShowRestartConfirm] = useState(false);
   const [error, setError] = useState<string | ApiError | null>(null);
   const [searchParams] = useSearchParams();
   const fromInitiation = searchParams.get("from") === "initiation";
@@ -597,6 +598,7 @@ export function ComplianceSetup() {
         complianceAnalysis: null,
         complianceItems: [],
         projectInfo: {},
+        isComplianceLocked: true,
       });
       setPhase(1);
       setSubPhase("review");
@@ -680,6 +682,7 @@ export function ComplianceSetup() {
         complianceAnalysis: null,
         complianceItems: [],
         projectInfo: {},
+        isComplianceLocked: true,
       });
       setPhase(1);
       setSubPhase("review");
@@ -1058,19 +1061,19 @@ export function ComplianceSetup() {
     }
   };
 
-  const handleRestart = async () => {
-    if (
-      window.confirm(
-        "Are you sure you want to restart the analysis? All current compliance data and results will be cleared.",
-      )
-    ) {
-      const contextId = activeProjectId || activeProgrammeId;
-      if (!contextId) return;
+  const handleRestart = () => {
+    setShowRestartConfirm(true);
+  };
 
-      setIsRestarting(true);
-      setIsResetting(true);
-      setShowAnalysisExists(false);
-      try {
+  const handleRestartConfirmed = async () => {
+    setShowRestartConfirm(false);
+    const contextId = activeProjectId || activeProgrammeId;
+    if (!contextId) return;
+
+    setIsRestarting(true);
+    setIsResetting(true);
+    setShowAnalysisExists(false);
+    try {
         // 1. Clear all compliance-related data from Firestore in parallel
         const clearOps: Promise<any>[] = [
           api.saveData("complianceItems", [], contextId),
@@ -1142,7 +1145,6 @@ export function ComplianceSetup() {
           if (isMountedRef.current) setIsResetting(false);
         }, 800);
       }
-    }
   };
 
   const handleFinalise = () => {
@@ -1305,6 +1307,38 @@ export function ComplianceSetup() {
                 <div className="w-2 h-2 rounded-full bg-indigo-600 animate-bounce delay-0"></div>
                 <div className="w-2 h-2 rounded-full bg-indigo-600 animate-bounce delay-150"></div>
                 <div className="w-2 h-2 rounded-full bg-indigo-600 animate-bounce delay-300"></div>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Restart Confirmation Dialog */}
+        {showRestartConfirm && (
+          <div className="fixed inset-0 z-110 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-md w-full overflow-hidden animate-in zoom-in duration-300">
+              <div className="p-8 text-center">
+                <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-6 ring-4 ring-white shadow-lg shadow-red-100">
+                  <AlertTriangle className="w-8 h-8 text-red-500" />
+                </div>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-3">
+                  Restart Analysis?
+                </h3>
+                <p className="text-slate-500 text-sm leading-relaxed font-medium mb-8">
+                  This will permanently clear all compliance items, AI results and questionnaire answers for this {activeType}. This action cannot be undone.
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setShowRestartConfirm(false)}
+                    className="w-full px-6 py-4 bg-slate-100 text-slate-700 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all active:scale-95"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleRestartConfirmed}
+                    className="w-full px-6 py-4 bg-red-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-700 transition-all hover:shadow-xl hover:shadow-red-200 active:scale-95"
+                  >
+                    Yes, Restart
+                  </button>
+                </div>
               </div>
             </div>
           </div>
