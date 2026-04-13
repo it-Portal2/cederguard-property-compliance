@@ -719,6 +719,31 @@ export function ProjectInitiation() {
                     </div>
 
                     <div>
+                      <label className={labelCls}>
+                        Assigned Project Manager{" "}
+                        <span className="text-rose-500 ml-0.5">*</span>
+                      </label>
+                      <select
+                        className={inputCls}
+                        value={formData.projectManagerId}
+                        onChange={(e) => set("projectManagerId", e.target.value)}
+                        disabled={!isAtLeastClientAdmin(userRole) && assignablePMs.length === 0}
+                        required
+                      >
+                        <option value="">— Select PM —</option>
+                        {assignablePMs.map((pm) => (
+                          <option key={pm.uid || pm.email} value={pm.email}>
+                            {pm.displayName || pm.email}
+                          </option>
+                        ))}
+                        {/* Fallback if user is not in the assignable list but is set */}
+                        {formData.projectManagerId && !assignablePMs.find(pm => pm.email === formData.projectManagerId) && (
+                          <option value={formData.projectManagerId}>{user?.displayName || formData.projectManagerId}</option>
+                        )}
+                      </select>
+                    </div>
+
+                    <div>
                       <label className={labelCls}>Associated Programme</label>
                       <select
                         className={inputCls}
