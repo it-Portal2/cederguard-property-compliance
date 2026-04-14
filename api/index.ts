@@ -1,7 +1,7 @@
 import { allRoutes } from './routes/index.js';
 import { createContext } from './lib/context.js';
 
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 export default async function handler(req: any, res: any) {
   // --- CORS Setup ---

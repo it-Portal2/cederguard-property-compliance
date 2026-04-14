@@ -34,18 +34,27 @@ export const aiRoutes: Record<
       "analyzeRisks",
       "analyzeControls",
     ].includes(action);
+
+    // Compliance analysis classifies 113+ items with detailed reasons —
+    // it needs significantly more output tokens than other actions.
+    // The old default of 8192 caused the model to compress its output on
+    // Vercel, silently flipping the applicable/excluded ratio.
+    const defaultMaxTokens = action === "analyzeCompliance" ? 16384
+      : action === "analyzeRisks" ? 16384
+      : 8192;
+
     const generationConfig = {
       temperature: config?.temperature || 0.7,
       topP: config?.topP || 0.95,
       topK: config?.topK || 40,
-      maxOutputTokens: config?.maxOutputTokens || 8192,
+      maxOutputTokens: config?.maxOutputTokens || defaultMaxTokens,
       responseMimeType: isJsonAction
         ? "application/json"
         : config?.responseMimeType || "text/plain",
       responseSchema: isJsonAction ? config?.responseSchema : undefined,
     };
 
-    const TIMEOUT_MS = 55000;
+    const TIMEOUT_MS = 90000;
 
     const tryGenerate = async (
       ai: GoogleGenAI,

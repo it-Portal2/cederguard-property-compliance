@@ -5,7 +5,7 @@ import { getMessaging } from "firebase-admin/messaging";
 import { GoogleGenAI } from "@google/genai";
 import { ROLE_STRINGS } from "../../src/lib/roleConstants.js";
 
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 // --- Firebase Admin Initialization (Modular ESM-native sub-packages) ---
 let initError: string | null = null;
@@ -129,6 +129,7 @@ export const parseAIResponse = (text: string, defaultValue: any = []) => {
 
   // 4. Force Healing for Truncated/Amputated JSON
   if (inString) {
+    console.warn("[parseAIResponse] Auto-healer: closing unclosed string — response was likely truncated by maxOutputTokens limit.");
     validSoFar += '"';
   }
 
@@ -144,6 +145,9 @@ export const parseAIResponse = (text: string, defaultValue: any = []) => {
   }
 
   // Balance structural stack
+  if (stack.length > 0) {
+    console.warn(`[parseAIResponse] Auto-healer: closing ${stack.length} unclosed bracket(s) — AI output was truncated. Consider increasing maxOutputTokens.`);
+  }
   while (stack.length > 0) {
     const opener = stack.pop();
     if (opener === '{') validSoFar += '}';

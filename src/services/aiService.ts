@@ -159,6 +159,7 @@ FORMATTING (STRICT): ABSOLUTELY NO MARKDOWN. ANY IDENTIFIER OR ID MUST BE ON THE
 
   const config = {
     responseMimeType: "application/json",
+    maxOutputTokens: 16384,
     responseSchema: {
       type: "object",
       properties: {
@@ -244,17 +245,29 @@ FORMATTING (STRICT): ABSOLUTELY NO MARKDOWN. ANY IDENTIFIER OR ID MUST BE ON THE
 
     const result =
       res.result && typeof res.result === "object" ? res.result : {};
+
+    const applicableIds = Array.isArray(result.applicableIds) ? result.applicableIds : [];
+    const excludedIds = Array.isArray(result.excludedIds) ? result.excludedIds : [];
+    const conditionalIds = Array.isArray(result.conditionalIds) ? result.conditionalIds : [];
+
+    // Post-analysis validation: detect truncated AI responses.
+    // If the total classified items is significantly less than what we sent,
+    // the response was likely truncated and the results are unreliable.
+    const totalClassified = applicableIds.length + excludedIds.length + conditionalIds.length;
+    const totalSent = safeItems.length;
+    if (totalClassified < totalSent * 0.5) {
+      console.warn(
+        `[AI Compliance] Possible truncated response: classified ${totalClassified}/${totalSent} items ` +
+        `(applicable=${applicableIds.length}, excluded=${excludedIds.length}, conditional=${conditionalIds.length}). ` +
+        `Expected ≥${Math.round(totalSent * 0.7)} classified items.`
+      );
+    }
+
     return {
       summary: result.summary || "No summary provided.",
-      applicableIds: Array.isArray(result.applicableIds)
-        ? result.applicableIds
-        : [],
-      excludedIds: Array.isArray(result.excludedIds)
-        ? result.excludedIds
-        : [],
-      conditionalIds: Array.isArray(result.conditionalIds)
-        ? result.conditionalIds
-        : [],
+      applicableIds,
+      excludedIds,
+      conditionalIds,
       regulatoryAuthorities: Array.isArray(result.regulatoryAuthorities)
         ? result.regulatoryAuthorities
         : [],
