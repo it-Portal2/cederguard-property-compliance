@@ -305,7 +305,11 @@ export function RiskAggregation() {
           >
             <option value="All Projects">All Projects</option>
             {safeProjects
-              .filter(p => !inProgrammeContext || p.programmeId === activeProgrammeId)
+              .filter(p => {
+                if (inProjectContext) return p.id === activeProjectId;
+                if (inProgrammeContext) return p.programmeId === activeProgrammeId;
+                return true;
+              })
               .map(p => <option key={p.id} value={p.id}>{p.name}</option>)
             }
           </select>

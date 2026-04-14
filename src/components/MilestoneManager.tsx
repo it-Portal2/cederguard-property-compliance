@@ -478,14 +478,22 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                             <div className="flex items-center justify-between gap-4 p-4 bg-indigo-50 rounded-xl border border-indigo-100">
                                 <div className="text-center flex-1">
                                     <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Original Date</p>
-                                    <p className="text-sm font-bold text-slate-600">{format(new Date(pendingUpdate.originalDate), 'dd MMM yyyy')}</p>
+                                    <p className="text-sm font-bold text-slate-600">
+                                        {pendingUpdate.originalDate && isValid(parseISO(pendingUpdate.originalDate)) 
+                                            ? format(parseISO(pendingUpdate.originalDate), 'dd MMM yyyy') 
+                                            : 'No Date'}
+                                    </p>
                                 </div>
                                 <div className="shrink-0">
                                     <Plus className="w-4 h-4 text-indigo-400 rotate-45" />
                                 </div>
                                 <div className="text-center flex-1">
                                     <p className="text-[9px] font-black text-indigo-500 uppercase mb-1">New Target</p>
-                                    <p className="text-sm font-black text-indigo-700">{format(new Date(pendingUpdate.updates.date!), 'dd MMM yyyy')}</p>
+                                    <p className="text-sm font-black text-indigo-700">
+                                        {pendingUpdate.updates.date && isValid(parseISO(pendingUpdate.updates.date)) 
+                                            ? format(parseISO(pendingUpdate.updates.date), 'dd MMM yyyy') 
+                                            : 'No Date'}
+                                    </p>
                                 </div>
                             </div>
                             <div>

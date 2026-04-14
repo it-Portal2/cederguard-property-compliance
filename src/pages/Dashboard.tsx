@@ -1,5 +1,5 @@
 import { getRIBALabel } from "../constants/ribaStages";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useStore } from "../store/useStore";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { InfoTooltip } from "../components/InfoTooltip";
@@ -105,35 +105,72 @@ export function Dashboard() {
     (p) => p.id === activeProgrammeId,
   );
 
+  // Refs for derived values that the effect _reads_ but should NOT be deps.
+  // These are stable booleans; putting them in the dep array is misleading
+  // and can mask bugs when other deps also change in the same tick.
+  const isClientAdminRef = useRef(isClientAdmin);
+  isClientAdminRef.current = isClientAdmin;
+  const isProjectManagerRef = useRef(isProjectManager);
+  isProjectManagerRef.current = isProjectManager;
+
+  // Version counter: incremented every time the effect fires.
+  // When a stale async load completes, it compares its captured version
+  // against the current ref — if they differ, the load is stale and its
+  // results are silently discarded, preventing the infinite flicker loop.
+  const loadVersionRef = useRef(0);
+
   // Load data when active context changes
   useEffect(() => {
     if (!isInitialized) return;
+
+    const version = ++loadVersionRef.current;
+    const isStale = () => loadVersionRef.current !== version;
+
     if (activeProjectId) {
+      setLoadingOverview(false);
       setIsLoadingContent(true);
-      void loadProjectData(activeProjectId).finally(() =>
-        setIsLoadingContent(false),
-      );
+      void loadProjectData(activeProjectId).finally(() => {
+        if (!isStale()) {
+          setIsLoadingContent(false);
+          setContextSwitching(false);
+        }
+      });
     } else if (activeProgrammeId) {
+      setLoadingOverview(false);
       setIsLoadingContent(true);
-      void loadProgrammeData(activeProgrammeId).finally(() =>
-        setIsLoadingContent(false),
-      );
-    } else if (isProjectManager || isClientAdmin) {
+      void loadProgrammeData(activeProgrammeId).finally(() => {
+        if (!isStale()) {
+          setIsLoadingContent(false);
+          setContextSwitching(false);
+        }
+      });
+    } else if (isClientAdminRef.current || isProjectManagerRef.current) {
+      setIsLoadingContent(false);
       setLoadingOverview(true);
-      void loadAggregateData().finally(() => setLoadingOverview(false));
+      void loadAggregateData().finally(() => {
+        if (!isStale()) {
+          setLoadingOverview(false);
+          setContextSwitching(false);
+        }
+      });
+    } else {
+      setIsLoadingContent(false);
+      setLoadingOverview(false);
+      setContextSwitching(false);
     }
-    setStrategicInsights(null);
-    setAiError(null);
-  }, [
-    isInitialized,
-    activeProjectId,
-    activeProgrammeId,
-    isClientAdmin,
-    isProjectManager,
-    loadProjectData,
-    loadProgrammeData,
-    loadAggregateData,
-  ]);
+
+    if (!isStale()) {
+      setStrategicInsights(null);
+      setAiError(null);
+    }
+
+    // Cleanup: mark this version as stale so any still-running async load
+    // from this effect won't update state after we re-fire.
+    return () => {
+      loadVersionRef.current++;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isInitialized, activeProjectId, activeProgrammeId]);
 
   // Sync URL params to store context
   useEffect(() => {
@@ -182,8 +219,6 @@ export function Dashboard() {
     }
   };
 
-  // True while any data fetch for the current context is in-flight
-  const isLoading = isLoadingContent || loadingOverview;
 
   // Filter projects for PM - show projects owned by the user or projects for their client if they have permissions
   const displayProjects = safeProjects.filter((p) => !p.isArchived);
@@ -242,6 +277,14 @@ export function Dashboard() {
     return displayProjects.some((p) => p.id === i.projectId);
   });
 
+  // Progressive rendering: only show section skeletons when data for that section
+  // hasn't arrived yet. This mirrors the pattern used by ComplianceDashboard and
+  // RiskRegister which render instantly from store data.
+  const isLoadingCompliance = (isLoadingContent || loadingOverview) && contextCompliance.length === 0;
+  const isLoadingRisks = (isLoadingContent || loadingOverview) && contextRisks.length === 0 && contextIssues.length === 0;
+  // Keep legacy isLoading only for the Portfolio Overview section (aggregate stats)
+  const isLoading = loadingOverview;
+
   // Compliance Stats — stage values must match ComplianceDashboard exactly:
   //   Complete  → stage 'Live' or 'Archived'
   //   Open      → stage 'Information Gap' or 'Risk Identified'
@@ -251,7 +294,7 @@ export function Dashboard() {
     s === "Information Gap" || s === "Risk Identified";
   const compIsHighRisk = (r?: string) => r === "High" || r === "Critical";
 
-  const compTotal = contextCompliance.length + pendingComplianceCount; // Full framework scope
+  const compTotal = contextCompliance.length; // Active framework scope only, unverified pending items are excluded from total
   const compApplicable = contextCompliance.length;
   const compComplete = contextCompliance.filter((i) =>
     compIsComplete(i.stage),
@@ -375,26 +418,25 @@ export function Dashboard() {
                     ? `programme:${activeProgrammeId}`
                     : "all"
               }
-              onChange={async (e) => {
+              onChange={(e) => {
                 const [type, id] = e.target.value.split(":");
                 setContextSwitching(true);
-                try {
-                  if (type === "all") {
-                    await loadAggregateData();
-                    navigate("/dashboard");
-                  } else if (type === "programme") {
-                    setActiveProject(null);
-                    setActiveProgramme(id);
-                    await loadProgrammeData(id);
-                    navigate(`/dashboard?programmeId=${id}`);
-                  } else if (type === "project") {
-                    setActiveProgramme(null);
-                    setActiveProject(id);
-                    await loadProjectData(id);
-                    navigate(`/dashboard?projectId=${id}`);
-                  }
-                } finally {
-                  setContextSwitching(false);
+                
+                // Set IDs and let the useEffect handle data loading.
+                // setContextSwitching(false) is called in the useEffect's .finally() 
+                // via the loading state flags — no hardcoded timers.
+                if (type === "all") {
+                  setActiveProject(null);
+                  setActiveProgramme(null);
+                  navigate("/dashboard");
+                } else if (type === "programme") {
+                  setActiveProject(null);
+                  setActiveProgramme(id);
+                  navigate(`/dashboard?programmeId=${id}`);
+                } else if (type === "project") {
+                  setActiveProgramme(null);
+                  setActiveProject(id);
+                  navigate(`/dashboard?projectId=${id}`);
                 }
               }}
               className="bg-transparent border-none text-xs font-bold text-indigo-600 focus:ring-0 cursor-pointer w-full md:min-w-[240px]"
@@ -1601,7 +1643,7 @@ export function Dashboard() {
               </h2>
             </div>
 
-            {isLoading ? (
+            {isLoadingCompliance ? (
               <>
                 <SkeletonStatCards count={5} />
                 <SkeletonBar />
@@ -1700,7 +1742,7 @@ export function Dashboard() {
               </h2>
             </div>
 
-            {isLoading ? (
+            {isLoadingRisks ? (
               <>
                 <SkeletonStatCards count={5} />
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">

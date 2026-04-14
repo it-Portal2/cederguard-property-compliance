@@ -4,10 +4,12 @@ import { X, AlertTriangle, Target } from 'lucide-react';
 import { KRI_METADATA, KRI_OWNERS } from '../data/riskData';
 import { clsx } from 'clsx';
 
+import { Loader2 } from 'lucide-react';
+
 interface KRIModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (kri: Partial<KRI>) => void;
+    onSave: (kri: Partial<KRI>) => Promise<void> | void;
     initialData?: KRI | null;
 }
 
@@ -28,6 +30,7 @@ const emptyForm = (): Partial<KRI> => ({
 
 export function KRIModal({ isOpen, onClose, onSave, initialData }: KRIModalProps) {
     const [formData, setFormData] = useState<Partial<KRI>>(emptyForm());
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -44,9 +47,14 @@ export function KRIModal({ isOpen, onClose, onSave, initialData }: KRIModalProps
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
-    const handleSave = () => {
-        onSave(formData);
-        onClose();
+    const handleSave = async () => {
+        setIsSubmitting(true);
+        try {
+            await onSave(formData);
+        } finally {
+            setIsSubmitting(false);
+            onClose();
+        }
     };
 
     return (
@@ -188,14 +196,19 @@ export function KRIModal({ isOpen, onClose, onSave, initialData }: KRIModalProps
                     </div>
                 </div>
 
-                {/* Footer */}
                 <div className="p-6 border-t border-slate-100 bg-slate-50 rounded-b-2xl flex justify-end gap-3 shrink-0">
-                    <button onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-xl transition-colors">
+                    <button onClick={onClose} disabled={isSubmitting} className="px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                         Cancel
                     </button>
-                    <button onClick={handleSave} disabled={!formData.name}
-                        className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm">
-                        {initialData ? 'Update KRI' : 'Create KRI'}
+                    <button onClick={handleSave} disabled={!formData.name || isSubmitting}
+                        className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center justify-center min-w-[120px]">
+                        {isSubmitting ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : initialData ? (
+                            'Update KRI'
+                        ) : (
+                            'Create KRI'
+                        )}
                     </button>
                 </div>
             </div>

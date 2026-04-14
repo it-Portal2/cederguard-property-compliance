@@ -214,13 +214,25 @@ export function RiskRegister() {
 
   // Handle URL-based actions
   useEffect(() => {
+    let changed = false;
+    const newParams = new URLSearchParams(searchParams);
+
     const action = searchParams.get("action");
     if (action === "add-risk") {
       setEditingRisk(null);
       setIsModalOpen(true);
-      // Clean up param
-      const newParams = new URLSearchParams(searchParams);
       newParams.delete("action");
+      changed = true;
+    }
+
+    const filterKri = searchParams.get("kri");
+    if (filterKri) {
+      setFilter((f) => ({ ...f, search: filterKri }));
+      newParams.delete("kri");
+      changed = true;
+    }
+
+    if (changed) {
       setSearchParams(newParams, { replace: true });
     }
   }, [searchParams, setSearchParams]);

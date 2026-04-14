@@ -2,8 +2,9 @@ import { useStore } from '../store/useStore';
 import {
   BarChart, Radar, AlertTriangle, ShieldCheck, TrendingUp,
   Layers, ArrowUpRight, Clock, Users, TrendingDown, Target, Plus, Edit2,
-  Trash2, ShieldOff, Loader2,
+  Trash2, ShieldOff, Loader2, Bell, ExternalLink
 } from 'lucide-react';
+import { useNavigate } from 'react-router';
 import { clsx } from 'clsx';
 import { useState, useMemo, useEffect } from 'react';
 import { KRIModal } from '../components/KRIModal';
@@ -18,7 +19,10 @@ export function KRITracker() {
     risks, projects, activeProgrammeId, activeProjectId,
     kris, addKRI, updateKRI, deleteKRI, user,
     isInitialized, loadProjectData, loadProgrammeData,
+    isContextSwitching, addNotification,
   } = useStore();
+
+  const navigate = useNavigate();
 
   const userRole = user?.role || (user as any)?.profile?.role;
   const canModify = isAtLeastPM(userRole);
@@ -211,7 +215,7 @@ export function KRITracker() {
   };
 
   // ─── Skeleton loader ─────────────────────────────────────────────────────────
-  const isLoading = !isInitialized;
+  const isLoading = !isInitialized || isContextSwitching;
 
   return (
     <div className="max-w-full px-8 space-y-12 pb-20 mt-4">
@@ -413,25 +417,57 @@ export function KRITracker() {
                       </div>
                     </td>
                     <td className="px-6 py-6">
-                      <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center justify-center gap-2 transition-opacity">
                         {isDeleting && <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />}
-                        {!isDeleting && canModify && (
-                          <button
-                            onClick={() => handleEdit(kri)}
-                            className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                            title="Edit KRI"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                        {!isDeleting && canDelete && (
-                          <button
-                            onClick={() => handleDelete(kri.id, kri.name)}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                            title="Delete KRI"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                        {!isDeleting && (
+                          <>
+                            <button
+                              onClick={() => navigate(`/risk/register?kri=${encodeURIComponent(kri.name)}`)}
+                              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                              title="View Linked Risks"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </button>
+                            {canModify && (
+                              <button
+                                onClick={() => {
+                                  if (s.status === 'Green') {
+                                    toast.error('No active alerts to dispatch for this KRI.');
+                                    return;
+                                  }
+                                  addNotification({
+                                    type: 'risk',
+                                    title: `KRI Alert: ${kri.name}`,
+                                    message: `Threshold breached. Requires immediate review by ${s.owner}.`,
+                                    time: new Date().toISOString()
+                                  });
+                                  toast.success(`Alert dispatched to ${s.owner}`);
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                                title="Dispatch Push Notification"
+                              >
+                                <Bell className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            {canModify && (
+                              <button
+                                onClick={() => handleEdit(kri)}
+                                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                title="Edit KRI"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            {canDelete && (
+                              <button
+                                onClick={() => handleDelete(kri.id, kri.name)}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                title="Delete KRI"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </>
                         )}
                       </div>
                     </td>
@@ -471,8 +507,8 @@ export function KRITracker() {
             <ShieldCheck className="w-6 h-6 text-indigo-400" /> Compliance Delta
           </h3>
           <p className="text-sm text-slate-400 font-bold leading-relaxed italic">
-            Portfolio aggregation identifies a stable correlation between active mitigations and overall KRI health.
-            Velocity remains within statutory tolerances.
+            Portfolio health is <strong className={clsx("font-black", stats.redCount > 0 ? "text-rose-400" : "text-emerald-400")}>{stats.redCount > 0 ? "Critical" : "Stable"}</strong>. 
+            We are actively tracking {stats.totalRisks} mitigations with {stats.totalHighRisks} high-priority exposures affecting the current context.
           </p>
         </div>
         <div className="bg-indigo-600 p-10 rounded-[3rem] text-white space-y-4">
@@ -480,8 +516,8 @@ export function KRITracker() {
             <TrendingUp className="w-6 h-6 text-white" /> Performance Insight
           </h3>
           <p className="text-sm text-indigo-100 font-bold leading-relaxed italic">
-            Average Risk Age has decreased by 12% following the implementation of Automated Discovery workflows.
-            Next review cycle scheduled for end of Q1.
+            Average overdue delay across all tracked risks is currently reading at <strong className="font-black text-white">{stats.avgDelay} days</strong>.
+            Next statutory review cycle is scheduled for the end of Q1.
           </p>
         </div>
       </div>
