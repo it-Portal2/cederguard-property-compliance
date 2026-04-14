@@ -123,31 +123,41 @@ export const projectRoutes: Record<
     } else {
       // Regular user (Project Manager or Programme Manager)
       queries.push(db.collection("projects").where("userId", "==", uid).get());
-      queries.push(db.collection("projects").where("creatorId", "==", uid).get());
+      queries.push(
+        db.collection("projects").where("creatorId", "==", uid).get(),
+      );
       if (email) {
         queries.push(db.collection("projects").where("pm", "==", email).get());
-        queries.push(db.collection("projects").where("userId", "==", email).get());
+        queries.push(
+          db.collection("projects").where("userId", "==", email).get(),
+        );
       }
 
       // Programme Manager: Fetch projects associated with their managed programmes
       if (userData.role === ROLE_STRINGS.PROGRAMME_MANAGER) {
         const progQueries = [
-          db.collection('programmes').where('userId', '==', uid).get(),
-          db.collection('programmes').where('creatorId', '==', uid).get()
+          db.collection("programmes").where("userId", "==", uid).get(),
+          db.collection("programmes").where("creatorId", "==", uid).get(),
         ];
         if (email) {
-          progQueries.push(db.collection('programmes').where('pm', '==', email).get());
+          progQueries.push(
+            db.collection("programmes").where("pm", "==", email).get(),
+          );
         }
-        
+
         const progSnapshots = await Promise.all(progQueries);
         const managedProgIds = new Set<string>();
-        progSnapshots.forEach(snap => snap.docs.forEach(doc => managedProgIds.add(doc.id)));
-        
+        progSnapshots.forEach((snap) =>
+          snap.docs.forEach((doc) => managedProgIds.add(doc.id)),
+        );
+
         const progIds = Array.from(managedProgIds);
         if (progIds.length > 0) {
           for (let i = 0; i < progIds.length; i += 10) {
             const chunk = progIds.slice(i, i + 10);
-            queries.push(db.collection("projects").where("programmeId", "in", chunk).get());
+            queries.push(
+              db.collection("projects").where("programmeId", "in", chunk).get(),
+            );
           }
         }
       }
@@ -253,7 +263,11 @@ export const projectRoutes: Record<
     }
 
     // 1. Delete all documents in the projects/{id}/data subcollection
-    const dataSnap = await db.collection("projects").doc(id).collection("data").get();
+    const dataSnap = await db
+      .collection("projects")
+      .doc(id)
+      .collection("data")
+      .get();
     if (!dataSnap.empty) {
       const dataBatch = db.batch();
       dataSnap.docs.forEach((doc) => dataBatch.delete(doc.ref));
@@ -261,12 +275,17 @@ export const projectRoutes: Record<
     }
 
     // 2. Delete all evidence documents linked to this project
-    const evidenceSnap = await db.collection("evidence").where("project", "==", id).get();
+    const evidenceSnap = await db
+      .collection("evidence")
+      .where("project", "==", id)
+      .get();
     if (!evidenceSnap.empty) {
       // Firestore batch limit is 500 — chunk if needed
       for (let i = 0; i < evidenceSnap.docs.length; i += 500) {
         const evidenceBatch = db.batch();
-        evidenceSnap.docs.slice(i, i + 500).forEach((doc) => evidenceBatch.delete(doc.ref));
+        evidenceSnap.docs
+          .slice(i, i + 500)
+          .forEach((doc) => evidenceBatch.delete(doc.ref));
         await evidenceBatch.commit();
       }
     }
@@ -305,7 +324,7 @@ export const projectRoutes: Record<
   },
 
   getPortfolioData: async (req, res, ctx) => {
-    const { db, uid, primaryUid, isAdmin } = ctx;
+    const { db, uid, primaryUid, isAdmin, userData, email } = ctx;
 
     if (isAdmin) {
       const allSnap = await db.collection("projects").get();
@@ -315,60 +334,104 @@ export const projectRoutes: Record<
 
     const queries = [];
 
-    if (userData.role === ROLE_STRINGS.CLIENT_ADMIN || userData.role === ROLE_STRINGS.ENTERPRISE) {
-      queries.push(db.collection("projects").where("clientId", "==", primaryUid).get());
+    if (
+      userData.role === ROLE_STRINGS.CLIENT_ADMIN ||
+      userData.role === ROLE_STRINGS.ENTERPRISE
+    ) {
+      queries.push(
+        db.collection("projects").where("clientId", "==", primaryUid).get(),
+      );
     } else {
       queries.push(db.collection("projects").where("userId", "==", uid).get());
-      queries.push(db.collection("projects").where("creatorId", "==", uid).get());
+      queries.push(
+        db.collection("projects").where("creatorId", "==", uid).get(),
+      );
       if (email) {
         queries.push(db.collection("projects").where("pm", "==", email).get());
-        queries.push(db.collection("projects").where("userId", "==", email).get());
+        queries.push(
+          db.collection("projects").where("userId", "==", email).get(),
+        );
       }
-      
+
       // Programme Manager: Aggregate projects via managed programmes
       if (userData.role === ROLE_STRINGS.PROGRAMME_MANAGER) {
         const progQueries = [
-          db.collection('programmes').where('userId', '==', uid).get(),
-          db.collection('programmes').where('creatorId', '==', uid).get()
+          db.collection("programmes").where("userId", "==", uid).get(),
+          db.collection("programmes").where("creatorId", "==", uid).get(),
         ];
         if (email) {
-          progQueries.push(db.collection('programmes').where('pm', '==', email).get());
+          progQueries.push(
+            db.collection("programmes").where("pm", "==", email).get(),
+          );
         }
         const progSnaps = await Promise.all(progQueries);
-        const progIds = Array.from(new Set(progSnaps.flatMap(s => s.docs.map(d => d.id))));
-        
+        const progIds = Array.from(
+          new Set(progSnaps.flatMap((s) => s.docs.map((d) => d.id))),
+        );
+
         if (progIds.length > 0) {
           for (let i = 0; i < progIds.length; i += 10) {
-            queries.push(db.collection("projects").where("programmeId", "in", progIds.slice(i, i + 10)).get());
+            queries.push(
+              db
+                .collection("projects")
+                .where("programmeId", "in", progIds.slice(i, i + 10))
+                .get(),
+            );
           }
         }
       }
     }
 
-    // 4. Fetch from team members as a safety net
-    const pmsSnap = await db.collection("users").where("clientId", "==", primaryUid).get();
-    const pmUids = pmsSnap.docs.map(d => d.id).filter(id => id !== uid && id !== primaryUid);
-    
-    // Process UIDs in chunks of 10 for 'in' query
-    for (let i = 0; i < pmUids.length; i += 10) {
-      const chunk = pmUids.slice(i, i + 10);
-      queries.push(db.collection("projects").where("userId", "in", chunk).get());
+    // 4. Fetch from team members as a safety net (Client Admins/Enterprise/Programme Managers only)
+    // Regular PMs should NOT see other PMs' projects - strict tenant isolation
+    let pmsSnap: any = null;
+    if (
+      userData.role === ROLE_STRINGS.CLIENT_ADMIN ||
+      userData.role === ROLE_STRINGS.ENTERPRISE ||
+      userData.role === ROLE_STRINGS.PROGRAMME_MANAGER
+    ) {
+      pmsSnap = await db
+        .collection("users")
+        .where("clientId", "==", primaryUid)
+        .get();
+      const pmUids = pmsSnap.docs
+        .map((d: any) => d.id)
+        .filter((id: string) => id !== uid && id !== primaryUid);
+
+      // Process UIDs in chunks of 10 for 'in' query
+      for (let i = 0; i < pmUids.length; i += 10) {
+        const chunk = pmUids.slice(i, i + 10);
+        queries.push(
+          db.collection("projects").where("userId", "in", chunk).get(),
+        );
+      }
     }
 
     const snaps = await Promise.all(queries);
     const projectMap = new Map();
-    
-    snaps.forEach(snap => {
-      snap.docs.forEach(doc => {
+
+    snaps.forEach((snap) => {
+      snap.docs.forEach((doc) => {
         projectMap.set(doc.id, { id: doc.id, ...doc.data() });
       });
     });
 
     const allProjects = Array.from(projectMap.values());
-    
+
     // Cache PM names/emails for enrichment
     const pmMap: Record<string, any> = {};
-    pmsSnap.docs.forEach(d => { pmMap[d.id] = d.data(); });
+
+    // If safety net ran, we have pmsSnap; otherwise fetch just the current user
+    if (pmsSnap) {
+      pmsSnap.docs.forEach((d: any) => {
+        pmMap[d.id] = d.data();
+      });
+    } else {
+      // For regular PMs, just fetch their own user data
+      const userDoc = await db.collection("users").doc(uid).get();
+      if (userDoc.exists) pmMap[uid] = userDoc.data();
+    }
+
     const ownerDoc = await db.collection("users").doc(primaryUid).get();
     if (ownerDoc.exists) pmMap[primaryUid] = ownerDoc.data();
 
@@ -376,28 +439,61 @@ export const projectRoutes: Record<
       allProjects.map(async (project) => {
         try {
           const [compDoc, riskDoc, issueDoc, activitySnap] = await Promise.all([
-            db.collection("projects").doc(project.id).collection("data").doc("complianceItems").get(),
-            db.collection("projects").doc(project.id).collection("data").doc("risks").get(),
-            db.collection("projects").doc(project.id).collection("data").doc("issues").get(),
-            db.collection("activityLogs").where("projectId", "==", project.id).orderBy("timestamp", "desc").limit(1).get(),
+            db
+              .collection("projects")
+              .doc(project.id)
+              .collection("data")
+              .doc("complianceItems")
+              .get(),
+            db
+              .collection("projects")
+              .doc(project.id)
+              .collection("data")
+              .doc("risks")
+              .get(),
+            db
+              .collection("projects")
+              .doc(project.id)
+              .collection("data")
+              .doc("issues")
+              .get(),
+            db
+              .collection("activityLogs")
+              .where("projectId", "==", project.id)
+              .orderBy("timestamp", "desc")
+              .limit(1)
+              .get(),
           ]);
 
-          const complianceItems = compDoc.exists ? (compDoc.data()?.data || []) : [];
-          const risks = riskDoc.exists ? (riskDoc.data()?.data || []) : [];
-          const issues = issueDoc.exists ? (issueDoc.data()?.data || []) : [];
+          const complianceItems = compDoc.exists
+            ? compDoc.data()?.data || []
+            : [];
+          const risks = riskDoc.exists ? riskDoc.data()?.data || [] : [];
+          const issues = issueDoc.exists ? issueDoc.data()?.data || [] : [];
           const lastActivity = activitySnap.docs[0]?.data()?.timestamp || null;
 
           const compTotal = complianceItems.length;
-          const compComplete = complianceItems.filter((c: any) => c.stage === "Complete").length;
-          const compPct = compTotal > 0 ? Math.round((compComplete / compTotal) * 100) : 0;
-          const compHighRisk = complianceItems.filter((c: any) => c.risk === "High" && c.stage !== "Complete").length;
+          const compComplete = complianceItems.filter(
+            (c: any) => c.stage === "Complete",
+          ).length;
+          const compPct =
+            compTotal > 0 ? Math.round((compComplete / compTotal) * 100) : 0;
+          const compHighRisk = complianceItems.filter(
+            (c: any) => c.risk === "High" && c.stage !== "Complete",
+          ).length;
 
           const riskOpen = risks.filter((r: any) => r.status === "Open").length;
-          const riskHigh = risks.filter((r: any) => (r.grossRating || 0) >= 16).length;
+          const riskHigh = risks.filter(
+            (r: any) => (r.grossRating || 0) >= 16,
+          ).length;
           const riskEscalated = risks.filter((r: any) => r.escalated).length;
 
-          const issueOpen = issues.filter((i: any) => i.status !== "4. Resolved").length;
-          const issueEscalated = issues.filter((i: any) => i.status === "2. Escalated").length;
+          const issueOpen = issues.filter(
+            (i: any) => i.status !== "4. Resolved",
+          ).length;
+          const issueEscalated = issues.filter(
+            (i: any) => i.status === "2. Escalated",
+          ).length;
 
           let rag = "Green";
           if (riskHigh > 0 || compHighRisk > 2) rag = "Red";
@@ -407,7 +503,11 @@ export const projectRoutes: Record<
 
           return {
             ...project,
-            pmName: pmInfo.displayName || pmInfo.companyName || pmInfo.email || (project.userId === primaryUid ? "Client Admin" : "Member"),
+            pmName:
+              pmInfo.displayName ||
+              pmInfo.companyName ||
+              pmInfo.email ||
+              (project.userId === primaryUid ? "Client Admin" : "Member"),
             pmEmail: pmInfo.email || "",
             lastActivity,
             compTotal,
@@ -424,9 +524,17 @@ export const projectRoutes: Record<
             rag,
           };
         } catch (_) {
-          return { ...project, pmName: "Unknown", rag: "Grey", compPct: 0, riskTotal: 0, issueTotal: 0, lastActivity: null };
+          return {
+            ...project,
+            pmName: "Unknown",
+            rag: "Grey",
+            compPct: 0,
+            riskTotal: 0,
+            issueTotal: 0,
+            lastActivity: null,
+          };
         }
-      })
+      }),
     );
 
     return res.status(200).json({ success: true, projects: enrichedProjects });

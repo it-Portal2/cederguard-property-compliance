@@ -14,7 +14,7 @@ import { toast } from "react-hot-toast";
 import { PublicationChecklist } from "../components/PublicationChecklist";
 import { DeliveryTeamCRUD } from "../components/DeliveryTeamCRUD";
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── Main Page 
 export function ProjectInitiation() {
   const navigate = useNavigate();
   const { id: urlProjectId } = useParams();
