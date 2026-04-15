@@ -20,6 +20,7 @@ export function ProjectInitiation() {
   const { id: urlProjectId } = useParams();
   const {
     setActiveProject,
+    setActiveProgramme,
     setProjects,
     projects,
     user,
@@ -147,6 +148,7 @@ export function ProjectInitiation() {
       }
     } else if (isNewRoute) {
       setActiveProject(null);
+      setActiveProgramme(null);
       resetForm();
     } else if (activeProjectId && !urlProjectId) {
       loadProjectData(activeProjectId);
@@ -183,6 +185,9 @@ export function ProjectInitiation() {
       }
       // Don't reset form if project not found - it might be loading
     } else if (!activeProjectId) {
+      // No project is being edited — clear any stale programme context so the
+      // PublicationChecklist sidebar doesn't leak the previously selected programme's data.
+      setActiveProgramme(null);
       resetForm();
     }
   }, [urlProjectId, activeProjectId, projects, pathname]);

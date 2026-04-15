@@ -136,7 +136,7 @@ function CheckGroup({ options, selected, onChange }: {
 
 export function ProgrammeInitiation() {
     const navigate = useNavigate();
-    const { programmes, setProgrammes, activeProgrammeId, setActiveProgramme, setActiveProgrammeId, updateProgramme, addNotification, user, clientId } = useStore();
+    const { programmes, setProgrammes, activeProgrammeId, setActiveProgramme, setActiveProgrammeId, setActiveProject, updateProgramme, addNotification, user, clientId } = useStore();
     const [loading, setLoading] = useState(false);
     const [aiAnalyzing, setAiAnalyzing] = useState(false);
     const [aiError, setAiError] = useState('');
@@ -176,7 +176,12 @@ export function ProgrammeInitiation() {
         if (id && id !== activeProgrammeId) {
             setActiveProgrammeId(id);
         }
-    }, [id, activeProgrammeId, setActiveProgrammeId]);
+        // When entering new programme creation mode, clear any stale project context
+        // so the PublicationChecklist sidebar doesn't show the previous project's data
+        if (!id && !activeProgrammeId) {
+            setActiveProject(null);
+        }
+    }, [id, activeProgrammeId, setActiveProgrammeId, setActiveProject]);
 
     const resetForm = useCallback(() => setForm({
         reference: '',
