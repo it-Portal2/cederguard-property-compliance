@@ -389,6 +389,9 @@ export function ComplianceTracker() {
     });
   }, [displayItems, searchTerm, selectedDomainId, activeRiskFilter]);
 
+  const isSearchActive = searchTerm.trim().length > 0;
+  const effectiveViewMode: 'grid' | 'list' = isSearchActive ? 'list' : viewMode;
+
   // Group items for category cards
   const domainStats = useMemo(() => {
     return DOMAINS.map(domain => {
@@ -660,7 +663,7 @@ export function ComplianceTracker() {
               onClick={() => setViewMode('grid')}
               className={cn(
                 "p-2 rounded-lg transition-all flex items-center gap-2",
-                viewMode === 'grid' ? "bg-white shadow-sm text-indigo-600" : "text-slate-400 hover:text-slate-600"
+                effectiveViewMode === 'grid' ? "bg-white shadow-sm text-indigo-600" : "text-slate-400 hover:text-slate-600"
               )}
             >
               <LayoutGrid className="w-4 h-4" />
@@ -670,7 +673,7 @@ export function ComplianceTracker() {
               onClick={() => setViewMode('list')}
               className={cn(
                 "p-2 rounded-lg transition-all flex items-center gap-2",
-                viewMode === 'list' ? "bg-white shadow-sm text-indigo-600" : "text-slate-400 hover:text-slate-600"
+                effectiveViewMode === 'list' ? "bg-white shadow-sm text-indigo-600" : "text-slate-400 hover:text-slate-600"
               )}
             >
               <List className="w-4 h-4" />
@@ -808,7 +811,7 @@ export function ComplianceTracker() {
               </button>
             </div>
           </motion.div>
-        ) : viewMode === 'grid' ? (
+        ) : effectiveViewMode === 'grid' ? (
           <motion.div
             key="grid"
             initial={{ opacity: 0, y: 20 }}
