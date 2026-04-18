@@ -318,6 +318,7 @@ export function RiskModal({
                         : `Write a professional risk description. ONLY return the description text, no explanations. Risk: ${formData.title}. Category: ${formData.category}. Context: ${formData.project || formData.programme || "Programme Level"}.`
                     }
                     onSuggest={(val) => handleChange("desc", val)}
+                    placeholder="e.g. describe the risk scenario, trigger conditions, or affected activities"
                     className="scale-90"
                   />
                 </div>
@@ -664,6 +665,7 @@ export function RiskModal({
                         : `Write specific, actionable risk controls. ONLY return the controls text, no explanations. Risk: ${formData.title}. Description: ${formData.desc || "Not provided"}. Context: ${formData.project || formData.programme || "Programme Level"}.`
                     }
                     onSuggest={(val) => handleChange("controls", val)}
+                    placeholder="e.g. describe existing safeguards, who owns them, how effective they currently are"
                     className="scale-90"
                   />
                 </div>
@@ -816,6 +818,7 @@ export function RiskModal({
                               : `Write a specific, actionable mitigation task. ONLY return the task description, no explanations. Risk: ${formData.title}. Description: ${formData.desc || "Not provided"}. Context: ${formData.project || formData.programme || "Programme Level"}.`
                           }
                           onSuggest={(val) => setNewActionTitle(val)}
+                          placeholder="e.g. a short action title to reduce or transfer this risk"
                           className="scale-90"
                         />
                       </div>

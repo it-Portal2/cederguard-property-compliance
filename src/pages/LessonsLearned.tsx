@@ -277,9 +277,10 @@ export function LessonsLearned() {
                   <div className="space-y-1">
                     <div className="flex items-center justify-between mb-1">
                       <label className="text-xs font-black text-slate-400 uppercase tracking-wider">What happened? (The Problem)</label>
-                      <AIWriter 
+                      <AIWriter
                         context={`Briefly describe a project problem or risk event for the project: ${newLesson.project}. Title: ${newLesson.title}`}
                         onSuggest={(val) => setNewLesson({...newLesson, problem: val})}
+                        placeholder="e.g. root cause, circumstances that led to this, when it was first noticed"
                         className="scale-90"
                       />
                     </div>
@@ -296,9 +297,10 @@ export function LessonsLearned() {
                     <div className="space-y-1">
                       <div className="flex items-center justify-between mb-1">
                         <label className="text-xs font-black text-slate-400 uppercase tracking-wider">How was it resolved?</label>
-                        <AIWriter 
+                        <AIWriter
                           context={`Suggest an effective resolution for the problem: ${newLesson.problem}. Project: ${newLesson.project}`}
                           onSuggest={(val) => setNewLesson({...newLesson, resolution: val})}
+                          placeholder="e.g. steps taken, who resolved it, what was agreed"
                           className="scale-90"
                         />
                       </div>
@@ -312,9 +314,10 @@ export function LessonsLearned() {
                     <div className="space-y-1">
                       <div className="flex items-center justify-between mb-1">
                         <label className="text-xs font-black text-slate-400 uppercase tracking-wider">Future Prevention</label>
-                        <AIWriter 
+                        <AIWriter
                           context={`Based on the problem: ${newLesson.problem} and resolution: ${newLesson.resolution}, what should be done to prevent this from happening again?`}
                           onSuggest={(val) => setNewLesson({...newLesson, prevention: val})}
+                          placeholder="e.g. process change, new check, or training to prevent recurrence"
                           className="scale-90"
                         />
                       </div>

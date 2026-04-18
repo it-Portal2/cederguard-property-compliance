@@ -965,7 +965,7 @@ export const useStore = create<AppState>((set, get) => ({
       if (item.id === itemId) {
         return {
           ...item,
-          updates: [update, ...(item.updates || [])],
+          updates: [update, ...(Array.isArray(item.updates) ? item.updates : [])],
           lastUpdated: new Date().toISOString(),
         };
       }
@@ -1348,6 +1348,8 @@ export const useStore = create<AppState>((set, get) => ({
                 projectId,
                 // Normalise status — items saved without a status default to "applicable"
                 status: c.status || "applicable",
+                // Normalise updates — Firestore can return a plain object instead of array
+                updates: Array.isArray(c.updates) ? c.updates : [],
               }))
             : [],
         });
@@ -1983,6 +1985,8 @@ export const useStore = create<AppState>((set, get) => ({
                 programmeId,
                 // Normalise status — items saved without a status default to "applicable"
                 status: c.status || "applicable",
+                // Normalise updates — Firestore can return a plain object instead of array
+                updates: Array.isArray(c.updates) ? c.updates : [],
               }))
             : [],
         });

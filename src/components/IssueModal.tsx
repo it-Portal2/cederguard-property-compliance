@@ -317,6 +317,7 @@ export function IssueModal({
                       return `Describe a property compliance, safety, or delivery issue that has ACTUALLY OCCURRED (not a potential risk).\n\nConsider: What specific problem materialized? Who/what was affected? When did it happen? Be factual and specific.`;
                     })()}
                     onSuggest={(val: string) => handleChange("desc", val)}
+                    placeholder="e.g. what triggered this issue, who is affected, which regulation applies"
                     className="scale-90"
                   />
                 </div>
@@ -347,6 +348,7 @@ export function IssueModal({
                       return `${baseContext}Consider: How does this issue affect people, budget, timeline, compliance, and reputation if it escalates?`;
                     })()}
                     onSuggest={(val: string) => handleChange("impact", val)}
+                    placeholder="e.g. operational delays, cost overrun, reputational risk to client"
                     className="scale-90"
                   />
                 </div>
@@ -526,6 +528,7 @@ export function IssueModal({
                       <AIWriter
                         context={`Suggest a resolution action for the issue: ${formData.desc}. Current response strategy: ${formData.response}.`}
                         onSuggest={(val: string) => setNewActionTitle(val)}
+                        placeholder="e.g. a short action title to resolve this issue"
                         className="scale-75"
                       />
                     </div>
@@ -838,6 +841,7 @@ export function IssueModal({
                     onSuggest={(val: string) =>
                       handleChange("lessonsLearnt", val)
                     }
+                    placeholder="e.g. what process or check should have caught this earlier"
                     className="scale-90"
                   />
                 </div>

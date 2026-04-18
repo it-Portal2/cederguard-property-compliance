@@ -102,12 +102,25 @@ export function ComplianceTracker() {
 
   const [isLoading, setIsLoading] = useState(false);
 
+  // Ref keeps the latest complianceItems readable inside the effect without
+  // adding it to the dependency array (that would cause an infinite loop).
+  const complianceItemsRef = useRef(complianceItems);
+  complianceItemsRef.current = complianceItems;
+
   useEffect(() => {
-    // Load data when active context changes.
-    // Skip the fetch if complianceItems already has data for this context (e.g. loaded by initStore).
     if (!activeProjectId && !activeProgrammeId) return;
+
+    // Only show the skeleton when the store has no data for this context yet.
+    // If data is already present, loadProjectData still runs as a silent
+    // background refresh — the user sees existing data instantly.
+    const alreadyHasData = complianceItemsRef.current.some(i =>
+      activeProjectId
+        ? i.projectId === activeProjectId
+        : i.programmeId === activeProgrammeId
+    );
+
     let cancelled = false;
-    setIsLoading(true);
+    if (!alreadyHasData) setIsLoading(true);
     const loadFn = activeProjectId
       ? loadProjectData(activeProjectId)
       : loadProgrammeData(activeProgrammeId!);
@@ -133,8 +146,10 @@ export function ComplianceTracker() {
 
   const fromInitiation = searchParams.get('from') === 'initiation';
   const isPM = !isAtLeastClientAdmin(currentUser?.profile?.role);
-  const activeItems = getActiveItems();
-  const pendingItems = getPendingItems();
+  // Explicit useMemo so that stats, domainStats, and filteredItems all recompute
+  // the instant complianceItems changes in the store (e.g. after an optimistic add/update).
+  const activeItems = useMemo(() => getActiveItems(), [complianceItems, activeProjectId, activeProgrammeId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const pendingItems = useMemo(() => getPendingItems(), [complianceItems, activeProjectId, activeProgrammeId]); // eslint-disable-line react-hooks/exhaustive-deps
   const [searchTerm, setSearchTerm] = useState('');
   const [showFullQueue, setShowFullQueue] = useState(false);
   const [showDismissed, setShowDismissed] = useState(false);
@@ -148,7 +163,7 @@ export function ComplianceTracker() {
       const action = searchParams.get('action');
       if (action === 'add-compliance') {
           setEditingItem(null);
-          setNewReq({ domain: 'General', reg: '', auth: '', risk: 'Medium', req: '' });
+          setNewReq({ domain: DOMAINS[0]?.label || '', reg: '', auth: '', risk: 'Medium', req: '' });
           setIsAddModalOpen(true);
           // Clean up the URL
           setSearchParams(prev => {
@@ -258,14 +273,14 @@ export function ComplianceTracker() {
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ComplianceItem | null>(null);
-  const [newReq, setNewReq] = useState({ domain: 'General', reg: '', auth: '', risk: 'Medium', req: '' });
+  const [newReq, setNewReq] = useState({ domain: DOMAINS[0]?.label || '', reg: '', auth: '', risk: 'Medium', req: '' });
   const [isSaving, setIsSaving] = useState(false);
   const [isAIInquiryOpen, setIsAIInquiryOpen] = useState(false);
 
   const openEditModal = (item: ComplianceItem) => {
     setEditingItem(item);
     // Normalise stored domain (id or label) to label so the modal select can match it
-    const domainLabel = DOMAINS.find(d => d.id === item.domain || d.label === item.domain)?.label || item.domain || 'General';
+    const domainLabel = DOMAINS.find(d => d.id === item.domain || d.label === item.domain)?.label || DOMAINS[0]?.label || '';
     setNewReq({
       domain: domainLabel,
       reg: item.reg || '',
@@ -278,7 +293,7 @@ export function ComplianceTracker() {
 
   const handleSaveRequirement = async () => {
     // Normalise domain: always store the id (e.g. "bs"), not the label ("Building Safety")
-    const domainId = DOMAINS.find(d => d.label === newReq.domain || d.id === newReq.domain)?.id || newReq.domain;
+    const domainId = DOMAINS.find(d => d.label === newReq.domain || d.id === newReq.domain)?.id || DOMAINS[0]?.id || newReq.domain;
     const payload = { ...newReq, domain: domainId, reg: newReq.reg.trim(), req: newReq.req.trim() };
     setIsSaving(true);
     try {
@@ -300,9 +315,14 @@ export function ComplianceTracker() {
           type: 'compliance',
           projectId: activeProjectId || undefined
         });
+        // Switch to list view filtered to the new item's domain so the user
+        // can immediately see the requirement they just added. domainId is
+        // already resolved above from the form's domain label → id lookup.
+        setViewMode('list');
+        setSelectedDomainId(domainId);
       }
       setIsAddModalOpen(false);
-      setNewReq({ domain: 'General', reg: '', auth: '', risk: 'Medium', req: '' });
+      setNewReq({ domain: DOMAINS[0]?.label || '', reg: '', auth: '', risk: 'Medium', req: '' });
     } catch {
       toast.error('Something went wrong. Please try again.');
     } finally {
@@ -779,7 +799,7 @@ export function ComplianceTracker() {
               <button 
                 onClick={() => {
                   setEditingItem(null);
-                  setNewReq({ domain: 'General', reg: '', auth: '', risk: 'Medium', req: '' });
+                  setNewReq({ domain: DOMAINS[0]?.label || '', reg: '', auth: '', risk: 'Medium', req: '' });
                   setIsAddModalOpen(true);
                 }}
                 className="px-8 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95"
@@ -1172,7 +1192,7 @@ export function ComplianceTracker() {
                                             <History className="w-3 h-3 text-indigo-400" /> Historical Updates
                                           </h4>
                                           <div className="space-y-3 max-h-60 overflow-y-auto pr-2 scrollbar-thin">
-                                            {item.updates && item.updates.length > 0 ? (
+                                            {Array.isArray(item.updates) && item.updates.length > 0 ? (
                                               item.updates.map((update: { id: string; date: string; content: string; author?: string }) => (
                                                 <div key={update.id} className="p-3 bg-white border border-slate-100 rounded-xl shadow-sm space-y-1">
                                                   <div className="flex justify-between items-center">
@@ -1422,6 +1442,7 @@ export function ComplianceTracker() {
                       `No markdown, no bullet points, no headers. Plain text only.`
                     ].filter(Boolean).join(' ')}
                     label="Draft with AI"
+                    placeholder="e.g. specify site type, occupancy, project phase, or local authority requirements"
                   />
                 </div>
                 <textarea 

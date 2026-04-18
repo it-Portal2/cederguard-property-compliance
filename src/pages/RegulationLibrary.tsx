@@ -815,6 +815,7 @@ export function RegulationLibrary() {
                         `Provide a specific, actionable compliance requirement statement — not a generic summary. Plain text only, no markdown.`
                       ].filter(Boolean).join(' ')}
                       label="AI Assist"
+                      placeholder="e.g. focus on residential conversions, or Grade II listed buildings in conservation areas"
                     />
                   </div>
                   <textarea 
