@@ -13,7 +13,7 @@ export function ProgrammeContext() {
     const activeProgramme = Array.isArray(programmes) ? (programmes.find(p => p.id === activeProgrammeId) || {} as any) : {} as any;
 
     const userRole = user?.role || (user as any)?.profile?.role || 'user';
-    const isClientAdmin = userRole === 'admin' || isSystemAdmin((user as any)?.email) || ['pro', 'enterprise', 'client_admin'].includes(userRole);
+    const isClientAdmin = userRole === 'admin' || isSystemAdmin((user as any)?.email) || ['enterprise', 'client_admin'].includes(userRole);
 
     const safeProjects = Array.isArray(projects) ? projects : [];
     const safeRisks = Array.isArray(risks) ? risks : [];

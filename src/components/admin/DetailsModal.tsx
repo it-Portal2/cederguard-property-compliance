@@ -146,7 +146,7 @@ export function DetailsModal({
 
                                 const transferTargets = allUsers.filter(u => {
                                     if (type === 'programmes') {
-                                        return ['client_admin', 'pro', 'enterprise'].includes(u.role);
+                                        return ['client_admin', 'enterprise'].includes(u.role);
                                     }
                                     return ['project_manager', 'senior_pm', 'senior_project_manager', 'assistant_project_manager', 'project_coordinator'].includes(u.role);
                                 });

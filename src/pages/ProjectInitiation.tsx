@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams, useLocation, Link } from "react-router";
 import { api } from "../lib/api";
 import { useStore, TeamMember } from "../store/useStore";
@@ -38,6 +38,11 @@ export function ProjectInitiation() {
   const [teamSaved, setTeamSaved] = useState(false);
   const [draftToDelete, setDraftToDelete] = useState<string | null>(null);
   const [deletingDraft, setDeletingDraft] = useState(false);
+  const [showNoProgrammeWarning, setShowNoProgrammeWarning] = useState(false);
+  // Tracks which project ID the form was last populated for — prevents
+  // background store updates (from loadProjectData resolving) from resetting
+  // isDirty and overwriting in-flight user edits (Fix 4).
+  const lastPopulatedForRef = useRef<string | null>(null);
 
   const defaultMilestones: ProgrammeMilestone[] = RIBA_STAGES.map((stage, idx) => ({
     id: `ms_${Date.now()}_${idx}`,
@@ -59,7 +64,7 @@ export function ProjectInitiation() {
       status: "Active",
       programmeId: activeProgrammeId || "",
       programmeManagerId: "",
-      projectManagerId: user?.email || "",
+      projectManagerId: "",
       riba: "",
       employersAgent: "",
       architect: "",
@@ -85,7 +90,7 @@ export function ProjectInitiation() {
     description: "",
     status: "Active",
     programmeId: activeProgrammeId || "",
-    projectManagerId: user?.email || "",
+    projectManagerId: "",
     programmeManagerId: "",
     riba: "",
     employersAgent: "",
@@ -106,89 +111,85 @@ export function ProjectInitiation() {
 
   const { pathname } = useLocation();
 
-  // Effect to handle URL parameters for editing or new mode
+  // Effect to handle URL parameters for editing or new mode.
+  // Fix 4: lastPopulatedForRef gates form population so that background
+  // store updates (loadProjectData resolving) never overwrite in-flight user
+  // edits or reset isDirty after the form has already been populated.
   useEffect(() => {
     const isNewRoute =
       pathname.includes("/projects/new") || pathname === "/initiate";
 
-    if (urlProjectId) {
-      setActiveProject(urlProjectId);
-      loadProjectData(urlProjectId);
+    const populateForm = (p: any) => {
+      setFormData({
+        name: p.name || "",
+        type: p.type || p.schemeType || "",
+        loc: p.loc || "",
+        description: p.scope || p.description || "",
+        status: p.status || "Active",
+        programmeId: p.programmeId || "",
+        projectManagerId: p.projectManagerId || p.pmId || user?.email || "",
+        programmeManagerId: (p as any).programmeManagerId || "",
+        riba: p.riba || "",
+        employersAgent: p.employersAgent || "",
+        architect: p.architect || "",
+        mainContractor: p.mainContractor || "",
+        startOnSite: p.startOnSite || "",
+        targetPC: p.targetPC || "",
+        costCentreCode: p.costCentreCode || "",
+        fundingStreams: p.fundingStreams || [],
+        numberOfUnits: p.numberOfUnits?.toString() || "",
+        numberOfStoreys: p.numberOfStoreys || "",
+        typeOfUnits: p.typeOfUnits || "",
+        bedroomsPerProperty: p.bedroomsPerProperty || "",
+        milestones: p.milestones || [],
+        deliveryTeam: Array.isArray(p.deliveryTeam) ? (p.deliveryTeam as TeamMember[]) : [] as TeamMember[],
+        deliveryTeamDone: !!p.deliveryTeamDone,
+      });
+      setIsDirty(false);
+    };
 
-      const p = (Array.isArray(projects) ? projects : []).find(
-        (proj) => proj.id === urlProjectId,
-      );
-      if (p) {
-        setFormData({
-          name: p.name || "",
-          type: p.type || p.schemeType || "",
-          loc: p.loc || "",
-          description: p.scope || p.description || "",
-          status: p.status || "Active",
-          programmeId: p.programmeId || "",
-          projectManagerId: p.projectManagerId || p.pmId || user?.email || "",
-          programmeManagerId: (p as any).programmeManagerId || "",
-          riba: p.riba || "",
-          employersAgent: p.employersAgent || "",
-          architect: p.architect || "",
-          mainContractor: p.mainContractor || "",
-          startOnSite: p.startOnSite || "",
-          targetPC: p.targetPC || "",
-          costCentreCode: p.costCentreCode || "",
-          fundingStreams: p.fundingStreams || [],
-          numberOfUnits: p.numberOfUnits?.toString() || "",
-          numberOfStoreys: p.numberOfStoreys || "",
-          typeOfUnits: p.typeOfUnits || "",
-          bedroomsPerProperty: p.bedroomsPerProperty || "",
-          milestones: p.milestones || [],
-          deliveryTeam: Array.isArray(p.deliveryTeam) ? (p.deliveryTeam as TeamMember[]) : [] as TeamMember[],
-          deliveryTeamDone: !!p.deliveryTeamDone,
-        });
-        setIsDirty(false);
+    if (urlProjectId) {
+      // Only populate when switching to a new project ID.
+      // Once populated (ref matches), skip — so store updates don't overwrite edits.
+      if (lastPopulatedForRef.current !== urlProjectId) {
+        setActiveProject(urlProjectId);
+        loadProjectData(urlProjectId);
+        const p = (Array.isArray(projects) ? projects : []).find(
+          (proj) => proj.id === urlProjectId,
+        );
+        if (p) {
+          populateForm(p);
+          lastPopulatedForRef.current = urlProjectId;
+        }
+        // If p not found yet (projects still loading), don't set the ref —
+        // the effect will retry when projects updates with the loaded data.
       }
     } else if (isNewRoute) {
-      setActiveProject(null);
-      setActiveProgramme(null);
-      resetForm();
-    } else if (activeProjectId && !urlProjectId) {
-      loadProjectData(activeProjectId);
-      const p = (Array.isArray(projects) ? projects : []).find(
-        (proj) => proj.id === activeProjectId,
-      );
-      if (p) {
-        setFormData({
-          name: p.name || "",
-          type: p.type || p.schemeType || "",
-          loc: p.loc || "",
-          description: p.scope || p.description || "",
-          status: p.status || "Active",
-          programmeId: p.programmeId || "",
-          projectManagerId: p.projectManagerId || p.pmId || user?.email || "",
-          programmeManagerId: (p as any).programmeManagerId || "",
-          riba: p.riba || "",
-          employersAgent: p.employersAgent || "",
-          architect: p.architect || "",
-          mainContractor: p.mainContractor || "",
-          startOnSite: p.startOnSite || "",
-          targetPC: p.targetPC || "",
-          costCentreCode: p.costCentreCode || "",
-          fundingStreams: p.fundingStreams || [],
-          numberOfUnits: p.numberOfUnits?.toString() || "",
-          numberOfStoreys: p.numberOfStoreys || "",
-          typeOfUnits: p.typeOfUnits || "",
-          bedroomsPerProperty: p.bedroomsPerProperty || "",
-          milestones: p.milestones || [],
-          deliveryTeam: Array.isArray(p.deliveryTeam) ? (p.deliveryTeam as TeamMember[]) : [] as TeamMember[],
-          deliveryTeamDone: !!p.deliveryTeamDone,
-        });
-        setIsDirty(false);
+      if (lastPopulatedForRef.current !== "new") {
+        setActiveProject(null);
+        setActiveProgramme(null);
+        resetForm();
+        lastPopulatedForRef.current = "new";
       }
-      // Don't reset form if project not found - it might be loading
+    } else if (activeProjectId && !urlProjectId) {
+      if (lastPopulatedForRef.current !== activeProjectId) {
+        loadProjectData(activeProjectId);
+        const p = (Array.isArray(projects) ? projects : []).find(
+          (proj) => proj.id === activeProjectId,
+        );
+        if (p) {
+          populateForm(p);
+          lastPopulatedForRef.current = activeProjectId;
+        }
+      }
     } else if (!activeProjectId) {
-      // No project is being edited — clear any stale programme context so the
-      // PublicationChecklist sidebar doesn't leak the previously selected programme's data.
-      setActiveProgramme(null);
-      resetForm();
+      if (lastPopulatedForRef.current !== null) {
+        // No project being edited — clear stale programme context so the
+        // PublicationChecklist sidebar doesn't leak previously selected data.
+        setActiveProgramme(null);
+        resetForm();
+        lastPopulatedForRef.current = null;
+      }
     }
   }, [urlProjectId, activeProjectId, projects, pathname]);
 
@@ -199,7 +200,6 @@ export function ProjectInitiation() {
         try {
           const fetchFn = [
             "admin",
-            "pro",
             "enterprise",
             "client_admin",
           ].includes(userRole)
@@ -224,68 +224,52 @@ export function ProjectInitiation() {
   const [loadingPMs, setLoadingPMs] = useState(false);
   const userRole = (user as any)?.role;
 
-  // Fetch Programme Managers for the Supervisor dropdown
+  // Parallelise all three dropdown fetches into a single mount effect.
+  // Previously three separate useEffects fired sequential API calls (3× token fetch + 3× network).
+  // Promise.all cuts this to one token fetch + three parallel Firestore queries.
   useEffect(() => {
-    const fetchManagers = async () => {
-      try {
-        const res = await api.clientGetProgrammeManagers();
-        if (res.success) setProgrammeManagers(res.users || []);
-      } catch (err) {
-        console.error("Failed to fetch programme managers:", err);
-      }
-    };
-    fetchManagers();
-  }, []);
-
-  // Sync filtered programmes when supervisor selection changes
-  useEffect(() => {
-    const syncProgrammes = async () => {
-      if (formData.programmeManagerId) {
-        try {
-          const res = await api.clientGetProgrammesByManager(formData.programmeManagerId);
-          if (res.success) setFilteredProgrammes(res.data || []);
-        } catch (err) {
-          console.error("Failed to fetch filtered programmes:", err);
-          setFilteredProgrammes([]);
-        }
-      } else {
-        // If no supervisor selected, fallback to global store programmes (which are gated by PM access anyway)
-        setFilteredProgrammes(Array.isArray(programmes) ? programmes : []);
-      }
-    };
-    syncProgrammes();
-  }, [formData.programmeManagerId, programmes]);
-
-  useEffect(() => {
-    if (user && !isAtLeastPM(userRole)) navigate("/projects");
-  }, [user, userRole, navigate]);
-
-  // Ensure PM receives a non-empty PM id on blank initiation
-  useEffect(() => {
-    if (user?.email && !formData.projectManagerId && !activeProjectId) {
-      setFormData(prev => ({ ...prev, projectManagerId: user.email! }));
-    }
-  }, [user?.email, formData.projectManagerId, activeProjectId]);
-
-  useEffect(() => {
-    const fetchPMs = async () => {
+    const fetchDropdownData = async () => {
       setLoadingPMs(true);
       try {
-        const res = await api.getAssignablePMs();
-        if (res.success) setAssignablePMs(res.users || []);
+        const [pmsRes, supervisorsRes, programmesRes] = await Promise.all([
+          api.getAssignablePMs(),
+          api.clientGetProgrammeManagers(),
+          api.clientGetProgrammesByManager(''),
+        ]);
+        if (pmsRes.success) setAssignablePMs(pmsRes.users || []);
+        if (supervisorsRes.success) setProgrammeManagers(supervisorsRes.users || []);
+        const progData = programmesRes.success ? (programmesRes.data || []) : [];
+        setFilteredProgrammes(progData.length > 0 ? progData : (Array.isArray(programmes) ? programmes : []));
       } catch (err: any) {
-        // Silently ignore 403 - user doesn't have permission (expected for regular PMs)
-        // This allows backend permission changes to work automatically
-        if (err.status !== 403) {
-          console.error("Failed to fetch PMs:", err);
-        }
-        setAssignablePMs([]);
+        // Silently ignore 403 — regular PMs may not have permission for all endpoints
+        if (err?.status !== 403) console.error('Failed to fetch dropdown data:', err);
       } finally {
         setLoadingPMs(false);
       }
     };
-    fetchPMs();
-  }, []);
+    fetchDropdownData();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Re-fetch programmes when supervisor filter changes.
+  // deps: formData.programmeManagerId only — removing `programmes` prevents a
+  // second fetch firing whenever the store updates (causing the dropdown to flash).
+  useEffect(() => {
+    if (!formData.programmeManagerId) return; // initial load handled above
+    const syncProgrammes = async () => {
+      try {
+        const res = await api.clientGetProgrammesByManager(formData.programmeManagerId);
+        if (res.success) setFilteredProgrammes(res.data || []);
+      } catch (err) {
+        console.error("Failed to fetch filtered programmes:", err);
+        setFilteredProgrammes([]);
+      }
+    };
+    syncProgrammes();
+  }, [formData.programmeManagerId]); // intentionally excludes `programmes` — see comment above
+
+  useEffect(() => {
+    if (user && !isAtLeastPM(userRole)) navigate("/projects");
+  }, [user, userRole, navigate]);
 
   const set = (key: string, val: any) => {
     setFormData((prev) => ({ ...prev, [key]: val }));
@@ -320,10 +304,16 @@ export function ProjectInitiation() {
     setIsDirty(true);
   };
 
-  const handleSubmit = async (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.FormEvent, skipProgrammeWarning = false) => {
     if (e) e.preventDefault();
     if (!requiredDone) {
       toast.error("Please fill all required fields.");
+      return;
+    }
+    // UX 3: soft warning when creating a new project with no programme linked.
+    // Not shown when updating (the user has already consciously set the field).
+    if (!skipProgrammeWarning && !formData.programmeId && !activeProjectId) {
+      setShowNoProgrammeWarning(true);
       return;
     }
     setLoading(true);
@@ -374,7 +364,6 @@ export function ProjectInitiation() {
           // Parallelize independent data loading operations
           const fetchFn = [
             "admin",
-            "pro",
             "enterprise",
             "client_admin",
           ].includes(userRole)
@@ -710,6 +699,7 @@ export function ProjectInitiation() {
                 </div>
 
                 <div className="space-y-5">
+                  {/* Project Name */}
                   <div>
                     <label className={labelCls}>
                       Project Name{" "}
@@ -725,6 +715,84 @@ export function ProjectInitiation() {
                     />
                   </div>
 
+                  {/* ── UX 1: Programme fields elevated to top — high-level classification ── */}
+                  <div className="p-4 bg-indigo-50/60 border border-indigo-100 rounded-xl space-y-4">
+                    <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest leading-none">
+                      Programme Classification
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div>
+                        <label className={clsx(labelCls, "text-indigo-700")}>
+                          Associated Programme
+                          {isAtLeastClientAdmin(userRole) && (
+                            <span className="text-rose-500 ml-0.5">*</span>
+                          )}
+                        </label>
+                        <select
+                          className={clsx(inputCls, "border-indigo-200 focus:border-indigo-500")}
+                          value={formData.programmeId}
+                          onChange={(e) => set("programmeId", e.target.value)}
+                          disabled={loadingPMs}
+                        >
+                          {loadingPMs
+                            ? <option value="">Loading programmes…</option>
+                            : <>
+                                {/* UX 4: explicit "independent" option — not a blank placeholder */}
+                                <option value="">— Independent (no programme link) —</option>
+                                {filteredProgrammes.map((p) => (
+                                  <option key={p.id} value={p.id}>
+                                    {p.name}
+                                  </option>
+                                ))}
+                              </>
+                          }
+                        </select>
+                        {/* UX 5: guidance for client admins */}
+                        {isAtLeastClientAdmin(userRole) && !formData.programmeId && (
+                          <p className="text-[10px] text-amber-600 font-semibold mt-1.5 ml-1">
+                            Recommended: link to a programme or confirm as independent.
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className={labelCls}>Programme Supervisor / Director</label>
+                        <select
+                          className={inputCls}
+                          value={formData.programmeManagerId}
+                          onChange={(e) => set("programmeManagerId", e.target.value)}
+                          disabled={loadingPMs}
+                        >
+                          {loadingPMs
+                            ? <option value="">Loading supervisors…</option>
+                            : <>
+                                <option value="">— Select Supervisor —</option>
+                                {programmeManagers.map((m) => (
+                                  <option key={m.uid || m.email} value={m.uid}>
+                                    {m.displayName || m.email?.split('@')[0] || '(No name)'}{' '}
+                                    ({m.role?.replace(/_/g, ' ')})
+                                  </option>
+                                ))}
+                              </>
+                          }
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* UX 2: confirmation banner when a programme is selected */}
+                    {formData.programmeId && (() => {
+                      const linked = filteredProgrammes.find(p => p.id === formData.programmeId);
+                      return linked ? (
+                        <div className="flex items-center gap-2 text-xs text-indigo-700 font-semibold bg-indigo-100/60 px-3 py-2 rounded-lg border border-indigo-200/60">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                          This project will be added to{' '}
+                          <span className="font-black">{linked.name}</span>
+                        </div>
+                      ) : null;
+                    })()}
+                  </div>
+
+                  {/* ── Rest of metadata grid ── */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
                       <label className={labelCls}>
@@ -740,9 +808,7 @@ export function ProjectInitiation() {
                         <option value="">— Select Type —</option>
                         <optgroup label="New Build">
                           <option>New Build – General Needs</option>
-                          <option>
-                            New Build – Higher-Risk Building (HRB)
-                          </option>
+                          <option>New Build – Higher-Risk Building (HRB)</option>
                           <option>New Build – Supported Housing</option>
                         </optgroup>
                         <optgroup label="Existing Stock">
@@ -778,53 +844,45 @@ export function ProjectInitiation() {
                         className={inputCls}
                         value={formData.projectManagerId}
                         onChange={(e) => set("projectManagerId", e.target.value)}
-                        disabled={!isAtLeastClientAdmin(userRole) && assignablePMs.length === 0}
+                        disabled={loadingPMs || (!isAtLeastClientAdmin(userRole) && assignablePMs.length === 0)}
                         required
                       >
-                        <option value="">— Select PM —</option>
-                        {assignablePMs.map((pm) => (
-                          <option key={pm.uid || pm.email} value={pm.email}>
-                            {pm.displayName || pm.email}
-                          </option>
-                        ))}
-                        {/* Fallback if user is not in the assignable list but is set */}
-                        {formData.projectManagerId && !assignablePMs.find(pm => pm.email === formData.projectManagerId) && (
-                          <option value={formData.projectManagerId}>{user?.displayName || formData.projectManagerId}</option>
-                        )}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className={labelCls}>Programme Supervisor / Director</label>
-                      <select
-                        className={inputCls}
-                        value={formData.programmeManagerId}
-                        onChange={(e) => set("programmeManagerId", e.target.value)}
-                      >
-                        <option value="">— Select Supervisor —</option>
-                        {programmeManagers.map((m) => (
-                          <option key={m.uid || m.email} value={m.uid}>
-                            {m.displayName} ({m.role?.replace('_', ' ')})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className={labelCls}>Associated Programme</label>
-                      <select
-                        className={inputCls}
-                        value={formData.programmeId}
-                        onChange={(e) => set("programmeId", e.target.value)}
-                      >
-                        <option value="">— Independent Project —</option>
-                        {filteredProgrammes.map(
-                          (p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.name}
-                            </option>
-                          ),
-                        )}
+                        {loadingPMs
+                          ? <option value="">Loading project managers…</option>
+                          : <>
+                              <option value="">— Select PM —</option>
+                              {/* Deduplicate by email, drop no-email entries (avoids blank gaps).
+                                  Filter out account-tier roles (pro, enterprise) — these are billing
+                                  tiers not job roles and should not appear in the PM assignment list.
+                                  If displayName contains '@' the backend used email as fallback — show
+                                  (No name) label instead. Show role label so users can distinguish. */}
+                              {[...new Map(
+                                assignablePMs
+                                  .filter(pm => pm.email && !['pro', 'enterprise', 'admin', 'super_admin'].includes(pm.role))
+                                  .map(pm => [pm.email, pm])
+                              ).values()].map((pm) => {
+                                const raw = pm.displayName?.trim() ?? '';
+                                const hasRealName = raw && !raw.includes('@');
+                                const name = hasRealName ? raw : `(No name) — ${pm.email}`;
+                                const roleLabel = pm.role?.replace(/_/g, ' ') || '';
+                                return (
+                                  <option key={pm.uid || pm.email} value={pm.email}>
+                                    {name}{roleLabel ? ` (${roleLabel})` : ''}
+                                  </option>
+                                );
+                              })}
+                              {/* Fallback: current PM not in assignable list (e.g. different org) */}
+                              {formData.projectManagerId && !assignablePMs.find(pm => pm.email === formData.projectManagerId) && (
+                                <option value={formData.projectManagerId}>
+                                  {(() => {
+                                    const raw = user?.displayName?.trim() ?? '';
+                                    const hasRealName = raw && !raw.includes('@');
+                                    return hasRealName ? raw : `(No name) — ${formData.projectManagerId}`;
+                                  })()}
+                                </option>
+                              )}
+                            </>
+                        }
                       </select>
                     </div>
 
@@ -1078,6 +1136,45 @@ export function ProjectInitiation() {
           </div>
         </div>
       </div>
+
+      {/* No-Programme Warning Modal (UX 3) */}
+      {showNoProgrammeWarning && (
+        <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3 mb-4 text-amber-600">
+              <div className="p-2 bg-amber-50 rounded-xl">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-black tracking-tight text-slate-900">Independent Project?</h3>
+            </div>
+            <p className="text-slate-500 mb-1 text-sm leading-relaxed">
+              This project is not linked to any programme. It will be saved as an <span className="font-bold text-slate-700">independent project</span>.
+            </p>
+            <p className="text-slate-400 mb-6 text-xs leading-relaxed">
+              You can link it to a programme later from this page. If this is intentional, continue below.
+            </p>
+            <div className="flex items-center gap-3 justify-end">
+              <button
+                type="button"
+                onClick={() => setShowNoProgrammeWarning(false)}
+                className="px-4 py-2 font-black text-xs uppercase tracking-widest text-slate-500 hover:bg-slate-50 border border-slate-200 rounded-xl transition-all"
+              >
+                Cancel — Add Programme
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowNoProgrammeWarning(false);
+                  handleSubmit(undefined, true);
+                }}
+                className="flex items-center gap-2 px-4 py-2 font-black text-xs uppercase tracking-widest text-white bg-amber-500 hover:bg-amber-600 shadow-lg shadow-amber-100 rounded-xl transition-all"
+              >
+                Continue as Independent
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Draft Modal */}
       {draftToDelete && (

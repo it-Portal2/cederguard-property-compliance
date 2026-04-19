@@ -76,7 +76,7 @@ export function UsersTab({ isAdmin }: { isAdmin: boolean }) {
         }
     };
 
-    const clientAdmins = users.filter(u => ['pro', 'enterprise', 'client_admin'].includes(u.role));
+    const clientAdmins = users.filter(u => ['enterprise', 'client_admin'].includes(u.role));
 
     const filtered = (Array.isArray(users) ? users : []).filter(u =>
         (u.email || '').toLowerCase().includes(search.toLowerCase()) ||
@@ -153,7 +153,7 @@ export function UsersTab({ isAdmin }: { isAdmin: boolean }) {
                                         </div>
                                     )}
                                 </td>
-                                {(['project_manager', 'senior_pm', 'senior_project_manager', 'assistant_project_manager', 'project_coordinator', 'user', 'pro', 'enterprise', 'employee'].includes(u.role || 'user')) && (
+                                {(['project_manager', 'senior_pm', 'senior_project_manager', 'assistant_project_manager', 'project_coordinator', 'user', 'enterprise', 'employee'].includes(u.role || 'user')) && (
                                     <td className="px-4 py-3">
                                         <div className="relative inline-block w-full max-w-[200px]">
                                             <select
@@ -172,7 +172,7 @@ export function UsersTab({ isAdmin }: { isAdmin: boolean }) {
                                         </div>
                                     </td>
                                 )}
-                                {!(['project_manager', 'senior_pm', 'senior_project_manager', 'assistant_project_manager', 'project_coordinator', 'user', 'pro', 'enterprise', 'employee'].includes(u.role || 'user')) && (
+                                {!(['project_manager', 'senior_pm', 'senior_project_manager', 'assistant_project_manager', 'project_coordinator', 'user', 'enterprise', 'employee'].includes(u.role || 'user')) && (
                                     <td className="px-4 py-3 text-slate-400 text-xs">—</td>
                                 )}
                                 <td className="px-4 py-3 text-right">

@@ -695,7 +695,12 @@ export const useStore = create<AppState>((set, get) => ({
   setPortfolioInfo: (info) => set({ portfolioInfo: info }),
   deferredPrompt: null,
   isInitialized: false,
-  setUser: (user) => set({ user }),
+  // Reset isInitialized on every setUser so the next login always re-runs
+  // initStore() from scratch. Without this, logging out and back in skips
+  // initStore() (it returns early because isInitialized is still true from the
+  // previous session), leaving the store user as the bare Firebase auth object
+  // (no .role), which makes all role-gated sidebar items invisible.
+  setUser: (user) => set({ user, isInitialized: false }),
   isDarkMode: false,
   toggleDarkMode: () => {
     const next = !get().isDarkMode;
@@ -985,20 +990,43 @@ export const useStore = create<AppState>((set, get) => ({
     const { risks } = get();
     // Normalize to ensure both ID and name fields are populated
     const normalizedRisk = normalizeRisk(risk) as RiskItem;
+
+    // Resolve and stamp programmeId on escalated risks before saving
+    if (normalizedRisk.escalated) {
+      const resolvedProgrammeId =
+        normalizedRisk.programmeId ||
+        (get().projects as any[]).find((p: any) => p.id === normalizedRisk.projectId)?.programmeId ||
+        get().activeProgrammeId ||
+        '';
+      if (resolvedProgrammeId) normalizedRisk.programmeId = resolvedProgrammeId;
+    }
+
     const newRisks = [normalizedRisk, ...risks];
     set({ risks: newRisks });
 
-    // If escalated, trigger notification
-    if (risk.escalated) {
+    // If escalated, trigger notification and dual-write to programme path
+    if (normalizedRisk.escalated) {
       get().addNotification({
         id: generateId("NOTIF"),
         type: "risk",
         title: "Risk Escalated",
-        message: `Risk "${risk.title}" has been escalated to the programme level.`,
+        message: `Risk "${normalizedRisk.title}" has been escalated to the programme level.`,
         status: "Unread",
         time: new Date().toISOString(),
         severity: "High",
       });
+      if (normalizedRisk.programmeId) {
+        try {
+          const progRes = await api.getData("risks", normalizedRisk.programmeId);
+          const progRisks: any[] = progRes.success ? (progRes.data || []) : [];
+          const idx = progRisks.findIndex((r: any) => r.id === normalizedRisk.id);
+          if (idx >= 0) progRisks[idx] = normalizedRisk;
+          else progRisks.push(normalizedRisk);
+          await api.saveData("risks", progRisks, normalizedRisk.programmeId);
+        } catch (e) {
+          console.error("Failed to dual-write escalated risk to programme path:", e);
+        }
+      }
     }
 
     const contextId = get().activeProjectId || get().activeProgrammeId;
@@ -1006,12 +1034,28 @@ export const useStore = create<AppState>((set, get) => ({
   },
   updateRisk: async (id, updates) => {
     const { risks } = get();
+    // Track programmeId for post-save operations
+    let escalateProgrammeId = '';
+    let deescalateProgrammeId = '';
+    let syncProgrammeId = '';
+
     const updated = risks.map((risk) => {
       if (risk.id === id) {
         const merged = { ...risk, ...updates };
         // Normalize to ensure both ID and name fields are populated
         const next = normalizeRisk(merged) as RiskItem;
-        if (updates.escalated && !risk.escalated) {
+
+        if (updates.escalated === true && !risk.escalated) {
+          // Resolve programmeId so the risk appears in the programme register
+          const resolved =
+            next.programmeId ||
+            (get().projects as any[]).find((p: any) => p.id === next.projectId)?.programmeId ||
+            get().activeProgrammeId ||
+            '';
+          if (resolved) {
+            next.programmeId = resolved;
+            escalateProgrammeId = resolved;
+          }
           get().addNotification({
             id: generateId("NOTIF"),
             type: "risk",
@@ -1022,21 +1066,94 @@ export const useStore = create<AppState>((set, get) => ({
             severity: "High",
           });
           if (next.status !== "Escalated") next.status = "Escalated";
+        } else if (updates.escalated === false && risk.escalated) {
+          // Track programme path so we can remove this risk after saving
+          deescalateProgrammeId = risk.programmeId || get().activeProgrammeId || '';
+        } else if (updates.escalated === undefined && risk.escalated && risk.programmeId) {
+          // Editing an already-escalated risk — keep programme path in sync
+          syncProgrammeId = risk.programmeId;
+          if (next.programmeId !== risk.programmeId) next.programmeId = risk.programmeId;
         }
+
         return next;
       }
       return risk;
     });
+
     set({ risks: updated });
     const contextId = get().activeProjectId || get().activeProgrammeId;
     await api.saveData("risks", updated, contextId);
+
+    // Dual-write to programme path when escalating
+    if (escalateProgrammeId) {
+      try {
+        const escalatedRisk = updated.find((r) => r.id === id);
+        if (escalatedRisk) {
+          const progRes = await api.getData("risks", escalateProgrammeId);
+          const progRisks: any[] = progRes.success ? (progRes.data || []) : [];
+          const idx = progRisks.findIndex((r: any) => r.id === id);
+          if (idx >= 0) progRisks[idx] = escalatedRisk;
+          else progRisks.push(escalatedRisk);
+          await api.saveData("risks", progRisks, escalateProgrammeId);
+        }
+      } catch (e) {
+        console.error("Failed to dual-write escalated risk to programme path:", e);
+      }
+    }
+
+    // Remove from programme path when de-escalating
+    if (deescalateProgrammeId) {
+      try {
+        const progRes = await api.getData("risks", deescalateProgrammeId);
+        const progRisks: any[] = progRes.success ? (progRes.data || []) : [];
+        const cleaned = progRisks.filter((r: any) => r.id !== id);
+        if (cleaned.length !== progRisks.length) {
+          await api.saveData("risks", cleaned, deescalateProgrammeId);
+        }
+      } catch (e) {
+        console.error("Failed to remove de-escalated risk from programme path:", e);
+      }
+    }
+
+    // Sync field edits to programme path when risk is already escalated
+    if (syncProgrammeId) {
+      try {
+        const updatedRisk = updated.find((r) => r.id === id);
+        if (updatedRisk) {
+          const progRes = await api.getData("risks", syncProgrammeId);
+          const progRisks: any[] = progRes.success ? (progRes.data || []) : [];
+          const idx = progRisks.findIndex((r: any) => r.id === id);
+          if (idx >= 0) {
+            progRisks[idx] = updatedRisk;
+            await api.saveData("risks", progRisks, syncProgrammeId);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to sync updated escalated risk to programme path:", e);
+      }
+    }
   },
   deleteRisk: async (id) => {
     const { risks } = get();
+    const riskToDelete = risks.find((r) => r.id === id);
     const updated = risks.filter((risk) => risk.id !== id);
     set({ risks: updated });
     const contextId = get().activeProjectId || get().activeProgrammeId;
     await api.saveData("risks", updated, contextId);
+
+    // Remove from programme path if the risk was escalated
+    if (riskToDelete?.escalated && riskToDelete.programmeId) {
+      try {
+        const progRes = await api.getData("risks", riskToDelete.programmeId);
+        const progRisks: any[] = progRes.success ? (progRes.data || []) : [];
+        const cleaned = progRisks.filter((r: any) => r.id !== id);
+        if (cleaned.length !== progRisks.length) {
+          await api.saveData("risks", cleaned, riskToDelete.programmeId);
+        }
+      } catch (e) {
+        console.error("Failed to remove deleted escalated risk from programme path:", e);
+      }
+    }
   },
   addRisks: async (newRisks) => {
     const { risks } = get();
@@ -1702,10 +1819,27 @@ export const useStore = create<AppState>((set, get) => ({
       // 1. Get profile first to establish role/clientId context
       const profileResult = await api.getProfile();
       if (profileResult.success && profileResult.profile) {
+        const firestoreProfile = profileResult.profile;
+        const authUser = auth.currentUser;
+
+        // Merge photoURL and displayName from Firebase Auth if Firestore doesn't
+        // have them yet (new Google sign-up: Firebase has them, Firestore doc doesn't).
+        const photoURL = firestoreProfile.photoURL || authUser?.photoURL || null;
+        const displayName = firestoreProfile.displayName || authUser?.displayName || null;
+
         set({
-          user: profileResult.profile,
-          clientId: profileResult.profile.clientId || null,
+          user: { ...firestoreProfile, photoURL, displayName },
+          clientId: firestoreProfile.clientId || null,
         });
+
+        // Persist missing fields to Firestore non-blocking so future loads
+        // also carry them (fixes "image gone after refresh" for new users).
+        if ((!firestoreProfile.photoURL && photoURL) || (!firestoreProfile.displayName && displayName)) {
+          const toSave: Record<string, string> = {};
+          if (!firestoreProfile.photoURL && photoURL) toSave.photoURL = photoURL;
+          if (!firestoreProfile.displayName && displayName) toSave.displayName = displayName;
+          api.saveProfile(toSave).catch(console.error);
+        }
       }
 
       // 2. Hydrate all baseline data and preferences in parallel

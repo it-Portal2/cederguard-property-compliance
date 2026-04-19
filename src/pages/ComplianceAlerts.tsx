@@ -61,7 +61,7 @@ export function ComplianceAlerts() {
         {
             id: 'handover',
             label: 'Handover Actions Pending',
-            items: contextCompliance.filter(i => i.trigger.toLowerCase().includes('handover') && i.stage !== 'Complete'),
+            items: contextCompliance.filter(i => i.trigger?.toLowerCase().includes('handover') && i.stage !== 'Complete'),
             color: 'purple',
             icon: <ListChecks className="w-5 h-5" />
         },

@@ -570,6 +570,9 @@ export function ProgrammeRiskRegister() {
                                         <div className="flex flex-col gap-1.5">
                                           <div className="flex items-center flex-wrap gap-2">
                                               <span className="font-black text-slate-900 text-[11px] tracking-tight line-clamp-1 hover:line-clamp-none transition-all cursor-help" title={stripMarkdown(r.title)}>{r.title}</span>
+                                              {isEsc && (
+                                                  <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 border border-purple-200 text-[7px] font-black uppercase rounded-sm tracking-widest shrink-0">Escalated ↑</span>
+                                              )}
                                               {differenceInDays(new Date(), new Date(r.dateAdded || '')) < 1 && (
                                                   <span className="px-1.5 py-0.5 bg-indigo-600 text-white text-[7px] font-black uppercase rounded shadow-sm shrink-0">New</span>
                                               )}

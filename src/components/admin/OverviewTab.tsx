@@ -50,7 +50,7 @@ export function OverviewTab({
 
             insights[domain].totalUsers++;
             if (isClientAdmin(user.role)) insights[domain].clientAdmins++;
-            const pmRoles = ['project_manager', 'senior_pm', 'senior_project_manager', 'senior_project_manger', 'assistant_project_manager', 'project_coordinator', 'pro', 'enterprise'];
+            const pmRoles = ['project_manager', 'senior_pm', 'senior_project_manager', 'senior_project_manger', 'assistant_project_manager', 'project_coordinator', 'enterprise'];
             if (pmRoles.includes(user.role)) insights[domain].pms++;
         });
 
@@ -137,7 +137,7 @@ export function OverviewTab({
                 <StatCard 
                     icon={Building} 
                     label="Client Admins (Orgs)" 
-                    value={loadingUsers ? '…' : (Array.isArray(allUsers) ? allUsers : []).filter(u => ['client_admin', 'pro', 'enterprise'].includes(u.role)).length} 
+                    value={loadingUsers ? '…' : (Array.isArray(allUsers) ? allUsers : []).filter(u => ['client_admin', 'enterprise'].includes(u.role)).length} 
                     color="bg-indigo-50 text-indigo-600" 
                     border="border-l-indigo-500" 
                 />
@@ -165,7 +165,7 @@ export function OverviewTab({
                     onClick={() => setDetailsModal({ isOpen: true, type: 'projects' })}
                 />
                 {(() => {
-                    const clientAdmins = (Array.isArray(allUsers) ? allUsers : []).filter(u => ['client_admin', 'pro', 'enterprise'].includes(u.role)).length;
+                    const clientAdmins = (Array.isArray(allUsers) ? allUsers : []).filter(u => ['client_admin', 'enterprise'].includes(u.role)).length;
                     const pmCount = (Array.isArray(allUsers) ? allUsers : []).filter(u => ['project_manager', 'senior_project_manager', 'assistant_project_manager', 'project_coordinator'].includes(u.role)).length;
                     const programmes = (Array.isArray(allProgrammes) ? allProgrammes : []).length;
                     const projects = (Array.isArray(allProjects) ? allProjects : []).length;

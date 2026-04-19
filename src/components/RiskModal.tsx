@@ -946,7 +946,7 @@ export function RiskModal({
                   ))}
                 </select>
               </div>
-              <div className="flex items-center mt-2">
+              <div className="flex flex-col mt-2">
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
@@ -960,6 +960,12 @@ export function RiskModal({
                     Escalate to Programme Level
                   </span>
                 </label>
+                {!!formData.escalated && !formData.programmeId && (
+                  <p className="text-xs text-rose-600 mt-1.5 ml-8 flex items-center gap-1">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                    Cannot escalate — this project is not linked to a programme. Set the programme link in Project Initiation first.
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -975,7 +981,7 @@ export function RiskModal({
           </button>
           <button
             onClick={handleSave}
-            disabled={!formData.title || isSaving}
+            disabled={!formData.title || isSaving || (!!formData.escalated && !formData.programmeId)}
             className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center gap-2"
           >
             {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}

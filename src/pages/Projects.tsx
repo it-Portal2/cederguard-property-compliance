@@ -65,7 +65,9 @@ function exportProjectsCSV(projects: any[], programmes: any[]) {
 
 function timeAgo(dateStr: string | undefined): string {
   if (!dateStr) return "Never";
-  const diff = Date.now() - new Date(dateStr).getTime();
+  const date = parseAnyDate(dateStr) ?? new Date(dateStr as string);
+  if (isNaN(date.getTime())) return "Never";
+  const diff = Date.now() - date.getTime();
   const minutes = Math.floor(diff / 60000);
   if (minutes < 60) return `${minutes} min ago`;
   const hours = Math.floor(minutes / 60);
@@ -74,6 +76,25 @@ function timeAgo(dateStr: string | undefined): string {
   if (days < 30) return `${days} day${days === 1 ? "" : "s"} ago`;
   const months = Math.floor(days / 30);
   return `${months} month${months === 1 ? "" : "s"} ago`;
+}
+
+function parseAnyDate(val: any): Date | null {
+  if (!val) return null;
+  // Firestore Timestamp: { seconds, nanoseconds } or { _seconds, _nanoseconds }
+  const secs = val?.seconds ?? val?._seconds;
+  if (typeof secs === "number" && secs > 0) return new Date(secs * 1000);
+  // ISO string or any parseable string
+  if (typeof val === "string" && val.trim()) {
+    const d = new Date(val);
+    if (!isNaN(d.getTime())) return d;
+  }
+  return null;
+}
+
+function formatCreatedDate(project: any): string | null {
+  const date = parseAnyDate(project.createdAt) ?? parseAnyDate(project.updatedAt);
+  if (!date) return null;
+  return `Created on ${date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
 }
 
 function ragColor(rag: string) {
@@ -224,6 +245,10 @@ export function Projects() {
       matchArchived &&
       isVisible
     );
+  }).sort((a, b) => {
+    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return dateB - dateA; // most recently created first
   });
 
   // Stats
@@ -649,9 +674,7 @@ export function Projects() {
                               project.riba
                                 ? `Stage ${project.riba.split(" ")[0]}`
                                 : null,
-                              project.updatedAt
-                                ? `Updated ${timeAgo(project.updatedAt)}`
-                                : null,
+                              formatCreatedDate(project),
                             ]
                               .filter(Boolean)
                               .join(" · ")}
@@ -662,9 +685,7 @@ export function Projects() {
                               project.riba
                                 ? `Stage ${project.riba.split(" ")[0]}`
                                 : null,
-                              project.updatedAt
-                                ? `Updated ${timeAgo(project.updatedAt)}`
-                                : null,
+                              formatCreatedDate(project),
                             ]
                               .filter(Boolean)
                               .join(" · ")}

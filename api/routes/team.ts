@@ -147,16 +147,19 @@ export const teamRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
     const { db, uid, email, userData, isAdmin, primaryUid } = ctx;
     const isClientAdmin = userData?.role === 'client_admin' || userData?.role === 'enterprise';
 
-    // Include all roles that can manage projects
+    // Include all roles that can be assigned to manage a project.
+    // 'pro' and 'enterprise' are billing/account tiers, not job roles — excluded
+    // so account owners don't clutter the PM assignment dropdown.
     const pmRoles = [
       'project_manager', 'senior_pm', 'senior_project_manager',
       'assistant_pm', 'assistant_project_manager',
-      'project_coordinator', 'pro', 'enterprise', 'client_admin'
+      'project_coordinator', 'client_admin'
     ];
 
     let query = db.collection('users').where('role', 'in', pmRoles);
 
-    // Filter to just this organisation
+    // Scope to this organisation for non-admin users.
+    // The query already restricts to pmRoles so admin role can never come from here.
     if (!isAdmin) {
       query = query.where('clientId', '==', primaryUid);
     }
@@ -169,17 +172,23 @@ export const teamRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
       displayName: doc.data().displayName || doc.data().companyName || doc.data().email
     }));
 
-    // Ensure the Client Admin themselves is in the assignable list
+    // Ensure the org owner (client_admin) is always in the assignable list.
+    // The Firestore query filters by clientId, but the org owner has no clientId on
+    // their own doc (they ARE the tenant root), so they won't appear in the query
+    // results without this guard.
+    // Guard is role-checked: only add the user if their role is in pmRoles — prevents
+    // platform-level admin/super_admin users from being injected into the list.
     if (!users.find(u => u.uid === primaryUid)) {
       const adminDoc = await db.collection('users').doc(primaryUid).get();
-      if (adminDoc.exists) {
+      const docRole = adminDoc.data()?.role || '';
+      if (adminDoc.exists && pmRoles.includes(docRole)) {
         users.push({
           uid: primaryUid,
           email: adminDoc.data()?.email,
-          role: adminDoc.data()?.role,
+          role: docRole,
           displayName: adminDoc.data()?.displayName || adminDoc.data()?.companyName || adminDoc.data()?.email
         });
-      } else if (isClientAdmin && !users.find(u => u.uid === uid)) {
+      } else if (isClientAdmin && pmRoles.includes(userData.role) && !users.find(u => u.uid === uid)) {
         users.push({
           uid,
           email,
@@ -196,7 +205,7 @@ export const teamRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
     const { db, isAdmin, primaryUid } = ctx;
     
     // Programme Managers and Client Admins can manage programmes
-    const roles = ['programme_manager', 'client_admin', 'enterprise'];
+    const roles = ['programme_manager', 'client_admin', 'enterprise', 'admin'];
     let query = db.collection('users').where('role', 'in', roles);
 
     if (!isAdmin) {
