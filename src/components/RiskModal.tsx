@@ -112,8 +112,17 @@ export function RiskModal({
     if (initialData) {
       // Convert stored probability back to display (0-100) for editing
       // Ensure ID fields are populated (for both ID-based and legacy risks)
+      // Resolve programmeId from the linked project if not stored on the risk —
+      // prevents "Cannot escalate" guard firing on risks that haven't been escalated yet.
+      const safeProjects = Array.isArray(projects) ? projects : [];
+      const resolvedProgrammeId =
+        initialData.programmeId ||
+        safeProjects.find((p) => p.id === initialData.projectId)?.programmeId ||
+        activeProgrammeId ||
+        '';
       setFormData({
         ...initialData,
+        programmeId: resolvedProgrammeId,
         grossProb: toDisplayProb(initialData.grossProb),
         residualProb: toDisplayProb(initialData.residualProb),
         categoryId:

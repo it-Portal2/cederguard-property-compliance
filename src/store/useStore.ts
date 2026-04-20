@@ -1037,6 +1037,7 @@ export const useStore = create<AppState>((set, get) => ({
     // Track programmeId for post-save operations
     let escalateProgrammeId = '';
     let deescalateProgrammeId = '';
+    let deescalateProjectId = '';
     let syncProgrammeId = '';
 
     const updated = risks.map((risk) => {
@@ -1046,6 +1047,8 @@ export const useStore = create<AppState>((set, get) => ({
         const next = normalizeRisk(merged) as RiskItem;
 
         if (updates.escalated === true && !risk.escalated) {
+          // Ensure projectId is stamped — needed for reliable de-escalation later
+          if (!next.projectId) next.projectId = get().activeProjectId || '';
           // Resolve programmeId so the risk appears in the programme register
           const resolved =
             next.programmeId ||
@@ -1067,8 +1070,12 @@ export const useStore = create<AppState>((set, get) => ({
           });
           if (next.status !== "Escalated") next.status = "Escalated";
         } else if (updates.escalated === false && risk.escalated) {
-          // Track programme path so we can remove this risk after saving
+          // Track both paths so we can clean up programme and update project
           deescalateProgrammeId = risk.programmeId || get().activeProgrammeId || '';
+          deescalateProjectId = risk.projectId || '';
+          // Reset status and clear programme link on the in-memory record
+          if (next.status === 'Escalated') next.status = 'Open';
+          next.programmeId = '';
         } else if (updates.escalated === undefined && risk.escalated && risk.programmeId) {
           // Editing an already-escalated risk — keep programme path in sync
           syncProgrammeId = risk.programmeId;
@@ -1112,6 +1119,40 @@ export const useStore = create<AppState>((set, get) => ({
         }
       } catch (e) {
         console.error("Failed to remove de-escalated risk from programme path:", e);
+      }
+    }
+
+    // When de-escalating from programme register, update the originating project path.
+    // Fallback: if projectId wasn't stored on the risk (legacy data), search all projects
+    // in this programme until we find which one contains the risk.
+    if (!deescalateProjectId && deescalateProgrammeId) {
+      const progProjects = (get().projects as any[]).filter(
+        (p: any) => p.programmeId === deescalateProgrammeId,
+      );
+      for (const proj of progProjects) {
+        try {
+          const res = await api.getData("risks", proj.id);
+          if (res.success && (res.data || []).some((r: any) => r.id === id)) {
+            deescalateProjectId = proj.id;
+            break;
+          }
+        } catch (e) {
+          // continue searching other projects
+        }
+      }
+    }
+
+    if (deescalateProjectId) {
+      try {
+        const projRes = await api.getData("risks", deescalateProjectId);
+        const projRisks: any[] = projRes.success ? (projRes.data || []) : [];
+        const idx = projRisks.findIndex((r: any) => r.id === id);
+        if (idx >= 0) {
+          projRisks[idx] = { ...projRisks[idx], escalated: false, status: 'Open', programmeId: '' };
+          await api.saveData("risks", projRisks, deescalateProjectId);
+        }
+      } catch (e) {
+        console.error("Failed to update de-escalated risk in project path:", e);
       }
     }
 

@@ -183,7 +183,7 @@ export function Projects() {
     new Set(
       (Array.isArray(projects) ? projects : [])
         .map((p) => p.type || p.schemeType)
-        .filter(Boolean),
+        .filter((v): v is string => Boolean(v)),
     ),
   );
   const ribaStages = [
@@ -384,7 +384,7 @@ export function Projects() {
       <div className="flex flex-col md:flex-row gap-8">
         {/* ── MOBILE FILTERS BUTTON ── */}
         {/* ── MOBILE STICKY HEADER ── */}
-        <div className="md:hidden sticky top-[3.5rem] z-30 bg-slate-50/80 backdrop-blur-md -mx-4 px-4 py-3 border-b border-slate-200 space-y-3 mb-6">
+        <div className="md:hidden sticky top-14 z-30 bg-slate-50/80 backdrop-blur-md -mx-4 px-4 py-3 border-b border-slate-200 space-y-3 mb-6">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-lg font-black text-slate-900 tracking-tight leading-none mb-1">
@@ -434,14 +434,14 @@ export function Projects() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setShowFilters(false)}
-                className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[60] md:hidden"
+                className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-60 md:hidden"
               />
               <motion.aside
                 initial={{ x: "-100%" }}
                 animate={{ x: 0 }}
                 exit={{ x: "-100%" }}
                 transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                className="fixed inset-y-0 left-0 w-[280px] bg-white z-[70] md:hidden shadow-2xl flex flex-col"
+                className="fixed inset-y-0 left-0 w-70 bg-white z-70 md:hidden shadow-2xl flex flex-col"
               >
                 <div className="p-4 border-b border-slate-100 flex items-center justify-between">
                   <h3 className="font-black text-slate-900 uppercase tracking-tight text-sm">
@@ -783,7 +783,7 @@ export function Projects() {
                   <h3 className="font-black text-slate-800 uppercase tracking-tighter text-lg">
                     Delete Project
                   </h3>
-                  <p className="text-xs text-slate-500 mt-0.5 truncate max-w-[200px]">
+                  <p className="text-xs text-slate-500 mt-0.5 truncate max-w-50">
                     {deleteModal.name}
                   </p>
                 </div>
@@ -852,7 +852,7 @@ export function Projects() {
                       ? "Restore Project"
                       : "Archive Project"}
                   </h3>
-                  <p className="text-xs text-slate-500 mt-0.5 truncate max-w-[200px]">
+                  <p className="text-xs text-slate-500 mt-0.5 truncate max-w-50">
                     {archiveModal.name}
                   </p>
                 </div>
@@ -985,7 +985,7 @@ export function Projects() {
         {/* All Project (Contextual) */}
         <FilterSection title="Quick Access">
           <div className="space-y-1">
-            <div className="mt-2 space-y-0.5 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
+            <div className="mt-2 space-y-0.5 max-h-50 overflow-y-auto pr-1 custom-scrollbar">
               {filtered.slice(0, 10).map((p) => (
                 <button
                   key={p.id}
