@@ -26,6 +26,15 @@ import { clsx } from "clsx";
 import { AIWriter } from "./AIWriter";
 import { generateId } from "../lib/utils";
 import {
+  L_TO_PCT,
+  clampRiskLevel,
+  resolveImpactValue,
+  deriveProjectSize,
+  DEFAULT_PROJECT_SIZE,
+  type ProjectSize,
+  type RiskLevel,
+} from "../data/riskBands";
+import {
   Plus,
   CheckCircle2,
   Circle,
@@ -48,9 +57,6 @@ function toDisplayProb(stored?: number): number {
   if (!stored) return 0;
   return stored > 1 ? Math.round(stored) : Math.round(stored * 100);
 }
-
-/** L (1-5) → probability % */
-const L_TO_PCT: Record<number, number> = { 1: 20, 2: 40, 3: 60, 4: 80, 5: 100 };
 
 const emptyForm = (): Partial<RiskItem> => ({
   project: "",
@@ -107,6 +113,21 @@ export function RiskModal({
   // Filter tasks for this risk
   const riskActions = tasks.filter((t) => t.riskId === initialData?.id);
 
+  // ── Exposure-derivation context ─────────────────────────────────────────────
+  // Always computed from the current formData + projects list. Used at every
+  // ingress point (open, change, save) to guarantee Impact £ is derived.
+  const safeProjectsList = Array.isArray(projects) ? projects : [];
+  const activeFormProject = safeProjectsList.find(
+    (p) => p.id === formData.projectId,
+  );
+  const derivedProjectSize: ProjectSize = deriveProjectSize(
+    activeFormProject as any,
+  );
+  const ctx = {
+    isProgrammeLevel: !!formData.isProgrammeLevel,
+    projectSize: derivedProjectSize,
+  };
+
   useEffect(() => {
     if (!isOpen) return;
     if (initialData) {
@@ -120,11 +141,28 @@ export function RiskModal({
         safeProjects.find((p) => p.id === initialData.projectId)?.programmeId ||
         activeProgrammeId ||
         '';
+      const isProgrammeLevel =
+        !!initialData.isProgrammeLevel || !initialData.projectId;
+      const initProject = safeProjects.find(
+        (p) => p.id === initialData.projectId,
+      );
+      const initCtx = {
+        isProgrammeLevel,
+        projectSize: deriveProjectSize(initProject as any),
+      };
+      const grossI = clampRiskLevel(initialData.grossI);
+      const residualI = clampRiskLevel(initialData.residualI);
       setFormData({
         ...initialData,
         programmeId: resolvedProgrammeId,
+        isProgrammeLevel,
+        grossI,
+        residualI,
         grossProb: toDisplayProb(initialData.grossProb),
         residualProb: toDisplayProb(initialData.residualProb),
+        // Override any manually-typed legacy Exposure values with derived ones
+        grossImpact: resolveImpactValue(grossI, initCtx),
+        residualImpact: resolveImpactValue(residualI, initCtx),
         categoryId:
           initialData.categoryId || getCategoryId(initialData.category || ""),
         workstreamId:
@@ -138,13 +176,22 @@ export function RiskModal({
       const currentProgramme = safeProgrammes.find(
         (p) => p.id === activeProgrammeId,
       );
+      const isProgrammeLevel = !activeProjectId && !!activeProgrammeId;
+      const newCtx = {
+        isProgrammeLevel,
+        projectSize: deriveProjectSize(currentProject as any),
+      };
+      // Default L=1, I=1 → derive Impact £ from the lookup, not the empty-form 0.
+      const defaultI: RiskLevel = 1;
       setFormData({
         ...emptyForm(),
         project: currentProject?.name || "",
         projectId: activeProjectId || "",
         programme: currentProgramme?.name || "",
         programmeId: activeProgrammeId || currentProject?.programmeId || "",
-        isProgrammeLevel: !activeProjectId && !!activeProgrammeId,
+        isProgrammeLevel,
+        grossImpact: resolveImpactValue(defaultI, newCtx),
+        residualImpact: resolveImpactValue(defaultI, newCtx),
       });
     }
   }, [
@@ -160,15 +207,53 @@ export function RiskModal({
 
   const handleChange = (field: keyof RiskItem, value: any) => {
     setFormData((prev) => {
-      const next = { ...prev, [field]: value };
+      const next: Partial<RiskItem> = { ...prev, [field]: value };
 
       // Auto-map Likelihood (1-5) → Probability %
       if (field === "grossL") {
-        next.grossProb = L_TO_PCT[parseInt(value) as 1 | 2 | 3 | 4 | 5] ?? 20;
+        next.grossProb = L_TO_PCT[clampRiskLevel(value)];
       }
       if (field === "residualL") {
-        next.residualProb =
-          L_TO_PCT[parseInt(value) as 1 | 2 | 3 | 4 | 5] ?? 20;
+        next.residualProb = L_TO_PCT[clampRiskLevel(value)];
+      }
+
+      // Re-derive Impact £ whenever the impact rating or derivation context
+      // changes. ALE is then trustworthy because it's computed live downstream.
+      const safeProjects = Array.isArray(projects) ? projects : [];
+      let isProgrammeLevel = !!next.isProgrammeLevel;
+      let activeProject = safeProjects.find((p) => p.id === next.projectId);
+
+      if (field === "projectId") {
+        const pid = value as string;
+        activeProject = safeProjects.find((p) => p.id === pid);
+        isProgrammeLevel = !pid;
+        next.isProgrammeLevel = isProgrammeLevel;
+        next.project = activeProject?.name || "";
+        next.programmeId = activeProject?.programmeId || next.programmeId || "";
+      }
+
+      if (field === "isProgrammeLevel") {
+        isProgrammeLevel = !!value;
+      }
+
+      const recomputeBoth =
+        field === "projectId" || field === "isProgrammeLevel";
+      const nextCtx = {
+        isProgrammeLevel,
+        projectSize: deriveProjectSize(activeProject as any),
+      };
+
+      if (field === "grossI" || recomputeBoth) {
+        next.grossImpact = resolveImpactValue(
+          clampRiskLevel(next.grossI ?? 1),
+          nextCtx,
+        );
+      }
+      if (field === "residualI" || recomputeBoth) {
+        next.residualImpact = resolveImpactValue(
+          clampRiskLevel(next.residualI ?? 1),
+          nextCtx,
+        );
       }
 
       return next;
@@ -179,17 +264,42 @@ export function RiskModal({
     setIsSaving(true);
     const updated = { ...formData };
 
+    // Orphan safety net — a risk without a project is programme-level.
+    // Must run BEFORE the impact re-derive so ctx picks the correct bands.
+    if (!updated.projectId) {
+      updated.isProgrammeLevel = true;
+    }
+
+    // Final re-derive — guarantees the persisted record carries derived
+    // Probability and Exposure £, regardless of how formData was populated
+    // (AI injection, legacy paste, etc.).
+    const safeProjects = Array.isArray(projects) ? projects : [];
+    const saveProject = safeProjects.find((p) => p.id === updated.projectId);
+    const saveCtx = {
+      isProgrammeLevel: !!updated.isProgrammeLevel,
+      projectSize: deriveProjectSize(saveProject as any),
+    };
+    const gI = clampRiskLevel(updated.grossI ?? 1);
+    const rI = clampRiskLevel(updated.residualI ?? 1);
+    const gL = clampRiskLevel(updated.grossL ?? 1);
+    const rL = clampRiskLevel(updated.residualL ?? 1);
+    updated.grossI = gI;
+    updated.residualI = rI;
+    updated.grossL = gL;
+    updated.residualL = rL;
+    updated.grossImpact = resolveImpactValue(gI, saveCtx);
+    updated.residualImpact = resolveImpactValue(rI, saveCtx);
+
     // Store probability as 0-1 decimal (e.g. 40% → 0.40)
-    const gProb = (updated.grossProb || 0) / 100;
-    const rProb = (updated.residualProb || 0) / 100;
+    const gProb = L_TO_PCT[gL] / 100;
+    const rProb = L_TO_PCT[rL] / 100;
     updated.grossProb = gProb;
     updated.residualProb = rProb;
 
-    updated.grossRating = (updated.grossL || 1) * (updated.grossI || 1);
-    updated.residualRating =
-      (updated.residualL || 1) * (updated.residualI || 1);
-    updated.grossALE = (updated.grossImpact || 0) * gProb;
-    updated.residualALE = (updated.residualImpact || 0) * rProb;
+    updated.grossRating = gL * gI;
+    updated.residualRating = rL * rI;
+    updated.grossALE = updated.grossImpact * gProb;
+    updated.residualALE = updated.residualImpact * rProb;
     updated.riskReduction =
       (updated.grossALE || 0) - (updated.residualALE || 0);
     updated.riskReductionPct =
@@ -198,10 +308,6 @@ export function RiskModal({
             (1 - (updated.residualRating || 0) / updated.grossRating) * 100,
           )
         : 0;
-
-    if (!updated.projectId) {
-      updated.isProgrammeLevel = true;
-    }
 
     try {
       await onSave(updated);
@@ -239,7 +345,7 @@ export function RiskModal({
         <div className="flex items-center justify-between p-6 border-b border-slate-100 shrink-0">
           <div>
             <div className="flex items-center justify-between gap-4">
-              <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase italic">
+              <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase">
                 {initialData ? "Refine Risk Intelligence" : "Register New Risk"}
               </h2>
               {formData.escalated && (
@@ -357,20 +463,7 @@ export function RiskModal({
                 </label>
                 <select
                   value={formData.projectId || ""}
-                  onChange={(e) => {
-                    const pid = e.target.value;
-                    const safeProjects = Array.isArray(projects)
-                      ? projects
-                      : [];
-                    const p = safeProjects.find((proj) => proj.id === pid);
-                    setFormData((prev) => ({
-                      ...prev,
-                      projectId: pid,
-                      project: p?.name || "",
-                      programmeId: p?.programmeId || prev.programmeId || "",
-                      isProgrammeLevel: !pid,
-                    }));
-                  }}
+                  onChange={(e) => handleChange("projectId", e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
                 >
                   <option value="">Programme Level / No Project</option>
@@ -471,6 +564,32 @@ export function RiskModal({
               </span>
             </div>
 
+            {/* Exposure derivation context — tells PMs WHY the £ values look the way they do */}
+            <div className="mb-4">
+              {ctx.isProgrammeLevel ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold uppercase tracking-wider">
+                  Context: Programme Bands
+                </span>
+              ) : activeFormProject ? (
+                <span
+                  className={clsx(
+                    "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[10px] font-bold uppercase tracking-wider",
+                    (activeFormProject as any)?.numberOfUnits
+                      ? "bg-slate-100 text-slate-700 border-slate-200"
+                      : "bg-amber-50 text-amber-800 border-amber-200",
+                  )}
+                >
+                  Context: Project Size — {ctx.projectSize}
+                  {!(activeFormProject as any)?.numberOfUnits &&
+                    " (default — set unit count in Project Initiation to refine)"}
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold uppercase tracking-wider">
+                  Context: Project Size — {DEFAULT_PROJECT_SIZE} (default)
+                </span>
+              )}
+            </div>
+
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Gross */}
@@ -547,16 +666,22 @@ export function RiskModal({
                         Exposure / Impact (£)
                       </label>
                       <input
-                        type="number"
-                        value={formData.grossImpact ?? 0}
-                        onChange={(e) =>
-                          handleChange(
-                            "grossImpact",
-                            parseFloat(e.target.value) || 0,
-                          )
-                        }
-                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                        type="text"
+                        value={`£${(formData.grossImpact || 0).toLocaleString(
+                          "en-GB",
+                          { maximumFractionDigits: 0 },
+                        )}`}
+                        readOnly
+                        disabled
+                        aria-readonly="true"
+                        className="w-full bg-slate-100 text-slate-700 cursor-not-allowed border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
                       />
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        Auto-derived from Impact ×{" "}
+                        {ctx.isProgrammeLevel
+                          ? "Programme band"
+                          : `Project size: ${ctx.projectSize}`}
+                      </p>
                     </div>
                   </div>
                   <div className="mt-2 text-xs text-slate-600 font-semibold bg-blue-50 rounded-lg px-3 py-2 border border-blue-100">
@@ -640,16 +765,22 @@ export function RiskModal({
                         Exposure / Impact (£)
                       </label>
                       <input
-                        type="number"
-                        value={formData.residualImpact ?? 0}
-                        onChange={(e) =>
-                          handleChange(
-                            "residualImpact",
-                            parseFloat(e.target.value) || 0,
-                          )
-                        }
-                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
+                        type="text"
+                        value={`£${(formData.residualImpact || 0).toLocaleString(
+                          "en-GB",
+                          { maximumFractionDigits: 0 },
+                        )}`}
+                        readOnly
+                        disabled
+                        aria-readonly="true"
+                        className="w-full bg-slate-100 text-slate-700 cursor-not-allowed border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
                       />
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        Auto-derived from Impact ×{" "}
+                        {ctx.isProgrammeLevel
+                          ? "Programme band"
+                          : `Project size: ${ctx.projectSize}`}
+                      </p>
                     </div>
                   </div>
                   <div className="mt-2 text-xs text-slate-600 font-semibold bg-indigo-50 rounded-lg px-3 py-2 border border-indigo-100">
