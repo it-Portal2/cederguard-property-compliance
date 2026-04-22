@@ -17,10 +17,17 @@ const API_URL = (import.meta as any).env.VITE_API_URL || "/api";
 export class ApiError extends Error {
   status: number;
   retryAfter?: number;
-  constructor(message: string, status: number, retryAfter?: number) {
+  code?: string;
+  constructor(
+    message: string,
+    status: number,
+    retryAfter?: number,
+    extras?: { code?: string },
+  ) {
     super(message);
     this.status = status;
     this.retryAfter = retryAfter;
+    this.code = extras?.code;
     this.name = "ApiError";
   }
 }
@@ -48,16 +55,18 @@ async function callApi(
     if (!res.ok) {
       let msg = "Request failed";
       let retryAfter: any = null;
+      let code: string | undefined = undefined;
       const textResponse = await res.text();
       try {
         const parsed = JSON.parse(textResponse);
         if (parsed.error) msg = parsed.error;
         else if (parsed.message) msg = parsed.message;
         if (parsed.retryAfter) retryAfter = parsed.retryAfter;
+        if (typeof parsed.code === "string") code = parsed.code;
       } catch (e) {
         msg = textResponse || `${res.status} ${res.statusText}`;
       }
-      throw new ApiError(msg, res.status, retryAfter);
+      throw new ApiError(msg, res.status, retryAfter, { code });
     }
 
     const textResponse = await res.text();
@@ -72,10 +81,14 @@ async function callApi(
     clearTimeout(timeoutId);
     if (err.name === "AbortError") {
       throw new ApiError(
-        "Request timed out after " +
-          timeout / 1000 +
-          " seconds. The AI might be taking too long or the connection is unstable.",
+        `Request timed out after ${timeout / 1000} seconds. Please check your connection and try again.`,
         408,
+      );
+    }
+    if (err instanceof TypeError) {
+      throw new ApiError(
+        "Network error. Please check your connection and try again.",
+        0,
       );
     }
     throw err;

@@ -27,9 +27,13 @@ import {
   FlagOff,
   ArrowLeft,
   Plus,
+  Shield,
+  Flame,
+  PoundSterling,
 } from "lucide-react";
 import { RiskModal } from "../components/RiskModal";
 import { ServiceManagementBar } from "../components/ServiceManagementBar";
+import { StatsCard } from "../components/common/StatsCard";
 
 import toast from "react-hot-toast";
 import DynamicTable from "../components/table/DynamicTable";
@@ -120,7 +124,12 @@ export function RiskRegister() {
     updateProject,
     updateProgramme,
     isInitialized,
+    pendingMutations,
   } = useStore();
+
+  // Row is "busy" when any mutation targeting this risk id is in flight.
+  // Action buttons disable and the row dims while true.
+  const isRowPending = (id: string) => pendingMutations.has(`risk:${id}`);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const urlProjectId = searchParams.get("projectId");
@@ -212,10 +221,10 @@ export function RiskRegister() {
       });
   }, [risks, activeProjectId, activeProgrammeId, projects, projectFilter, progLevelLabel]);
 
-  // ── Action handlers ─────────────────────────────────────────────────────────
-  // Modal UI is provided by DynamicTable's ConfirmDialog (see Bug Fix 6 + 6.1).
-  // These handlers contain the business/write logic only — they run after confirm.
-
+  // Action handlers — pessimistic: await the store call, return the promise so
+  // ConfirmDialog (inside DynamicTable) can hold open with a spinner until the
+  // server ACKs. Toast fires on success; error bubbles so DynamicTable also
+  // catches and shows.
   const doEscalate = async (r: RiskItem) => {
     if (!canModify) return;
     const escalating = !r.escalated;
@@ -241,6 +250,7 @@ export function RiskRegister() {
       }
     } catch (err: any) {
       toast.error(err?.message || "Failed to update escalation status.");
+      throw err;
     }
   };
 
@@ -256,6 +266,7 @@ export function RiskRegister() {
       });
     } catch (err: any) {
       toast.error(err?.message || "Failed to convert risk to issue.");
+      throw err;
     }
   };
 
@@ -266,21 +277,41 @@ export function RiskRegister() {
       toast.success(`Risk "${r.title}" deleted`);
     } catch (err: any) {
       toast.error(err?.message || "Failed to delete risk.");
+      throw err;
     }
   };
 
   const doBulkDelete = async (rows: RiskItem[]) => {
     const count = rows.length;
-    try {
-      await Promise.all(rows.map((r) => deleteRisk(r.id)));
+    let succeeded = 0;
+    const failures: string[] = [];
+    for (const r of rows) {
+      try {
+        await deleteRisk(r.id);
+        succeeded += 1;
+      } catch (err: any) {
+        failures.push(err?.message || "Unknown error");
+      }
+    }
+    const failed = count - succeeded;
+    if (failed === 0) {
       toast.success(`${count} risks deleted successfully`);
       addNotification({
         title: "Risks Deleted",
         body: `Successfully deleted ${count} risks.`,
         type: "risk",
       });
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to delete risks.");
+    } else if (succeeded === 0) {
+      toast.error(failures[0] || "Failed to delete risks. Please try again.");
+    } else {
+      toast.error(
+        `Deleted ${succeeded} of ${count} risks — ${failed} failed.`,
+      );
+      addNotification({
+        title: "Risks Deleted (partial)",
+        body: `Deleted ${succeeded} of ${count} risks — ${failed} failed.`,
+        type: "risk",
+      });
     }
   };
 
@@ -751,6 +782,7 @@ export function RiskRegister() {
             key: "edit",
             label: "Edit",
             icon: Edit2,
+            isDisabled: (r: RiskItem) => isRowPending(r.id),
             onClick: (r: RiskItem) => {
               setEditingRisk(r);
               setIsModalOpen(true);
@@ -760,8 +792,9 @@ export function RiskRegister() {
             key: "escalate",
             label: (r: RiskItem) =>
               r.escalated ? "De-escalate" : "Escalate to Programme",
-            icon: Flag,
+            icon: (r: RiskItem) => (r.escalated ? FlagOff : Flag),
             isActive: (r: RiskItem) => r.escalated,
+            isDisabled: (r: RiskItem) => isRowPending(r.id),
             requireConfirm: {
               icon: (r: RiskItem) => (r.escalated ? FlagOff : Flag),
               variant: (r: RiskItem) => (r.escalated ? "default" : "warning"),
@@ -782,6 +815,7 @@ export function RiskRegister() {
             icon: AlertTriangle,
             isVisible: (r: RiskItem) =>
               !r.convertedToIssue && r.status !== "Closed",
+            isDisabled: (r: RiskItem) => isRowPending(r.id),
             requireConfirm: {
               icon: AlertTriangle,
               variant: "warning" as const,
@@ -801,6 +835,7 @@ export function RiskRegister() {
             label: "Delete",
             icon: Trash2,
             isDanger: true,
+            isDisabled: (r: RiskItem) => isRowPending(r.id),
             requireConfirm: {
               icon: Trash2,
               variant: "danger" as const,
@@ -881,64 +916,62 @@ export function RiskRegister() {
         </div>
 
         {/* Summary Tiles */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          {[
-            {
-              label: "Total",
-              value: contextScoped.length,
-              color: "text-indigo-600",
-              border: "border-l-indigo-500",
-            },
-            {
-              label: "Open",
-              value: contextScoped.filter((r) => r.status === "Open").length,
-              color: "text-red-600",
-              border: "border-l-red-500",
-            },
-            {
-              label: "High/Severe",
-              value: contextScoped.filter((r) => (r.residualRating || 0) >= 16).length,
-              color: "text-red-700",
-              border: "border-l-red-700",
-            },
-            {
-              label: "Escalated",
-              value: contextScoped.filter((r) => r.escalated).length,
-              color: "text-amber-600",
-              border: "border-l-amber-500",
-            },
-            {
-              label: "Financial Exposure (ALE)",
-              value: (() => {
-                const total = contextScoped.reduce(
-                  (s, r) => s + (r.residualALE || 0),
-                  0,
-                );
-                return total >= 1000000
-                  ? `£${(total / 1000000).toFixed(1)}m`
-                  : total >= 1000
-                    ? `£${Math.round(total / 1000)}k`
-                    : fGBP(Math.round(total));
-              })(),
-              color: "text-slate-900",
-              border: "border-l-slate-900",
-            },
-          ].map((s) => (
-            <div
-              key={s.label}
-              className={clsx(
-                "bg-white rounded-xl border border-slate-200 border-l-4 px-4 py-3 shadow-sm",
-                s.border,
-              )}
-            >
-              <div className={clsx("text-xl font-extrabold", s.color)}>
-                {s.value}
-              </div>
-              <div className="text-xs text-slate-400 font-semibold uppercase tracking-wider mt-0.5">
-                {s.label}
-              </div>
-            </div>
-          ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+          <StatsCard
+            title="Total Risks"
+            value={contextScoped.length}
+            unit="risks"
+            icon={Shield}
+            iconBgClassName="bg-indigo-50 dark:bg-indigo-900/30"
+            iconClassName="text-indigo-600 dark:text-indigo-400"
+            valueClassName="text-indigo-600 dark:text-indigo-400"
+          />
+          <StatsCard
+            title="Open"
+            value={contextScoped.filter((r) => r.status === "Open").length}
+            unit="open"
+            icon={AlertCircle}
+            iconBgClassName="bg-orange-50 dark:bg-orange-900/30"
+            iconClassName="text-orange-600 dark:text-orange-400"
+            valueClassName="text-orange-600 dark:text-orange-400"
+          />
+          <StatsCard
+            title="High / Severe"
+            value={contextScoped.filter((r) => (r.residualRating || 0) >= 16).length}
+            unit="risks"
+            icon={Flame}
+            iconBgClassName="bg-red-50 dark:bg-red-900/30"
+            iconClassName="text-red-600 dark:text-red-400"
+            valueClassName="text-red-600 dark:text-red-400"
+          />
+          <StatsCard
+            title="Escalated"
+            value={contextScoped.filter((r) => r.escalated).length}
+            unit="escalated"
+            icon={Flag}
+            iconBgClassName="bg-amber-50 dark:bg-amber-900/30"
+            iconClassName="text-amber-600 dark:text-amber-400"
+            valueClassName="text-amber-600 dark:text-amber-400"
+          />
+          <StatsCard
+            title="Financial Exposure"
+            value={(() => {
+              const total = contextScoped.reduce(
+                (s, r) => s + (r.residualALE || 0),
+                0,
+              );
+              return total >= 1000000
+                ? `£${(total / 1000000).toFixed(1)}m`
+                : total >= 1000
+                  ? `£${Math.round(total / 1000)}k`
+                  : fGBP(Math.round(total));
+            })()}
+            unit="ALE"
+            icon={PoundSterling}
+            iconBgClassName="bg-slate-100 dark:bg-slate-700"
+            iconClassName="text-slate-900 dark:text-slate-200"
+            valueClassName="text-[26px] sm:text-[28px] text-slate-900 dark:text-slate-100"
+          />
         </div>
 
         {/* Source Project filter — programme level only, unchanged logic */}
@@ -975,9 +1008,15 @@ export function RiskRegister() {
           searchFields={["title", "id", "workstream", "desc"]}
           selectable
           getRowId={(r) => r.id}
-          rowClassName={(r) =>
-            r.escalated ? "bg-indigo-50/30 hover:bg-indigo-50/50" : ""
-          }
+          rowClassName={(r) => {
+            const base = r.escalated
+              ? "bg-indigo-50/30 hover:bg-indigo-50/50"
+              : "";
+            const pending = isRowPending(r.id)
+              ? " opacity-60 pointer-events-none"
+              : "";
+            return base + pending;
+          }}
           emptyState={{
             title: "No risks found matching your filters.",
             icon: ShieldOff,
@@ -997,10 +1036,9 @@ export function RiskRegister() {
                 await updateRisk(editingRisk.id, { ...d, isNew: false });
                 toast.success("Risk updated.");
               } else {
-                const newId = generateId("R");
                 const newRisk: RiskItem = {
                   ...d,
-                  id: newId,
+                  id: generateId("R"),
                   dateAdded: new Date().toISOString().split("T")[0],
                   isNew: true,
                   projectId: d.projectId || activeProjectId || "",
@@ -1011,6 +1049,7 @@ export function RiskRegister() {
               }
             } catch (err: any) {
               toast.error(err?.message || "Failed to save risk.");
+              throw err;
             }
           }}
           initialData={editingRisk}

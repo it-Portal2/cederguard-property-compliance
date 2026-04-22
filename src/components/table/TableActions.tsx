@@ -25,14 +25,18 @@ export default function TableActions<T extends Record<string, any>>({
       <div className="flex items-center gap-1">
         {visible.map((action) => {
           const loading = action.isLoading?.(row) ?? false;
+          const disabled = action.isDisabled?.(row) ?? false;
           const label = typeof action.label === 'function' ? action.label(row) : action.label;
-          const Icon = action.icon;
+          const Icon =
+            typeof action.icon === 'function'
+              ? (action.icon as (r: T) => React.ComponentType<{ size?: number; className?: string }>)(row)
+              : action.icon;
           const isActive = action.isActive?.(row) ?? false;
 
           return (
             <TableTooltip key={action.key} content={label} variant="action" align="center">
               <button
-                disabled={loading}
+                disabled={loading || disabled}
                 onClick={() => onActionClick(action, row)}
                 aria-label={label}
                 className={clsx(

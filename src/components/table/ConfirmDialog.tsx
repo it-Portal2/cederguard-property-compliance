@@ -79,7 +79,7 @@ export default function ConfirmDialog({
     if (focusable && focusable.length > 0) focusable[0].focus();
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { onCancel(); return; }
+      if (e.key === 'Escape') { if (!loading) onCancel(); return; }
 
       if (e.key === 'Enter' && !loading) {
         const target = e.target as HTMLElement;
@@ -123,7 +123,7 @@ export default function ConfirmDialog({
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15 }}
           className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={(e) => e.target === e.currentTarget && onCancel()}
+          onClick={(e) => { if (e.target === e.currentTarget && !loading) onCancel(); }}
         >
           <motion.div
             ref={containerRef}

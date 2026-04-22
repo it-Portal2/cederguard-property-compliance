@@ -12,6 +12,7 @@ import { api } from "../lib/api";
 import { isAtLeastClientAdmin } from "../lib/roles";
 import { generateId, isValidDateString } from "../lib/utils";
 import { auth } from "../lib/firebase";
+import { enqueueBestEffort } from "./mutations";
 
 /**
  * Check if a value looks like a valid category ID (starts with "cat-")
@@ -558,6 +559,12 @@ export interface AppState {
   updateRisk: (id: string, updates: Partial<RiskItem>) => Promise<void>;
   deleteRisk: (id: string) => Promise<void>;
 
+  // Mutation pending set — contains entity keys like "risk:R-001" while a
+  // write is in flight for that entity. UI subscribes to dim rows, disable
+  // action buttons, and show per-row spinners. Replaced atomically on change.
+  pendingMutations: Set<string>;
+  isPendingMutation: (entityKey: string) => boolean;
+
   // Issues
   issues: IssueItem[];
   setIssues: (issues: IssueItem[]) => void;
@@ -688,7 +695,18 @@ export interface AppState {
   canManageContext: () => boolean;
 }
 
-export const useStore = create<AppState>((set, get) => ({
+export const useStore = create<AppState>((set, get) => {
+  // Shared pending-mutation setter — replaces the Set atomically so Zustand
+  // selectors subscribed to pendingMutations re-render on every change.
+  const setPending = (key: string, pending: boolean) =>
+    set((s) => {
+      const next = new Set(s.pendingMutations);
+      if (pending) next.add(key);
+      else next.delete(key);
+      return { pendingMutations: next };
+    });
+
+  return {
   user: null,
   clientId: null,
   portfolioInfo: null,
@@ -933,20 +951,38 @@ export const useStore = create<AppState>((set, get) => ({
     });
   },
   approveRisk: async (id) => {
-    const { risks } = get();
-    const updated = risks.map((r) =>
+    const prevRisks = get().risks;
+    const prevRow = prevRisks.find((r) => r.id === id);
+    if (!prevRow) return;
+    const contextId = get().activeProjectId || get().activeProgrammeId;
+    const entityKey = `risk:${id}`;
+    const updated = prevRisks.map((r) =>
       r.id === id ? { ...r, status: "Open", isProgrammeLevel: true } : r,
     );
-    set({ risks: updated });
-    const contextId = get().activeProjectId || get().activeProgrammeId;
-    await api.saveData("risks", updated, contextId);
+
+    setPending(entityKey, true);
+    try {
+      await api.saveData("risks", updated, contextId);
+      set({ risks: updated });
+    } finally {
+      setPending(entityKey, false);
+    }
   },
   dismissRisk: async (id) => {
-    const { risks } = get();
-    const updated = risks.filter((r) => r.id !== id);
-    set({ risks: updated });
+    const prevRisks = get().risks;
+    const prevRow = prevRisks.find((r) => r.id === id);
+    if (!prevRow) return;
     const contextId = get().activeProjectId || get().activeProgrammeId;
-    await api.saveData("risks", updated, contextId);
+    const entityKey = `risk:${id}`;
+    const updated = prevRisks.filter((r) => r.id !== id);
+
+    setPending(entityKey, true);
+    try {
+      await api.saveData("risks", updated, contextId);
+      set({ risks: updated });
+    } finally {
+      setPending(entityKey, false);
+    }
   },
   approveIssue: async (id) => {
     const { issues } = get();
@@ -986,9 +1022,13 @@ export const useStore = create<AppState>((set, get) => ({
   // Risk Management
   risks: [],
   setRisks: (risks) => set({ risks }),
+
+  // ── Mutation pending state ─────────────────────────────────────────────
+  // Tracks which entity-scoped mutations are currently in-flight so the UI
+  // can reflect progress and block duplicate user actions.
+  pendingMutations: new Set<string>(),
+  isPendingMutation: (entityKey) => get().pendingMutations.has(entityKey),
   addRisk: async (risk) => {
-    const { risks } = get();
-    // Normalize to ensure both ID and name fields are populated
     const normalizedRisk = normalizeRisk(risk) as RiskItem;
 
     // Resolve and stamp programmeId on escalated risks before saving
@@ -1001,10 +1041,19 @@ export const useStore = create<AppState>((set, get) => ({
       if (resolvedProgrammeId) normalizedRisk.programmeId = resolvedProgrammeId;
     }
 
-    const newRisks = [normalizedRisk, ...risks];
-    set({ risks: newRisks });
+    const contextId = get().activeProjectId || get().activeProgrammeId;
+    const entityKey = `risk:${normalizedRisk.id}`;
+    const updated = [normalizedRisk, ...get().risks];
 
-    // If escalated, trigger notification and dual-write to programme path
+    setPending(entityKey, true);
+    try {
+      await api.saveData("risks", updated, contextId);
+      set({ risks: updated });
+    } finally {
+      setPending(entityKey, false);
+    }
+
+    // Primary write confirmed — best-effort secondary side-effects.
     if (normalizedRisk.escalated) {
       get().addNotification({
         id: generateId("NOTIF"),
@@ -1016,31 +1065,34 @@ export const useStore = create<AppState>((set, get) => ({
         severity: "High",
       });
       if (normalizedRisk.programmeId) {
-        try {
-          const progRes = await api.getData("risks", normalizedRisk.programmeId);
-          const progRisks: any[] = progRes.success ? (progRes.data || []) : [];
-          const idx = progRisks.findIndex((r: any) => r.id === normalizedRisk.id);
-          if (idx >= 0) progRisks[idx] = normalizedRisk;
-          else progRisks.push(normalizedRisk);
-          await api.saveData("risks", progRisks, normalizedRisk.programmeId);
-        } catch (e) {
-          console.error("Failed to dual-write escalated risk to programme path:", e);
-        }
+        const progId = normalizedRisk.programmeId;
+        enqueueBestEffort(
+          `risks:${progId}`,
+          async () => {
+            const progRes = await api.getData("risks", progId);
+            const progRisks: any[] = progRes.success ? (progRes.data || []) : [];
+            const idx = progRisks.findIndex((r: any) => r.id === normalizedRisk.id);
+            if (idx >= 0) progRisks[idx] = normalizedRisk;
+            else progRisks.push(normalizedRisk);
+            await api.saveData("risks", progRisks, progId);
+          },
+          `addRisk dual-write (programme ${progId})`,
+        );
       }
     }
-
-    const contextId = get().activeProjectId || get().activeProgrammeId;
-    await api.saveData("risks", newRisks, contextId);
   },
   updateRisk: async (id, updates) => {
-    const { risks } = get();
+    const prevRisks = get().risks;
+    const prevRow = prevRisks.find((r) => r.id === id);
+    if (!prevRow) return;
+
     // Track programmeId for post-save operations
     let escalateProgrammeId = '';
     let deescalateProgrammeId = '';
     let deescalateProjectId = '';
     let syncProgrammeId = '';
 
-    const updated = risks.map((risk) => {
+    const updated = prevRisks.map((risk) => {
       if (risk.id === id) {
         const merged = { ...risk, ...updates };
         // Normalize to ensure both ID and name fields are populated
@@ -1087,113 +1139,144 @@ export const useStore = create<AppState>((set, get) => ({
       return risk;
     });
 
-    set({ risks: updated });
     const contextId = get().activeProjectId || get().activeProgrammeId;
-    await api.saveData("risks", updated, contextId);
+    const entityKey = `risk:${id}`;
 
-    // Dual-write to programme path when escalating
+    setPending(entityKey, true);
+    try {
+      await api.saveData("risks", updated, contextId);
+      set({ risks: updated });
+    } finally {
+      setPending(entityKey, false);
+    }
+
+    // Primary write confirmed — dispatch programme-path side-effects through
+    // the queue keyed by the programme id so they serialize safely with each
+    // other and with concurrent mutations on the same programme.
     if (escalateProgrammeId) {
-      try {
-        const escalatedRisk = updated.find((r) => r.id === id);
-        if (escalatedRisk) {
-          const progRes = await api.getData("risks", escalateProgrammeId);
+      const progId = escalateProgrammeId;
+      enqueueBestEffort(
+        `risks:${progId}`,
+        async () => {
+          const escalatedRisk = get().risks.find((r) => r.id === id);
+          if (!escalatedRisk) return;
+          const progRes = await api.getData("risks", progId);
           const progRisks: any[] = progRes.success ? (progRes.data || []) : [];
           const idx = progRisks.findIndex((r: any) => r.id === id);
           if (idx >= 0) progRisks[idx] = escalatedRisk;
           else progRisks.push(escalatedRisk);
-          await api.saveData("risks", progRisks, escalateProgrammeId);
-        }
-      } catch (e) {
-        console.error("Failed to dual-write escalated risk to programme path:", e);
-      }
-    }
-
-    // Remove from programme path when de-escalating
-    if (deescalateProgrammeId) {
-      try {
-        const progRes = await api.getData("risks", deescalateProgrammeId);
-        const progRisks: any[] = progRes.success ? (progRes.data || []) : [];
-        const cleaned = progRisks.filter((r: any) => r.id !== id);
-        if (cleaned.length !== progRisks.length) {
-          await api.saveData("risks", cleaned, deescalateProgrammeId);
-        }
-      } catch (e) {
-        console.error("Failed to remove de-escalated risk from programme path:", e);
-      }
-    }
-
-    // When de-escalating from programme register, update the originating project path.
-    // Fallback: if projectId wasn't stored on the risk (legacy data), search all projects
-    // in this programme until we find which one contains the risk.
-    if (!deescalateProjectId && deescalateProgrammeId) {
-      const progProjects = (get().projects as any[]).filter(
-        (p: any) => p.programmeId === deescalateProgrammeId,
+          await api.saveData("risks", progRisks, progId);
+        },
+        `updateRisk escalate dual-write (programme ${progId})`,
       );
-      for (const proj of progProjects) {
-        try {
-          const res = await api.getData("risks", proj.id);
-          if (res.success && (res.data || []).some((r: any) => r.id === id)) {
-            deescalateProjectId = proj.id;
-            break;
+    }
+
+    if (deescalateProgrammeId) {
+      const progId = deescalateProgrammeId;
+      enqueueBestEffort(
+        `risks:${progId}`,
+        async () => {
+          const progRes = await api.getData("risks", progId);
+          const progRisks: any[] = progRes.success ? (progRes.data || []) : [];
+          const cleaned = progRisks.filter((r: any) => r.id !== id);
+          if (cleaned.length !== progRisks.length) {
+            await api.saveData("risks", cleaned, progId);
           }
-        } catch (e) {
-          // continue searching other projects
-        }
-      }
+        },
+        `updateRisk deescalate programme cleanup (${progId})`,
+      );
     }
 
-    if (deescalateProjectId) {
-      try {
-        const projRes = await api.getData("risks", deescalateProjectId);
-        const projRisks: any[] = projRes.success ? (projRes.data || []) : [];
-        const idx = projRisks.findIndex((r: any) => r.id === id);
-        if (idx >= 0) {
-          projRisks[idx] = { ...projRisks[idx], escalated: false, status: 'Open', programmeId: '' };
-          await api.saveData("risks", projRisks, deescalateProjectId);
-        }
-      } catch (e) {
-        console.error("Failed to update de-escalated risk in project path:", e);
-      }
+    // When de-escalating, project-path update runs best-effort. Resolves the
+    // originating project id if missing, then patches the project's risk row.
+    if (deescalateProgrammeId) {
+      const progId = deescalateProgrammeId;
+      const knownProjectId = deescalateProjectId;
+      enqueueBestEffort(
+        `risks:project-lookup:${progId}`,
+        async () => {
+          let projId = knownProjectId;
+          if (!projId) {
+            const progProjects = (get().projects as any[]).filter(
+              (p: any) => p.programmeId === progId,
+            );
+            for (const proj of progProjects) {
+              const res = await api.getData("risks", proj.id);
+              if (res.success && (res.data || []).some((r: any) => r.id === id)) {
+                projId = proj.id;
+                break;
+              }
+            }
+          }
+          if (!projId) return;
+          const projRes = await api.getData("risks", projId);
+          const projRisks: any[] = projRes.success ? (projRes.data || []) : [];
+          const idx = projRisks.findIndex((r: any) => r.id === id);
+          if (idx >= 0) {
+            projRisks[idx] = {
+              ...projRisks[idx],
+              escalated: false,
+              status: "Open",
+              programmeId: "",
+            };
+            await api.saveData("risks", projRisks, projId);
+          }
+        },
+        `updateRisk deescalate project update`,
+      );
     }
 
-    // Sync field edits to programme path when risk is already escalated
     if (syncProgrammeId) {
-      try {
-        const updatedRisk = updated.find((r) => r.id === id);
-        if (updatedRisk) {
-          const progRes = await api.getData("risks", syncProgrammeId);
+      const progId = syncProgrammeId;
+      enqueueBestEffort(
+        `risks:${progId}`,
+        async () => {
+          const updatedRisk = get().risks.find((r) => r.id === id);
+          if (!updatedRisk) return;
+          const progRes = await api.getData("risks", progId);
           const progRisks: any[] = progRes.success ? (progRes.data || []) : [];
           const idx = progRisks.findIndex((r: any) => r.id === id);
           if (idx >= 0) {
             progRisks[idx] = updatedRisk;
-            await api.saveData("risks", progRisks, syncProgrammeId);
+            await api.saveData("risks", progRisks, progId);
           }
-        }
-      } catch (e) {
-        console.error("Failed to sync updated escalated risk to programme path:", e);
-      }
+        },
+        `updateRisk sync programme (${progId})`,
+      );
     }
   },
   deleteRisk: async (id) => {
-    const { risks } = get();
-    const riskToDelete = risks.find((r) => r.id === id);
-    const updated = risks.filter((risk) => risk.id !== id);
-    set({ risks: updated });
-    const contextId = get().activeProjectId || get().activeProgrammeId;
-    await api.saveData("risks", updated, contextId);
+    const prevRisks = get().risks;
+    const riskToDelete = prevRisks.find((r) => r.id === id);
+    if (!riskToDelete) return;
 
-    // Remove from programme path if the risk was escalated
-    if (riskToDelete?.escalated && riskToDelete.programmeId) {
-      try {
-        const progRes = await api.getData("risks", riskToDelete.programmeId);
-        const progRisks: any[] = progRes.success ? (progRes.data || []) : [];
-        const cleaned = progRisks.filter((r: any) => r.id !== id);
-        if (cleaned.length !== progRisks.length) {
-          await api.saveData("risks", cleaned, riskToDelete.programmeId);
-        }
-      } catch (e) {
-        console.error("Failed to remove deleted escalated risk from programme path:", e);
-      }
+    const contextId = get().activeProjectId || get().activeProgrammeId;
+    const entityKey = `risk:${id}`;
+    const updated = prevRisks.filter((r) => r.id !== id);
+
+    setPending(entityKey, true);
+    try {
+      await api.saveData("risks", updated, contextId);
+      set({ risks: updated });
+    } finally {
+      setPending(entityKey, false);
+    }
+
+    // Best-effort programme-path cleanup — runs after primary delete confirms.
+    if (riskToDelete.escalated && riskToDelete.programmeId) {
+      const progId = riskToDelete.programmeId;
+      enqueueBestEffort(
+        `risks:${progId}`,
+        async () => {
+          const progRes = await api.getData("risks", progId);
+          const progRisks: any[] = progRes.success ? (progRes.data || []) : [];
+          const cleaned = progRisks.filter((r: any) => r.id !== id);
+          if (cleaned.length !== progRisks.length) {
+            await api.saveData("risks", cleaned, progId);
+          }
+        },
+        `deleteRisk programme cleanup (${progId})`,
+      );
     }
   },
   addRisks: async (newRisks) => {
@@ -2303,10 +2386,8 @@ export const useStore = create<AppState>((set, get) => ({
   convertToIssue: async (riskId: string) => {
     const risk = get().risks.find((r) => r.id === riskId);
     if (!risk) return;
+    const prevRiskShape = { ...risk };
 
-    // Resolve context IDs — risks loaded via loadProjectData are only stamped
-    // with projectId, not programmeId. Fall back to the active context so the
-    // new issue is discoverable under both project and programme views.
     const resolvedProjectId = risk.projectId || get().activeProjectId || "";
     const resolvedProgrammeId =
       risk.programmeId || get().activeProgrammeId || "";
@@ -2327,21 +2408,38 @@ export const useStore = create<AppState>((set, get) => ({
       status: "1. Investigating",
     };
 
+    const contextId = get().activeProjectId || get().activeProgrammeId;
+    const entityKey = `risk:${riskId}`;
     const updatedRisks = get().risks.map((r) =>
       r.id === riskId ? { ...r, status: "Closed", convertedToIssue: true } : r,
     );
+    const updatedIssues = [newIssue, ...get().issues];
 
-    set((state) => ({
-      issues: [newIssue, ...state.issues],
-      risks: updatedRisks,
-    }));
-
-    // Use get().issues AFTER set() — it already contains newIssue. Do NOT
-    // prepend again or the DB ends up with a duplicate entry.
-    const contextId = get().activeProjectId || get().activeProgrammeId;
-    const updatedIssues = get().issues;
-    await api.saveData("risks", updatedRisks, contextId);
-    await api.saveData("issues", updatedIssues, contextId);
+    setPending(entityKey, true);
+    try {
+      await api.saveData("risks", updatedRisks, contextId);
+      try {
+        await api.saveData("issues", updatedIssues, contextId);
+      } catch (issuesErr) {
+        // risks write committed but issues failed — compensate by reverting
+        // the risk row on the server so client+server stay consistent.
+        try {
+          const compensated = updatedRisks.map((r) =>
+            r.id === riskId ? prevRiskShape : r,
+          );
+          await api.saveData("risks", compensated, contextId);
+        } catch (compErr) {
+          console.error(
+            "[convertToIssue] compensating risks save failed — server may be half-committed until next refresh",
+            compErr,
+          );
+        }
+        throw issuesErr;
+      }
+      set({ risks: updatedRisks, issues: updatedIssues });
+    } finally {
+      setPending(entityKey, false);
+    }
   },
   escalateRisk: async (riskId: string, _projectId: string) => {
     const { risks } = get();
@@ -2430,4 +2528,5 @@ export const useStore = create<AppState>((set, get) => ({
 
     return false;
   },
-}));
+  };
+});

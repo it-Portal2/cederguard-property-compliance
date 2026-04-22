@@ -51,6 +51,7 @@ export default function DynamicTable<T extends Record<string, any>>({
   virtualize = false,
   rowHeight = 44,
   visibleRowCount = 20,
+  toolbarActions,
 }: DynamicTableProps<T>) {
   // ── Local state ─────────────────────────────────────────────────────────────
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -235,6 +236,7 @@ export default function DynamicTable<T extends Record<string, any>>({
           selectedCount={selectedIds.size}
           selectedRows={selectedRows(data)}
           onBulkAction={handleBulkAction}
+          toolbarActions={toolbarActions}
         />
 
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-x-auto">

@@ -13,6 +13,7 @@ import {
     Shield,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import toast from 'react-hot-toast';
 import { analyzeControls, analyzeContextSentence } from '../services/aiService';
 import { clsx } from 'clsx';
 import { stripMarkdown, parseAISuggestion } from '../lib/utils';
@@ -41,7 +42,8 @@ const itemVariants: Variants = {
 };
 
 export function AIControlSuggestions() {
-    const { risks, updateRisk, activeProject, activeProgramme, projectInfo } = useStore();
+    const { risks, updateRisk, activeProject, activeProgramme, projectInfo, pendingMutations } = useStore();
+    const isRiskPending = (id: string) => pendingMutations.has(`risk:${id}`);
     const [isAutoLoading,     setIsAutoLoading]     = useState(false);
     const [isManualLoading,   setIsManualLoading]   = useState(false);
     const [suggestedControls, setSuggestedControls] = useState<any[]>([]);
@@ -87,19 +89,25 @@ export function AIControlSuggestions() {
 
     const addControl = (riskId: string, suggestion: string) => {
         const risk = risks.find(r => r.id === riskId);
-        if (risk) {
-            const newControls = risk.controls && risk.controls !== 'None'
-                ? `${risk.controls}\n- ${suggestion}`
-                : `- ${suggestion}`;
-            updateRisk(riskId, { controls: newControls });
-            setSuggestedControls(prev =>
-                prev.map(sc =>
-                    sc.riskId === riskId
-                        ? { ...sc, suggestions: sc.suggestions.filter((s: string) => s !== suggestion) }
-                        : sc
-                ).filter(sc => sc.suggestions.length > 0)
-            );
-        }
+        if (!risk) return;
+        const newControls = risk.controls && risk.controls !== 'None'
+            ? `${risk.controls}\n- ${suggestion}`
+            : `- ${suggestion}`;
+        // Optimistically prune the suggestion from the local panel — the store
+        // rolls the risk back on failure, and the toast surfaces the error.
+        setSuggestedControls(prev =>
+            prev.map(sc =>
+                sc.riskId === riskId
+                    ? { ...sc, suggestions: sc.suggestions.filter((s: string) => s !== suggestion) }
+                    : sc
+            ).filter(sc => sc.suggestions.length > 0)
+        );
+        updateRisk(riskId, { controls: newControls }).then(
+            () => toast.success('Control added.'),
+            (err: any) => {
+                toast.error(err?.message || 'Failed to add control.');
+            },
+        );
     };
 
     return (
@@ -562,12 +570,13 @@ export function AIControlSuggestions() {
 
                                                             <motion.button
                                                                 onClick={() => addControl(item.riskId, s)}
+                                                                disabled={isRiskPending(item.riskId)}
                                                                 title="Add to risk"
                                                                 initial={{ opacity: 0 }}
                                                                 whileHover={{ scale: 1.1, backgroundColor: '#4f46e5', borderColor: '#4f46e5', color: '#ffffff' }}
                                                                 whileTap={{ scale: 0.9 }}
                                                                 transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-                                                                className="absolute top-3.5 right-3.5 p-1.5 rounded-lg bg-white border border-slate-200 text-slate-400 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                                                className="absolute top-3.5 right-3.5 p-1.5 rounded-lg bg-white border border-slate-200 text-slate-400 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                                             >
                                                                 <Plus className="w-3.5 h-3.5" />
                                                             </motion.button>

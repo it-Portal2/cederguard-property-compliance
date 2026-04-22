@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useStore } from '../store/useStore';
+import toast from 'react-hot-toast';
 import { Shield, AlertTriangle, Search } from 'lucide-react';
 import { clsx } from 'clsx';
 import { stripMarkdown } from '../lib/utils';
@@ -24,7 +25,9 @@ export function RiskAggregation() {
     isInitialized,
     loadProjectData,
     loadProgrammeData,
+    pendingMutations,
   } = useStore();
+  const isRowPending = (id: string) => pendingMutations.has(`risk:${id}`);
 
   // entity: 'All Projects' | projectId — resets on context switch
   const [filter, setFilter] = useState({
@@ -466,12 +469,17 @@ export function RiskAggregation() {
                     <div className="flex items-center justify-center gap-2 opacity-10 group-hover:opacity-100 transition-opacity">
                       {!r.convertedToIssue && r.status !== 'Closed' && (
                         <button
+                          disabled={isRowPending(r.id)}
                           onClick={() => {
-                            if (window.confirm(`Convert risk ${r.id} to an issue? This will close the risk.`)) {
-                              useStore.getState().convertToIssue(r.id);
-                            }
+                            if (!window.confirm(`Convert risk ${r.id} to an issue? This will close the risk.`)) return;
+                            useStore.getState().convertToIssue(r.id).then(
+                              () => toast.success('Risk converted to live issue.'),
+                              (err: any) => {
+                                toast.error(err?.message || 'Failed to convert risk to issue.');
+                              },
+                            );
                           }}
-                          className="w-6 h-6 flex items-center justify-center bg-white text-amber-500 border border-amber-200 rounded-lg hover:bg-amber-50 transition-all shadow-sm"
+                          className="w-6 h-6 flex items-center justify-center bg-white text-amber-500 border border-amber-200 rounded-lg hover:bg-amber-50 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Move to Issue"
                         >
                           <AlertTriangle className="w-3 h-3" />

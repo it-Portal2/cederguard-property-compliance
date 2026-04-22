@@ -56,13 +56,16 @@ export interface ColumnDef<T> {
 export interface RowAction<T> {
   key: string;
   label: string | ((row: T) => string);
-  icon?: React.ComponentType<{ size?: number; className?: string }>;
+  icon?:
+    | React.ComponentType<{ size?: number; className?: string }>
+    | ((row: T) => React.ComponentType<{ size?: number; className?: string }>);
   onClick: (row: T) => void;
   isVisible?: (row: T) => boolean;
   isDanger?: boolean;
   requireConfirm?: ConfirmConfig;
   isLoading?: (row: T) => boolean;
   isActive?: (row: T) => boolean;
+  isDisabled?: (row: T) => boolean;
 }
 
 // ── Bulk actions ─────────────────────────────────────────────────────────────
@@ -134,4 +137,5 @@ export interface DynamicTableProps<T extends Record<string, any>> {
   virtualize?: boolean;
   rowHeight?: number;
   visibleRowCount?: number;
+  toolbarActions?: React.ReactNode;
 }

@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import {
   Search, X, SlidersHorizontal, Eye, FileSpreadsheet, Download, Trash2
 } from 'lucide-react';
@@ -26,6 +27,7 @@ interface TableToolbarProps<T> {
   selectedCount?: number;
   selectedRows?: T[];
   onBulkAction?: (action: BulkAction<T>) => void;
+  toolbarActions?: ReactNode;
 }
 
 export default function TableToolbar<T extends Record<string, any>>({
@@ -49,6 +51,7 @@ export default function TableToolbar<T extends Record<string, any>>({
   selectedCount = 0,
   selectedRows = [],
   onBulkAction,
+  toolbarActions,
 }: TableToolbarProps<T>) {
   const [showFilters, setShowFilters] = useState(false);
   const [showColPicker, setShowColPicker] = useState(false);
@@ -70,7 +73,6 @@ export default function TableToolbar<T extends Record<string, any>>({
 
   const showSecondaryRow =
     columnVisibilityControl ||
-    exportXlsx ||
     exportCsv ||
     (hasInlineBulk && selectedCount > 0) ||
     activeFilterCount > 0;
@@ -120,6 +122,21 @@ export default function TableToolbar<T extends Record<string, any>>({
             )}
           </button>
         )}
+
+        {exportXlsx && (
+          <button
+            onClick={onExportXlsx}
+            title="Export XLSX"
+            className="flex items-center justify-center gap-2 h-10 px-4 text-[13px] font-medium rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200 shadow-sm shrink-0 transition-all duration-150"
+          >
+            <FileSpreadsheet size={15} />
+            <span>Export</span>
+          </button>
+        )}
+
+        {toolbarActions && (
+          <div className="flex items-stretch gap-2 shrink-0 ml-auto">{toolbarActions}</div>
+        )}
       </div>
 
       {/* Secondary row: Columns / Export / Bulk / Clear All */}
@@ -158,16 +175,6 @@ export default function TableToolbar<T extends Record<string, any>>({
             </div>
           )}
 
-          {exportXlsx && (
-            <button
-              onClick={onExportXlsx}
-              title="Export XLSX"
-              className="flex items-center gap-1.5 h-8 px-3 text-[11px] font-medium rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300 transition-all duration-150"
-            >
-              <FileSpreadsheet size={13} />
-              Export
-            </button>
-          )}
           {exportCsv && (
             <button
               onClick={onExportCsv}

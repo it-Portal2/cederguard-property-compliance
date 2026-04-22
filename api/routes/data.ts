@@ -1,4 +1,4 @@
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { ApiContext } from '../lib/context.js';
 import crypto from 'crypto';
 
@@ -8,12 +8,32 @@ export const dataRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
     const { collection, data, projectId } = req.body;
     if (!collection || data === undefined) return res.status(400).json({ error: 'Missing collection or data' });
 
-    let pathRef;
+    let pathRef: FirebaseFirestore.DocumentReference | undefined;
     if (projectId) {
       if (!(await isAuthorizedForContext(projectId))) {
         return res.status(403).json({ error: 'Forbidden: You do not have access to this project.' });
       }
       pathRef = db.collection('projects').doc(projectId).collection('data').doc(collection);
+
+      if (data === null) {
+        await pathRef.delete();
+      } else {
+        await pathRef.set({ data, updatedAt: Timestamp.fromMillis(Date.now()) });
+      }
+
+      if (['risks', 'issues', 'complianceItems', 'complianceAnalysis'].includes(collection)) {
+        const count = Array.isArray(data) ? data.length : (data ? 1 : 0);
+        db.collection('activityLogs').add({
+          type: `${collection}_saved`,
+          uid,
+          email,
+          projectId,
+          count,
+          timestamp: new Date().toISOString()
+        }).catch(console.error);
+      }
+
+      return res.status(200).json({ success: true });
     } else if (collection === 'programmes') {
       // Standardize: programmes stored as documents in top-level collection indexed by clientId
       if (Array.isArray(data)) {
@@ -82,7 +102,10 @@ export const dataRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
       }
       const pathRef = db.collection('projects').doc(projectId).collection('data').doc(collection);
       const doc = await pathRef.get();
-      return res.status(200).json({ success: true, data: doc.exists ? doc.data()?.data : null });
+      return res.status(200).json({
+        success: true,
+        data: doc.exists ? doc.data()?.data : null,
+      });
     } else if (collection === 'programmes') {
       const pmFilter = req.body.pmFilter; // Optional filter for fetching a specific manager's programmes
 

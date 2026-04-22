@@ -117,6 +117,12 @@ export default function TableTooltip({
     },
     onFocus: (e: React.FocusEvent) => {
       children.props.onFocus?.(e);
+      const el = e.currentTarget as HTMLElement;
+      try {
+        if (typeof el.matches === 'function' && !el.matches(':focus-visible')) return;
+      } catch {
+        return;
+      }
       show();
     },
     onBlur: (e: React.FocusEvent) => {
