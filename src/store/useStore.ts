@@ -319,6 +319,10 @@ export interface Programme {
   isArchived?: boolean;
   clientId?: string;
   userId?: string;
+  creatorId?: string;
+
+  // PM roster — explicit membership edited via invite flow or WorkspaceSettings "Manage programmes"
+  assignedPMIds?: string[];
 
   // Metadata for Service Management Bar
   lastRiskRun?: string;
@@ -466,6 +470,7 @@ export interface Project {
 
   // Additional fields for forms and reporting
   projectManagerId?: string;
+  programmeManagerId?: string;
   pmId?: string;
   costCentreCode?: string;
   fundingStreams?: string[];
@@ -1831,6 +1836,7 @@ export const useStore = create<AppState>((set, get) => {
     });
   },
   resetAllData: async () => {
+    await api.clientResetWorkspaceData();
     set({
       projects: [],
       programmes: [],

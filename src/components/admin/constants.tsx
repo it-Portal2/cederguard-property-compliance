@@ -27,6 +27,12 @@ export const ACTIVITY_ICONS: Record<string, { label: string; color: string }> = 
     programme_deleted: { label: 'Programme Deleted', color: 'text-red-600 bg-red-50' },
     admin_transfer_project: { label: 'Project Transferred', color: 'text-amber-600 bg-amber-50' },
     admin_transfer_programme: { label: 'Programme Transferred', color: 'text-purple-600 bg-purple-50' },
+    admin_supervisor_assigned: { label: 'Supervisor Assigned', color: 'text-indigo-600 bg-indigo-50' },
+    supervisor_assigned: { label: 'Supervisor Linked', color: 'text-sky-600 bg-sky-50' },
+    pm_added_to_programme: { label: 'PM Added to Programme', color: 'text-emerald-600 bg-emerald-50' },
+    pm_removed_from_programme: { label: 'PM Removed from Programme', color: 'text-amber-600 bg-amber-50' },
+    admin_user_promoted: { label: 'Role Changed', color: 'text-violet-600 bg-violet-50' },
+    pm_level_updated: { label: 'PM Level Changed', color: 'text-slate-600 bg-slate-50' },
     default: { label: 'Activity', color: 'text-slate-600 bg-slate-100' },
 };
 

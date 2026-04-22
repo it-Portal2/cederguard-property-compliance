@@ -105,13 +105,29 @@ export const api = {
   deleteProject: (id: string) => callApi("deleteProject", { id }),
   deleteProgramme: (id: string) => callApi("deleteProgramme", { id }),
 
-  // Client Admin: invite a PM, view all PMs and their projects
-  inviteProjectManager: (pmEmail: string, pmName: string, pmRole: string) =>
-    callApi("inviteProjectManager", { pmEmail, pmName, pmRole }),
+  // Client Admin: invite a PM, view all PMs and their projects.
+  // Invites always create a canonical project_manager; pmLevel is a sub-level.
+  inviteProjectManager: (
+    pmEmail: string,
+    pmName: string,
+    pmLevel: string,
+    programmeIds?: string[],
+  ) =>
+    callApi("inviteProjectManager", {
+      pmEmail,
+      pmName,
+      pmLevel,
+      programmeIds: programmeIds || [],
+    }),
   clientGetPMs: () => callApi("clientGetPMs"),
   clientGetTeam: () => callApi("clientGetTeam"),
   clientRemoveUser: (targetUid: string) =>
     callApi("clientRemoveUser", { targetUid }),
+  cancelInvite: (inviteId: string) => callApi("cancelInvite", { inviteId }),
+  updateInvite: (
+    inviteId: string,
+    updates: { pmLevel?: string; programmeIds?: string[]; name?: string },
+  ) => callApi("updateInvite", { inviteId, ...updates }),
   clientUpdateUserRole: (targetUid: string, role: string) =>
     callApi("clientUpdateUserRole", { targetUid, role }),
   clientGetProjects: () => callApi("clientGetProjects"),
@@ -133,8 +149,25 @@ export const api = {
     callApi("saveData", { collection, data, projectId }),
   getData: (collection: string, projectId?: string | null) =>
     callApi("getData", { collection, projectId }),
-  clientGetProgrammesByManager: (pmFilter: string) =>
-    callApi("getData", { collection: "programmes", pmFilter }),
+  clientGetProgrammesByManager: (supervisorId: string) =>
+    callApi("clientGetProgrammesByManager", { supervisorId }),
+  clientGetMySupervisors: () => callApi("clientGetMySupervisors"),
+  getPMsAssignedToProgramme: (programmeId: string) =>
+    callApi("getPMsAssignedToProgramme", { programmeId }),
+  addPMToProgramme: (programmeId: string, userId: string) =>
+    callApi("addPMToProgramme", { programmeId, userId }),
+  removePMFromProgramme: (programmeId: string, userId: string) =>
+    callApi("removePMFromProgramme", { programmeId, userId }),
+  setPmLevel: (targetUid: string, pmLevel: string) =>
+    callApi("setPmLevel", { targetUid, pmLevel }),
+  clientAssignSupervisor: (targetUid: string, supervisorUid: string | null) =>
+    callApi("clientAssignSupervisor", { targetUid, supervisorUid }),
+  clientUpdateMemberProfile: (targetUid: string, displayName: string) =>
+    callApi("clientUpdateMemberProfile", { targetUid, displayName }),
+  adminAssignSupervisor: (targetUid: string, supervisorUid: string | null) =>
+    callApi("adminAssignSupervisor", { targetUid, supervisorUid }),
+  adminPromoteUser: (targetUid: string, newRole: string, pmLevel?: string) =>
+    callApi("adminPromoteUser", { targetUid, newRole, pmLevel }),
   getSystemMappings: () => callApi("getSystemMappings"),
 
   getEvidence: (projectId: string) => callApi("getEvidence", { projectId }),
@@ -172,6 +205,7 @@ export const api = {
   adminGetInvoices: () => callApi("adminGetInvoices"),
   adminDeleteInvoice: (id: string) => callApi("adminDeleteInvoice", { id }),
   clientGetInvoices: () => callApi("clientGetInvoices"),
+  clientResetWorkspaceData: () => callApi("clientResetWorkspaceData"),
 
   adminDeleteProgramme: (id: string) => callApi("adminDeleteProgramme", { id }),
   adminDeleteProject: (id: string) => callApi("adminDeleteProject", { id }),

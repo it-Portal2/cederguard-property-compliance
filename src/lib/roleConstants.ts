@@ -12,3 +12,15 @@ export const ROLE_STRINGS = {
   PROJECT_COORDINATOR: "project_coordinator",
   VIEWER: "viewer",
 } as const;
+
+export const PM_LEVELS = ["senior", "standard", "assistant", "coordinator"] as const;
+export type PmLevel = (typeof PM_LEVELS)[number];
+
+export const CANONICAL_ROLES = [
+  "super_admin",
+  "client_admin",
+  "project_manager",
+  "viewer",
+  "enterprise",
+] as const;
+export type CanonicalRole = (typeof CANONICAL_ROLES)[number];

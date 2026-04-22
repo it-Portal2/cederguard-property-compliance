@@ -1,41 +1,127 @@
-import { useState, useEffect } from 'react';
-import { Settings2, Building2, Users, Bell, Save, Plus, Mail, Trash2, Loader2, CheckCircle2, Clock, User2, FolderKanban, Database, AlertTriangle, RefreshCcw, ScanSearch, ShieldCheck, Globe } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import {
+    Settings2,
+    Building2,
+    Users,
+    Save,
+    Plus,
+    Mail,
+    Loader2,
+    CheckCircle2,
+    FolderKanban,
+    Database,
+    AlertTriangle,
+    RefreshCcw,
+    ScanSearch,
+    ShieldCheck,
+    Globe,
+    UserCog,
+    UserMinus,
+    Pencil,
+} from 'lucide-react';
+import toast from 'react-hot-toast';
 import { api } from '../lib/api';
 import { useStore } from '../store/useStore';
 import { clsx } from 'clsx';
+import DynamicTable from '../components/table/DynamicTable';
+import type { ColumnDef, RowAction, FilterDef } from '../components/table/types';
+import TableTooltip from '../components/table/TableTooltip';
+import { PM_LEVELS } from '../lib/roleConstants';
+import type { PmLevel } from '../lib/roleConstants';
+import { canonicalRole, pmLevelLabel } from '../lib/roles';
+import type { CanonicalRole } from '../lib/roles';
+import { StatsCard } from '../components/common/StatsCard';
+import ConfirmDialog from '../components/table/ConfirmDialog';
 
-const inputCls = "w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white/80 backdrop-blur-sm placeholder:text-slate-400 shadow-sm hover:border-slate-300 transition-all";
+const inputCls = "w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white/80 backdrop-blur-sm placeholder:text-slate-400 shadow-sm hover:border-slate-300";
 const labelCls = "block text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] mb-2 ml-1";
 
+interface TeamMember {
+    uid: string;
+    email: string;
+    displayName?: string;
+    role?: string;
+    pmLevel?: PmLevel | null;
+    supervisorUid?: string | null;
+    createdAt?: string;
+    clientId?: string;
+    status: 'active' | 'pending';
+    inviteEmail?: string;
+    inviteId?: string;
+    inviteProgrammeIds?: string[];
+}
+
+const CANONICAL_ROLE_BADGE: Record<CanonicalRole, { label: string; cls: string }> = {
+    super_admin: { label: 'Super Admin', cls: 'bg-violet-50 text-violet-700 border-violet-100' },
+    client_admin: { label: 'Client Admin', cls: 'bg-indigo-50 text-indigo-700 border-indigo-100' },
+    project_manager: { label: 'Project Manager', cls: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
+    viewer: { label: 'Viewer', cls: 'bg-slate-50 text-slate-700 border-slate-200' },
+    enterprise: { label: 'Enterprise', cls: 'bg-sky-50 text-sky-700 border-sky-100' },
+};
+
+const PM_LEVEL_OPTIONS: { value: PmLevel; label: string }[] = PM_LEVELS.map(v => ({
+    value: v,
+    label: pmLevelLabel(v),
+}));
+
+const CANONICAL_ROLE_PROMOTE_OPTIONS: { value: CanonicalRole; label: string }[] = [
+    { value: 'project_manager', label: 'Project Manager' },
+    { value: 'client_admin', label: 'Client Admin' },
+];
+
 export function WorkspaceSettings() {
-    const { user, resetAllData, addNotification } = useStore();
+    const { user, resetAllData, addNotification, programmes, fetchProgrammes } = useStore();
     const [activeTab, setActiveTab] = useState<'org' | 'team' | 'data'>('org');
     const [resetting, setResetting] = useState(false);
+    const [resetStep, setResetStep] = useState<'idle' | 'confirm1' | 'confirm2'>('idle');
 
-    // Org settings state
-    const [orgName, setOrgName] = useState(user?.profile?.orgName || '');
-    const [regNo, setRegNo] = useState(user?.profile?.regNo || '');
-    const [address, setAddress] = useState(user?.profile?.address || '');
-    const [jurisdiction, setJurisdiction] = useState(user?.profile?.jurisdiction || 'England & Wales');
+    // Org settings state — user fields are flattened at the root of `user`
+    // (see useStore.initStore: `set({ user: { ...firestoreProfile, ... } })`).
+    const [orgName, setOrgName] = useState((user as any)?.orgName || '');
+    const [regNo, setRegNo] = useState((user as any)?.regNo || '');
+    const [address, setAddress] = useState((user as any)?.address || '');
+    const [jurisdiction, setJurisdiction] = useState((user as any)?.jurisdiction || 'England & Wales');
     const [savingOrg, setSavingOrg] = useState(false);
     const [orgSaved, setOrgSaved] = useState(false);
 
     // Team management state
     const [pms, setPMs] = useState<any[]>([]);
     const [pending, setPending] = useState<any[]>([]);
-    const [newPmEmail, setNewPmEmail] = useState('');
-    const [newPmName, setNewPmName] = useState('');
-    const [newPmRole, setNewPmRole] = useState<string>('project_manager');
-    const [inviting, setInviting] = useState(false);
-    const [inviteMsg, setInviteMsg] = useState('');
+    const [inviteOpen, setInviteOpen] = useState(false);
+    const [inviteEditTarget, setInviteEditTarget] = useState<TeamMember | null>(null);
     const [loadingTeam, setLoadingTeam] = useState(false);
 
-    const [pmProjects, setPmProjects] = useState<Record<string, number>>({});
+    // Row-action modal state
+    const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
+    const [changingRoleFor, setChangingRoleFor] = useState<TeamMember | null>(null);
 
-    const formatRole = (role: string) => {
-        if (!role) return 'Project Manager';
-        return role.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-    };
+    // Programmes available for binding/rostering. Backend already scopes the
+    // `programmes` store to the caller's org via clientId; no further frontend
+    // filter is needed (and the backend re-validates ownership on every
+    // invite / addPMToProgramme call).
+    const ownedProgrammes = useMemo(
+        () => (Array.isArray(programmes) ? programmes : []),
+        [programmes],
+    );
+
+    const callerCanonical = canonicalRole(user?.role);
+    const canChangeRole = callerCanonical === 'super_admin' || callerCanonical === 'client_admin';
+
+    useEffect(() => {
+        fetchProgrammes();
+    }, []);
+
+    // Rehydrate org form fields when the user object resolves/changes.
+    // Without this, opening the page before `initStore` finishes leaves the
+    // inputs empty even though the profile has data.
+    useEffect(() => {
+        if (!user) return;
+        const u = user as any;
+        if (u.orgName !== undefined) setOrgName(u.orgName || '');
+        if (u.regNo !== undefined) setRegNo(u.regNo || '');
+        if (u.address !== undefined) setAddress(u.address || '');
+        if (u.jurisdiction !== undefined) setJurisdiction(u.jurisdiction || 'England & Wales');
+    }, [user]);
 
     useEffect(() => {
         if (activeTab === 'team') {
@@ -46,20 +132,10 @@ export function WorkspaceSettings() {
     const loadTeam = async () => {
         setLoadingTeam(true);
         try {
-            const [pmsRes, projectsRes] = await Promise.all([
-                api.clientGetPMs().catch(() => null),
-                api.clientGetProjects().catch(() => null),
-            ]);
+            const pmsRes = await api.clientGetPMs().catch(() => null);
             if (pmsRes) {
                 setPMs(Array.isArray(pmsRes.pms) ? pmsRes.pms : []);
                 setPending(Array.isArray(pmsRes.pending) ? pmsRes.pending : []);
-            }
-            if (Array.isArray(projectsRes?.projects)) {
-                const counts: Record<string, number> = {};
-                (projectsRes.projects as any[]).forEach((p: any) => {
-                    if (p.userId) counts[p.userId] = (counts[p.userId] || 0) + 1;
-                });
-                setPmProjects(counts);
             }
         } catch (err) {
             console.error(err);
@@ -72,30 +148,19 @@ export function WorkspaceSettings() {
         setSavingOrg(true);
         try {
             await api.saveProfile({ orgName, regNo, address, jurisdiction });
+            // Reflect saved values into the store so in-memory reads stay fresh
+            // without requiring a full page refresh / initStore re-run.
+            useStore.setState((s: any) => ({
+                user: { ...(s.user || {}), orgName, regNo, address, jurisdiction },
+            }));
             setOrgSaved(true);
+            toast.success('Organisation details saved.');
             setTimeout(() => setOrgSaved(false), 3000);
-        } catch (err) {
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to save organisation details.');
             console.error(err);
         } finally {
             setSavingOrg(false);
-        }
-    };
-
-    const handleInvitePM = async () => {
-        if (!newPmEmail.includes('@')) { setInviteMsg('Please enter a valid email address.'); return; }
-        setInviting(true);
-        setInviteMsg('');
-        try {
-            await api.inviteProjectManager(newPmEmail, newPmName, newPmRole);
-            setInviteMsg(`✅ Invitation sent to ${newPmEmail}.`);
-            setNewPmEmail('');
-            setNewPmName('');
-            setNewPmRole('project_manager');
-            loadTeam();
-        } catch (err: any) {
-            setInviteMsg(`❌ Error: ${err.message}`);
-        } finally {
-            setInviting(false);
         }
     };
 
@@ -105,78 +170,376 @@ export function WorkspaceSettings() {
         { key: 'data', label: 'Infrastructure', icon: Database },
     ];
 
-    const handleResetData = async () => {
-        if (!window.confirm("CRITICAL WARNING: This will permanently delete ALL data for this workspace. This action cannot be undone. Are you absolutely sure?")) {
-            return;
-        }
-
-        const secondConfirm = window.prompt("Type 'RESET' to confirm platform wipe:");
-        if (secondConfirm !== 'RESET') {
-            addNotification({ title: 'Reset Cancelled', body: 'Workspace reset was not confirmed.', type: 'system' });
-            return;
-        }
-
+    const handleResetConfirmed = async () => {
         setResetting(true);
         try {
             await resetAllData();
+            setResetStep('idle');
             addNotification({ title: 'Workspace Reset', body: 'Platform has been successfully reset.', type: 'system' });
             setActiveTab('org');
         } catch (err) {
             console.error(err);
+            setResetStep('idle');
             addNotification({ title: 'Reset Failed', body: 'Failed to reset platform data. Please try again.', type: 'system' });
         } finally {
             setResetting(false);
         }
     };
 
-    return (
-        <div className="space-y-10 max-w-7xl mx-auto pb-24">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-2">
-                <div>
-                    <h1 className="text-3xl font-black text-slate-900 flex items-center gap-3 tracking-tight">
-                        <div className="p-2.5 bg-slate-900 rounded-2xl shadow-lg shadow-slate-200">
-                            <Settings2 className="w-7 h-7 text-white" />
-                        </div>
-                        Workspace Configuration
-                    </h1>
-                    <p className="text-sm text-slate-500 mt-3 font-medium max-w-lg leading-relaxed">
-                        Manage your organisation profile, team access, and data infrastructure from one central dashboard.
-                    </p>
-                </div>
+    // ── Team table data pipeline ─────────────────────────────────────────────
+    const teamRows: TeamMember[] = useMemo(() => {
+        const activeRows: TeamMember[] = (Array.isArray(pms) ? pms : []).map((pm: any) => ({
+            uid: pm.uid,
+            email: pm.email,
+            displayName: pm.displayName,
+            role: pm.role,
+            pmLevel: pm.pmLevel ?? null,
+            supervisorUid: pm.supervisorUid ?? null,
+            createdAt: pm.createdAt,
+            clientId: pm.clientId,
+            status: 'active' as const,
+        }));
+        const pendingRows: TeamMember[] = (Array.isArray(pending) ? pending : []).map((inv: any, idx: number) => ({
+            uid: `pending:${inv.email || idx}`,
+            email: inv.email,
+            displayName: inv.name,
+            role: 'project_manager',
+            pmLevel: inv.pmLevel ?? 'standard',
+            createdAt: inv.createdAt,
+            status: 'pending' as const,
+            inviteEmail: inv.email,
+            inviteId: inv.id,
+            inviteProgrammeIds: Array.isArray(inv.programmeIds) ? inv.programmeIds : [],
+        }));
+        return [...activeRows, ...pendingRows];
+    }, [pms, pending]);
 
-                <div className="flex gap-1 bg-white/40 backdrop-blur-xl p-1 rounded-2xl border border-white/40 shadow-xl shadow-slate-200/50 overflow-x-auto scrollbar-hide max-w-full">
-                    {Array.isArray(tabs) && tabs.map(t => (
-                        <button
-                            key={t.key}
-                            onClick={() => setActiveTab(t.key as 'org' | 'team' | 'data')}
-                            className={clsx(
-                                "flex items-center gap-2.5 px-6 py-3 rounded-xl text-xs font-black transition-all duration-500 select-none relative group",
-                                activeTab === t.key
-                                    ? 'bg-slate-900 shadow-2xl shadow-indigo-900/20 text-white scale-[1.02]'
-                                    : 'text-slate-500 hover:text-slate-900 hover:bg-white/60'
-                            )}
-                        >
-                            <t.icon className={clsx("w-4 h-4 transition-transform duration-500 group-hover:scale-110", activeTab === t.key ? "text-indigo-400" : "text-slate-400")} />
-                            {t.label}
-                        </button>
-                    ))}
+    const programmesByMember = useMemo(() => {
+        const map: Record<string, any[]> = {};
+        (Array.isArray(programmes) ? programmes : []).forEach((p: any) => {
+            const ids: string[] = Array.isArray(p.assignedPMIds) ? p.assignedPMIds : [];
+            ids.forEach(uid => {
+                if (!map[uid]) map[uid] = [];
+                map[uid].push(p);
+            });
+        });
+        return map;
+    }, [programmes]);
+
+    const columns: ColumnDef<TeamMember>[] = [
+        {
+            key: 'displayName',
+            label: 'Member',
+            sortable: true,
+            render: (_v, row) => (
+                <div className="flex items-center gap-3 min-w-0">
+                    <div className={clsx(
+                        'w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black ring-2 ring-white shrink-0',
+                        row.status === 'pending'
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-gradient-to-br from-indigo-500 to-indigo-700 text-white',
+                    )}>
+                        {(row.displayName || row.email || '?')[0].toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                        <p className="text-xs font-semibold text-slate-900 truncate" title={row.displayName || row.email}>
+                            {row.displayName || row.email || 'Awaiting Onboarding'}
+                        </p>
+                        <p className="text-[11px] text-slate-500 truncate" title={row.email}>{row.email}</p>
+                    </div>
                 </div>
+            ),
+            exportValue: (_v, row) => row.displayName || row.email || '',
+        },
+        {
+            key: 'role',
+            label: 'Role',
+            sortable: true,
+            render: (_v, row) => {
+                const c = canonicalRole(row.role);
+                const cfg = CANONICAL_ROLE_BADGE[c];
+                return (
+                    <span className={clsx('inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold border', cfg.cls)}>
+                        {cfg.label}
+                    </span>
+                );
+            },
+            exportValue: (_v, row) => CANONICAL_ROLE_BADGE[canonicalRole(row.role)].label,
+        },
+        {
+            key: 'pmLevel',
+            label: 'PM Level',
+            sortable: true,
+            render: (_v, row) => {
+                if (canonicalRole(row.role) !== 'project_manager') {
+                    return <span className="text-slate-300 text-[11px]">—</span>;
+                }
+                return <span className="text-[11px] text-slate-700">{pmLevelLabel(row.pmLevel)}</span>;
+            },
+            exportValue: (_v, row) =>
+                canonicalRole(row.role) === 'project_manager' ? pmLevelLabel(row.pmLevel) : '',
+        },
+        {
+            key: 'programmes',
+            label: 'Programmes',
+            render: (_v, row) => {
+                const allProgrammes = Array.isArray(programmes) ? programmes : [];
+                const memberProgrammes = row.status === 'pending'
+                    ? (row.inviteProgrammeIds || [])
+                        .map(id => allProgrammes.find((p: any) => p.id === id))
+                        .filter(Boolean)
+                    : programmesByMember[row.uid] || [];
+                if (memberProgrammes.length === 0) {
+                    return <span className="text-slate-300 text-[11px]">None</span>;
+                }
+                const visible = memberProgrammes.slice(0, 2);
+                const overflow = memberProgrammes.slice(2);
+                return (
+                    <div className="flex items-center gap-1 flex-wrap">
+                        {visible.map((p: any) => (
+                            <span key={p.id} className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200 max-w-[140px] truncate">
+                                {p.name || p.reference}
+                            </span>
+                        ))}
+                        {overflow.length > 0 && (
+                            <TableTooltip content={
+                                <div className="flex flex-col gap-1">
+                                    {overflow.map((p: any) => <span key={p.id}>{p.name || p.reference}</span>)}
+                                </div>
+                            }>
+                                <span tabIndex={0} className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-200 text-slate-800 border border-slate-300 cursor-default">
+                                    +{overflow.length}
+                                </span>
+                            </TableTooltip>
+                        )}
+                    </div>
+                );
+            },
+            exportValue: (_v, row) => {
+                const allProgrammes = Array.isArray(programmes) ? programmes : [];
+                const list = row.status === 'pending'
+                    ? (row.inviteProgrammeIds || [])
+                        .map(id => allProgrammes.find((p: any) => p.id === id))
+                        .filter(Boolean)
+                    : programmesByMember[row.uid] || [];
+                return list.map((p: any) => p.name || p.reference).join('; ');
+            },
+        },
+        {
+            key: 'status',
+            label: 'Status',
+            sortable: true,
+            render: (_v, row) => (
+                <span className={clsx(
+                    'inline-flex px-2 py-0.5 rounded-md text-[10px] font-bold border',
+                    row.status === 'active'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                        : 'bg-amber-50 text-amber-700 border-amber-100',
+                )}>
+                    {row.status === 'active' ? 'Active' : 'Pending'}
+                </span>
+            ),
+            exportValue: (_v, row) => (row.status === 'active' ? 'Active' : 'Pending'),
+        },
+        {
+            key: 'createdAt',
+            label: 'Joined',
+            sortable: true,
+            render: (_v, row) => (
+                <span className="text-[11px] text-slate-600">
+                    {row.status === 'pending'
+                        ? (row.createdAt
+                            ? <span className="text-amber-600">Invited {new Date(row.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                            : '—')
+                        : (row.createdAt
+                            ? new Date(row.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                            : '—')}
+                </span>
+            ),
+            exportValue: (_v, row) =>
+                row.createdAt ? new Date(row.createdAt).toLocaleDateString('en-GB') : '',
+        },
+    ];
+
+    const filterDefs: FilterDef<TeamMember>[] = [
+        {
+            key: 'role',
+            label: 'Role',
+            type: 'select',
+            options: [
+                { value: 'super_admin', label: 'Super Admin' },
+                { value: 'client_admin', label: 'Client Admin' },
+                { value: 'project_manager', label: 'Project Manager' },
+                { value: 'viewer', label: 'Viewer' },
+            ],
+            match: (rowValue, filterValue) => canonicalRole(rowValue) === filterValue,
+        },
+        {
+            key: 'pmLevel',
+            label: 'PM Level',
+            type: 'select',
+            options: PM_LEVEL_OPTIONS.map(o => ({ value: o.value, label: o.label })),
+        },
+        {
+            key: 'status',
+            label: 'Status',
+            type: 'select',
+            options: [
+                { value: 'active', label: 'Active' },
+                { value: 'pending', label: 'Pending' },
+            ],
+        },
+    ];
+
+    const rowActions: RowAction<TeamMember>[] = [
+        {
+            key: 'edit',
+            label: 'Edit member',
+            icon: Pencil,
+            isVisible: (r) => r.status === 'active',
+            onClick: (r) => setEditingMember(r),
+        },
+        {
+            key: 'change-role',
+            label: 'Change role',
+            icon: UserCog,
+            isVisible: (r) => canChangeRole && r.status === 'active' && r.uid !== user?.uid,
+            isDisabled: (r) =>
+                callerCanonical === 'client_admin' && canonicalRole(r.role) === 'super_admin',
+            onClick: (r) => setChangingRoleFor(r),
+        },
+        {
+            key: 'edit-invite',
+            label: 'Edit invite',
+            icon: Pencil,
+            isVisible: (r) => r.status === 'pending',
+            onClick: (r) => { setInviteEditTarget(r); setInviteOpen(true); },
+        },
+        {
+            key: 'cancel-invite',
+            label: 'Cancel invite',
+            icon: UserMinus,
+            isDanger: true,
+            isVisible: (r) => r.status === 'pending',
+            requireConfirm: {
+                icon: UserMinus,
+                variant: 'danger' as const,
+                title: 'Cancel invitation',
+                message: (r: TeamMember) =>
+                    `Cancel the invitation sent to ${r.email}? They will no longer be able to use this invite link.`,
+                confirmLabel: 'Cancel invite',
+                isDanger: true,
+            },
+            onClick: async (r) => {
+                try {
+                    await api.cancelInvite(r.inviteId!);
+                    toast.success('Invitation cancelled.');
+                    loadTeam();
+                } catch (err: any) {
+                    toast.error(err?.message || 'Failed to cancel invitation.');
+                    throw err;
+                }
+            },
+        },
+        {
+            key: 'remove',
+            label: 'Remove from team',
+            icon: UserMinus,
+            isDanger: true,
+            isVisible: (r) => r.status === 'active' && r.uid !== user?.uid && canonicalRole(r.role) !== 'super_admin',
+            requireConfirm: {
+                icon: UserMinus,
+                variant: 'danger' as const,
+                title: 'Remove from team',
+                message: (r: TeamMember) =>
+                    `Remove ${r.displayName || r.email} from your team? They will lose access to this workspace.`,
+                confirmLabel: 'Remove',
+                isDanger: true,
+            },
+            onClick: async (r) => {
+                try {
+                    await api.clientRemoveUser(r.uid);
+                    toast.success('Team member removed.');
+                    loadTeam();
+                } catch (err: any) {
+                    toast.error(err?.message || 'Failed to remove member.');
+                    throw err;
+                }
+            },
+        },
+    ];
+
+    const activeTabMeta = tabs.find(t => t.key === activeTab);
+
+    return (
+        <div className="max-w-full mx-auto">
+            {/* Page header — eyebrow breadcrumb, title, description */}
+            <header className="px-2 pt-2 pb-6">
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 uppercase tracking-[0.12em]">
+                    <Settings2 className="w-3.5 h-3.5" strokeWidth={2.25} />
+                    <span>Settings</span>
+                    <span className="text-slate-300">/</span>
+                    <span className="text-slate-400 normal-case tracking-normal font-medium">{activeTabMeta?.label}</span>
+                </div>
+                <h1 className="mt-2 text-[26px] sm:text-[30px] leading-[1.15] font-bold text-slate-900 tracking-tight">
+                    Workspace
+                </h1>
+                <p className="mt-1.5 text-sm text-slate-500 leading-relaxed max-w-2xl">
+                    Manage your organisation profile, team access, and data infrastructure from one central dashboard.
+                </p>
+            </header>
+
+            {/* Segmented control — Linear / Vercel / Notion pattern with raised active pill */}
+            <div className="px-2 mb-8">
+                <nav
+                    className="inline-flex items-center gap-1 p-1 bg-slate-100/90 border border-slate-200/80 rounded-xl shadow-[inset_0_1px_2px_rgba(15,23,42,0.04)] overflow-x-auto scrollbar-hide max-w-full"
+                    aria-label="Workspace sections"
+                    role="tablist"
+                >
+                    {Array.isArray(tabs) && tabs.map(t => {
+                        const isActive = activeTab === t.key;
+                        return (
+                            <button
+                                key={t.key}
+                                onClick={() => setActiveTab(t.key as 'org' | 'team' | 'data')}
+                                role="tab"
+                                aria-selected={isActive}
+                                className={clsx(
+                                    "group relative inline-flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-lg text-[13px] font-semibold whitespace-nowrap",
+                                    "transition-all duration-150 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40 focus-visible:ring-offset-1",
+                                    isActive
+                                        ? "bg-white text-slate-900 shadow-[0_1px_2px_rgba(15,23,42,0.06),0_1px_3px_rgba(15,23,42,0.08)] ring-1 ring-slate-900/5"
+                                        : "text-slate-500 hover:text-slate-900 hover:bg-white/50"
+                                )}
+                            >
+                                <t.icon
+                                    className={clsx(
+                                        "w-4 h-4 transition-colors",
+                                        isActive ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-600"
+                                    )}
+                                    strokeWidth={2}
+                                />
+                                {t.label}
+                            </button>
+                        );
+                    })}
+                </nav>
             </div>
 
             <div className="px-2">
                 {activeTab === 'org' && (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                        <div className="lg:col-span-2 bg-white/60 backdrop-blur-xl rounded-[24px] sm:rounded-[40px] border border-white/40 shadow-2xl shadow-indigo-900/5 overflow-hidden transition-all hover:shadow-indigo-900/10 hover:bg-white/80">
-                            <div className="px-5 sm:px-10 py-6 sm:py-8 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-white/40 to-transparent">
-                                <h2 className="font-black text-slate-900 text-lg tracking-tight flex items-center gap-4">
-                                    <div className="p-3 rounded-2xl bg-indigo-50/50 flex items-center justify-center border border-indigo-100 shadow-sm">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                            <div className="px-5 sm:px-8 py-5 sm:py-6 border-b border-slate-100 flex items-center justify-between">
+                                <h2 className="font-black text-slate-900 text-base sm:text-lg tracking-tight flex items-center gap-3">
+                                    <div className="p-2.5 rounded-lg bg-indigo-50 flex items-center justify-center border border-indigo-100">
                                         <Building2 className="w-5 h-5 text-indigo-600" />
                                     </div>
                                     Organisation Identity
                                 </h2>
                                 {orgSaved && (
-                                    <div className="flex items-center gap-1.5 text-emerald-600 text-xs font-black animate-in fade-in slide-in-from-right-4">
-                                        <CheckCircle2 className="w-4 h-4" /> Changes Saved
+                                    <div className="flex items-center gap-1.5 text-emerald-600 text-xs font-black">
+                                        <CheckCircle2 className="w-4 h-4" /> Saved
                                     </div>
                                 )}
                             </div>
@@ -209,27 +572,27 @@ export function WorkspaceSettings() {
                                     <button
                                         onClick={handleSaveOrg}
                                         disabled={savingOrg}
-                                        className="flex items-center justify-center gap-3 w-full sm:w-auto px-8 py-4 bg-slate-900 text-white text-xs font-black rounded-2xl hover:bg-slate-800 transition-all hover:scale-[1.02] active:scale-95 shadow-xl shadow-slate-200 disabled:opacity-50"
+                                        className="flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3 bg-slate-900 text-white text-xs font-black rounded-lg hover:bg-slate-800 transition-all active:scale-95 shadow-sm disabled:opacity-50"
                                     >
-                                        {savingOrg ? <Loader2 className="w-4 h-4 animate-spin text-indigo-400" /> : <Save className="w-4 h-4" />}
-                                        Commit Changes
+                                        {savingOrg ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                        Save Changes
                                     </button>
                                 </div>
                             </div>
                         </div>
 
                         <div className="space-y-6">
-                            <div className="bg-indigo-600 rounded-[28px] sm:rounded-[32px] p-6 sm:p-8 text-white shadow-2xl shadow-indigo-200 relative overflow-hidden group">
-                                <ScanSearch className="absolute -top-10 -right-10 w-40 h-40 text-white/10 rotate-12 transition-transform group-hover:scale-110" />
-                                <h3 className="text-xl font-black mb-2 relative z-10 tracking-tight">Enterprise Tier</h3>
-                                <p className="text-indigo-100 text-xs font-medium relative z-10 leading-relaxed max-w-[200px]">
+                            <div className="bg-indigo-600 rounded-xl p-6 sm:p-8 text-white shadow-sm relative overflow-hidden">
+                                <ScanSearch className="absolute -top-10 -right-10 w-40 h-40 text-white/10 rotate-12" />
+                                <h3 className="text-lg sm:text-xl font-black mb-2 relative z-10 tracking-tight">Enterprise Tier</h3>
+                                <p className="text-indigo-100 text-xs font-medium relative z-10 leading-relaxed">
                                     Your workspace is currently operating on the strategic compliance package.
                                 </p>
-                                <div className="mt-8 pt-6 border-t border-white/10 relative z-10">
-                                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-indigo-200 mb-4">
+                                <div className="mt-6 pt-5 border-t border-white/10 relative z-10">
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-indigo-200 mb-3">
                                         Features Included
                                     </div>
-                                    <ul className="space-y-3">
+                                    <ul className="space-y-2.5">
                                         <li className="flex items-center gap-2 text-xs font-bold"><CheckCircle2 className="w-3.5 h-3.5 text-indigo-300" /> AI Risk Identification</li>
                                         <li className="flex items-center gap-2 text-xs font-bold"><CheckCircle2 className="w-3.5 h-3.5 text-indigo-300" /> Multi-User Team Access</li>
                                         <li className="flex items-center gap-2 text-xs font-bold"><CheckCircle2 className="w-3.5 h-3.5 text-indigo-300" /> Priority Support</li>
@@ -241,200 +604,513 @@ export function WorkspaceSettings() {
                 )}
 
                 {activeTab === 'team' && (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                        <div className="lg:col-span-1 space-y-6">
-                            <div className="bg-white/60 backdrop-blur-xl rounded-[24px] sm:rounded-[40px] border border-white/40 shadow-2xl shadow-indigo-900/5 p-5 sm:p-10 transition-all hover:bg-white/80">
-                                <h2 className="font-black text-slate-900 text-lg tracking-tight mb-6 sm:mb-8 flex items-center gap-4">
-                                    <div className="p-3 rounded-2xl bg-indigo-50/50 flex items-center justify-center border border-indigo-100 shadow-sm">
-                                        <Plus className="w-5 h-5 text-indigo-600" />
-                                    </div>
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-slate-900 flex items-center justify-center">
+                                <Users className="w-4 h-4 text-white" />
+                            </div>
+                            <div>
+                                <h2 className="text-base font-black text-slate-900 tracking-tight">Team Members</h2>
+                                <p className="text-[11px] text-slate-500">
+                                    {teamRows.filter(r => r.status === 'active').length} active
+                                    {teamRows.filter(r => r.status === 'pending').length > 0 && ` · ${teamRows.filter(r => r.status === 'pending').length} pending`}
+                                </p>
+                            </div>
+                        </div>
+                        <DynamicTable<TeamMember>
+                            data={teamRows}
+                            columns={columns}
+                            rowActions={rowActions}
+                            filters={filterDefs}
+                            searchable
+                            searchPlaceholder="Search by name or email…"
+                            searchFields={["displayName", "email"]}
+                            getRowId={(r) => r.uid}
+                            loading={loadingTeam}
+                            export={{ xlsx: true, filename: 'team-members' }}
+                            emptyState={{
+                                icon: Users,
+                                title: 'No team members yet',
+                                description: 'Send your first invitation using the Invite Team Member button.',
+                            }}
+                            headerVariant="light"
+                            toolbarActions={
+                                <button
+                                    onClick={() => setInviteOpen(true)}
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-all active:scale-95 shadow-sm whitespace-nowrap"
+                                >
+                                    <Plus className="w-3.5 h-3.5" />
                                     Invite Team Member
-                                </h2>
-
-                                <div className="space-y-5">
-                                    <div>
-                                        <label className={labelCls}>Full Name</label>
-                                        <input className={inputCls} value={newPmName} onChange={e => setNewPmName(e.target.value)} placeholder="e.g. Robert Wilson" />
-                                    </div>
-                                    <div>
-                                        <label className={labelCls}>Email Address</label>
-                                        <input className={inputCls} value={newPmEmail} onChange={e => setNewPmEmail(e.target.value)} placeholder="e.g. r.wilson@org.gov.uk" type="email" />
-                                    </div>
-                                    <div>
-                                        <label className={labelCls}>Assigned Role</label>
-                                        <select className={inputCls} value={newPmRole} onChange={e => setNewPmRole(e.target.value)}>
-                                            <option value="senior_pm">Senior Project Manager</option>
-                                            <option value="project_manager">Project Manager</option>
-                                            <option value="assistant_pm">Assistant Project Manager</option>
-                                            <option value="project_coordinator">Project Coordinator</option>
-                                        </select>
-                                    </div>
-
-                                    <button
-                                        onClick={handleInvitePM}
-                                        disabled={inviting || !newPmEmail}
-                                        className="w-full flex items-center justify-center gap-3 px-8 py-4 bg-slate-900 text-white text-xs font-black rounded-2xl hover:bg-slate-800 transition-all hover:scale-[1.02] active:scale-95 shadow-xl shadow-slate-200 disabled:opacity-50"
-                                    >
-                                        {inviting ? <Loader2 className="w-4 h-4 animate-spin text-indigo-400" /> : <Mail className="w-4 h-4" />}
-                                        Execute Invitation
-                                    </button>
-
-                                    {inviteMsg && (
-                                        <div className={clsx(
-                                            "mt-4 p-4 rounded-xl text-[11px] font-bold border flex gap-3 items-center",
-                                            inviteMsg.startsWith('✅') ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-red-50 border-red-100 text-red-700'
-                                        )}>
-                                            <div className={clsx("w-2 h-2 rounded-full shrink-0 animate-pulse", inviteMsg.startsWith('✅') ? 'bg-emerald-500' : 'bg-red-500')}></div>
-                                            {inviteMsg}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="lg:col-span-2 bg-white/60 backdrop-blur-xl rounded-[24px] sm:rounded-[40px] border border-white/40 shadow-2xl shadow-indigo-900/5 overflow-hidden transition-all hover:bg-white/80">
-                            <div className="px-5 sm:px-10 py-6 sm:py-8 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-white/40 to-transparent">
-                                <h2 className="font-black text-slate-900 text-lg tracking-tight flex items-center gap-4">
-                                    <div className="p-3 rounded-2xl bg-slate-900 flex items-center justify-center shadow-lg shadow-slate-200">
-                                        <Users className="w-5 h-5 text-white" />
-                                    </div>
-                                    Active Team Personnel
-                                </h2>
-                                <div className="px-4 py-1.5 bg-slate-900/5 rounded-full text-[10px] font-black text-slate-600 uppercase tracking-[0.1em] border border-slate-200">
-                                    {pms.length + pending.length} Members
-                                </div>
-                            </div>
-
-                            {pms.length === 0 && pending.length === 0 ? (
-                                <div className="p-20 text-center">
-                                    <div className="w-16 h-16 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-4 border border-slate-100">
-                                        <Users className="w-8 h-8 text-slate-300" />
-                                    </div>
-                                    <h3 className="text-slate-900 font-black tracking-tight mb-2">No active members</h3>
-                                    <p className="text-sm text-slate-400 font-medium">Your team registry is currently empty.</p>
-                                </div>
-                            ) : (
-                                <div className="divide-y divide-slate-50">
-                                    {Array.isArray(pms) && pms.map(pm => (
-                                        <div key={pm.uid} className="flex items-center gap-3 sm:gap-6 px-5 sm:px-10 py-4 sm:py-6 hover:bg-indigo-50/20 transition-all group cursor-default">
-                                            <div className="relative shrink-0">
-                                                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white flex items-center justify-center text-lg font-black shadow-xl shadow-indigo-100 ring-4 ring-white transition-transform duration-500 group-hover:scale-110">
-                                                    {(pm.displayName || pm.email || '?')[0].toUpperCase()}
-                                                </div>
-                                                <div className="absolute -bottom-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-emerald-500 rounded-full border-4 border-white shadow-sm animate-pulse"></div>
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-3">
-                                                    <p className="text-sm font-black text-slate-900 tracking-tight truncate" title={pm.displayName || pm.email}>{pm.displayName || pm.email}</p>
-                                                    <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100">
-                                                        {formatRole(pm.role)}
-                                                    </span>
-                                                </div>
-                                                <p className="text-xs text-slate-500 font-medium mt-0.5 truncate" title={pm.email}>{pm.email}</p>
-                                            </div>
-                                            <div className="hidden md:flex flex-col items-end gap-1">
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em]">Registered Since</p>
-                                                <p className="text-xs font-bold text-slate-700">
-                                                    {pm.createdAt ? new Date(pm.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Alpha Access'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                    {Array.isArray(pending) && pending.map(inv => (
-                                        <div key={inv.email} className="flex items-center gap-3 sm:gap-6 px-4 sm:px-8 py-4 sm:py-5 bg-amber-50/20 border-l-4 border-amber-400 group">
-                                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-sm font-black ring-4 ring-white shrink-0">
-                                                {(inv.name || inv.email || '?')[0].toUpperCase()}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-3">
-                                                    <p className="text-sm font-black text-slate-900 tracking-tight truncate" title={inv.name || 'Awaiting Onboarding'}>{inv.name || 'Awaiting Onboarding'}</p>
-                                                    <span className="text-[10px] font-black text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-100">
-                                                        {formatRole(inv.role)}
-                                                    </span>
-                                                </div>
-                                                <p className="text-xs text-slate-500 font-medium mt-0.5 truncate" title={inv.email}>{inv.email}</p>
-                                            </div>
-                                            <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-100 rounded-xl text-amber-700 text-[10px] font-black uppercase tracking-widest animate-pulse">
-                                                <Clock className="w-3.5 h-3.5" /> Pending
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+                                </button>
+                            }
+                        />
                     </div>
                 )}
 
                 {activeTab === 'data' && (
-                    <div className="space-y-8 max-w-4xl">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {[
-                                { label: 'Active Programmes', val: (Array.isArray(useStore.getState().programmes) ? useStore.getState().programmes : []).length, icon: FolderKanban, color: 'text-indigo-600', bg: 'bg-indigo-50/50', border: 'border-indigo-100' },
-                                { label: 'Live Projects', val: (Array.isArray(useStore.getState().projects) ? useStore.getState().projects : []).length, icon: Building2, color: 'text-emerald-600', bg: 'bg-emerald-50/50', border: 'border-emerald-100' },
-                                { label: 'Integrity Status', val: 'Healthy', icon: ShieldCheck, color: 'text-blue-600', bg: 'bg-blue-50/50', border: 'border-blue-100' }
-                            ].map((stat, i) => (
-                                <div key={i} className="bg-white/60 backdrop-blur-xl p-6 md:p-10 rounded-3xl md:rounded-[40px] border border-white/40 shadow-2xl shadow-slate-900/5 group hover:scale-[1.05] hover:bg-white/80 transition-all duration-500">
-                                    <div className={clsx("w-14 h-14 flex items-center justify-center rounded-2xl mb-8 shadow-sm border transition-transform duration-500 group-hover:rotate-6", stat.bg, stat.border)}>
-                                        <stat.icon className={clsx("w-7 h-7", stat.color)} />
-                                    </div>
-                                    <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.25em] mb-3">{stat.label}</p>
-                                    <p className="text-4xl font-black text-slate-900 tracking-tight">{stat.val}</p>
-                                </div>
-                            ))}
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <StatsCard
+                                title="Active Programmes"
+                                value={(Array.isArray(useStore.getState().programmes) ? useStore.getState().programmes : []).length}
+                                icon={FolderKanban}
+                                rounded="lg"
+                                size="md"
+                                iconBgClassName="bg-indigo-50 border border-indigo-100"
+                                iconClassName="text-indigo-600"
+                            />
+                            <StatsCard
+                                title="Live Projects"
+                                value={(Array.isArray(useStore.getState().projects) ? useStore.getState().projects : []).length}
+                                icon={Building2}
+                                rounded="lg"
+                                size="md"
+                                iconBgClassName="bg-emerald-50 border border-emerald-100"
+                                iconClassName="text-emerald-600"
+                            />
+                            <StatsCard
+                                title="Integrity Status"
+                                value="Healthy"
+                                icon={ShieldCheck}
+                                rounded="lg"
+                                size="md"
+                                iconBgClassName="bg-blue-50 border border-blue-100"
+                                iconClassName="text-blue-600"
+                            />
                         </div>
 
-                        <div className="group relative bg-rose-600 rounded-[24px] md:rounded-[40px] p-6 md:p-10 text-white shadow-2xl shadow-rose-200 overflow-hidden">
-                            <div className="absolute inset-0 bg-gradient-to-br from-rose-500 via-rose-600 to-rose-700 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-                            <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-                                <div className="space-y-4">
-                                    <div className="inline-flex items-center gap-3 px-4 py-1.5 bg-white/10 rounded-full text-white text-[10px] font-black uppercase tracking-[0.2em] backdrop-blur-sm border border-white/20">
+                        <div className="relative bg-rose-600 rounded-xl p-6 sm:p-8 text-white shadow-sm overflow-hidden">
+                            <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                                <div className="space-y-3 min-w-0">
+                                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-lg text-white text-[10px] font-black uppercase tracking-[0.2em] border border-white/20">
                                         <AlertTriangle className="w-3.5 h-3.5" />
                                         Critical Intervention
                                     </div>
-                                    <h3 className="text-2xl sm:text-3xl font-black tracking-tight leading-none">Factory Reset Workspace</h3>
-                                    <p className="text-rose-100 text-sm font-medium max-w-lg leading-relaxed opacity-90">
+                                    <h3 className="text-xl sm:text-2xl font-black tracking-tight">Factory Reset Workspace</h3>
+                                    <p className="text-rose-100 text-xs sm:text-sm font-medium leading-relaxed w-full">
                                         Permanently decommission all projects, strategic programmes, and identified risks. This action wipes the database clean and is strictly irreversible.
                                     </p>
                                 </div>
                                 <button
-                                    onClick={handleResetData}
+                                    onClick={() => setResetStep('confirm1')}
                                     disabled={resetting}
-                                    className="flex items-center justify-center gap-4 px-8 sm:px-10 py-4 sm:py-5 bg-white text-rose-600 text-sm font-black rounded-2xl hover:bg-rose-50 transition-all shadow-xl hover:scale-[1.05] active:scale-95 disabled:opacity-50 group-hover:shadow-rose-900/40"
+                                    className="shrink-0 flex items-center justify-center gap-2 px-6 py-3 bg-white text-rose-600 text-xs sm:text-sm font-black rounded-xl hover:bg-rose-50 transition-all active:scale-95 shadow-sm disabled:opacity-50"
                                 >
-                                    {resetting ? <RefreshCcw className="w-5 h-5 animate-spin" /> : <RefreshCcw className="w-5 h-5" />}
+                                    <RefreshCcw className={clsx("w-4 h-4", resetting && "animate-spin")} />
                                     Reset Workspace Data
                                 </button>
                             </div>
-                            <Database className="absolute -bottom-16 -right-16 w-64 h-64 text-white/5 opacity-10 -rotate-12 pointer-events-none group-hover:scale-110 group-hover:rotate-0 transition-transform duration-1000" />
+                            <Database className="absolute -bottom-16 -right-16 w-64 h-64 text-white/5 -rotate-12 pointer-events-none" />
                         </div>
 
-                        <div className="bg-slate-900 rounded-[24px] md:rounded-[40px] p-6 md:p-10 text-white shadow-2xl shadow-slate-400/20 relative overflow-hidden">
-                            <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em] mb-6 sm:mb-8 flex items-center gap-3">
+                        <div className="bg-slate-900 rounded-xl p-6 sm:p-8 text-white shadow-sm relative overflow-hidden">
+                            <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em] mb-6 flex items-center gap-3">
                                 <div className="w-6 h-6 rounded-lg bg-indigo-500/20 flex items-center justify-center">
                                     <Globe className="w-3.5 h-3.5" />
                                 </div>
                                 Cloud Infrastructure Topology
                             </h4>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-10">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                                 {[
                                     { label: 'Primary Region', val: 'eu-west-2 (London)' },
                                     { label: 'Active Resilience', val: 'Multi-AZ Availability' },
                                     { label: 'Encryption Protocol', val: 'AES-256 / SHA-512' },
                                     { label: 'Compliance Mesh', val: 'GCP Shielded Nodes' }
                                 ].map((item, i) => (
-                                    <div key={i} className="space-y-2 border-l border-white/10 pl-5">
+                                    <div key={i} className="space-y-2 border-l border-white/10 pl-4">
                                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{item.label}</p>
                                         <p className="text-xs font-bold text-slate-200">{item.val}</p>
                                     </div>
                                 ))}
                             </div>
-                            <div className="mt-12 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 opacity-40">
+                            <div className="mt-8 pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-2 opacity-40">
                                 <p className="text-[10px] font-bold text-slate-500">Service Level Agreement: 99.99% Guaranteed</p>
                                 <p className="text-[10px] font-bold text-slate-500 tracking-tighter">NODE_ID: CEDAR_PRD_UKW_01</p>
                             </div>
                         </div>
                     </div>
                 )}
+            </div>
+
+            {inviteOpen && (
+                <InviteTeamMemberModal
+                    editTarget={inviteEditTarget}
+                    programmes={ownedProgrammes}
+                    onClose={() => { setInviteOpen(false); setInviteEditTarget(null); }}
+                    onSaved={() => { setInviteOpen(false); setInviteEditTarget(null); loadTeam(); }}
+                />
+            )}
+
+            {editingMember && (
+                <EditMemberModal
+                    member={editingMember}
+                    programmes={ownedProgrammes}
+                    currentAssignments={programmesByMember[editingMember.uid] || []}
+                    onClose={() => setEditingMember(null)}
+                    onSaved={() => { setEditingMember(null); loadTeam(); }}
+                />
+            )}
+
+            {changingRoleFor && (
+                <ChangeRoleModal
+                    member={changingRoleFor}
+                    callerCanonical={callerCanonical}
+                    onClose={() => setChangingRoleFor(null)}
+                    onSaved={() => {
+                        setChangingRoleFor(null);
+                        loadTeam();
+                    }}
+                />
+            )}
+
+            <ConfirmDialog
+                open={resetStep === 'confirm1'}
+                variant="danger"
+                title="Reset workspace data?"
+                message="This will permanently delete all projects, programmes, risks, issues, and pending invitations for this workspace. This cannot be undone."
+                confirmLabel="Yes, continue"
+                onCancel={() => setResetStep('idle')}
+                onConfirm={() => setResetStep('confirm2')}
+            />
+
+            <ConfirmDialog
+                open={resetStep === 'confirm2'}
+                variant="danger"
+                title="Are you absolutely sure?"
+                message="Final confirmation — all workspace data will be wiped from the database immediately and permanently."
+                confirmLabel="Delete everything"
+                loading={resetting}
+                onCancel={() => setResetStep('idle')}
+                onConfirm={handleResetConfirmed}
+            />
+
+        </div>
+    );
+}
+
+// ── Edit Member Modal (PM Level + Programmes) ─────────────────────────────────
+
+function EditMemberModal({
+    member,
+    programmes,
+    currentAssignments,
+    onClose,
+    onSaved,
+}: {
+    member: TeamMember;
+    programmes: any[];
+    currentAssignments: any[];
+    onClose: () => void;
+    onSaved: () => void;
+}) {
+    const initialIds = useMemo(() => new Set(currentAssignments.map(p => p.id)), [currentAssignments]);
+    const [displayName, setDisplayName] = useState(member.displayName || '');
+    const [selected, setSelected] = useState<Set<string>>(new Set(initialIds));
+    const [pmLevel, setPmLevel] = useState<PmLevel>(member.pmLevel || 'standard');
+    const [saving, setSaving] = useState(false);
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            const toAdd: string[] = [];
+            const toRemove: string[] = [];
+            programmes.forEach(p => {
+                const was = initialIds.has(p.id);
+                const is = selected.has(p.id);
+                if (!was && is) toAdd.push(p.id);
+                if (was && !is) toRemove.push(p.id);
+            });
+            await Promise.all([
+                ...(displayName.trim() !== (member.displayName || '')
+                    ? [api.clientUpdateMemberProfile(member.uid, displayName.trim())] : []),
+                ...(pmLevel !== member.pmLevel && canonicalRole(member.role) === 'project_manager'
+                    ? [api.setPmLevel(member.uid, pmLevel)] : []),
+                ...toAdd.map(pid => api.addPMToProgramme(pid, member.uid)),
+                ...toRemove.map(pid => api.removePMFromProgramme(pid, member.uid)),
+            ]);
+            toast.success('Member updated.');
+            onSaved();
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to update member.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
+            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[85vh] flex flex-col">
+                <fieldset disabled={saving} className="contents">
+                    <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+                        <div>
+                            <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                                <Pencil className="w-5 h-5 text-indigo-600" />
+                                Edit {member.displayName || member.email}
+                            </h3>
+                            <p className="text-xs text-slate-500 mt-0.5">{member.email}</p>
+                        </div>
+                        <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100">
+                            <span className="text-lg leading-none">×</span>
+                        </button>
+                    </div>
+                    <div className="px-6 py-5 space-y-6 overflow-y-auto flex-1">
+                        <div>
+                            <p className={labelCls}>Display Name</p>
+                            <input className={inputCls} value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="e.g. Robert Wilson" />
+                        </div>
+                        {canonicalRole(member.role) === 'project_manager' && (
+                            <div>
+                                <p className={labelCls}>PM Level</p>
+                                <select className={inputCls} value={pmLevel} onChange={e => setPmLevel(e.target.value as PmLevel)}>
+                                    {PM_LEVEL_OPTIONS.map(o => (
+                                        <option key={o.value} value={o.value}>{o.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                        <div>
+                            <p className={labelCls}>Programmes</p>
+                            {programmes.length === 0 ? (
+                                <p className="text-[11px] text-slate-400 px-1">You have no programmes to assign.</p>
+                            ) : (
+                                <div className="space-y-1.5 border border-slate-200 rounded-xl p-2.5 max-h-52 overflow-y-auto">
+                                    {programmes.map(p => (
+                                        <label key={p.id} className="flex items-start gap-3 px-2 py-2 rounded-lg hover:bg-slate-50 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                className="w-4 h-4 mt-0.5 accent-indigo-600"
+                                                checked={selected.has(p.id)}
+                                                onChange={e => setSelected(prev => {
+                                                    const next = new Set(prev);
+                                                    if (e.target.checked) next.add(p.id); else next.delete(p.id);
+                                                    return next;
+                                                })}
+                                            />
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-semibold text-slate-800 truncate">{p.name || p.reference}</p>
+                                                {p.reference && p.name && <p className="text-[11px] text-slate-500 truncate">{p.reference}</p>}
+                                            </div>
+                                        </label>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-2">
+                        <button onClick={onClose} className="px-4 py-2 text-xs font-bold text-slate-600 rounded-lg hover:bg-slate-100">
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleSave}
+                            className="flex items-center gap-2 px-5 py-2 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 shadow-sm"
+                        >
+                            {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                            Save Changes
+                        </button>
+                    </div>
+                </fieldset>
+            </div>
+        </div>
+    );
+}
+
+// ── Change Role Modal ──────────────────────────────────────────────────────────
+
+function ChangeRoleModal({
+    member,
+    callerCanonical,
+    onClose,
+    onSaved,
+}: {
+    member: TeamMember;
+    callerCanonical: CanonicalRole;
+    onClose: () => void;
+    onSaved: () => void;
+}) {
+    const [newRole, setNewRole] = useState<CanonicalRole>(canonicalRole(member.role));
+    const [saving, setSaving] = useState(false);
+
+    const options = callerCanonical === 'super_admin'
+        ? [...CANONICAL_ROLE_PROMOTE_OPTIONS, { value: 'super_admin' as CanonicalRole, label: 'Super Admin' }, { value: 'viewer' as CanonicalRole, label: 'Viewer' }]
+        : CANONICAL_ROLE_PROMOTE_OPTIONS;
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            await api.adminPromoteUser(member.uid, newRole);
+            toast.success('Role updated.');
+            onSaved();
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to update role.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+                <fieldset disabled={saving} className="contents">
+                    <div className="px-6 py-5 border-b border-slate-100">
+                        <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                            <UserCog className="w-5 h-5 text-indigo-600" />
+                            Change role for {member.displayName || member.email}
+                        </h3>
+                    </div>
+                    <div className="px-6 py-5 space-y-4">
+                        <div>
+                            <label className={labelCls}>Canonical Role</label>
+                            <select className={inputCls} value={newRole} onChange={e => setNewRole(e.target.value as CanonicalRole)}>
+                                {options.map(o => (
+                                    <option key={o.value} value={o.value}>{o.label}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                    <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-2">
+                        <button onClick={onClose} className="px-4 py-2 text-xs font-bold text-slate-600 rounded-lg hover:bg-slate-100">
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleSave}
+                            className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2"
+                        >
+                            {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                            Save
+                        </button>
+                    </div>
+                </fieldset>
+            </div>
+        </div>
+    );
+}
+
+// ── Invite / Edit Team Member Modal (unified) ─────────────────────────────────
+// editTarget=null → create mode; editTarget=TeamMember → edit pending invite mode
+
+function InviteTeamMemberModal({
+    editTarget = null,
+    programmes,
+    onClose,
+    onSaved,
+}: {
+    editTarget?: TeamMember | null;
+    programmes: any[];
+    onClose: () => void;
+    onSaved: () => void;
+}) {
+    const isEdit = editTarget !== null;
+    const [email, setEmail] = useState('');
+    const [name, setName] = useState(editTarget?.displayName || '');
+    const [pmLevel, setPmLevel] = useState<PmLevel>((editTarget?.pmLevel as PmLevel) || 'standard');
+    const [programmeIds, setProgrammeIds] = useState<string[]>(editTarget?.inviteProgrammeIds || []);
+    const [saving, setSaving] = useState(false);
+    const [errorMsg, setErrorMsg] = useState('');
+
+    const handleSubmit = async () => {
+        setErrorMsg('');
+        if (!isEdit && !email.includes('@')) { setErrorMsg('Please enter a valid email address.'); return; }
+        setSaving(true);
+        try {
+            if (isEdit) {
+                await api.updateInvite(editTarget!.inviteId!, { name, pmLevel, programmeIds });
+                toast.success('Invitation updated.');
+            } else {
+                await api.inviteProjectManager(email, name, pmLevel, programmeIds);
+                toast.success(`Invitation sent to ${email}.`);
+            }
+            onSaved();
+        } catch (err: any) {
+            setErrorMsg(err?.message || 'Something went wrong.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
+            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col">
+                <fieldset disabled={saving} className="contents">
+                    <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+                        <div>
+                            <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                                {isEdit
+                                    ? <><Pencil className="w-5 h-5 text-indigo-600" /> Edit Invitation</>
+                                    : <><Mail className="w-5 h-5 text-indigo-600" /> Invite Team Member</>
+                                }
+                            </h3>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                                {isEdit
+                                    ? `Editing invite for ${editTarget!.email}`
+                                    : 'All invited users join as Project Managers. Role promotions happen after they sign in.'}
+                            </p>
+                        </div>
+                        <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100">
+                            <span className="text-lg leading-none">×</span>
+                        </button>
+                    </div>
+                    <div className="px-6 py-5 space-y-5 overflow-y-auto flex-1">
+                        <div>
+                            <label className={labelCls}>Full Name</label>
+                            <input className={inputCls} value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Robert Wilson" />
+                        </div>
+                        {!isEdit && (
+                            <div>
+                                <label className={labelCls}>Email Address</label>
+                                <input className={inputCls} value={email} onChange={e => setEmail(e.target.value)} placeholder="e.g. r.wilson@org.gov.uk" type="email" />
+                            </div>
+                        )}
+                        <div>
+                            <label className={labelCls}>PM Level</label>
+                            <select className={inputCls} value={pmLevel} onChange={e => setPmLevel(e.target.value as PmLevel)}>
+                                {PM_LEVEL_OPTIONS.map(o => (
+                                    <option key={o.value} value={o.value}>{o.label}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className={labelCls}>Bind to programmes{!isEdit && ' (optional)'}</label>
+                            {programmes.length === 0 ? (
+                                <p className="text-[11px] text-slate-400 px-1">You have no programmes yet. Invite first, bind later.</p>
+                            ) : (
+                                <div className="max-h-44 overflow-y-auto space-y-1.5 border border-slate-200 rounded-xl p-2.5 bg-white/70">
+                                    {programmes.map((p: any) => (
+                                        <label key={p.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                className="w-4 h-4 accent-indigo-600"
+                                                checked={programmeIds.includes(p.id)}
+                                                onChange={e => setProgrammeIds(prev =>
+                                                    e.target.checked ? [...prev, p.id] : prev.filter(id => id !== p.id)
+                                                )}
+                                            />
+                                            <span className="text-xs text-slate-700 truncate">{p.name || p.reference}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        {errorMsg && (
+                            <div className="p-3 rounded-xl text-[11px] font-bold border bg-red-50 border-red-100 text-red-700 flex gap-2 items-center">
+                                <div className="w-2 h-2 rounded-full shrink-0 bg-red-500" />
+                                {errorMsg}
+                            </div>
+                        )}
+                    </div>
+                    <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-2">
+                        <button onClick={onClose} className="px-4 py-2 text-xs font-bold text-slate-600 rounded-lg hover:bg-slate-100">
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleSubmit}
+                            disabled={saving || (!isEdit && !email)}
+                            className="flex items-center gap-2 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-all disabled:opacity-50 shadow-sm"
+                        >
+                            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : isEdit ? <Pencil className="w-3.5 h-3.5" /> : <Mail className="w-3.5 h-3.5" />}
+                            {isEdit ? 'Save Changes' : 'Send Invitation'}
+                        </button>
+                    </div>
+                </fieldset>
             </div>
         </div>
     );

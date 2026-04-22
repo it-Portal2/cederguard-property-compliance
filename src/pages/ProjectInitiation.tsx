@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams, useLocation, Link } from "react-router";
 import { api } from "../lib/api";
 import { useStore, TeamMember } from "../store/useStore";
-import { isAtLeastPM, isSuperAdmin, isAtLeastClientAdmin } from "../lib/roles";
+import { isAtLeastPM, isSuperAdmin, isAtLeastClientAdmin, pmLevelLabel } from "../lib/roles";
 import { Save, CheckCircle2, Info, LayoutTemplate, UserCircle, Rocket, ChevronRight, AlertCircle, Shield, Trash2, ScanSearch, AlertTriangle, Plus } from 'lucide-react';
 import { clsx } from "clsx";
 import { stripMarkdown } from "../lib/utils";
@@ -117,7 +117,9 @@ export function ProjectInitiation() {
   // edits or reset isDirty after the form has already been populated.
   useEffect(() => {
     const isNewRoute =
-      pathname.includes("/projects/new") || pathname === "/initiate";
+      pathname.includes("/projects/new") ||
+      pathname === "/initiate" ||
+      pathname === "/project/initiation";
 
     const populateForm = (p: any) => {
       setFormData({
@@ -222,27 +224,19 @@ export function ProjectInitiation() {
   const [programmeManagers, setProgrammeManagers] = useState<any[]>([]);
   const [filteredProgrammes, setFilteredProgrammes] = useState<any[]>([]);
   const [loadingPMs, setLoadingPMs] = useState(false);
+  const [loadingProgrammes, setLoadingProgrammes] = useState(false);
+  const [loadingAssignablePMs, setLoadingAssignablePMs] = useState(false);
   const userRole = (user as any)?.role;
 
-  // Parallelise all three dropdown fetches into a single mount effect.
-  // Previously three separate useEffects fired sequential API calls (3× token fetch + 3× network).
-  // Promise.all cuts this to one token fetch + three parallel Firestore queries.
+  // Fetch cascade Step 1 supervisors on mount. Step 2/3 fetch only after their parent is set.
   useEffect(() => {
     const fetchDropdownData = async () => {
       setLoadingPMs(true);
       try {
-        const [pmsRes, supervisorsRes, programmesRes] = await Promise.all([
-          api.getAssignablePMs(),
-          api.clientGetProgrammeManagers(),
-          api.clientGetProgrammesByManager(''),
-        ]);
-        if (pmsRes.success) setAssignablePMs(pmsRes.users || []);
+        const supervisorsRes = await api.clientGetMySupervisors();
         if (supervisorsRes.success) setProgrammeManagers(supervisorsRes.users || []);
-        const progData = programmesRes.success ? (programmesRes.data || []) : [];
-        setFilteredProgrammes(progData.length > 0 ? progData : (Array.isArray(programmes) ? programmes : []));
       } catch (err: any) {
-        // Silently ignore 403 — regular PMs may not have permission for all endpoints
-        if (err?.status !== 403) console.error('Failed to fetch dropdown data:', err);
+        if (err?.status !== 403) console.error('Failed to fetch supervisors:', err);
       } finally {
         setLoadingPMs(false);
       }
@@ -250,22 +244,62 @@ export function ProjectInitiation() {
     fetchDropdownData();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Re-fetch programmes when supervisor filter changes.
-  // deps: formData.programmeManagerId only — removing `programmes` prevents a
-  // second fetch firing whenever the store updates (causing the dropdown to flash).
+  // Step 2 — re-fetch programmes when supervisor changes; clear when supervisor cleared.
   useEffect(() => {
-    if (!formData.programmeManagerId) return; // initial load handled above
+    if (!formData.programmeManagerId) {
+      setFilteredProgrammes([]);
+      setLoadingProgrammes(false);
+      return;
+    }
     const syncProgrammes = async () => {
+      setLoadingProgrammes(true);
       try {
         const res = await api.clientGetProgrammesByManager(formData.programmeManagerId);
-        if (res.success) setFilteredProgrammes(res.data || []);
+        if (res.success) setFilteredProgrammes(res.programmes || []);
       } catch (err) {
         console.error("Failed to fetch filtered programmes:", err);
         setFilteredProgrammes([]);
+      } finally {
+        setLoadingProgrammes(false);
       }
     };
     syncProgrammes();
-  }, [formData.programmeManagerId]); // intentionally excludes `programmes` — see comment above
+  }, [formData.programmeManagerId]);
+
+  // Step 3 — re-fetch PMs assigned to the chosen programme; clear when programme cleared.
+  useEffect(() => {
+    if (!formData.programmeId) {
+      setAssignablePMs([]);
+      setLoadingAssignablePMs(false);
+      return;
+    }
+    const syncPMs = async () => {
+      setLoadingAssignablePMs(true);
+      try {
+        const res = await api.getPMsAssignedToProgramme(formData.programmeId);
+        if (res.success) setAssignablePMs(res.users || []);
+      } catch (err: any) {
+        if (err?.status !== 403) console.error("Failed to fetch programme PMs:", err);
+        setAssignablePMs([]);
+      } finally {
+        setLoadingAssignablePMs(false);
+      }
+    };
+    syncPMs();
+  }, [formData.programmeId]);
+
+  // Cascade reset — clearing a parent clears its children.
+  useEffect(() => {
+    if (!formData.programmeManagerId && (formData.programmeId || formData.projectManagerId)) {
+      setFormData((prev) => ({ ...prev, programmeId: "", projectManagerId: "" }));
+    }
+  }, [formData.programmeManagerId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!formData.programmeId && formData.projectManagerId) {
+      setFormData((prev) => ({ ...prev, projectManagerId: "" }));
+    }
+  }, [formData.programmeId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (user && !isAtLeastPM(userRole)) navigate("/projects");
@@ -333,6 +367,7 @@ export function ProjectInitiation() {
           scope: formData.description,
           status: formData.status,
           programmeId: formData.programmeId,
+          programmeManagerId: formData.programmeManagerId || null,
           projectManagerId: formData.projectManagerId,
           riba: formData.riba,
           employersAgent: formData.employersAgent,
@@ -420,7 +455,7 @@ export function ProjectInitiation() {
     try {
       await updateProject(activeProjectId, {
         isPublished: true,
-        setupProgress: 100,
+        setupProgress: formData.programmeId ? 100 : 90,
         status: "Active",
       });
       toast.success("Project published successfully.");
@@ -722,19 +757,25 @@ export function ProjectInitiation() {
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <div>
-                        <label className={clsx(labelCls, "text-indigo-700")}>
+                        <label className={clsx(labelCls, "text-indigo-700 flex items-center gap-1.5")}>
                           Associated Programme
                           {isAtLeastClientAdmin(userRole) && (
                             <span className="text-rose-500 ml-0.5">*</span>
+                          )}
+                          {loadingProgrammes && (
+                            <span className="flex items-center gap-1 text-indigo-500 font-semibold normal-case tracking-normal text-[10px]">
+                              <div className="w-2.5 h-2.5 border-2 border-indigo-200 border-t-indigo-500 rounded-full animate-spin" />
+                              Loading…
+                            </span>
                           )}
                         </label>
                         <select
                           className={clsx(inputCls, "border-indigo-200 focus:border-indigo-500")}
                           value={formData.programmeId}
                           onChange={(e) => set("programmeId", e.target.value)}
-                          disabled={loadingPMs}
+                          disabled={loadingPMs || loadingProgrammes}
                         >
-                          {loadingPMs
+                          {loadingPMs || loadingProgrammes
                             ? <option value="">Loading programmes…</option>
                             : <>
                                 {/* UX 4: explicit "independent" option — not a blank placeholder */}
@@ -748,9 +789,14 @@ export function ProjectInitiation() {
                           }
                         </select>
                         {/* UX 5: guidance for client admins */}
-                        {isAtLeastClientAdmin(userRole) && !formData.programmeId && (
+                        {isAtLeastClientAdmin(userRole) && !formData.programmeId && !loadingProgrammes && (
                           <p className="text-[10px] text-amber-600 font-semibold mt-1.5 ml-1">
                             Recommended: link to a programme or confirm as independent.
+                          </p>
+                        )}
+                        {formData.programmeManagerId && !loadingProgrammes && filteredProgrammes.length === 0 && (
+                          <p className="text-[10px] text-slate-500 font-semibold mt-1.5 ml-1">
+                            This supervisor hasn't created any programmes yet. You can continue as independent and link one later.
                           </p>
                         )}
                       </div>
@@ -836,52 +882,63 @@ export function ProjectInitiation() {
                     </div>
 
                     <div>
-                      <label className={labelCls}>
+                      <label className={clsx(labelCls, "flex items-center gap-1.5")}>
                         Assigned Project Manager{" "}
                         <span className="text-rose-500 ml-0.5">*</span>
+                        {loadingAssignablePMs && (
+                          <span className="flex items-center gap-1 text-indigo-500 font-semibold normal-case tracking-normal text-[10px]">
+                            <div className="w-2.5 h-2.5 border-2 border-indigo-200 border-t-indigo-500 rounded-full animate-spin" />
+                            Loading…
+                          </span>
+                        )}
                       </label>
                       <select
                         className={inputCls}
                         value={formData.projectManagerId}
                         onChange={(e) => set("projectManagerId", e.target.value)}
-                        disabled={loadingPMs || (!isAtLeastClientAdmin(userRole) && assignablePMs.length === 0)}
+                        disabled={loadingPMs || loadingAssignablePMs || (!isAtLeastClientAdmin(userRole) && assignablePMs.length === 0 && !formData.programmeId)}
                         required
                       >
-                        {loadingPMs
+                        {loadingPMs || loadingAssignablePMs
                           ? <option value="">Loading project managers…</option>
-                          : <>
-                              <option value="">— Select PM —</option>
-                              {/* Deduplicate by email, drop no-email entries (avoids blank gaps).
-                                  Filter out account-tier roles (pro, enterprise) — these are billing
-                                  tiers not job roles and should not appear in the PM assignment list.
-                                  If displayName contains '@' the backend used email as fallback — show
-                                  (No name) label instead. Show role label so users can distinguish. */}
-                              {[...new Map(
-                                assignablePMs
-                                  .filter(pm => pm.email && !['pro', 'enterprise', 'admin', 'super_admin'].includes(pm.role))
-                                  .map(pm => [pm.email, pm])
-                              ).values()].map((pm) => {
-                                const raw = pm.displayName?.trim() ?? '';
-                                const hasRealName = raw && !raw.includes('@');
-                                const name = hasRealName ? raw : `(No name) — ${pm.email}`;
-                                const roleLabel = pm.role?.replace(/_/g, ' ') || '';
-                                return (
-                                  <option key={pm.uid || pm.email} value={pm.email}>
-                                    {name}{roleLabel ? ` (${roleLabel})` : ''}
+                          : !formData.programmeId
+                            ? <option value="">— Select a programme first —</option>
+                            : <>
+                                <option value="">— Select PM —</option>
+                                {/* Deduplicate by email, drop no-email entries (avoids blank gaps).
+                                    Filter out account-tier roles (pro, enterprise) — these are billing
+                                    tiers not job roles and should not appear in the PM assignment list.
+                                    If displayName contains '@' the backend used email as fallback — show
+                                    (No name) label instead. Label uses pmLevel (Senior/Standard/Assistant/Coordinator)
+                                    which describes seniority; falls back to role string when pmLevel missing. */}
+                                {[...new Map(
+                                  assignablePMs
+                                    .filter(pm => pm.email && !['pro', 'enterprise', 'admin', 'super_admin'].includes(pm.role))
+                                    .map(pm => [pm.email, pm])
+                                ).values()].map((pm) => {
+                                  const raw = pm.displayName?.trim() ?? '';
+                                  const hasRealName = raw && !raw.includes('@');
+                                  const name = hasRealName ? raw : `(No name) — ${pm.email}`;
+                                  const designation = pm.pmLevel
+                                    ? pmLevelLabel(pm.pmLevel)
+                                    : (pm.role?.replace(/_/g, ' ') || '');
+                                  return (
+                                    <option key={pm.uid || pm.email} value={pm.email}>
+                                      {name}{designation ? ` — ${designation}` : ''}
+                                    </option>
+                                  );
+                                })}
+                                {/* Fallback: current PM not in assignable list (e.g. different org) */}
+                                {formData.projectManagerId && !assignablePMs.find(pm => pm.email === formData.projectManagerId) && (
+                                  <option value={formData.projectManagerId}>
+                                    {(() => {
+                                      const raw = user?.displayName?.trim() ?? '';
+                                      const hasRealName = raw && !raw.includes('@');
+                                      return hasRealName ? raw : `(No name) — ${formData.projectManagerId}`;
+                                    })()}
                                   </option>
-                                );
-                              })}
-                              {/* Fallback: current PM not in assignable list (e.g. different org) */}
-                              {formData.projectManagerId && !assignablePMs.find(pm => pm.email === formData.projectManagerId) && (
-                                <option value={formData.projectManagerId}>
-                                  {(() => {
-                                    const raw = user?.displayName?.trim() ?? '';
-                                    const hasRealName = raw && !raw.includes('@');
-                                    return hasRealName ? raw : `(No name) — ${formData.projectManagerId}`;
-                                  })()}
-                                </option>
-                              )}
-                            </>
+                                )}
+                              </>
                         }
                       </select>
                     </div>

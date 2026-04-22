@@ -7,8 +7,14 @@ export const profileRoutes: Record<string, (req: any, res: any, ctx: ApiContext)
     const { profile } = req.body;
         if (!profile) return res.status(400).json({ error: 'Missing profile data' });
         
-        // Whitelist allowed fields to prevent privilege escalation
-        const allowedFields = ['displayName', 'photoURL', 'phoneNumber', 'bio', 'onboardingCompleted', 'theme', 'geminiBackupKey', 'fcmToken'];
+        // Whitelist allowed fields to prevent privilege escalation.
+        // Org-identity fields (orgName/regNo/address/jurisdiction) are writable by
+        // the owning user — no role/clientId leak possible from these strings.
+        const allowedFields = [
+          'displayName', 'photoURL', 'phoneNumber', 'bio',
+          'onboardingCompleted', 'theme', 'geminiBackupKey', 'fcmToken',
+          'orgName', 'regNo', 'address', 'jurisdiction',
+        ];
         const sanitizedProfile: any = {};
         allowedFields.forEach(field => {
           if (profile[field] !== undefined) sanitizedProfile[field] = profile[field];
@@ -40,21 +46,44 @@ export const profileRoutes: Record<string, (req: any, res: any, ctx: ApiContext)
 
           if (!invSnap.empty) {
             const invData = invSnap.docs[0].data();
-            const requestedRole = invData?.role || 'project_manager';
+            const clientId = invData?.clientId || invData?.invitedBy;
+            const supervisorUid = invData?.invitedBy || null;
+            const pmLevel = invData?.pmLevel || 'standard';
+            // Invites always produce a canonical project_manager, regardless of any legacy role field.
+            const role = 'project_manager';
 
+            const now = new Date().toISOString();
             await db.collection('users').doc(uid).set({
               email,
-              role: requestedRole,
-              clientId: invData?.clientId || invData?.invitedBy,
-              updatedAt: new Date().toISOString()
+              role,
+              pmLevel,
+              supervisorUid,
+              clientId,
+              updatedAt: now,
+              ...(!profileData.createdAt ? { createdAt: now } : {}),
             }, { merge: true });
 
             profileData = {
               ...profileData,
               email,
-              role: requestedRole,
-              clientId: invData?.clientId || invData?.invitedBy
+              role,
+              pmLevel,
+              supervisorUid,
+              clientId
             };
+
+            // Best-effort: array-union this uid into each programme roster on the invite
+            const programmeIds: string[] = Array.isArray(invData?.programmeIds) ? invData.programmeIds : [];
+            for (const pid of programmeIds) {
+              if (!pid || typeof pid !== 'string') continue;
+              try {
+                await db.collection('programmes').doc(pid).update({
+                  assignedPMIds: FieldValue.arrayUnion(uid)
+                });
+              } catch (e) {
+                console.warn(`[invite-consume] Failed to roster ${uid} into programme ${pid}:`, (e as any)?.message || e);
+              }
+            }
 
             // If it was a workspace-level invitation (no projectId), delete it
             if (!invData?.projectId) {
@@ -62,17 +91,35 @@ export const profileRoutes: Record<string, (req: any, res: any, ctx: ApiContext)
             }
           } else {
             // No invitation and no role: assign default Project Manager role
+            const now = new Date().toISOString();
             await db.collection('users').doc(uid).set({
               email,
               role: 'project_manager',
-              updatedAt: new Date().toISOString()
+              pmLevel: 'standard',
+              supervisorUid: null,
+              updatedAt: now,
+              ...(!profileData.createdAt ? { createdAt: now } : {}),
             }, { merge: true });
 
             profileData = {
               ...profileData,
               email,
-              role: 'project_manager'
+              role: 'project_manager',
+              pmLevel: 'standard',
+              supervisorUid: null
             };
+          }
+        }
+
+        // Backfill createdAt for existing users who predate the field
+        if (!profileData.createdAt) {
+          try {
+            const authUser = await getAuthService().getUser(uid);
+            const createdAt = authUser.metadata.creationTime || new Date().toISOString();
+            await db.collection('users').doc(uid).update({ createdAt });
+            profileData = { ...profileData, createdAt };
+          } catch (e) {
+            // non-fatal — just won't have a joined date this call
           }
         }
 

@@ -125,6 +125,8 @@ export function RiskRegister() {
     updateProgramme,
     isInitialized,
     pendingMutations,
+    loadProjectData,
+    loadProgrammeData,
   } = useStore();
 
   // Row is "busy" when any mutation targeting this risk id is in flight.

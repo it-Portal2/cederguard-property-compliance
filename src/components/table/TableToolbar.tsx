@@ -80,9 +80,9 @@ export default function TableToolbar<T extends Record<string, any>>({
   return (
     <div className="mb-3 space-y-2">
       {/* Primary row: Search + Filters — full width */}
-      <div className="flex items-stretch gap-2 w-full">
+      <div className="flex flex-wrap items-stretch gap-2 w-full">
         {hasSearch && (
-          <div className="relative flex-1 min-w-0">
+          <div className="relative w-full md:flex-1 md:w-auto min-w-0">
             <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             <input
               type="text"
@@ -135,7 +135,7 @@ export default function TableToolbar<T extends Record<string, any>>({
         )}
 
         {toolbarActions && (
-          <div className="flex items-stretch gap-2 shrink-0 ml-auto">{toolbarActions}</div>
+          <div className="flex items-stretch gap-2 shrink-0 md:ml-auto">{toolbarActions}</div>
         )}
       </div>
 

@@ -53,7 +53,15 @@ function InviteForm({ onInvited }: { onInvited: () => void }) {
     setError('');
     setSuccess('');
     try {
-      await api.inviteProjectManager(email.trim().toLowerCase(), name.trim(), role);
+      const roleToPmLevel: Record<string, string> = {
+        project_manager: 'standard',
+        senior_pm: 'senior',
+        senior_project_manager: 'senior',
+        assistant_pm: 'assistant',
+        project_coordinator: 'coordinator',
+      };
+      const pmLevel = roleToPmLevel[role] ?? 'standard';
+      await api.inviteProjectManager(email.trim().toLowerCase(), name.trim(), pmLevel, []);
       setSuccess(`Invitation sent to ${email.trim()}`);
       setEmail('');
       setName('');

@@ -32,8 +32,24 @@ export const projectRoutes: Record<
       userId: ownerId,
       clientId: projectClientId,
       creatorId: uid,
+      programmeManagerId: data.programmeManagerId || null,
       createdAt: FieldValue.serverTimestamp(),
     });
+
+    // Auto-roster: if the project has both a PM and a programme, ensure the PM is on the
+    // programme's assignedPMIds roster (keeps roster consistent with project reality).
+    if (ownerId && typeof ownerId === "string" && !ownerId.includes("@") && data.programmeId) {
+      try {
+        await db.collection("programmes").doc(data.programmeId).update({
+          assignedPMIds: FieldValue.arrayUnion(ownerId),
+        });
+      } catch (e) {
+        console.warn(
+          `[createProject] Auto-roster failed for programme ${data.programmeId}:`,
+          (e as any)?.message || e,
+        );
+      }
+    }
 
     if (data.pmEmails && typeof data.pmEmails === "string") {
       const emails = data.pmEmails

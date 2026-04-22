@@ -254,6 +254,8 @@ export const isAuthorizedForContextImpl = async (
       return true;
     if (prog.userId === uid || prog.pm === email)
       return true;
+    if (Array.isArray(prog.assignedPMIds) && prog.assignedPMIds.includes(uid))
+      return true;
   }
 
   return false;

@@ -928,7 +928,9 @@ export function RiskSetup() {
                             if (!activeProjectId) return;
                             setLoading(true);
                             try {
-                                await updateProject(activeProjectId, { isPublished: true, setupProgress: 100 });
+                                const proj = (projects || []).find((p: any) => p.id === activeProjectId);
+                                const hasProgramme = !!(proj as any)?.programmeId;
+                                await updateProject(activeProjectId, { isPublished: true, setupProgress: hasProgramme ? 100 : 90 });
                                 navigate('/dashboard');
                             } catch (err: any) {
                                 setError(err.message || 'Failed to publish');

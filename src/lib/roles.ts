@@ -1,4 +1,6 @@
-import { ROLE_STRINGS } from "./roleConstants";
+import { ROLE_STRINGS, type CanonicalRole, type PmLevel } from "./roleConstants";
+
+export type { CanonicalRole, PmLevel };
 
 export type UserRole =
   | "admin"
@@ -110,4 +112,52 @@ export const isPM = (role?: string) => {
     ROLE_STRINGS.ASSISTANT_PM,
     ROLE_STRINGS.PROJECT_COORDINATOR,
   ].includes((role || "") as any);
+};
+
+// Canonical role mapping — collapses granular role strings into the 5 product tiers.
+export function canonicalRole(role?: string | null): CanonicalRole {
+  switch (role) {
+    case ROLE_STRINGS.ADMIN:
+      return "super_admin";
+    case ROLE_STRINGS.CLIENT_ADMIN:
+    case ROLE_STRINGS.PROGRAMME_MANAGER:
+      return "client_admin";
+    case ROLE_STRINGS.PROJECT_MANAGER:
+    case ROLE_STRINGS.SENIOR_PM:
+    case ROLE_STRINGS.SENIOR_PROJECT_MANAGER:
+    case ROLE_STRINGS.ASSISTANT_PM:
+    case "assistant_pm":
+    case ROLE_STRINGS.PROJECT_COORDINATOR:
+      return "project_manager";
+    case ROLE_STRINGS.ENTERPRISE:
+      return "enterprise";
+    case ROLE_STRINGS.VIEWER:
+      return "viewer";
+    default:
+      return "project_manager";
+  }
+}
+
+export const isSupervisorRole = (role?: string | null) => {
+  const c = canonicalRole(role);
+  return c === "super_admin" || c === "client_admin";
+};
+
+export const isProjectManagerRole = (role?: string | null) => {
+  return canonicalRole(role) === "project_manager";
+};
+
+export const pmLevelLabel = (level?: PmLevel | string | null): string => {
+  switch (level) {
+    case "senior":
+      return "Senior Project Manager";
+    case "standard":
+      return "Project Manager";
+    case "assistant":
+      return "Assistant Project Manager";
+    case "coordinator":
+      return "Project Coordinator";
+    default:
+      return "Project Manager";
+  }
 };

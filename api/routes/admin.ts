@@ -1,6 +1,30 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { ApiContext } from '../lib/context.js';
 import crypto from 'crypto';
+import { ROLE_STRINGS, PM_LEVELS } from '../../src/lib/roleConstants.js';
+
+const canonicalOf = (role?: string | null): string => {
+  switch (role) {
+    case ROLE_STRINGS.ADMIN:
+      return 'super_admin';
+    case ROLE_STRINGS.CLIENT_ADMIN:
+    case ROLE_STRINGS.PROGRAMME_MANAGER:
+      return 'client_admin';
+    case ROLE_STRINGS.PROJECT_MANAGER:
+    case ROLE_STRINGS.SENIOR_PM:
+    case ROLE_STRINGS.SENIOR_PROJECT_MANAGER:
+    case ROLE_STRINGS.ASSISTANT_PM:
+    case 'assistant_pm':
+    case ROLE_STRINGS.PROJECT_COORDINATOR:
+      return 'project_manager';
+    case ROLE_STRINGS.ENTERPRISE:
+      return 'enterprise';
+    case ROLE_STRINGS.VIEWER:
+      return 'viewer';
+    default:
+      return 'project_manager';
+  }
+};
 
 export const adminRoutes: Record<string, (req: any, res: any, ctx: ApiContext) => Promise<any>> = {
   adminDeleteProject: async (req, res, ctx) => {
@@ -58,15 +82,30 @@ export const adminRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =
         return res.status(403).json({ error: 'Forbidden: Resource belongs to another organization.' });
     }
 
+    // Cross-org transfer fix: if the new owner lives in a different org, also move the
+    // project's clientId so authz checks keyed on clientId don't lock the new owner out.
+    let newClientId = projectData.clientId;
+    if (isAdmin && targetUser.uid) {
+      const newOwnerDoc = await db.collection('users').doc(targetUser.uid).get();
+      if (newOwnerDoc.exists) {
+        const newOwnerData = newOwnerDoc.data() || {};
+        const ownerClientId = newOwnerData.clientId || targetUser.uid;
+        if (ownerClientId !== projectData.clientId) {
+          newClientId = ownerClientId;
+        }
+      }
+    }
+
     await db.collection('projects').doc(id).update({
       userId: targetUser.uid,
       pm: targetUser.email || projectData.pm,
       pmName: targetUser.displayName || targetUser.email || projectData.pmName,
+      clientId: newClientId,
       updatedAt: FieldValue.serverTimestamp()
     });
 
-    db.collection('activityLogs').add({ 
-        type: 'admin_project_transferred', 
+    db.collection('activityLogs').add({
+        type: 'admin_project_transferred',
         uid, email, 
         projectId: id, 
         targetUid: targetUser.uid,
@@ -91,14 +130,27 @@ export const adminRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =
         return res.status(403).json({ error: 'Forbidden: Resource belongs to another organization.' });
     }
 
+    let newProgClientId = progData.clientId;
+    if (isAdmin && targetUser.uid) {
+      const newOwnerDoc = await db.collection('users').doc(targetUser.uid).get();
+      if (newOwnerDoc.exists) {
+        const newOwnerData = newOwnerDoc.data() || {};
+        const ownerClientId = newOwnerData.clientId || targetUser.uid;
+        if (ownerClientId !== progData.clientId) {
+          newProgClientId = ownerClientId;
+        }
+      }
+    }
+
     await db.collection('programmes').doc(id).update({
       userId: targetUser.uid,
       pm: targetUser.email || progData.pm,
+      clientId: newProgClientId,
       updatedAt: FieldValue.serverTimestamp()
     });
 
-    db.collection('activityLogs').add({ 
-        type: 'admin_programme_transferred', 
+    db.collection('activityLogs').add({
+        type: 'admin_programme_transferred',
         uid, email, 
         id, 
         targetUid: targetUser.uid,
@@ -213,6 +265,96 @@ export const adminRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =
       updates,
       timestamp: new Date().toISOString()
     });
+
+    return res.status(200).json({ success: true });
+  },
+
+  adminAssignSupervisor: async (req, res, ctx) => {
+    const { db, uid, email, isAdmin } = ctx;
+    if (!isAdmin) return res.status(403).json({ error: 'Forbidden' });
+
+    const { targetUid, supervisorUid } = req.body;
+    if (!targetUid) return res.status(400).json({ error: 'Missing targetUid' });
+
+    const targetDoc = await db.collection('users').doc(targetUid).get();
+    if (!targetDoc.exists) return res.status(404).json({ error: 'User not found' });
+
+    if (supervisorUid) {
+      const supDoc = await db.collection('users').doc(supervisorUid).get();
+      if (!supDoc.exists) return res.status(404).json({ error: 'Supervisor not found' });
+      const supCanonical = canonicalOf(supDoc.data()?.role);
+      if (supCanonical !== 'super_admin' && supCanonical !== 'client_admin') {
+        return res.status(400).json({ error: 'Target user is not a valid supervisor' });
+      }
+    }
+
+    await db.collection('users').doc(targetUid).set({
+      supervisorUid: supervisorUid || null,
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
+
+    db.collection('activityLogs').add({
+      type: 'admin_supervisor_assigned',
+      uid,
+      email,
+      targetUid,
+      supervisorUid: supervisorUid || null,
+      timestamp: new Date().toISOString(),
+    }).catch(console.error);
+
+    return res.status(200).json({ success: true });
+  },
+
+  adminPromoteUser: async (req, res, ctx) => {
+    const { db, uid, email, userData, primaryUid, isAdmin } = ctx;
+    const { targetUid, newRole, pmLevel } = req.body;
+
+    if (!targetUid || !newRole) return res.status(400).json({ error: 'Missing targetUid or newRole' });
+
+    const targetDoc = await db.collection('users').doc(targetUid).get();
+    if (!targetDoc.exists) return res.status(404).json({ error: 'User not found' });
+    const targetData = targetDoc.data() || {};
+
+    const fromRole = targetData.role || null;
+    const newCanonical = canonicalOf(newRole);
+    const callerCanonical = canonicalOf(userData?.role);
+
+    if (isAdmin) {
+      // super_admin → can set any role
+    } else if (callerCanonical === 'client_admin') {
+      if (targetData.clientId !== primaryUid) {
+        return res.status(403).json({ error: 'Forbidden: target outside your organisation' });
+      }
+      if (canonicalOf(fromRole) === 'super_admin') {
+        return res.status(403).json({ error: 'Forbidden: cannot modify a super admin' });
+      }
+      if (newCanonical !== 'project_manager' && newCanonical !== 'client_admin') {
+        return res.status(403).json({ error: 'Forbidden: client_admins can only flip between project_manager and client_admin' });
+      }
+    } else {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    const updates: any = {
+      role: newRole,
+      updatedAt: new Date().toISOString(),
+    };
+    if (newCanonical === 'project_manager') {
+      updates.pmLevel = PM_LEVELS.includes(pmLevel) ? pmLevel : targetData.pmLevel || 'standard';
+    }
+
+    await db.collection('users').doc(targetUid).set(updates, { merge: true });
+
+    db.collection('activityLogs').add({
+      type: 'admin_user_promoted',
+      uid,
+      email,
+      targetUid,
+      fromRole,
+      toRole: newRole,
+      pmLevel: updates.pmLevel || null,
+      timestamp: new Date().toISOString(),
+    }).catch(console.error);
 
     return res.status(200).json({ success: true });
   },
