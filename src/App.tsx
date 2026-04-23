@@ -63,8 +63,6 @@ import { CostCalculator } from './pages/CostCalculator';
 import { CPDTraining } from './pages/CPDTraining';
 import { LessonsLearned } from './pages/LessonsLearned';
 import { ProjectPlan } from './pages/ProjectPlan';
-import { ComplianceProfiler } from './pages/ComplianceProfiler';
-import { RiskIdentifier } from './pages/RiskIdentifier';
 
 
 import { BillingPanel } from './pages/BillingPanel';
@@ -219,10 +217,6 @@ function AppContent() {
 
               {/* Help Center */}
               <Route path="/help" element={<HelpCenter />} />
-
-              {/* Tools */}
-              <Route path="/tools/compliance-profiler" element={<ComplianceProfiler />} />
-              <Route path="/tools/risk-identifier" element={<RiskIdentifier />} />
 
               {/* Team Management */}
               <Route path="/team" element={<RoleGuard requireAdmin><ClientTeamPanel /></RoleGuard>} />

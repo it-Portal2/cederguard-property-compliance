@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate, useParams, useLocation, Link } from "react-router";
+import { useNavigate, useParams, useLocation } from "react-router";
 import { api } from "../lib/api";
 import { useStore, TeamMember } from "../store/useStore";
 import { isAtLeastPM, isSuperAdmin, isAtLeastClientAdmin, pmLevelLabel } from "../lib/roles";
@@ -481,42 +481,6 @@ export function ProjectInitiation() {
   return (
     <div className="min-h-screen bg-slate-50/50 pb-24 md:pb-12 pt-safe">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
-        {/* Reference Tools */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          <Link
-            to="/tools/compliance-profiler"
-            className="flex items-center gap-4 p-4 bg-white border border-slate-200 rounded-2xl hover:border-indigo-300 hover:shadow-lg transition-all group"
-          >
-            <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center group-hover:bg-indigo-600 transition-colors">
-              <Shield className="w-6 h-6 text-indigo-600 group-hover:text-white" />
-            </div>
-            <div>
-              <h3 className="font-bold text-slate-900 leading-tight">
-                Compliance Profiler
-              </h3>
-              <p className="text-[11px] text-slate-500 mt-0.5">
-                Interactive guide to determine required compliance domains.
-              </p>
-            </div>
-          </Link>
-          <Link
-            to="/tools/risk-identifier"
-            className="flex items-center gap-4 p-4 bg-white border border-slate-200 rounded-2xl hover:border-amber-300 hover:shadow-lg transition-all group"
-          >
-            <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center group-hover:bg-amber-500 transition-colors">
-              <AlertTriangle className="w-6 h-6 text-amber-500 group-hover:text-white" />
-            </div>
-            <div>
-              <h3 className="font-bold text-slate-900 leading-tight">
-                Risk Identifier
-              </h3>
-              <p className="text-[11px] text-slate-500 mt-0.5">
-                Industry-standard risk library and mitigation reference.
-              </p>
-            </div>
-          </Link>
-        </div>
-
         {/* ── HEADER SECTION ─────────── */}
         <div className="mb-8 md:mb-12">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">

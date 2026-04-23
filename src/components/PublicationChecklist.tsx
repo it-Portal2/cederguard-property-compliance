@@ -89,6 +89,10 @@ export function PublicationChecklist({
   const contextId = activeProjectId || activeProgrammeId;
   const activeType = isProg ? "programme" : "project";
 
+  const deliveryTeamComplete =
+    !!activeEntity?.deliveryTeamDone ||
+    !!(activeEntity as any)?.projectManagerId;
+
   const canPublish =
     (activeEntity?.complianceSetupDone ||
       (contextId &&
@@ -100,7 +104,7 @@ export function PublicationChecklist({
         (Array.isArray(risks) ? risks : []).filter(
           (r) => r.projectId === contextId || r.programmeId === contextId,
         ).length >= 3)) &&
-    !!activeEntity?.deliveryTeamDone;
+    deliveryTeamComplete;
 
   const steps: {
     num: string;
@@ -155,7 +159,7 @@ export function PublicationChecklist({
       num: "4",
       label: "4. Assign Delivery Team",
       info: "Adding technical and management stakeholders.",
-      status: activeEntity?.deliveryTeamDone
+      status: deliveryTeamComplete
         ? "complete"
         : (activeEntity?.riskSetupDone && activeEntity?.aiRiskDiscoveryDone) ||
             (contextId &&

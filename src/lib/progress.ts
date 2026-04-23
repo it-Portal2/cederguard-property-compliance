@@ -69,11 +69,14 @@ export function calculateProgrammeProgress(programme: Programme | null | undefin
 export function calculateProjectProgress(project: any | null | undefined): { percentage: number } {
   if (!project) return { percentage: 0 };
   if (project.isPublished) return { percentage: 100 };
-  
-  let percentage = 25; // Base creation
-  if (project.complianceSetupDone) percentage += 25;
-  if (project.riskSetupDone) percentage += 25;
-  if (project.aiRiskDiscoveryDone) percentage += 25;
-  
-  return { percentage: Math.min(percentage, 100) };
+
+  // Mirror PublicationChecklist's 5-step model so draft-dropdown % matches sidebar %.
+  // 1. Project exists (always true here) · 2. Compliance setup · 3. Risk setup
+  // 4. Delivery team (PM assigned) · 5. Published (false in this branch)
+  let completed = 1;
+  if (project.complianceSetupDone) completed += 1;
+  if (project.riskSetupDone && project.aiRiskDiscoveryDone) completed += 1;
+  if (project.deliveryTeamDone || project.projectManagerId) completed += 1;
+
+  return { percentage: Math.round((completed / 5) * 100) };
 }

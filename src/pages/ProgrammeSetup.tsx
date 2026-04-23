@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router';
+import { useNavigate } from 'react-router';
 import { Save, ChevronRight, ChevronLeft, LayoutTemplate, CheckCircle2, ArrowLeft, Lightbulb, Target, AlertTriangle, Shield, Settings, FileSearch, Info, DollarSign, ScanSearch } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { api } from '../lib/api';
@@ -292,34 +292,6 @@ Use precise, formal language appropriate for a board-level risk register. Focus 
 
     return (
         <div className="max-w-5xl mx-auto pb-24">
-            {/* Reference Tools */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
-                <Link
-                    to="/tools/compliance-profiler"
-                    className="flex items-center gap-4 p-4 bg-white border border-slate-200 rounded-2xl hover:border-indigo-300 hover:shadow-lg transition-all group"
-                >
-                    <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center group-hover:bg-indigo-600 transition-colors">
-                        <Shield className="w-6 h-6 text-indigo-600 group-hover:text-white" />
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-slate-900">Compliance Profiler</h3>
-                        <p className="text-xs text-slate-500">Interactive guide to determine required compliance domains.</p>
-                    </div>
-                </Link>
-                <Link
-                    to="/tools/risk-identifier"
-                    className="flex items-center gap-4 p-4 bg-white border border-slate-200 rounded-2xl hover:border-amber-300 hover:shadow-lg transition-all group"
-                >
-                    <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center group-hover:bg-amber-500 transition-colors">
-                        <AlertTriangle className="w-6 h-6 text-amber-500 group-hover:text-white" />
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-slate-900">Risk Identifier</h3>
-                        <p className="text-xs text-slate-500">Industry-standard risk library and mitigation reference.</p>
-                    </div>
-                </Link>
-            </div>
-
             {/* Page header */}
             <div className="flex items-center gap-4 mb-8">
                 <button onClick={() => navigate(-1)} className="p-2 hover:bg-white rounded-xl border border-transparent hover:border-slate-200 transition-colors">
