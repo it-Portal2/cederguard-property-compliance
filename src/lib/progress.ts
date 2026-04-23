@@ -57,8 +57,15 @@ export function calculateProgrammeProgress(programme: Programme | null | undefin
     },
   ];
 
-  const completedCount = pillars.filter(p => p.status === 'complete').length;
-  const percentage = programme.isPublished ? 100 : Math.round((completedCount / pillars.length) * 100);
+  // Mirror PublicationChecklist's 5-step model so draft-dropdown % matches sidebar %.
+  // 1. Programme exists · 2. Compliance setup · 3. Risk setup
+  // 4. Delivery team / PM assigned · 5. Published (handled by early return below)
+  let completed = 1;
+  if (programme.complianceSetupDone) completed += 1;
+  if (programme.riskSetupDone && programme.aiRiskDiscoveryDone) completed += 1;
+  if (programme.deliveryTeamDone || (programme as any).projectManagerId) completed += 1;
+
+  const percentage = programme.isPublished ? 100 : Math.round((completed / 5) * 100);
 
   return {
     percentage,
