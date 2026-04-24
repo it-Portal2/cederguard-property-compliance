@@ -35,8 +35,27 @@ try {
   initError = "Fatal Init Error: " + (e?.message ?? String(e));
 }
 
-// Lazy-initialize service handles
-export const getDB = () => getFirestore();
+// Lazy-initialize service handles.
+//
+// Firestore settings must be applied exactly once, before any operation.
+// `ignoreUndefinedProperties: true` skips `undefined` fields on write rather
+// than throwing — matches typical JS/TS semantics where a missing field is
+// equivalent to no field. Prevents whole classes of "value undefined in
+// field X" errors from optional form fields, seed branches, etc.
+let firestoreSettingsApplied = false;
+export const getDB = () => {
+  const db = getFirestore();
+  if (!firestoreSettingsApplied) {
+    try {
+      db.settings({ ignoreUndefinedProperties: true });
+    } catch {
+      // settings() throws if called twice or after a query has been issued;
+      // either case means it's already configured — safe to ignore.
+    }
+    firestoreSettingsApplied = true;
+  }
+  return db;
+};
 export const getAuthService = () => getAuth();
 export const getMessagingService = () => getMessaging();
 

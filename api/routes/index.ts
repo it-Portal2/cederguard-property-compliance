@@ -8,6 +8,10 @@ import { aiRoutes } from './ai.js';
 import { complianceRoutes } from './compliance.js';
 import { profileRoutes } from './profile.js';
 import { notificationsRoutes } from './notifications.js';
+import { governanceRoutes } from './governance.js';
+import { governanceFrameworkRoutes } from './governanceFramework.js';
+import { governanceTemplatesRoutes } from './governanceTemplates.js';
+import { governanceForwardPlanRoutes } from './governanceForwardPlan.js';
 
 export const allRoutes: Record<string, any> = {
   ...projectRoutes,
@@ -19,5 +23,9 @@ export const allRoutes: Record<string, any> = {
   ...aiRoutes,
   ...complianceRoutes,
   ...profileRoutes,
-  ...notificationsRoutes
+  ...notificationsRoutes,
+  ...governanceRoutes,
+  ...governanceFrameworkRoutes,
+  ...governanceTemplatesRoutes,
+  ...governanceForwardPlanRoutes
 };

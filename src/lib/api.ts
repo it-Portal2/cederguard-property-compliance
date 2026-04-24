@@ -236,4 +236,82 @@ export const api = {
   savePreference: (key: string, value: any) =>
     callApi("savePreference", { key, value }),
   getPreferences: () => callApi("getPreferences"),
+
+  // Programme Governance — Phase 1 editor sandbox
+  governanceSandboxSaveSection: (sectionId: string, content: any, wordCount: number) =>
+    callApi("governanceSandboxSaveSection", { sectionId, content, wordCount }),
+  governanceSandboxLoadSection: (sectionId: string) =>
+    callApi("governanceSandboxLoadSection", { sectionId }),
+  governanceRenderSandboxPdf: (
+    content: any,
+    extras?: {
+      councilLogoDataUri?: string | null;
+      signatureDataUris?: Partial<Record<"A" | "B", string>>;
+      meta?: Record<string, any>;
+    },
+  ) => callApi("governanceRenderSandboxPdf", { content, ...(extras ?? {}) }),
+
+  // Programme Governance — Phase 2 branding assets
+  governanceGetCouncilAssets: () => callApi("governanceGetCouncilAssets"),
+  governanceUploadCouncilLogo: (fileBase64: string) =>
+    callApi("governanceUploadCouncilLogo", { fileBase64 }),
+  governanceDeleteCouncilLogo: () => callApi("governanceDeleteCouncilLogo"),
+  governanceUploadCouncilStamp: (stampId: string, label: string, fileBase64: string) =>
+    callApi("governanceUploadCouncilStamp", { stampId, label, fileBase64 }),
+  governanceDeleteCouncilStamp: (stampId: string) =>
+    callApi("governanceDeleteCouncilStamp", { stampId }),
+  governanceGetUserSignature: () => callApi("governanceGetUserSignature"),
+  governanceUploadUserSignature: (fileBase64: string) =>
+    callApi("governanceUploadUserSignature", { fileBase64 }),
+  governanceDeleteUserSignature: () => callApi("governanceDeleteUserSignature"),
+
+  // Programme Governance — Phase 3 framework / bodies / thresholds / ToR
+  governanceGetFramework: () => callApi("governanceGetFramework"),
+  governancePublishFramework: () => callApi("governancePublishFramework"),
+  governanceUpsertBody: (bodyId: string, patch: any) =>
+    callApi("governanceUpsertBody", { bodyId, patch }),
+  governanceDeleteBody: (bodyId: string) =>
+    callApi("governanceDeleteBody", { bodyId }),
+  governanceUpsertThreshold: (thresholdId: string, patch: any) =>
+    callApi("governanceUpsertThreshold", { thresholdId, patch }),
+  governanceDeleteThreshold: (thresholdId: string) =>
+    callApi("governanceDeleteThreshold", { thresholdId }),
+  governanceListToRVersions: (ownerBodyId: string) =>
+    callApi("governanceListToRVersions", { ownerBodyId }),
+  governanceUpsertToR: (ownerBodyId: string, patch: any, publish?: boolean) =>
+    callApi("governanceUpsertToR", { ownerBodyId, patch, publish: !!publish }),
+  governanceExportFrameworkDiagram: () =>
+    callApi("governanceExportFrameworkDiagram"),
+  governanceExportFrameworkConstitution: () =>
+    callApi("governanceExportFrameworkConstitution"),
+
+  // Programme Governance — Phase 4 report templates
+  governanceListTemplates: () => callApi("governanceListTemplates"),
+  governanceGetTemplate: (templateId: string) =>
+    callApi("governanceGetTemplate", { templateId }),
+  governanceUpsertTemplate: (templateId: string, patch: any) =>
+    callApi("governanceUpsertTemplate", { templateId, patch }),
+  governancePublishTemplate: (templateId: string) =>
+    callApi("governancePublishTemplate", { templateId }),
+  governanceDuplicateTemplate: (templateId: string, newId: string) =>
+    callApi("governanceDuplicateTemplate", { templateId, newId }),
+  governanceAiRecommendTemplate: (intake: string) =>
+    callApi("governanceAiRecommendTemplate", { intake }),
+
+  // Programme Governance — Phase 5 Forward Plan
+  governanceListForwardPlanItems: () => callApi("governanceListForwardPlanItems"),
+  governanceGetForwardPlanItem: (itemId: string) =>
+    callApi("governanceGetForwardPlanItem", { itemId }),
+  governanceUpsertForwardPlanItem: (itemId: string, patch: any) =>
+    callApi("governanceUpsertForwardPlanItem", { itemId, patch }),
+  governanceSoftDeleteForwardPlanItem: (itemId: string, reason: string) =>
+    callApi("governanceSoftDeleteForwardPlanItem", { itemId, reason }),
+  governanceRestoreForwardPlanItem: (itemId: string) =>
+    callApi("governanceSoftDeleteForwardPlanItem", { itemId, restore: true }),
+  governanceMarkForwardPlanItemDecided: (itemId: string, outcome?: string) =>
+    callApi("governanceMarkForwardPlanItemDecided", { itemId, outcome }),
+  governanceImportForwardPlanDryRun: (fileBase64: string) =>
+    callApi("governanceImportForwardPlanDryRun", { fileBase64 }),
+  governanceImportForwardPlanCommit: (fileBase64: string) =>
+    callApi("governanceImportForwardPlanCommit", { fileBase64 }),
 };

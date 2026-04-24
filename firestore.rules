@@ -144,6 +144,114 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // =====================================================
+    // Programme Governance — v1 collections
+    // =====================================================
+    // All writes go through the backend (Firebase Admin SDK) which
+    // bypasses these rules. Client SDK writes are blocked. Reads are
+    // allowed for signed-in users; server-side code enforces the
+    // per-clientId tenancy scoping.
+
+    // Framework + bodies + ToR + authority thresholds
+    match /frameworks/{frameworkId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+    match /governanceBodies/{bodyId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+    match /termsOfReference/{torId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // Forward Plan
+    match /forwardPlanItems/{itemId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // Report templates + report instances + review artefacts
+    match /reportTemplates/{templateId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+    match /reports/{reportId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+
+      // Section content + immutable version snapshots live as sub-collections
+      match /sections/{sectionId} {
+        allow read: if isSignedIn();
+        allow write: if false;
+      }
+      match /sectionVersions/{versionId} {
+        allow read: if isSignedIn();
+        allow write: if false;
+      }
+    }
+    match /amendments/{amendmentId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+    match /reportComments/{commentId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+    match /signatures/{signatureId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+    match /chaseEvents/{chaseId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // Meetings + per-project meeting attendance
+    match /meetings/{meetingId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+    match /meetingAttendance/{attendanceId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // Per-project governance docs (decision logs, ToR acknowledgements, etc.)
+    match /projectGovernanceDocs/{docId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // Export jobs (weekly FP export, framework PDF export, audit export)
+    match /exportJobs/{jobId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // Phase 1 editor sandbox — per-user scratch area for the standalone
+    // editor test page. Server writes only (Firebase Admin bypasses).
+    match /_governanceSandbox/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if false;
+
+      match /sections/{sectionId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow write: if false;
+      }
+    }
+
+    // Immutable streams — server-only, no client writes EVER (even admin)
+    match /auditEvents/{eventId} {
+      allow read: if isAdmin() || isClientAdminOrAbove();
+      allow write: if false;
+    }
+    match /goldenThread/{recordId} {
+      allow read: if isAdmin() || isClientAdminOrAbove();
+      allow write: if false;
+    }
+
     // --- Deny all unmatched paths ---
     match /{document=**} {
       allow read, write: if false;

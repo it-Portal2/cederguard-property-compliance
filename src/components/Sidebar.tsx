@@ -112,6 +112,8 @@ export function Sidebar() {
       setOpenGroup('Monitoring & Reporting');
     } else if (path.startsWith('/reporting')) {
       setOpenGroup('Reports');
+    } else if (path.startsWith('/governance')) {
+      setOpenGroup('Programme Governance');
     } else if (path.startsWith('/setup/workspace') || path.startsWith('/team') || path.startsWith('/admin')) {
       setOpenGroup('Account');
     } else if (path.startsWith('/developer')) {
@@ -284,10 +286,10 @@ export function Sidebar() {
         )}
 
         {/* REPORTS */}
-        <NavGroup 
-          label="Reports" 
-          isAdmin={hasCoreAccess} 
-          isOpen={openGroup === 'Reports'} 
+        <NavGroup
+          label="Reports"
+          isAdmin={hasCoreAccess}
+          isOpen={openGroup === 'Reports'}
           onToggle={() => toggleGroup('Reports')}
         >
           {isClientAdmin && (
@@ -298,6 +300,28 @@ export function Sidebar() {
           )}
           <NavItem to="/reporting/project" icon={ClipboardList} label="Project Reports" />
         </NavGroup>
+
+        {/* PROGRAMME GOVERNANCE */}
+        {hasCoreAccess && (
+          <NavGroup
+            label="Programme Governance"
+            isAdmin={hasCoreAccess}
+            isOpen={openGroup === 'Programme Governance'}
+            onToggle={() => toggleGroup('Programme Governance')}
+          >
+            <NavItem to="/governance/dashboard" icon={LayoutDashboard} label="Dashboard" />
+            <NavItem to="/governance/forward-plan" icon={CalendarIcon} label="Forward Plan" />
+            {isProjectManager && (
+              <NavItem to="/governance/my-reports" icon={ClipboardList} label="My Reports" />
+            )}
+            <NavItem to="/governance/reports" icon={FileText} label="Reports & Templates" />
+            <NavItem to="/governance/meetings" icon={Users} label="Meetings" />
+            {isClientAdmin && (
+              <NavItem to="/governance/framework" icon={Gavel} label="Framework" iconClass="text-indigo-600" />
+            )}
+            <NavItem to="/governance/archive" icon={ScrollText} label="Archive & Audit" />
+          </NavGroup>
+        )}
 
         {/* ACCOUNT */}
         {(isClientAdmin || isAdmin) && (

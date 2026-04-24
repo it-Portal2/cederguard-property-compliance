@@ -69,6 +69,17 @@ import { BillingPanel } from './pages/BillingPanel';
 import { MobileHeader } from './components/MobileHeader';
 import { ProfileSettingsModal } from './components/ProfileSettingsModal';
 
+// Programme Governance (Phase 0 — placeholder pages)
+import { GovernanceDashboardPage } from './pages/governance/DashboardPage';
+import { GovernanceForwardPlanPage } from './pages/governance/ForwardPlanPage';
+import { GovernanceMyReportsPage } from './pages/governance/MyReportsPage';
+import { GovernanceTemplatesPage } from './pages/governance/TemplatesPage';
+import { GovernanceMeetingsPage } from './pages/governance/MeetingsPage';
+import { GovernanceFrameworkPage } from './pages/governance/FrameworkPage';
+import { GovernanceArchivePage } from './pages/governance/ArchivePage';
+// Programme Governance (Phase 1 — editor sandbox)
+import { GovernanceEditorSandboxPage } from './pages/governance/EditorSandboxPage';
+
 function ContextSwitchingOverlay() {
   const isContextSwitching = useStore(state => state.isContextSwitching);
   if (!isContextSwitching) return null;
@@ -227,6 +238,16 @@ function AppContent() {
 
               {/* Billing */}
               <Route path="/admin/billing" element={<RoleGuard requireAdmin><BillingPanel /></RoleGuard>} />
+
+              {/* Programme Governance */}
+              <Route path="/governance/dashboard" element={<RoleGuard requirePM><GovernanceDashboardPage /></RoleGuard>} />
+              <Route path="/governance/forward-plan" element={<RoleGuard requirePM><GovernanceForwardPlanPage /></RoleGuard>} />
+              <Route path="/governance/my-reports" element={<RoleGuard requirePM><GovernanceMyReportsPage /></RoleGuard>} />
+              <Route path="/governance/reports" element={<RoleGuard requirePM><GovernanceTemplatesPage /></RoleGuard>} />
+              <Route path="/governance/meetings" element={<RoleGuard requirePM><GovernanceMeetingsPage /></RoleGuard>} />
+              <Route path="/governance/framework" element={<RoleGuard requireClientAdmin><GovernanceFrameworkPage /></RoleGuard>} />
+              <Route path="/governance/archive" element={<RoleGuard requirePM><GovernanceArchivePage /></RoleGuard>} />
+              <Route path="/governance/editor-sandbox" element={<RoleGuard requireClientAdmin><GovernanceEditorSandboxPage /></RoleGuard>} />
 
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>

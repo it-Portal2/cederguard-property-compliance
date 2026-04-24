@@ -12,6 +12,7 @@ export type UserRole =
   | "senior_project_manager"
   | "assistant_project_manager"
   | "project_coordinator"
+  | "strategic_director"
   | "viewer";
 
 // Admin emails must be configured via VITE_SYSTEM_ADMIN_EMAILS env var (comma-separated).
@@ -114,7 +115,7 @@ export const isPM = (role?: string) => {
   ].includes((role || "") as any);
 };
 
-// Canonical role mapping — collapses granular role strings into the 5 product tiers.
+// Canonical role mapping — collapses granular role strings into the product tiers.
 export function canonicalRole(role?: string | null): CanonicalRole {
   switch (role) {
     case ROLE_STRINGS.ADMIN:
@@ -129,6 +130,8 @@ export function canonicalRole(role?: string | null): CanonicalRole {
     case "assistant_pm":
     case ROLE_STRINGS.PROJECT_COORDINATOR:
       return "project_manager";
+    case ROLE_STRINGS.STRATEGIC_DIRECTOR:
+      return "strategic_director";
     case ROLE_STRINGS.ENTERPRISE:
       return "enterprise";
     case ROLE_STRINGS.VIEWER:
@@ -161,3 +164,29 @@ export const pmLevelLabel = (level?: PmLevel | string | null): string => {
       return "Project Manager";
   }
 };
+
+export const isStrategicDirector = (role?: string | null) => {
+  return canonicalRole(role) === "strategic_director";
+};
+
+// Multi-role authorisation: a user may hold additional canonical roles via `extraRoles`.
+// Check the primary `role` first, then fall back to any entries in `extraRoles`.
+// Leaves existing single-role helpers untouched — opt-in only.
+export function userHasRole(
+  user:
+    | { role?: string | null; extraRoles?: CanonicalRole[] | null }
+    | null
+    | undefined,
+  allowed: CanonicalRole[],
+): boolean {
+  if (!user) return false;
+  const primary = canonicalRole(user.role);
+  if (allowed.includes(primary)) return true;
+  const extras = user.extraRoles;
+  if (Array.isArray(extras)) {
+    for (const r of extras) {
+      if (allowed.includes(r)) return true;
+    }
+  }
+  return false;
+}

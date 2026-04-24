@@ -18,6 +18,7 @@ import {
     UserCog,
     UserMinus,
     Pencil,
+    Image as ImageIcon,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../lib/api';
@@ -32,6 +33,7 @@ import { canonicalRole, pmLevelLabel } from '../lib/roles';
 import type { CanonicalRole } from '../lib/roles';
 import { StatsCard } from '../components/common/StatsCard';
 import ConfirmDialog from '../components/table/ConfirmDialog';
+import { BrandingTab } from '../components/governance/branding/BrandingTab';
 
 const inputCls = "w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white/80 backdrop-blur-sm placeholder:text-slate-400 shadow-sm hover:border-slate-300";
 const labelCls = "block text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] mb-2 ml-1";
@@ -55,6 +57,7 @@ const CANONICAL_ROLE_BADGE: Record<CanonicalRole, { label: string; cls: string }
     super_admin: { label: 'Super Admin', cls: 'bg-violet-50 text-violet-700 border-violet-100' },
     client_admin: { label: 'Client Admin', cls: 'bg-indigo-50 text-indigo-700 border-indigo-100' },
     project_manager: { label: 'Project Manager', cls: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
+    strategic_director: { label: 'Strategic Director', cls: 'bg-amber-50 text-amber-700 border-amber-100' },
     viewer: { label: 'Viewer', cls: 'bg-slate-50 text-slate-700 border-slate-200' },
     enterprise: { label: 'Enterprise', cls: 'bg-sky-50 text-sky-700 border-sky-100' },
 };
@@ -71,7 +74,7 @@ const CANONICAL_ROLE_PROMOTE_OPTIONS: { value: CanonicalRole; label: string }[] 
 
 export function WorkspaceSettings() {
     const { user, resetAllData, addNotification, programmes, fetchProgrammes } = useStore();
-    const [activeTab, setActiveTab] = useState<'org' | 'team' | 'data'>('org');
+    const [activeTab, setActiveTab] = useState<'org' | 'branding' | 'team' | 'data'>('org');
     const [resetting, setResetting] = useState(false);
     const [resetStep, setResetStep] = useState<'idle' | 'confirm1' | 'confirm2'>('idle');
 
@@ -166,6 +169,7 @@ export function WorkspaceSettings() {
 
     const tabs = [
         { key: 'org', label: 'Organisation', icon: Building2 },
+        { key: 'branding', label: 'Branding', icon: ImageIcon },
         { key: 'team', label: 'Team', icon: Users },
         { key: 'data', label: 'Infrastructure', icon: Database },
     ];
@@ -485,7 +489,7 @@ export function WorkspaceSettings() {
                     Workspace
                 </h1>
                 <p className="mt-1.5 text-sm text-slate-500 leading-relaxed max-w-2xl">
-                    Manage your organisation profile, team access, and data infrastructure from one central dashboard.
+                    Manage your organisation profile, branding, team access, and data infrastructure from one central dashboard.
                 </p>
             </header>
 
@@ -501,7 +505,7 @@ export function WorkspaceSettings() {
                         return (
                             <button
                                 key={t.key}
-                                onClick={() => setActiveTab(t.key as 'org' | 'team' | 'data')}
+                                onClick={() => setActiveTab(t.key as 'org' | 'branding' | 'team' | 'data')}
                                 role="tab"
                                 aria-selected={isActive}
                                 className={clsx(
@@ -602,6 +606,8 @@ export function WorkspaceSettings() {
                         </div>
                     </div>
                 )}
+
+                {activeTab === 'branding' && <BrandingTab />}
 
                 {activeTab === 'team' && (
                     <div className="space-y-4">

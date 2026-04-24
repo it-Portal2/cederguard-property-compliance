@@ -4,6 +4,7 @@ import { X, Save, Loader2, Key, Trash2, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { logout } from '../lib/firebase';
 import { useStore } from '../store/useStore';
+import { SignatureUpload } from './governance/branding/SignatureUpload';
 
 interface ProfileSettingsModalProps {
     isOpen: boolean;
@@ -180,6 +181,10 @@ export function ProfileSettingsModal({ isOpen, onClose }: ProfileSettingsModalPr
                                     {message.text}
                                 </div>
                             )}
+
+                            <hr className="border-slate-100 my-2" />
+
+                            <SignatureUpload />
 
                             <hr className="border-slate-100 my-4" />
 

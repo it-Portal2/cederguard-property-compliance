@@ -10,6 +10,7 @@ export const ROLE_STRINGS = {
   SENIOR_PROJECT_MANAGER: "senior_project_manager",
   ASSISTANT_PM: "assistant_project_manager",
   PROJECT_COORDINATOR: "project_coordinator",
+  STRATEGIC_DIRECTOR: "strategic_director",
   VIEWER: "viewer",
 } as const;
 
@@ -20,6 +21,7 @@ export const CANONICAL_ROLES = [
   "super_admin",
   "client_admin",
   "project_manager",
+  "strategic_director",
   "viewer",
   "enterprise",
 ] as const;
