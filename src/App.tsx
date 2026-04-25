@@ -79,6 +79,10 @@ import { GovernanceFrameworkPage } from './pages/governance/FrameworkPage';
 import { GovernanceArchivePage } from './pages/governance/ArchivePage';
 // Programme Governance (Phase 1 — editor sandbox)
 import { GovernanceEditorSandboxPage } from './pages/governance/EditorSandboxPage';
+// Programme Governance (Phase 6a — Reports CRUD shell)
+import { GovernanceReportsListPage } from './pages/governance/ReportsListPage';
+// Programme Governance (Phase 6b — Report authoring with Tiptap editor)
+import { ReportAuthoringPage } from './pages/governance/ReportAuthoringPage';
 
 function ContextSwitchingOverlay() {
   const isContextSwitching = useStore(state => state.isContextSwitching);
@@ -244,6 +248,8 @@ function AppContent() {
               <Route path="/governance/forward-plan" element={<RoleGuard requirePM><GovernanceForwardPlanPage /></RoleGuard>} />
               <Route path="/governance/my-reports" element={<RoleGuard requirePM><GovernanceMyReportsPage /></RoleGuard>} />
               <Route path="/governance/reports" element={<RoleGuard requirePM><GovernanceTemplatesPage /></RoleGuard>} />
+              <Route path="/governance/reports-list" element={<RoleGuard requirePM><GovernanceReportsListPage /></RoleGuard>} />
+              <Route path="/governance/reports-list/:id" element={<RoleGuard requirePM><ReportAuthoringPage /></RoleGuard>} />
               <Route path="/governance/meetings" element={<RoleGuard requirePM><GovernanceMeetingsPage /></RoleGuard>} />
               <Route path="/governance/framework" element={<RoleGuard requireClientAdmin><GovernanceFrameworkPage /></RoleGuard>} />
               <Route path="/governance/archive" element={<RoleGuard requirePM><GovernanceArchivePage /></RoleGuard>} />

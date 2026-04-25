@@ -167,7 +167,7 @@ export function GovernanceFrameworkPage() {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
-      className="mx-auto max-w-7xl"
+      className="mx-auto"
     >
       <header className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-start gap-3">

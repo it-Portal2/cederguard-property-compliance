@@ -120,7 +120,7 @@ export function GovernanceTemplatesPage() {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
-      className="mx-auto max-w-7xl space-y-6"
+      className="mx-auto space-y-6"
     >
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-3">

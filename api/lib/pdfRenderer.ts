@@ -40,6 +40,11 @@ export interface PDFRenderOptions {
     keyDecision?: 'Yes' | 'No';
     consultation?: string;
   };
+  /** Optional diagonal watermark — e.g. "DRAFT" / "APPROVED" / "SEALED".
+   *  Stamped on every page after the walker finishes. */
+  watermarkText?: string | null;
+  /** Watermark colour as RGB tuple. Defaults to slate-300-ish. */
+  watermarkColor?: [number, number, number];
 }
 
 // --- Layout constants -----------------------------------------------------
@@ -69,8 +74,36 @@ export function renderReportPdf(options: PDFRenderOptions): Buffer {
 
   walkContent(options.doc.content ?? [], ctx);
 
-  // Page numbers — every page, bottom centre.
+  // Diagonal watermark on every page (e.g. "DRAFT"). Drawn before page
+  // numbers so the page-number text overlays cleanly on top. Designed to
+  // be a faint stamp — readable but never obscuring the content beneath.
   const pageCount = (pdf as any).internal.getNumberOfPages();
+  if (options.watermarkText) {
+    // Default colour is a very-pale slate so the stamp reads as a
+    // background marker, not foreground content. Caller-supplied colours
+    // are also expected to be pale (>= 220 on each channel).
+    const wmColor = options.watermarkColor ?? [241, 245, 249]; // slate-100
+    for (let i = 1; i <= pageCount; i++) {
+      pdf.setPage(i);
+      pdf.saveGraphicsState();
+      pdf.setFontSize(64);
+      pdf.setTextColor(wmColor[0], wmColor[1], wmColor[2]);
+      pdf.setFont(FONT_FAMILY, 'bold');
+      pdf.text(
+        options.watermarkText,
+        ctx.pageWidth / 2,
+        ctx.pageHeight / 2,
+        { align: 'center', angle: 35 },
+      );
+      pdf.restoreGraphicsState();
+      // Restore default font weight + size for whatever runs next.
+      pdf.setFont(FONT_FAMILY, 'normal');
+      pdf.setFontSize(11);
+      pdf.setTextColor(0);
+    }
+  }
+
+  // Page numbers — every page, bottom centre.
   for (let i = 1; i <= pageCount; i++) {
     pdf.setPage(i);
     pdf.setFontSize(8);

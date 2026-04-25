@@ -311,10 +311,12 @@ export function Sidebar() {
           >
             <NavItem to="/governance/dashboard" icon={LayoutDashboard} label="Dashboard" />
             <NavItem to="/governance/forward-plan" icon={CalendarIcon} label="Forward Plan" />
-            {isProjectManager && (
-              <NavItem to="/governance/my-reports" icon={ClipboardList} label="My Reports" />
-            )}
-            <NavItem to="/governance/reports" icon={FileText} label="Reports & Templates" />
+            {/* My Reports (PM personal workspace) — currently a Phase 0
+                placeholder; re-enable when Phase 7 ships its real surface.
+                Route /governance/my-reports stays accessible directly so
+                anyone testing the placeholder can still hit it. */}
+            <NavItem to="/governance/reports-list" icon={FileText} label="Reports" />
+            <NavItem to="/governance/reports" icon={ClipboardList} label="Templates" />
             <NavItem to="/governance/meetings" icon={Users} label="Meetings" />
             {isClientAdmin && (
               <NavItem to="/governance/framework" icon={Gavel} label="Framework" iconClass="text-indigo-600" />

@@ -314,4 +314,57 @@ export const api = {
     callApi("governanceImportForwardPlanDryRun", { fileBase64 }),
   governanceImportForwardPlanCommit: (fileBase64: string) =>
     callApi("governanceImportForwardPlanCommit", { fileBase64 }),
+  // Phase 6a — Reports CRUD shell
+  governanceListReports: () => callApi("governanceListReports"),
+  governanceGetReport: (reportId: string) =>
+    callApi("governanceGetReport", { reportId }),
+  governanceUpsertReport: (reportId: string, patch: any) =>
+    callApi("governanceUpsertReport", { reportId, patch }),
+  governanceSoftDeleteReport: (reportId: string, reason: string) =>
+    callApi("governanceSoftDeleteReport", { reportId, reason }),
+  governanceRestoreReport: (reportId: string) =>
+    callApi("governanceSoftDeleteReport", { reportId, restore: true }),
+  // Phase 6b — Report sections (Tiptap editor)
+  governanceListReportSections: (reportId: string) =>
+    callApi("governanceListReportSections", { reportId }),
+  governanceSaveReportSection: (
+    reportId: string,
+    sectionId: string,
+    patch: { content?: any; wordCount?: number },
+  ) => callApi("governanceSaveReportSection", { reportId, sectionId, patch }),
+  // Phase 6c — Report state machine + amendments
+  governanceSubmitReport: (reportId: string) =>
+    callApi("governanceSubmitReport", { reportId }),
+  governanceWithdrawReport: (reportId: string) =>
+    callApi("governanceWithdrawReport", { reportId }),
+  governanceRequestAmendments: (
+    reportId: string,
+    amendments: Array<{ text: string; sectionId?: string | null }>,
+  ) => callApi("governanceRequestAmendments", { reportId, amendments }),
+  governanceApproveReport: (reportId: string) =>
+    callApi("governanceApproveReport", { reportId }),
+  governanceAbandonReport: (reportId: string, reason: string) =>
+    callApi("governanceAbandonReport", { reportId, reason }),
+  governanceListAmendments: (reportId: string) =>
+    callApi("governanceListAmendments", { reportId }),
+  governanceResolveAmendment: (amendmentId: string) =>
+    callApi("governanceResolveAmendment", { amendmentId }),
+  // Phase 6d — Report PDF + sign Part A
+  governanceRenderReportPdf: (reportId: string, opts?: { noWatermark?: boolean }) =>
+    callApi("governanceRenderReportPdf", {
+      reportId,
+      noWatermark: opts?.noWatermark === true,
+    }),
+  governanceSignPartA: (reportId: string) =>
+    callApi("governanceSignPartA", { reportId }),
+  governanceListReviewers: () => callApi("governanceListReviewers"),
+  // Phase 6e — Senior PM intermediate review + Unlock-for-correction
+  governanceSeniorPmApprove: (reportId: string) =>
+    callApi("governanceSeniorPmApprove", { reportId }),
+  governanceSeniorPmRequestAmendments: (
+    reportId: string,
+    amendments: Array<{ text: string; sectionId?: string | null }>,
+  ) => callApi("governanceSeniorPmRequestAmendments", { reportId, amendments }),
+  governanceUnlockReport: (reportId: string, reason: string) =>
+    callApi("governanceUnlockReport", { reportId, reason }),
 };
