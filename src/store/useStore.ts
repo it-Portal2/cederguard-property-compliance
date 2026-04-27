@@ -478,6 +478,13 @@ export interface Project {
   numberOfStoreys?: string;
   typeOfUnits?: string;
   bedroomsPerProperty?: string;
+  // Project Cost (mirrors Programme's portfolio financials, slim variant —
+  // no Volume Targets / Project Count which are aggregate-only concepts).
+  // Stored as strings so the form input round-trips cleanly; consumers
+  // parse on read.
+  totalValue?: string;
+  totalGrant?: string;
+  contingencyPct?: string;
   scope?: string;
   description?: string;
   isArchived?: boolean;

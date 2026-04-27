@@ -3,7 +3,7 @@ import { useNavigate, useParams, useLocation } from "react-router";
 import { api } from "../lib/api";
 import { useStore, TeamMember } from "../store/useStore";
 import { isAtLeastPM, isSuperAdmin, isAtLeastClientAdmin, pmLevelLabel } from "../lib/roles";
-import { Save, CheckCircle2, Info, LayoutTemplate, UserCircle, Rocket, ChevronRight, AlertCircle, Shield, Trash2, ScanSearch, AlertTriangle, Plus } from 'lucide-react';
+import { Save, CheckCircle2, Info, LayoutTemplate, UserCircle, Rocket, ChevronRight, AlertCircle, Shield, Trash2, ScanSearch, AlertTriangle, Plus, DollarSign } from 'lucide-react';
 import { clsx } from "clsx";
 import { stripMarkdown } from "../lib/utils";
 import { RIBA_STAGES } from "../constants/ribaStages";
@@ -77,6 +77,11 @@ export function ProjectInitiation() {
       numberOfStoreys: "",
       typeOfUnits: "",
       bedroomsPerProperty: "",
+      // Project Cost — slim variant of Programme's Scale & Portfolio
+      // Financials. Default contingency to 5% (matches Programme default).
+      totalValue: "",
+      totalGrant: "",
+      contingencyPct: "5",
       milestones: [...defaultMilestones],
       deliveryTeam: [],
       deliveryTeamDone: false,
@@ -104,6 +109,10 @@ export function ProjectInitiation() {
     numberOfStoreys: "",
     typeOfUnits: "",
     bedroomsPerProperty: "",
+    // Project Cost (slim mirror of Programme's portfolio financials).
+    totalValue: "",
+    totalGrant: "",
+    contingencyPct: "5",
     milestones: [...defaultMilestones],
     deliveryTeam: [] as TeamMember[],
     deliveryTeamDone: false,
@@ -143,6 +152,10 @@ export function ProjectInitiation() {
         numberOfStoreys: p.numberOfStoreys || "",
         typeOfUnits: p.typeOfUnits || "",
         bedroomsPerProperty: p.bedroomsPerProperty || "",
+        // Project Cost (slim mirror of Programme's portfolio financials).
+        totalValue: p.totalValue?.toString() || "",
+        totalGrant: p.totalGrant?.toString() || "",
+        contingencyPct: p.contingencyPct?.toString() || "5",
         milestones: p.milestones || [],
         deliveryTeam: Array.isArray(p.deliveryTeam) ? (p.deliveryTeam as TeamMember[]) : [] as TeamMember[],
         deliveryTeamDone: !!p.deliveryTeamDone,
@@ -383,6 +396,10 @@ export function ProjectInitiation() {
           numberOfStoreys: formData.numberOfStoreys,
           typeOfUnits: formData.typeOfUnits,
           bedroomsPerProperty: formData.bedroomsPerProperty,
+          // Project Cost (slim mirror of Programme's portfolio financials).
+          totalValue: formData.totalValue,
+          totalGrant: formData.totalGrant,
+          contingencyPct: formData.contingencyPct,
           milestones: formData.milestones,
           deliveryTeam: formData.deliveryTeam,
           createdBy: user?.email || "",
@@ -644,6 +661,11 @@ export function ProjectInitiation() {
                                 typeOfUnits: p.typeOfUnits || "",
                                 bedroomsPerProperty:
                                   p.bedroomsPerProperty || "",
+                                // Project Cost (slim mirror of Programme financials).
+                                totalValue: p.totalValue?.toString() || "",
+                                totalGrant: p.totalGrant?.toString() || "",
+                                contingencyPct:
+                                  p.contingencyPct?.toString() || "5",
                                 milestones: p.milestones || [],
                                 deliveryTeam: Array.isArray(p.deliveryTeam)
                                   ? (p.deliveryTeam as TeamMember[])
@@ -1047,6 +1069,60 @@ export function ProjectInitiation() {
                         }
                       />
                     </div>
+                  </div>
+                </div>
+              </div>
+
+              <hr className="border-slate-100" />
+
+              {/* ── SECTION: PROJECT COST ── */}
+              {/* Slim mirror of Programme's "Scale & Portfolio Financials"
+                  section — only the per-project fields (no Volume Targets
+                  / Project Count, which are aggregate/portfolio concepts). */}
+              <div id="project-cost" className="space-y-6 scroll-mt-24">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white shadow-lg shadow-emerald-100">
+                    <DollarSign className="w-4 h-4" />
+                  </div>
+                  <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest">
+                    Project Cost
+                  </h2>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div>
+                    <label className={labelCls}>Total Value (£)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      className={inputCls}
+                      placeholder="e.g. 2500000"
+                      value={formData.totalValue}
+                      onChange={(e) => set("totalValue", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Grant Funding (£)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      className={inputCls}
+                      placeholder="e.g. 750000"
+                      value={formData.totalGrant}
+                      onChange={(e) => set("totalGrant", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Contingency (%)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      className={inputCls}
+                      placeholder="5"
+                      value={formData.contingencyPct}
+                      onChange={(e) => set("contingencyPct", e.target.value)}
+                    />
                   </div>
                 </div>
               </div>
