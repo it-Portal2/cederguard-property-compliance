@@ -8,6 +8,7 @@ import { stripMarkdown } from '../lib/utils';
 import type { Programme, TeamMember } from '../store/useStore';
 import { isSuperAdmin, isAtLeastClientAdmin } from '../lib/roles';
 import { clsx } from 'clsx';
+import { GovernanceProfileFields } from '../components/governance/GovernanceProfileFields';
 import { format } from 'date-fns';
 import { calculateProgrammeProgress } from '../lib/progress';
 import { DeliveryTeamCRUD } from '../components/DeliveryTeamCRUD';
@@ -197,6 +198,13 @@ export function ProgrammeInitiation() {
         boardComposition: '',
         reportingCycle: '',
         governanceFramework: '',
+        // Phase 6.5 — standardised Governance Profile (Anthony Apr 2026).
+        // Linked to the Programme Governance Framework — picking values
+        // resolves to the matching body / threshold / route.
+        decisionDeliveryLevel: '',
+        financialThreshold: '',
+        riskRegulatoryProfile: '',
+        decisionAuthority: '',
         programmeStartDate: format(new Date(), 'yyyy-MM-dd'),
         programmeEndDate: '',
         createdBy: user?.email || '',
@@ -235,6 +243,13 @@ export function ProgrammeInitiation() {
         boardComposition: '',
         reportingCycle: '',
         governanceFramework: '',
+        // Phase 6.5 — standardised Governance Profile (Anthony Apr 2026).
+        // Linked to the Programme Governance Framework — picking values
+        // resolves to the matching body / threshold / route.
+        decisionDeliveryLevel: '',
+        financialThreshold: '',
+        riskRegulatoryProfile: '',
+        decisionAuthority: '',
         programmeStartDate: format(new Date(), 'yyyy-MM-dd'),
         programmeEndDate: '',
         createdBy: user?.email || '',
@@ -284,6 +299,11 @@ export function ProgrammeInitiation() {
             boardComposition: prog.boardComposition || '',
             reportingCycle: prog.reportingCycle || '',
             governanceFramework: prog.governanceFramework || '',
+            // Phase 6.5 — Governance Profile.
+            decisionDeliveryLevel: (prog as any).decisionDeliveryLevel || '',
+            financialThreshold: (prog as any).financialThreshold || '',
+            riskRegulatoryProfile: (prog as any).riskRegulatoryProfile || '',
+            decisionAuthority: (prog as any).decisionAuthority || '',
             programmeStartDate: prog.programmeStartDate || format(new Date(), 'yyyy-MM-dd'),
             programmeEndDate: prog.programmeEndDate || '',
             createdBy: user?.email || prog.createdBy || '',
@@ -482,6 +502,11 @@ export function ProgrammeInitiation() {
                 strategicObjectives: form.strategicObjectives || '',
                 geographicScope: form.geographicScope || '',
                 escalationRoute: form.escalationRoute || '',
+                // Phase 6.5 — Governance Profile (linked to Framework).
+                decisionDeliveryLevel: form.decisionDeliveryLevel || '',
+                financialThreshold: form.financialThreshold || '',
+                riskRegulatoryProfile: form.riskRegulatoryProfile || '',
+                decisionAuthority: form.decisionAuthority || '',
                 overallRAG: form.overallRAG || '',
                 programmeStartDate: form.programmeStartDate || format(new Date(), 'yyyy-MM-dd'),
                 programmeEndDate: form.programmeEndDate || '',
@@ -711,22 +736,25 @@ export function ProgrammeInitiation() {
                                     {formErrors.strategicObjectives && <p className="mt-1 ml-1 text-[11px] text-rose-500 font-bold">{formErrors.strategicObjectives}</p>}
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-50 pt-6">
-                                    <div>
-                                        <label className={labelCls}>Senior Responsible Owner (SRO)</label>
-                                        <input className={inputCls} value={form.sro} onChange={e => set('sro', e.target.value)} placeholder="e.g. Director of Housing" />
-                                    </div>
-                                    <div>
-                                        <label className={labelCls}>Strategic Sponsor</label>
-                                        <input className={inputCls} value={form.sponsor} onChange={e => set('sponsor', e.target.value)} placeholder="e.g. Project Board" />
-                                    </div>
-                                    <div>
-                                        <label className={labelCls}>Governance Framework</label>
-                                        <select className={inputCls} value={form.governanceFramework} onChange={e => set('governanceFramework', e.target.value)}>
-                                            <option value="">— Select —</option>
-                                            {Array.isArray(GOVERNANCE_FRAMEWORKS) && GOVERNANCE_FRAMEWORKS.map(g => <option key={g}>{g}</option>)}
-                                        </select>
-                                    </div>
+                                {/* Phase 6.5 — Anthony's standardised Governance Profile.
+                                    Replaces SRO / Strategic Sponsor / Governance Framework /
+                                    Escalation Route (per Q1, Q2, Q3 = A). Reporting Cycle
+                                    kept (Q4 = collapse to old version). Board Composition
+                                    kept (not in Anthony's removal list). Linked to the
+                                    Programme Governance Framework so each pick resolves
+                                    to a real body / threshold / route (Q5 = B). */}
+                                <GovernanceProfileFields
+                                    classes={{ label: labelCls, input: inputCls }}
+                                    values={{
+                                        decisionDeliveryLevel: form.decisionDeliveryLevel as any,
+                                        financialThreshold: form.financialThreshold as any,
+                                        riskRegulatoryProfile: form.riskRegulatoryProfile as any,
+                                        decisionAuthority: form.decisionAuthority as any,
+                                    }}
+                                    onChange={(key, val) => set(key, val)}
+                                />
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                                     <div>
                                         <label className={labelCls}>Reporting Cycle</label>
                                         <select className={inputCls} value={form.reportingCycle} onChange={e => set('reportingCycle', e.target.value)}>
@@ -737,10 +765,6 @@ export function ProgrammeInitiation() {
                                     <div>
                                         <label className={labelCls}>Board Composition</label>
                                         <input className={inputCls} value={form.boardComposition} onChange={e => set('boardComposition', e.target.value)} placeholder="e.g. Executive Board, Non-exec Directors" />
-                                    </div>
-                                    <div>
-                                        <label className={labelCls}>Escalation Route</label>
-                                        <input className={inputCls} value={form.escalationRoute} onChange={e => set('escalationRoute', e.target.value)} placeholder="e.g. Programme Board → Cabinet Member" />
                                     </div>
                                 </div>
                             </div>

@@ -8,6 +8,7 @@ import { clsx } from "clsx";
 import { stripMarkdown } from "../lib/utils";
 import { RIBA_STAGES } from "../constants/ribaStages";
 import { calculateProjectProgress } from "../lib/progress";
+import { GovernanceProfileFields } from "../components/governance/GovernanceProfileFields";
 import { ProgrammeMilestone } from "../store/useStore";
 import { toast } from "react-hot-toast";
 
@@ -82,6 +83,12 @@ export function ProjectInitiation() {
       totalValue: "",
       totalGrant: "",
       contingencyPct: "5",
+      // Phase 6.5 — Governance Profile (linked to Framework).
+      decisionDeliveryLevel: "",
+      financialThreshold: "",
+      riskRegulatoryProfile: "",
+      decisionAuthority: "",
+      reportingCycle: "",
       milestones: [...defaultMilestones],
       deliveryTeam: [],
       deliveryTeamDone: false,
@@ -113,6 +120,12 @@ export function ProjectInitiation() {
     totalValue: "",
     totalGrant: "",
     contingencyPct: "5",
+    // Phase 6.5 — Governance Profile (linked to Framework).
+    decisionDeliveryLevel: "",
+    financialThreshold: "",
+    riskRegulatoryProfile: "",
+    decisionAuthority: "",
+    reportingCycle: "",
     milestones: [...defaultMilestones],
     deliveryTeam: [] as TeamMember[],
     deliveryTeamDone: false,
@@ -156,6 +169,12 @@ export function ProjectInitiation() {
         totalValue: p.totalValue?.toString() || "",
         totalGrant: p.totalGrant?.toString() || "",
         contingencyPct: p.contingencyPct?.toString() || "5",
+        // Phase 6.5 — Governance Profile.
+        decisionDeliveryLevel: (p as any).decisionDeliveryLevel || "",
+        financialThreshold: (p as any).financialThreshold || "",
+        riskRegulatoryProfile: (p as any).riskRegulatoryProfile || "",
+        decisionAuthority: (p as any).decisionAuthority || "",
+        reportingCycle: (p as any).reportingCycle || "",
         milestones: p.milestones || [],
         deliveryTeam: Array.isArray(p.deliveryTeam) ? (p.deliveryTeam as TeamMember[]) : [] as TeamMember[],
         deliveryTeamDone: !!p.deliveryTeamDone,
@@ -400,6 +419,12 @@ export function ProjectInitiation() {
           totalValue: formData.totalValue,
           totalGrant: formData.totalGrant,
           contingencyPct: formData.contingencyPct,
+          // Phase 6.5 — Governance Profile (linked to Framework).
+          decisionDeliveryLevel: formData.decisionDeliveryLevel || '',
+          financialThreshold: formData.financialThreshold || '',
+          riskRegulatoryProfile: formData.riskRegulatoryProfile || '',
+          decisionAuthority: formData.decisionAuthority || '',
+          reportingCycle: formData.reportingCycle || '',
           milestones: formData.milestones,
           deliveryTeam: formData.deliveryTeam,
           createdBy: user?.email || "",
@@ -666,6 +691,17 @@ export function ProjectInitiation() {
                                 totalGrant: p.totalGrant?.toString() || "",
                                 contingencyPct:
                                   p.contingencyPct?.toString() || "5",
+                                // Phase 6.5 — Governance Profile.
+                                decisionDeliveryLevel:
+                                  (p as any).decisionDeliveryLevel || "",
+                                financialThreshold:
+                                  (p as any).financialThreshold || "",
+                                riskRegulatoryProfile:
+                                  (p as any).riskRegulatoryProfile || "",
+                                decisionAuthority:
+                                  (p as any).decisionAuthority || "",
+                                reportingCycle:
+                                  (p as any).reportingCycle || "",
                                 milestones: p.milestones || [],
                                 deliveryTeam: Array.isArray(p.deliveryTeam)
                                   ? (p.deliveryTeam as TeamMember[])
@@ -1123,6 +1159,54 @@ export function ProjectInitiation() {
                       value={formData.contingencyPct}
                       onChange={(e) => set("contingencyPct", e.target.value)}
                     />
+                  </div>
+                </div>
+              </div>
+
+              <hr className="border-slate-100" />
+
+              {/* ── SECTION: GOVERNANCE SETUP (Phase 6.5) ── */}
+              {/* Standardised taxonomy that mirrors the Programme Governance
+                  Framework. Picking values resolves to a real body / threshold
+                  / route in the live framework (Q5 = B). Reporting Cycle uses
+                  the same dropdown shape as Programme Setup (Q4 = collapse to
+                  old version). */}
+              <div id="project-governance" className="space-y-6 scroll-mt-24">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-100">
+                    <Shield className="w-4 h-4" />
+                  </div>
+                  <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest">
+                    Governance Setup
+                  </h2>
+                </div>
+
+                <GovernanceProfileFields
+                  classes={{ label: labelCls, input: inputCls }}
+                  values={{
+                    decisionDeliveryLevel: formData.decisionDeliveryLevel as any,
+                    financialThreshold: formData.financialThreshold as any,
+                    riskRegulatoryProfile: formData.riskRegulatoryProfile as any,
+                    decisionAuthority: formData.decisionAuthority as any,
+                  }}
+                  onChange={(key, val) => set(key, val)}
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+                  <div>
+                    <label className={labelCls}>Reporting Cycle</label>
+                    <select
+                      className={inputCls}
+                      value={formData.reportingCycle}
+                      onChange={(e) => set("reportingCycle", e.target.value)}
+                    >
+                      <option value="">— Select —</option>
+                      <option>Monthly</option>
+                      <option>Bi-monthly</option>
+                      <option>Quarterly</option>
+                      <option>Six-monthly</option>
+                      <option>Ad hoc</option>
+                    </select>
                   </div>
                 </div>
               </div>

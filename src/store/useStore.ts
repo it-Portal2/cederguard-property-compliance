@@ -311,6 +311,26 @@ export interface Programme {
   isPublished?: boolean;
   setupProgress?: number;
 
+  // Governance Profile (Phase 6.5 — Anthony's standardised taxonomy that
+  // mirrors the Programme Governance Framework's tiers + thresholds).
+  // Linked: picking a value resolves to a matching body / authority band
+  // in the live framework. Free-text legacy fields above (sro, sponsor,
+  // governanceFramework, escalationRoute) are no longer rendered in the
+  // Programme Setup form but kept in storage for legacy programmes.
+  decisionDeliveryLevel?: 'Strategic' | 'Corporate' | 'Programme' | 'Project' | '';
+  financialThreshold?: 'Under £100k' | '£100k – £500k' | '£500k – £5m' | '£5m+' | '';
+  riskRegulatoryProfile?:
+    | 'Building Safety / Compliance-critical'
+    | 'Financial / Legal / Regulatory'
+    | 'Standard'
+    | '';
+  decisionAuthority?:
+    | 'Cabinet / Members'
+    | 'Executive Team'
+    | 'Strategic Director'
+    | 'Delegated Officer'
+    | '';
+
   // Extended fields used across the app
   overallRAG?: string;
   escalationRoute?: string;
@@ -485,6 +505,23 @@ export interface Project {
   totalValue?: string;
   totalGrant?: string;
   contingencyPct?: string;
+  // Governance Profile (Phase 6.5 — same standardised taxonomy as
+  // Programme so Project-level reports / FP entries can resolve to the
+  // same Framework bodies + thresholds).
+  decisionDeliveryLevel?: 'Strategic' | 'Corporate' | 'Programme' | 'Project' | '';
+  financialThreshold?: 'Under £100k' | '£100k – £500k' | '£500k – £5m' | '£5m+' | '';
+  riskRegulatoryProfile?:
+    | 'Building Safety / Compliance-critical'
+    | 'Financial / Legal / Regulatory'
+    | 'Standard'
+    | '';
+  decisionAuthority?:
+    | 'Cabinet / Members'
+    | 'Executive Team'
+    | 'Strategic Director'
+    | 'Delegated Officer'
+    | '';
+  reportingCycle?: string;
   scope?: string;
   description?: string;
   isArchived?: boolean;
