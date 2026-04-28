@@ -21,6 +21,7 @@ import {
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
 import { api } from '../../../lib/api';
+import { useStore } from '../../../store/useStore';
 import type { FrameworkBody } from '../framework/types';
 import type {
   Attendee,
@@ -1525,22 +1526,38 @@ function LinksTab({
   readOnly: boolean;
   onUpdate: (m: Meeting) => void;
 }) {
+  // Pull projects from the Zustand store rather than refetching via
+  // `clientGetProjects`. The store is already populated with the
+  // project switcher's projects (which includes programme-linked ones
+  // for client admins — `clientGetProjects` has a known gap there).
+  // Single source of truth + no second round-trip.
+  const storeProjects = useStore((s) => s.projects);
+
   const [reports, setReports] = useState<LinkOption[]>([]);
-  const [projects, setProjects] = useState<LinkOption[]>([]);
   const [loadingPickers, setLoadingPickers] = useState(true);
   const [busy, setBusy] = useState(false);
   const [reportSearch, setReportSearch] = useState('');
   const [projectSearch, setProjectSearch] = useState('');
+
+  // Project options derived from the store — no fetch needed.
+  const projects: LinkOption[] = useMemo(
+    () =>
+      (storeProjects ?? [])
+        .map((p: any) => ({
+          id: p.id,
+          label: p.name ?? p.title ?? '(unnamed)',
+          sublabel: p.programmeName ?? p.scheme ?? '',
+        }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    [storeProjects],
+  );
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoadingPickers(true);
       try {
-        const [reportsRes, projectsRes] = await Promise.all([
-          api.governanceListReports(),
-          api.clientGetProjects(),
-        ]);
+        const reportsRes = await api.governanceListReports();
         if (cancelled) return;
         const reportOpts: LinkOption[] = ((reportsRes?.items ?? []) as any[])
           .filter((r) => !r.softDeleted)
@@ -1549,18 +1566,10 @@ function LinksTab({
             label: r.title ?? '(untitled)',
             sublabel: r.scheme || r.templateLabel || '',
           }));
-        const projectOpts: LinkOption[] = (
-          (projectsRes?.success && projectsRes.data ? projectsRes.data : []) as any[]
-        ).map((p) => ({
-          id: p.id,
-          label: p.name ?? p.title ?? '(unnamed)',
-          sublabel: p.programmeName ?? '',
-        }));
         setReports(reportOpts.sort((a, b) => a.label.localeCompare(b.label)));
-        setProjects(projectOpts.sort((a, b) => a.label.localeCompare(b.label)));
       } catch (e: any) {
-        console.error('[LinksTab] load failed', e);
-        toast.error(e?.message ?? 'Failed to load links.');
+        console.error('[LinksTab] reports load failed', e);
+        toast.error(e?.message ?? 'Failed to load reports.');
       } finally {
         if (!cancelled) setLoadingPickers(false);
       }
