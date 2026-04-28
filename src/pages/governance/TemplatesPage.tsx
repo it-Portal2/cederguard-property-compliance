@@ -7,6 +7,7 @@ import { api } from '../../lib/api';
 import { TemplateCard } from '../../components/governance/templates/TemplateCard';
 import { TemplateEditorModal } from '../../components/governance/templates/TemplateEditorModal';
 import { AiRecommendationCard } from '../../components/governance/templates/AiRecommendationCard';
+import { TextInputDialog } from '../../components/governance/TextInputDialog';
 import {
   type ReportTemplate,
   type TemplateCategory,
@@ -30,6 +31,10 @@ export function GovernanceTemplatesPage() {
   const [opened, setOpened] = useState<ReportTemplate | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [openingId, setOpeningId] = useState<string | null>(null);
+  const [duplicating, setDuplicating] = useState(false);
+  const [duplicateTarget, setDuplicateTarget] = useState<ReportTemplate | null>(
+    null,
+  );
 
   const refresh = useCallback(async () => {
     try {
@@ -77,23 +82,31 @@ export function GovernanceTemplatesPage() {
     }
   };
 
-  const handleDuplicate = async (template: ReportTemplate) => {
+  const handleDuplicate = (template: ReportTemplate) => {
     if (!canEdit) return;
-    const newId = window.prompt(
-      'New template ID (letters, digits, underscore, hyphen):',
-      `${template.id}-copy`,
-    );
-    if (!newId) return;
+    setDuplicateTarget(template);
+  };
+
+  const confirmDuplicate = async (newId: string) => {
+    if (!duplicateTarget) return;
+    setDuplicating(true);
     try {
-      const res = await api.governanceDuplicateTemplate(template.id, newId.trim());
+      const res = await api.governanceDuplicateTemplate(duplicateTarget.id, newId);
       const copy = res.template as ReportTemplate;
-      setTemplates((prev) => [...prev, copy].sort((a, b) => (a.title ?? '').localeCompare(b.title ?? '')));
+      setTemplates((prev) =>
+        [...prev, copy].sort((a, b) =>
+          (a.title ?? '').localeCompare(b.title ?? ''),
+        ),
+      );
       toast.success('Template duplicated');
+      setDuplicateTarget(null);
       setOpened(copy);
       setModalOpen(true);
     } catch (e: any) {
       console.error('[TemplatesPage] duplicate failed', e);
       toast.error(e?.message ?? 'Duplicate failed.');
+    } finally {
+      setDuplicating(false);
     }
   };
 
@@ -238,6 +251,24 @@ export function GovernanceTemplatesPage() {
         onClose={() => setModalOpen(false)}
         onSaved={handleSaved}
         onDuplicated={handleDuplicatedFromModal}
+      />
+
+      <TextInputDialog
+        open={duplicateTarget !== null}
+        title="Duplicate template"
+        message="Pick a new ID for the copy. Letters, digits, underscores and hyphens only."
+        inputLabel="New template ID"
+        placeholder="e.g. gw1-housing-variant"
+        defaultValue={duplicateTarget ? `${duplicateTarget.id}-copy` : ''}
+        validate={(v) =>
+          /^[a-z0-9_-]{2,80}$/i.test(v)
+            ? null
+            : 'Use 2–80 letters, digits, underscores or hyphens.'
+        }
+        confirmLabel="Duplicate"
+        loading={duplicating}
+        onConfirm={confirmDuplicate}
+        onCancel={() => (duplicating ? null : setDuplicateTarget(null))}
       />
     </motion.div>
   );

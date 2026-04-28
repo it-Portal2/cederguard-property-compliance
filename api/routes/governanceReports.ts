@@ -1896,6 +1896,81 @@ async function governanceUnlockReport(req: any, res: any, ctx: ApiContext) {
   }
 }
 
+// Phase 7 — My Reports.
+// Returns every OPEN amendment whose linked report is owned by the
+// signed-in user. Single round trip — UI uses this to render the
+// "Feedback from PgM" side panel without N+1 amendment fetches.
+// Cross-tenant safety: reports query is already scoped to clientId; we
+// only enrich amendments that match my-report ids.
+async function governanceListMyOpenAmendments(
+  _req: any,
+  res: any,
+  ctx: ApiContext,
+) {
+  try {
+    const reportSnap = await ctx.db
+      .collection('reports')
+      .where('clientId', '==', ctx.primaryUid)
+      .where('ownerUid', '==', ctx.uid)
+      .get();
+
+    const myReportIds = new Set<string>();
+    const reportMeta = new Map<
+      string,
+      { title: string; scheme: string; status: string; targetBoardDate: string | null }
+    >();
+    for (const d of reportSnap.docs) {
+      const data = d.data() ?? {};
+      if (data.softDeleted) continue;
+      const id = (data.id ?? d.id) as string;
+      myReportIds.add(id);
+      reportMeta.set(id, {
+        title: (data.title ?? '') as string,
+        scheme: (data.scheme ?? '') as string,
+        status: (data.status ?? 'Draft') as string,
+        targetBoardDate: (data.targetBoardDate ?? null) as string | null,
+      });
+    }
+
+    if (myReportIds.size === 0) {
+      return res.status(200).json({ success: true, items: [] });
+    }
+
+    const amendSnap = await ctx.db
+      .collection('amendments')
+      .where('clientId', '==', ctx.primaryUid)
+      .where('status', '==', 'open')
+      .get();
+
+    const items = amendSnap.docs
+      .filter((d) => myReportIds.has((d.data() ?? {}).reportId))
+      .map((d) => {
+        const a = d.data() ?? {};
+        const meta = reportMeta.get(a.reportId)!;
+        return {
+          _id: d.id,
+          ...a,
+          reportTitle: meta.title,
+          reportScheme: meta.scheme,
+          reportStatus: meta.status,
+          reportTargetBoardDate: meta.targetBoardDate,
+        };
+      })
+      .sort((a: any, b: any) =>
+        (a.createdAt ?? '').localeCompare(b.createdAt ?? ''),
+      );
+
+    return res.status(200).json({ success: true, items });
+  } catch (e: any) {
+    console.error('[governanceListMyOpenAmendments] failed:', e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? 'Failed to load amendments.',
+      code: 'LOAD_FAILED',
+    });
+  }
+}
+
 async function governanceListReviewers(_req: any, res: any, ctx: ApiContext) {
   try {
     // Pull every user in the workspace (no role filter) and apply
@@ -1967,6 +2042,8 @@ export const governanceReportsRoutes: Record<string, any> = {
   governanceSeniorPmApprove,
   governanceSeniorPmRequestAmendments,
   governanceUnlockReport,
+  // Phase 7 · My Reports
+  governanceListMyOpenAmendments,
 };
 
 // Re-export so the page knows the full enum without importing seed.

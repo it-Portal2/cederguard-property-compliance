@@ -301,7 +301,7 @@ export function IssueModal({
               Core Details
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="col-span-2">
+              <div className="md:col-span-2">
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-sm font-medium text-slate-700">
                     Issue Description <span className="text-red-500">*</span>
@@ -329,7 +329,7 @@ export function IssueModal({
                   required
                 />
               </div>
-              <div className="col-span-2">
+              <div className="md:col-span-2">
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-sm font-medium text-slate-700">
                     Impact and Consequences
@@ -831,7 +831,7 @@ export function IssueModal({
                   ))}
                 </select>
               </div>
-              <div className="col-span-2 mt-2">
+              <div className="md:col-span-2 mt-2">
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-sm font-medium text-slate-700">
                     Lessons Learnt (Resolution)

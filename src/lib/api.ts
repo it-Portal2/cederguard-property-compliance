@@ -367,4 +367,61 @@ export const api = {
   ) => callApi("governanceSeniorPmRequestAmendments", { reportId, amendments }),
   governanceUnlockReport: (reportId: string, reason: string) =>
     callApi("governanceUnlockReport", { reportId, reason }),
+  // Phase 7 — My Reports (PM personal workspace)
+  governanceListMyOpenAmendments: () =>
+    callApi("governanceListMyOpenAmendments"),
+  // Phase 8a — Meetings CRUD shell
+  governanceListMeetings: () => callApi("governanceListMeetings"),
+  governanceGetMeeting: (meetingId: string) =>
+    callApi("governanceGetMeeting", { meetingId }),
+  governanceUpsertMeeting: (meetingId: string, patch: any) =>
+    callApi("governanceUpsertMeeting", { meetingId, patch }),
+  governanceSoftDeleteMeeting: (meetingId: string, reason: string) =>
+    callApi("governanceSoftDeleteMeeting", { meetingId, reason }),
+  governanceRestoreMeeting: (meetingId: string) =>
+    callApi("governanceSoftDeleteMeeting", { meetingId, restore: true }),
+  governanceMarkMeetingHeld: (meetingId: string) =>
+    callApi("governanceMarkMeetingHeld", { meetingId }),
+  governanceCancelMeeting: (meetingId: string, reason: string) =>
+    callApi("governanceCancelMeeting", { meetingId, reason }),
+  // Phase 8b — Meetings tabs
+  governanceSaveMeetingMinutes: (
+    meetingId: string,
+    content: any,
+    wordCount: number,
+  ) =>
+    callApi("governanceSaveMeetingMinutes", { meetingId, content, wordCount }),
+  governanceAddMeetingDecision: (meetingId: string, text: string) =>
+    callApi("governanceAddMeetingDecision", { meetingId, text }),
+  governanceDeleteMeetingDecision: (meetingId: string, decisionId: string) =>
+    callApi("governanceDeleteMeetingDecision", { meetingId, decisionId }),
+  governanceAddMeetingActionItem: (
+    meetingId: string,
+    text: string,
+    ownerLabel: string,
+    dueDate: string | null,
+  ) =>
+    callApi("governanceAddMeetingActionItem", {
+      meetingId,
+      text,
+      ownerLabel,
+      dueDate,
+    }),
+  governanceToggleMeetingActionItem: (meetingId: string, actionItemId: string) =>
+    callApi("governanceToggleMeetingActionItem", { meetingId, actionItemId }),
+  governanceDeleteMeetingActionItem: (meetingId: string, actionItemId: string) =>
+    callApi("governanceDeleteMeetingActionItem", { meetingId, actionItemId }),
+  governanceUpdateMeetingLinks: (
+    meetingId: string,
+    linkedReportIds: string[] | undefined,
+    linkedProjectIds: string[] | undefined,
+  ) =>
+    callApi("governanceUpdateMeetingLinks", {
+      meetingId,
+      linkedReportIds,
+      linkedProjectIds,
+    }),
+  // Phase 8c — workspace member picker (reusable primitive)
+  governanceListWorkspaceMembers: () =>
+    callApi("governanceListWorkspaceMembers"),
 };

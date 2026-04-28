@@ -416,7 +416,7 @@ export function GovernanceReportsListPage() {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
-      className="mx-auto max-w-7xl space-y-6"
+      className="mx-auto space-y-6"
     >
       {/* Header (same pattern as Forward Plan: heading left, controls right) */}
       <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-6">

@@ -79,7 +79,7 @@ export function KRIModal({ isOpen, onClose, onSave, initialData }: KRIModalProps
                 {/* Content */}
                 <div className="p-6 overflow-y-auto flex-1 space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="col-span-2">
+                        <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-slate-700 mb-1">KRI Name <span className="text-red-500">*</span></label>
                             <input 
                                 type="text" 
@@ -104,7 +104,7 @@ export function KRIModal({ isOpen, onClose, onSave, initialData }: KRIModalProps
                                 className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                                 placeholder="Select or type a KRI Name" required />
                         </div>
-                        <div className="col-span-2">
+                        <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-slate-700 mb-1">KRI Components</label>
                             <textarea value={formData.components || ''} onChange={e => handleChange('components', e.target.value)}
                                 className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 min-h-[80px]"
@@ -126,7 +126,7 @@ export function KRIModal({ isOpen, onClose, onSave, initialData }: KRIModalProps
                             </select>
                         </div>
                         
-                        <div className="col-span-2 border-t border-slate-100 pt-4 mt-2">
+                        <div className="md:col-span-2 border-t border-slate-100 pt-4 mt-2">
                             <h3 className="text-xs font-black text-indigo-600 uppercase tracking-widest mb-4">Threshold Configuration</h3>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div>

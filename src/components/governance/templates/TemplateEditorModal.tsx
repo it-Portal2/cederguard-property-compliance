@@ -25,6 +25,8 @@ import {
   CATEGORY_LABEL,
   CATEGORY_STYLES,
 } from './types';
+import ConfirmDialog from '../../table/ConfirmDialog';
+import { TextInputDialog } from '../TextInputDialog';
 
 // All 6 categories shown in the Category dropdown.
 const CATEGORY_OPTIONS: Array<{ value: TemplateCategory; label: string }> = [
@@ -170,6 +172,11 @@ export function TemplateEditorModal({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [saving, setSaving] = useState<'draft' | 'publish' | 'create' | null>(null);
   const [duplicating, setDuplicating] = useState(false);
+  const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
+  const [pendingStarter, setPendingStarter] = useState<
+    { starterId: string | null; firstTime: boolean } | null
+  >(null);
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
 
   // Snapshot the initial state so we can detect unsaved changes on close.
   const initialStateRef = useRef<FormState>(form);
@@ -216,8 +223,14 @@ export function TemplateEditorModal({
 
   const handleClose = () => {
     if (isDirty()) {
-      if (!window.confirm('Discard your changes?')) return;
+      setDiscardConfirmOpen(true);
+      return;
     }
+    onClose();
+  };
+
+  const confirmDiscardClose = () => {
+    setDiscardConfirmOpen(false);
     onClose();
   };
 
@@ -247,19 +260,18 @@ export function TemplateEditorModal({
   };
 
   const handleStarterChange = (starterId: string | null) => {
-    // If user has made edits, warn before overwriting.
+    // If user has made edits, ask before overwriting.
     if (isDirty()) {
-      if (
-        !window.confirm(
-          starterId
-            ? 'Switching starter will replace your current edits — continue?'
-            : 'Switching to Blank will replace your current edits — continue?',
-        )
-      ) {
-        return;
-      }
+      setPendingStarter({ starterId, firstTime: false });
+      return;
     }
     applyStarter(starterId);
+  };
+
+  const confirmStarterSwap = () => {
+    if (!pendingStarter) return;
+    applyStarter(pendingStarter.starterId);
+    setPendingStarter(null);
   };
 
   const patchSection = (id: string, patch: Partial<TemplateSection>) => {
@@ -383,18 +395,18 @@ export function TemplateEditorModal({
     }
   };
 
-  const duplicate = async () => {
+  const duplicate = () => {
     if (!canEdit || !template) return;
-    const suggested = `${template.id}-copy`;
-    const newId = window.prompt(
-      'New template ID (letters, digits, underscore, hyphen):',
-      suggested,
-    );
-    if (!newId) return;
+    setDuplicateDialogOpen(true);
+  };
+
+  const confirmDuplicate = async (newId: string) => {
+    if (!template) return;
     setDuplicating(true);
     try {
-      const res = await api.governanceDuplicateTemplate(template.id, newId.trim());
+      const res = await api.governanceDuplicateTemplate(template.id, newId);
       toast.success('Template duplicated — opening the copy for editing.');
+      setDuplicateDialogOpen(false);
       onDuplicated(res.template as ReportTemplate);
     } catch (e: any) {
       console.error('[TemplateEditorModal] duplicate failed', e);
@@ -755,6 +767,45 @@ export function TemplateEditorModal({
           </div>
         </footer>
       </div>
+      <ConfirmDialog
+        open={discardConfirmOpen}
+        title="Discard unsaved changes?"
+        message="You have edits that haven't been saved. Closing the editor will discard them."
+        confirmLabel="Discard changes"
+        variant="danger"
+        onConfirm={confirmDiscardClose}
+        onCancel={() => setDiscardConfirmOpen(false)}
+      />
+      <ConfirmDialog
+        open={pendingStarter !== null}
+        title="Replace your current edits?"
+        message={
+          pendingStarter?.starterId
+            ? 'Switching to a different starter will replace the sections you have on screen.'
+            : 'Switching to Blank will replace the sections you have on screen.'
+        }
+        confirmLabel="Replace"
+        variant="warning"
+        onConfirm={confirmStarterSwap}
+        onCancel={() => setPendingStarter(null)}
+      />
+      <TextInputDialog
+        open={duplicateDialogOpen}
+        title="Duplicate template"
+        message="Pick a new ID for the copy. Letters, digits, underscores and hyphens only."
+        inputLabel="New template ID"
+        placeholder="e.g. gw1-housing-variant"
+        defaultValue={template ? `${template.id}-copy` : ''}
+        validate={(v) =>
+          /^[a-z0-9_-]{2,80}$/i.test(v)
+            ? null
+            : 'Use 2–80 letters, digits, underscores or hyphens.'
+        }
+        confirmLabel="Duplicate"
+        loading={duplicating}
+        onConfirm={confirmDuplicate}
+        onCancel={() => (duplicating ? null : setDuplicateDialogOpen(false))}
+      />
     </div>
   );
 }

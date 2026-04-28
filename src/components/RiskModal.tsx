@@ -415,7 +415,7 @@ export function RiskModal({
               Core Details
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="col-span-2">
+              <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                   Risk Title <span className="text-red-500">*</span>
                 </label>
@@ -428,7 +428,7 @@ export function RiskModal({
                   required
                 />
               </div>
-              <div className="col-span-2">
+              <div className="md:col-span-2">
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-sm font-medium text-slate-700">
                     Description
@@ -451,7 +451,7 @@ export function RiskModal({
                   placeholder="Detailed description of the risk event..."
                 />
               </div>
-              <div className="col-span-2">
+              <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                   Causes & Effects
                 </label>
@@ -868,7 +868,7 @@ export function RiskModal({
               Management
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="col-span-2 mt-4">
+              <div className="md:col-span-2 mt-4">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
                     <Target className="w-4 h-4 text-amber-500" />

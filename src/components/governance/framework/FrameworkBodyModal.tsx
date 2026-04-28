@@ -12,6 +12,7 @@ import {
   TIER_STYLES,
 } from './types';
 import { TorEditor } from './TorEditor';
+import ConfirmDialog from '../../table/ConfirmDialog';
 
 interface FrameworkBodyModalProps {
   body: FrameworkBody | null;
@@ -75,6 +76,7 @@ export function FrameworkBodyModal({
   const [tab, setTab] = useState<typeof TAB_BODY | typeof TAB_TOR>(TAB_BODY);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -126,14 +128,19 @@ export function FrameworkBodyModal({
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!body) return;
-    if (!window.confirm(`Delete "${body.name}" from the framework?`)) return;
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!body) return;
     setDeleting(true);
     try {
       await api.governanceDeleteBody(body.id);
       toast.success('Body removed');
       onDeleted(body.id);
+      setDeleteConfirmOpen(false);
       onClose();
     } catch (e: any) {
       console.error('[FrameworkBodyModal] delete failed', e);
@@ -331,6 +338,16 @@ export function FrameworkBodyModal({
           </div>
         </footer>
       </div>
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        title={`Delete "${body?.name ?? ''}"?`}
+        message="This removes the body from the framework. Reports + meetings already linked to it keep their reference for audit purposes."
+        confirmLabel="Delete body"
+        variant="danger"
+        loading={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => (deleting ? null : setDeleteConfirmOpen(false))}
+      />
     </div>
   );
 }

@@ -311,11 +311,19 @@ export function Sidebar() {
           >
             <NavItem to="/governance/dashboard" icon={LayoutDashboard} label="Dashboard" />
             <NavItem to="/governance/forward-plan" icon={CalendarIcon} label="Forward Plan" />
-            {/* My Reports (PM personal workspace) — currently a Phase 0
-                placeholder; re-enable when Phase 7 ships its real surface.
-                Route /governance/my-reports stays accessible directly so
-                anyone testing the placeholder can still hit it. */}
-            <NavItem to="/governance/reports-list" icon={FileText} label="Reports" />
+            {/* Role-split per prototype: pure PMs get the personal
+                workspace; PgMs / Client Admins get the workspace-wide
+                pipeline. Admins see both. Avoids the "two near-identical
+                tables" UX trap. */}
+            {isProjectManager && !isClientAdmin && (
+              <NavItem to="/governance/my-reports" icon={ClipboardList} label="My reports" />
+            )}
+            {isClientAdmin && (
+              <NavItem to="/governance/reports-list" icon={FileText} label="Reports" />
+            )}
+            {isAdmin && (
+              <NavItem to="/governance/my-reports" icon={ClipboardList} label="My reports" />
+            )}
             <NavItem to="/governance/reports" icon={ClipboardList} label="Templates" />
             <NavItem to="/governance/meetings" icon={Users} label="Meetings" />
             {isClientAdmin && (
