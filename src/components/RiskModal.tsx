@@ -343,25 +343,31 @@ export function RiskModal({
 
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[calc(100dvh-2rem)] md:max-h-[90vh] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-100 shrink-0">
-          <div>
-            <div className="flex items-center justify-between gap-4">
-              <h2 className="text-xl font-black text-slate-900 tracking-tight uppercase">
+      {/*
+        Modal shell:
+        - h-full + max-h cap so it never exceeds viewport
+        - flex-col with min-h-0 on children → header/footer fixed, middle scrolls
+        - overflow-hidden on the shell prevents any internal element bleeding out
+      */}
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl h-full max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2rem)] md:max-h-[90vh] flex flex-col overflow-hidden">
+        {/* Header — fixed, never scrolls */}
+        <div className="flex items-start justify-between gap-3 p-4 sm:p-6 border-b border-slate-100 shrink-0">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center flex-wrap gap-2">
+              <h2 className="text-base sm:text-xl font-black text-slate-900 tracking-tight uppercase truncate">
                 {initialData ? "Refine Risk Intelligence" : "Register New Risk"}
               </h2>
               {formData.escalated && (
-                <div className="flex items-center gap-2 px-3 py-1 bg-purple-600 text-white rounded-full animate-pulse shadow-lg shadow-purple-200">
-                  <ShieldAlert className="w-3.5 h-3.5" />
-                  <span className="text-[10px] font-black uppercase tracking-widest">
-                    Escalated to Programme
+                <div className="flex items-center gap-1.5 px-2 py-0.5 bg-purple-600 text-white rounded-full animate-pulse shadow-lg shadow-purple-200 shrink-0">
+                  <ShieldAlert className="w-3 h-3" />
+                  <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap">
+                    Escalated
                   </span>
                 </div>
               )}
             </div>
             {initialData && (
-              <p className="text-sm text-slate-500 mt-1">
+              <p className="text-xs sm:text-sm text-slate-500 mt-1 truncate">
                 Ref: {initialData.id}
               </p>
             )}
@@ -369,768 +375,823 @@ export function RiskModal({
           <button
             onClick={onClose}
             disabled={isSaving}
-            className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Warnings / Banners */}
-        <div className="shrink-0 px-6 pt-2 space-y-2">
-          {formData.escalated && (
-            <div className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800">
-              <ShieldAlert className="w-5 h-5 shrink-0" />
-              <div className="text-xs font-bold leading-tight">
-                <span className="uppercase tracking-widest block mb-0.5">
-                  Escalated to Programme
-                </span>
-                This risk is currently being managed at the programme level. Any
-                changes here will be reflected in the Programme Risk Register.
-              </div>
-            </div>
+        {/*
+          Scrollable region — the ONLY thing that scrolls.
+          - flex-1 + min-h-0 makes flexbox actually allow this to shrink and scroll
+          - overflow-y-auto + overflow-x-hidden contains all overflow
+          - We removed the disabled <fieldset> wrapping (it killed scrolling while saving)
+            and instead disable individual interactive controls via the saving state.
+        */}
+        <div
+          className={clsx(
+            "flex-1 min-h-0 overflow-y-auto overflow-x-hidden",
+            isSaving && "opacity-60",
           )}
-          {formData.convertedToIssue && (
-            <div className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-xl text-red-800">
-              <AlertTriangle className="w-5 h-5 shrink-0" />
-              <div className="text-xs font-bold leading-tight">
-                <span className="uppercase tracking-widest block mb-0.5">
-                  Converted to Issue
-                </span>
-                This risk has been closed and converted to a live issue. Manage
-                the resolution in the{" "}
-                <span className="underline italic">Issue Registry</span>.
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Content */}
-        <fieldset
-          disabled={isSaving}
-          className="p-6 overflow-y-auto flex-1 space-y-8 disabled:opacity-60 disabled:pointer-events-none border-0 m-0"
         >
-          {/* Section 1: Core Details */}
-          <div>
-            <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">
-              Core Details
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Risk Title <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.title || ""}
-                  onChange={(e) => handleChange("title", e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                  placeholder="e.g., Delay in planning approval"
-                  required
-                />
-              </div>
-              <div className="md:col-span-2">
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-sm font-medium text-slate-700">
-                    Description
-                  </label>
-                  <AIWriter
-                    context={
-                      formData.desc?.trim()
-                        ? `Enhance and professionalize this risk description by keeping ALL existing details and expanding with clearer language. DO NOT remove any facts, stakeholders, or locations mentioned. ONLY return the enhanced description, no explanations. Current: "${formData.desc}". Risk: ${formData.title}. Category: ${formData.category}.`
-                        : `Write a professional risk description. ONLY return the description text, no explanations. Risk: ${formData.title}. Category: ${formData.category}. Context: ${formData.project || formData.programme || "Programme Level"}.`
-                    }
-                    onSuggest={(val) => handleChange("desc", val)}
-                    placeholder="e.g. describe the risk scenario, trigger conditions, or affected activities"
-                    className="scale-90"
-                  />
-                </div>
-                <textarea
-                  value={formData.desc || ""}
-                  onChange={(e) => handleChange("desc", e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 min-h-[80px]"
-                  placeholder="Detailed description of the risk event..."
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Causes & Effects
-                </label>
-                <textarea
-                  value={formData.cause || ""}
-                  onChange={(e) => handleChange("cause", e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 min-h-[80px]"
-                  placeholder="Specific causes and effects..."
-                />
-              </div>
-
-              {/* Project / Context — only show projects in scope */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Project (Optional)
-                </label>
-                <select
-                  value={formData.projectId || ""}
-                  onChange={(e) => handleChange("projectId", e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
-                >
-                  <option value="">Programme Level / No Project</option>
-                  {scopedProjects.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Workstream
-                </label>
-                <select
-                  value={formData.workstream || ""}
-                  onChange={(e) => handleChange("workstream", e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
-                >
-                  <option value="">— Select Workstream —</option>
-                  {formData.isProgrammeLevel
-                    ? STRATEGIC_WORKSTREAMS.map((w) => (
-                        <option key={w} value={w}>
-                          {w}
-                        </option>
-                      ))
-                    : OPERATIONAL_WORKSTREAMS.map((w) => (
-                        <option key={w} value={w}>
-                          {w}
-                        </option>
-                      ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Category
-                </label>
-                <select
-                  value={formData.category || ""}
-                  onChange={(e) => handleChange("category", e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
-                >
-                  <option value="">— Select Category —</option>
-                  {formData.isProgrammeLevel
-                    ? STRATEGIC_CATEGORY_NAMES.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))
-                    : OPERATIONAL_CATEGORY_NAMES.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Linked KRI{" "}
-                  <span className="text-slate-400 font-normal text-xs">
-                    (Optional)
-                  </span>
-                </label>
-                <select
-                  value={formData.kri || ""}
-                  onChange={(e) => handleChange("kri", e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
-                >
-                  <option value="">— None —</option>
-                  {KRI_LIST.map((k) => (
-                    <option key={k} value={k}>
-                      {k}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Section 2: Assessment & Controls */}
-          <div>
-            <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">
-              Assessment & Controls
-            </h3>
-
-            {/* Probability legend */}
-            <div className="mb-4 flex gap-2 flex-wrap">
-              {Object.entries(L_TO_PCT).map(([l, pct]) => (
-                <span
-                  key={l}
-                  className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-bold border border-slate-200"
-                >
-                  L{l} = {pct}%
-                </span>
-              ))}
-              <span className="text-[10px] text-slate-400 self-center ml-1">
-                — Likelihood to Probability mapping
-              </span>
-            </div>
-
-            {/* Exposure derivation context — tells PMs WHY the £ values look the way they do */}
-            <div className="mb-4">
-              {ctx.isProgrammeLevel ? (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold uppercase tracking-wider">
-                  Context: Programme Bands
-                </span>
-              ) : activeFormProject ? (
-                <span
-                  className={clsx(
-                    "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[10px] font-bold uppercase tracking-wider",
-                    (activeFormProject as any)?.numberOfUnits
-                      ? "bg-slate-100 text-slate-700 border-slate-200"
-                      : "bg-amber-50 text-amber-800 border-amber-200",
-                  )}
-                >
-                  Context: Project Size — {ctx.projectSize}
-                  {!(activeFormProject as any)?.numberOfUnits &&
-                    " (default — set unit count in Project Initiation to refine)"}
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold uppercase tracking-wider">
-                  Context: Project Size — {DEFAULT_PROJECT_SIZE} (default)
-                </span>
-              )}
-            </div>
-
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Gross */}
-                <div>
-                  <h4 className="font-semibold text-slate-800 mb-3 flex items-center justify-between">
-                    Gross Score (Inherent){" "}
-                    <span
-                      className={clsx(
-                        "px-2 py-0.5 rounded text-xs border font-bold",
-                        scoreColor(currGross),
-                      )}
-                    >
-                      {currGross}
-                    </span>
-                  </h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">
-                        Likelihood (1–5)
-                      </label>
-                      <select
-                        value={formData.grossL ?? 1}
-                        onChange={(e) =>
-                          handleChange("grossL", parseInt(e.target.value))
-                        }
-                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
-                      >
-                        {[1, 2, 3, 4, 5].map((n) => (
-                          <option key={n} value={n}>
-                            {n} — {L_TO_PCT[n]}%
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">
-                        Impact (1–5)
-                      </label>
-                      <select
-                        value={formData.grossI ?? 1}
-                        onChange={(e) =>
-                          handleChange("grossI", parseInt(e.target.value))
-                        }
-                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
-                      >
-                        {[1, 2, 3, 4, 5].map((n) => (
-                          <option key={n} value={n}>
-                            {n}
-                          </option>
-                        ))}
-                      </select>
+          <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
+            {/* Warnings / Banners — now inside the scroll area so they don't squeeze the form */}
+            {(formData.escalated || formData.convertedToIssue) && (
+              <div className="space-y-2">
+                {formData.escalated && (
+                  <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800">
+                    <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5" />
+                    <div className="text-xs font-bold leading-tight min-w-0">
+                      <span className="uppercase tracking-widest block mb-0.5">
+                        Escalated to Programme
+                      </span>
+                      <span className="font-medium">
+                        This risk is currently being managed at the programme
+                        level. Any changes here will be reflected in the
+                        Programme Risk Register.
+                      </span>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 mt-4">
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">
-                        Probability %{" "}
-                        <span className="text-indigo-500 font-bold">
-                          ({formData.grossProb || 0}%)
-                        </span>
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.grossProb ?? 0}
-                        disabled
-                        className="w-full bg-slate-100/50 cursor-not-allowed text-slate-500 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
-                      />
-                      <p className="text-[10px] text-slate-400 mt-0.5">
-                        Strictly derived from Likelihood
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">
-                        Exposure / Impact (£)
-                      </label>
-                      <input
-                        type="text"
-                        value={`£${(formData.grossImpact || 0).toLocaleString(
-                          "en-GB",
-                          { maximumFractionDigits: 0 },
-                        )}`}
-                        readOnly
-                        disabled
-                        aria-readonly="true"
-                        className="w-full bg-slate-100 text-slate-700 cursor-not-allowed border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
-                      />
-                      <p className="text-[10px] text-slate-400 mt-0.5">
-                        Auto-derived from Impact ×{" "}
-                        {ctx.isProgrammeLevel
-                          ? "Programme band"
-                          : `Project size: ${ctx.projectSize}`}
-                      </p>
+                )}
+                {formData.convertedToIssue && (
+                  <div className="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-xl text-red-800">
+                    <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+                    <div className="text-xs font-bold leading-tight min-w-0">
+                      <span className="uppercase tracking-widest block mb-0.5">
+                        Converted to Issue
+                      </span>
+                      <span className="font-medium">
+                        This risk has been closed and converted to a live issue.
+                        Manage the resolution in the{" "}
+                        <span className="underline italic">Issue Registry</span>
+                        .
+                      </span>
                     </div>
                   </div>
-                  <div className="mt-2 text-xs text-slate-600 font-semibold bg-blue-50 rounded-lg px-3 py-2 border border-blue-100">
-                    Gross ALE = £{Math.round(gALE).toLocaleString()} &nbsp;(
-                    {formData.grossProb || 0}% × £
-                    {(formData.grossImpact || 0).toLocaleString()})
-                  </div>
-                </div>
-
-                {/* Residual */}
-                <div>
-                  <h4 className="font-semibold text-slate-800 mb-3 flex items-center justify-between">
-                    Residual Risk Score{" "}
-                    <span
-                      className={clsx(
-                        "px-2 py-0.5 rounded text-xs border font-bold",
-                        scoreColor(currResidual),
-                      )}
-                    >
-                      {currResidual}
-                    </span>
-                  </h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">
-                        Likelihood (1–5)
-                      </label>
-                      <select
-                        value={formData.residualL ?? 1}
-                        onChange={(e) =>
-                          handleChange("residualL", parseInt(e.target.value))
-                        }
-                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
-                      >
-                        {[1, 2, 3, 4, 5].map((n) => (
-                          <option key={n} value={n}>
-                            {n} — {L_TO_PCT[n]}%
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">
-                        Impact (1–5)
-                      </label>
-                      <select
-                        value={formData.residualI ?? 1}
-                        onChange={(e) =>
-                          handleChange("residualI", parseInt(e.target.value))
-                        }
-                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
-                      >
-                        {[1, 2, 3, 4, 5].map((n) => (
-                          <option key={n} value={n}>
-                            {n}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 mt-4">
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">
-                        Probability %{" "}
-                        <span className="text-indigo-500 font-bold">
-                          ({formData.residualProb || 0}%)
-                        </span>
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.residualProb ?? 0}
-                        disabled
-                        className="w-full bg-slate-100/50 cursor-not-allowed text-slate-500 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
-                      />
-                      <p className="text-[10px] text-slate-400 mt-0.5">
-                        Strictly derived from Likelihood
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">
-                        Exposure / Impact (£)
-                      </label>
-                      <input
-                        type="text"
-                        value={`£${(formData.residualImpact || 0).toLocaleString(
-                          "en-GB",
-                          { maximumFractionDigits: 0 },
-                        )}`}
-                        readOnly
-                        disabled
-                        aria-readonly="true"
-                        className="w-full bg-slate-100 text-slate-700 cursor-not-allowed border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
-                      />
-                      <p className="text-[10px] text-slate-400 mt-0.5">
-                        Auto-derived from Impact ×{" "}
-                        {ctx.isProgrammeLevel
-                          ? "Programme band"
-                          : `Project size: ${ctx.projectSize}`}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-2 text-xs text-slate-600 font-semibold bg-indigo-50 rounded-lg px-3 py-2 border border-indigo-100">
-                    Residual ALE = £{Math.round(rALE).toLocaleString()} &nbsp;(
-                    {formData.residualProb || 0}% × £
-                    {(formData.residualImpact || 0).toLocaleString()})
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4">
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-sm font-medium text-slate-700">
-                    Current Controls
-                  </label>
-                  <AIWriter
-                    context={
-                      formData.controls?.trim()
-                        ? `Enhance these risk controls by keeping ALL existing control measures and making them more specific and actionable. DO NOT remove any existing controls. ONLY return the enhanced controls, no explanations. Current: "${formData.controls}". Risk: ${formData.title}.`
-                        : `Write specific, actionable risk controls. ONLY return the controls text, no explanations. Risk: ${formData.title}. Description: ${formData.desc || "Not provided"}. Context: ${formData.project || formData.programme || "Programme Level"}.`
-                    }
-                    onSuggest={(val) => handleChange("controls", val)}
-                    placeholder="e.g. describe existing safeguards, who owns them, how effective they currently are"
-                    className="scale-90"
-                  />
-                </div>
-                <textarea
-                  value={formData.controls || ""}
-                  onChange={(e) => handleChange("controls", e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 min-h-[80px]"
-                  placeholder="List of controls currently in place..."
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Response Strategy
-                  </label>
-                  <select
-                    value={formData.response || ""}
-                    onChange={(e) => handleChange("response", e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
-                  >
-                    <option value="">— Select Response —</option>
-                    {RISK_RESPONSES.map((r) => (
-                      <option key={r} value={r}>
-                        {r}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Risk Appetite
-                  </label>
-                  <select
-                    value={formData.appetite || ""}
-                    onChange={(e) => handleChange("appetite", e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
-                  >
-                    <option value="">— Select Appetite —</option>
-                    {APPETITES.map((a) => (
-                      <option key={a} value={a}>
-                        {a}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Section 3: Management */}
-          <div>
-            <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">
-              Management
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2 mt-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                    <Target className="w-4 h-4 text-amber-500" />
-                    Mitigation Actions / Tasks
-                  </h4>
-                  <button
-                    onClick={() => setIsAddingAction(true)}
-                    className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1.5 rounded-lg transition-colors"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    Add Action
-                  </button>
-                </div>
-
-                <div className="space-y-2 mb-4">
-                  {riskActions.length === 0 ? (
-                    <div className="text-center py-6 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                      <p className="text-xs text-slate-400">
-                        No actions defined for this risk yet.
-                      </p>
-                    </div>
-                  ) : (
-                    riskActions.map((action) => (
-                      <div
-                        key={action.id}
-                        className="group flex items-center justify-between bg-white border border-slate-200 p-3 rounded-xl hover:border-indigo-200 transition-all shadow-sm"
-                      >
-                        <div className="flex items-start gap-3">
-                          <button
-                            onClick={() =>
-                              updateTask(action.id, {
-                                status:
-                                  action.status === "Completed"
-                                    ? "Pending"
-                                    : "Completed",
-                              })
-                            }
-                            className="mt-0.5"
-                          >
-                            {action.status === "Completed" ? (
-                              <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                            ) : (
-                              <Circle className="w-5 h-5 text-slate-300 group-hover:text-indigo-400" />
-                            )}
-                          </button>
-                          <div>
-                            <p
-                              className={clsx(
-                                "text-sm font-medium",
-                                action.status === "Completed"
-                                  ? "text-slate-400 line-through"
-                                  : "text-slate-700",
-                              )}
-                            >
-                              {action.title}
-                            </p>
-                            <div className="flex items-center gap-3 mt-1 text-[10px] text-slate-400">
-                              <span className="flex items-center gap-1">
-                                <Calendar className="w-3 h-3" />
-                                {action.dueDate
-                                  ? format(
-                                      new Date(action.dueDate),
-                                      "dd MMM yyyy",
-                                    )
-                                  : "No date"}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <User className="w-3 h-3" />
-                                {action.owner || "Unassigned"}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => deleteTask(action.id)}
-                          className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-rose-500 rounded-lg transition-all"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))
-                  )}
-
-                  {isAddingAction && (
-                    <div className="bg-white border-2 border-indigo-100 p-4 rounded-xl shadow-md animate-in slide-in-from-top-2 duration-200">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">
-                          New Action
-                        </span>
-                        <AIWriter
-                          context={
-                            newActionTitle?.trim()
-                              ? `Rewrite and improve this mitigation action title. ONLY return the improved action text, no explanations or commentary. Current: "${newActionTitle}". Risk: ${formData.title}.`
-                              : `Write a specific, actionable mitigation task. ONLY return the task description, no explanations. Risk: ${formData.title}. Description: ${formData.desc || "Not provided"}. Context: ${formData.project || formData.programme || "Programme Level"}.`
-                          }
-                          onSuggest={(val) => setNewActionTitle(val)}
-                          placeholder="e.g. a short action title to reduce or transfer this risk"
-                          className="scale-90"
-                        />
-                      </div>
-                      <input
-                        autoFocus
-                        type="text"
-                        value={newActionTitle}
-                        onChange={(e) => setNewActionTitle(e.target.value)}
-                        placeholder="What needs to be done?"
-                        disabled={isAddingTask}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 mb-3 disabled:opacity-50"
-                        onKeyDown={async (e) => {
-                          if (
-                            e.key === "Enter" &&
-                            newActionTitle &&
-                            !isAddingTask
-                          ) {
-                            try {
-                              setIsAddingTask(true);
-                              await addTask({
-                                id: generateId("TSK"),
-                                title: newActionTitle,
-                                status: "Pending",
-                                priority: "Medium",
-                                dueDate: new Date().toISOString().split("T")[0],
-                                riskId: initialData?.id || "",
-                                projectId: formData.projectId || "",
-                                owner: formData.owner || "",
-                              });
-                              toast.success("Task added successfully");
-                              setNewActionTitle("");
-                              setIsAddingAction(false);
-                            } catch (err: any) {
-                              toast.error(err.message || "Failed to add task");
-                            } finally {
-                              setIsAddingTask(false);
-                            }
-                          }
-                        }}
-                      />
-                      <div className="flex justify-end gap-2">
-                        <button
-                          disabled={isAddingTask}
-                          onClick={() => setIsAddingAction(false)}
-                          className="px-3 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-100 rounded-lg disabled:opacity-50"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          disabled={!newActionTitle || isAddingTask}
-                          onClick={async () => {
-                            try {
-                              setIsAddingTask(true);
-                              await addTask({
-                                id: generateId("TSK"),
-                                title: newActionTitle,
-                                status: "Pending",
-                                priority: "Medium",
-                                dueDate: new Date().toISOString().split("T")[0],
-                                riskId: initialData?.id || "",
-                                projectId: formData.projectId || "",
-                                owner: formData.owner || "",
-                              });
-                              toast.success("Task added successfully");
-                              setNewActionTitle("");
-                              setIsAddingAction(false);
-                            } catch (err: any) {
-                              toast.error(err.message || "Failed to add task");
-                            } finally {
-                              setIsAddingTask(false);
-                            }
-                          }}
-                          className="px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2"
-                        >
-                          {isAddingTask ? (
-                            <>
-                              <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                              Adding...
-                            </>
-                          ) : (
-                            "Add Task"
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Risk Owner
-                </label>
-                <input
-                  type="text"
-                  value={formData.owner || ""}
-                  onChange={(e) => handleChange("owner", e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
-                  placeholder="E.g., Project Manager"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Due Date
-                </label>
-                <input
-                  type="date"
-                  value={formData.dueDate || ""}
-                  onChange={(e) => handleChange("dueDate", e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Status
-                </label>
-                <select
-                  value={formData.status || "Open"}
-                  onChange={(e) => handleChange("status", e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500"
-                >
-                  {RISK_STATUSES.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex flex-col mt-2">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={!!formData.escalated}
-                    onChange={(e) =>
-                      handleChange("escalated", e.target.checked)
-                    }
-                    className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                  />
-                  <span className="text-sm font-medium text-slate-700">
-                    Escalate to Programme Level
-                  </span>
-                </label>
-                {!!formData.escalated && !formData.programmeId && (
-                  <p className="text-xs text-rose-600 mt-1.5 ml-8 flex items-center gap-1">
-                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                    Cannot escalate — this project is not linked to a programme. Set the programme link in Project Initiation first.
-                  </p>
                 )}
               </div>
+            )}
+
+            {/* Section 1: Core Details */}
+            <div>
+              <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">
+                Core Details
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2 min-w-0">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Risk Title <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.title || ""}
+                    onChange={(e) => handleChange("title", e.target.value)}
+                    disabled={isSaving}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 disabled:opacity-60"
+                    placeholder="e.g., Delay in planning approval"
+                    required
+                  />
+                </div>
+                <div className="md:col-span-2 min-w-0">
+                  <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
+                    <label className="block text-sm font-medium text-slate-700">
+                      Description
+                    </label>
+                    <AIWriter
+                      context={
+                        formData.desc?.trim()
+                          ? `Enhance and professionalize this risk description by keeping ALL existing details and expanding with clearer language. DO NOT remove any facts, stakeholders, or locations mentioned. ONLY return the enhanced description, no explanations. Current: "${formData.desc}". Risk: ${formData.title}. Category: ${formData.category}.`
+                          : `Write a professional risk description. ONLY return the description text, no explanations. Risk: ${formData.title}. Category: ${formData.category}. Context: ${formData.project || formData.programme || "Programme Level"}.`
+                      }
+                      onSuggest={(val) => handleChange("desc", val)}
+                      placeholder="e.g. describe the risk scenario, trigger conditions, or affected activities"
+                      className="scale-90"
+                    />
+                  </div>
+                  <textarea
+                    value={formData.desc || ""}
+                    onChange={(e) => handleChange("desc", e.target.value)}
+                    disabled={isSaving}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 min-h-[80px] disabled:opacity-60 resize-y"
+                    placeholder="Detailed description of the risk event..."
+                  />
+                </div>
+                <div className="md:col-span-2 min-w-0">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Causes & Effects
+                  </label>
+                  <textarea
+                    value={formData.cause || ""}
+                    onChange={(e) => handleChange("cause", e.target.value)}
+                    disabled={isSaving}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 min-h-[80px] disabled:opacity-60 resize-y"
+                    placeholder="Specific causes and effects..."
+                  />
+                </div>
+
+                {/* Project / Context — only show projects in scope */}
+                <div className="min-w-0">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Project (Optional)
+                  </label>
+                  <select
+                    value={formData.projectId || ""}
+                    onChange={(e) => handleChange("projectId", e.target.value)}
+                    disabled={isSaving}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 disabled:opacity-60"
+                  >
+                    <option value="">Programme Level / No Project</option>
+                    {scopedProjects.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="min-w-0">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Workstream
+                  </label>
+                  <select
+                    value={formData.workstream || ""}
+                    onChange={(e) => handleChange("workstream", e.target.value)}
+                    disabled={isSaving}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 disabled:opacity-60"
+                  >
+                    <option value="">— Select Workstream —</option>
+                    {formData.isProgrammeLevel
+                      ? STRATEGIC_WORKSTREAMS.map((w) => (
+                          <option key={w} value={w}>
+                            {w}
+                          </option>
+                        ))
+                      : OPERATIONAL_WORKSTREAMS.map((w) => (
+                          <option key={w} value={w}>
+                            {w}
+                          </option>
+                        ))}
+                  </select>
+                </div>
+                <div className="min-w-0">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Category
+                  </label>
+                  <select
+                    value={formData.category || ""}
+                    onChange={(e) => handleChange("category", e.target.value)}
+                    disabled={isSaving}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 disabled:opacity-60"
+                  >
+                    <option value="">— Select Category —</option>
+                    {formData.isProgrammeLevel
+                      ? STRATEGIC_CATEGORY_NAMES.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))
+                      : OPERATIONAL_CATEGORY_NAMES.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                  </select>
+                </div>
+                <div className="min-w-0">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Linked KRI{" "}
+                    <span className="text-slate-400 font-normal text-xs">
+                      (Optional)
+                    </span>
+                  </label>
+                  <select
+                    value={formData.kri || ""}
+                    onChange={(e) => handleChange("kri", e.target.value)}
+                    disabled={isSaving}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 disabled:opacity-60"
+                  >
+                    <option value="">— None —</option>
+                    {KRI_LIST.map((k) => (
+                      <option key={k} value={k}>
+                        {k}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Section 2: Assessment & Controls */}
+            <div>
+              <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">
+                Assessment & Controls
+              </h3>
+
+              {/* Probability legend */}
+              <div className="mb-4 flex gap-2 flex-wrap">
+                {Object.entries(L_TO_PCT).map(([l, pct]) => (
+                  <span
+                    key={l}
+                    className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-bold border border-slate-200"
+                  >
+                    L{l} = {pct}%
+                  </span>
+                ))}
+                <span className="text-[10px] text-slate-400 self-center ml-1">
+                  — Likelihood to Probability mapping
+                </span>
+              </div>
+
+              {/* Exposure derivation context — tells PMs WHY the £ values look the way they do */}
+              <div className="mb-4">
+                {ctx.isProgrammeLevel ? (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold uppercase tracking-wider">
+                    Context: Programme Bands
+                  </span>
+                ) : activeFormProject ? (
+                  <span
+                    className={clsx(
+                      "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[10px] font-bold uppercase tracking-wider",
+                      (activeFormProject as any)?.numberOfUnits
+                        ? "bg-slate-100 text-slate-700 border-slate-200"
+                        : "bg-amber-50 text-amber-800 border-amber-200",
+                    )}
+                  >
+                    Context: Project Size — {ctx.projectSize}
+                    {!(activeFormProject as any)?.numberOfUnits &&
+                      " (default — set unit count in Project Initiation to refine)"}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold uppercase tracking-wider">
+                    Context: Project Size — {DEFAULT_PROJECT_SIZE} (default)
+                  </span>
+                )}
+              </div>
+
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 sm:p-5 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                  {/* Gross */}
+                  <div className="min-w-0">
+                    <h4 className="font-semibold text-slate-800 mb-3 flex items-center justify-between gap-2">
+                      <span className="truncate">Gross Score (Inherent)</span>
+                      <span
+                        className={clsx(
+                          "px-2 py-0.5 rounded text-xs border font-bold shrink-0",
+                          scoreColor(currGross),
+                        )}
+                      >
+                        {currGross}
+                      </span>
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                      <div className="min-w-0">
+                        <label className="block text-xs font-medium text-slate-600 mb-1">
+                          Likelihood (1–5)
+                        </label>
+                        <select
+                          value={formData.grossL ?? 1}
+                          onChange={(e) =>
+                            handleChange("grossL", parseInt(e.target.value))
+                          }
+                          disabled={isSaving}
+                          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 disabled:opacity-60"
+                        >
+                          {[1, 2, 3, 4, 5].map((n) => (
+                            <option key={n} value={n}>
+                              {n} — {L_TO_PCT[n]}%
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="min-w-0">
+                        <label className="block text-xs font-medium text-slate-600 mb-1">
+                          Impact (1–5)
+                        </label>
+                        <select
+                          value={formData.grossI ?? 1}
+                          onChange={(e) =>
+                            handleChange("grossI", parseInt(e.target.value))
+                          }
+                          disabled={isSaving}
+                          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 disabled:opacity-60"
+                        >
+                          {[1, 2, 3, 4, 5].map((n) => (
+                            <option key={n} value={n}>
+                              {n}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4 mt-4">
+                      <div className="min-w-0">
+                        <label className="block text-xs font-medium text-slate-600 mb-1">
+                          Probability %{" "}
+                          <span className="text-indigo-500 font-bold">
+                            ({formData.grossProb || 0}%)
+                          </span>
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.grossProb ?? 0}
+                          disabled
+                          className="w-full bg-slate-100/50 cursor-not-allowed text-slate-500 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+                        />
+                        <p className="text-[10px] text-slate-400 mt-0.5">
+                          Strictly derived from Likelihood
+                        </p>
+                      </div>
+                      <div className="min-w-0">
+                        <label className="block text-xs font-medium text-slate-600 mb-1">
+                          Exposure / Impact (£)
+                        </label>
+                        <input
+                          type="text"
+                          value={`£${(formData.grossImpact || 0).toLocaleString(
+                            "en-GB",
+                            { maximumFractionDigits: 0 },
+                          )}`}
+                          readOnly
+                          disabled
+                          aria-readonly="true"
+                          className="w-full bg-slate-100 text-slate-700 cursor-not-allowed border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+                        />
+                        <p className="text-[10px] text-slate-400 mt-0.5 break-words">
+                          Auto-derived from Impact ×{" "}
+                          {ctx.isProgrammeLevel
+                            ? "Programme band"
+                            : `Project size: ${ctx.projectSize}`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-2 text-xs text-slate-600 font-semibold bg-blue-50 rounded-lg px-3 py-2 border border-blue-100 break-words">
+                      Gross ALE = £{Math.round(gALE).toLocaleString()} &nbsp;(
+                      {formData.grossProb || 0}% × £
+                      {(formData.grossImpact || 0).toLocaleString()})
+                    </div>
+                  </div>
+
+                  {/* Residual */}
+                  <div className="min-w-0">
+                    <h4 className="font-semibold text-slate-800 mb-3 flex items-center justify-between gap-2">
+                      <span className="truncate">Residual Risk Score</span>
+                      <span
+                        className={clsx(
+                          "px-2 py-0.5 rounded text-xs border font-bold shrink-0",
+                          scoreColor(currResidual),
+                        )}
+                      >
+                        {currResidual}
+                      </span>
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                      <div className="min-w-0">
+                        <label className="block text-xs font-medium text-slate-600 mb-1">
+                          Likelihood (1–5)
+                        </label>
+                        <select
+                          value={formData.residualL ?? 1}
+                          onChange={(e) =>
+                            handleChange("residualL", parseInt(e.target.value))
+                          }
+                          disabled={isSaving}
+                          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 disabled:opacity-60"
+                        >
+                          {[1, 2, 3, 4, 5].map((n) => (
+                            <option key={n} value={n}>
+                              {n} — {L_TO_PCT[n]}%
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="min-w-0">
+                        <label className="block text-xs font-medium text-slate-600 mb-1">
+                          Impact (1–5)
+                        </label>
+                        <select
+                          value={formData.residualI ?? 1}
+                          onChange={(e) =>
+                            handleChange("residualI", parseInt(e.target.value))
+                          }
+                          disabled={isSaving}
+                          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 disabled:opacity-60"
+                        >
+                          {[1, 2, 3, 4, 5].map((n) => (
+                            <option key={n} value={n}>
+                              {n}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4 mt-4">
+                      <div className="min-w-0">
+                        <label className="block text-xs font-medium text-slate-600 mb-1">
+                          Probability %{" "}
+                          <span className="text-indigo-500 font-bold">
+                            ({formData.residualProb || 0}%)
+                          </span>
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.residualProb ?? 0}
+                          disabled
+                          className="w-full bg-slate-100/50 cursor-not-allowed text-slate-500 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+                        />
+                        <p className="text-[10px] text-slate-400 mt-0.5">
+                          Strictly derived from Likelihood
+                        </p>
+                      </div>
+                      <div className="min-w-0">
+                        <label className="block text-xs font-medium text-slate-600 mb-1">
+                          Exposure / Impact (£)
+                        </label>
+                        <input
+                          type="text"
+                          value={`£${(formData.residualImpact || 0).toLocaleString(
+                            "en-GB",
+                            { maximumFractionDigits: 0 },
+                          )}`}
+                          readOnly
+                          disabled
+                          aria-readonly="true"
+                          className="w-full bg-slate-100 text-slate-700 cursor-not-allowed border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+                        />
+                        <p className="text-[10px] text-slate-400 mt-0.5 break-words">
+                          Auto-derived from Impact ×{" "}
+                          {ctx.isProgrammeLevel
+                            ? "Programme band"
+                            : `Project size: ${ctx.projectSize}`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-2 text-xs text-slate-600 font-semibold bg-indigo-50 rounded-lg px-3 py-2 border border-indigo-100 break-words">
+                      Residual ALE = £{Math.round(rALE).toLocaleString()}{" "}
+                      &nbsp;({formData.residualProb || 0}% × £
+                      {(formData.residualImpact || 0).toLocaleString()})
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                <div className="min-w-0">
+                  <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
+                    <label className="block text-sm font-medium text-slate-700">
+                      Current Controls
+                    </label>
+                    <AIWriter
+                      context={
+                        formData.controls?.trim()
+                          ? `Enhance these risk controls by keeping ALL existing control measures and making them more specific and actionable. DO NOT remove any existing controls. ONLY return the enhanced controls, no explanations. Current: "${formData.controls}". Risk: ${formData.title}.`
+                          : `Write specific, actionable risk controls. ONLY return the controls text, no explanations. Risk: ${formData.title}. Description: ${formData.desc || "Not provided"}. Context: ${formData.project || formData.programme || "Programme Level"}.`
+                      }
+                      onSuggest={(val) => handleChange("controls", val)}
+                      placeholder="e.g. describe existing safeguards, who owns them, how effective they currently are"
+                      className="scale-90"
+                    />
+                  </div>
+                  <textarea
+                    value={formData.controls || ""}
+                    onChange={(e) => handleChange("controls", e.target.value)}
+                    disabled={isSaving}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 min-h-[80px] disabled:opacity-60 resize-y"
+                    placeholder="List of controls currently in place..."
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="min-w-0">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Response Strategy
+                    </label>
+                    <select
+                      value={formData.response || ""}
+                      onChange={(e) => handleChange("response", e.target.value)}
+                      disabled={isSaving}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 disabled:opacity-60"
+                    >
+                      <option value="">— Select Response —</option>
+                      {RISK_RESPONSES.map((r) => (
+                        <option key={r} value={r}>
+                          {r}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="min-w-0">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Risk Appetite
+                    </label>
+                    <select
+                      value={formData.appetite || ""}
+                      onChange={(e) => handleChange("appetite", e.target.value)}
+                      disabled={isSaving}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 disabled:opacity-60"
+                    >
+                      <option value="">— Select Appetite —</option>
+                      {APPETITES.map((a) => (
+                        <option key={a} value={a}>
+                          {a}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Section 3: Management */}
+            <div>
+              <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">
+                Management
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2 min-w-0">
+                  <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+                    <h4 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                      <Target className="w-4 h-4 text-amber-500 shrink-0" />
+                      Mitigation Actions / Tasks
+                    </h4>
+                    <button
+                      onClick={() => setIsAddingAction(true)}
+                      disabled={isSaving}
+                      className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Add Action
+                    </button>
+                  </div>
+
+                  <div className="space-y-2 mb-4">
+                    {riskActions.length === 0 ? (
+                      <div className="text-center py-6 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                        <p className="text-xs text-slate-400">
+                          No actions defined for this risk yet.
+                        </p>
+                      </div>
+                    ) : (
+                      riskActions.map((action) => (
+                        <div
+                          key={action.id}
+                          className="group flex items-start justify-between gap-3 bg-white border border-slate-200 p-3 rounded-xl hover:border-indigo-200 transition-all shadow-sm"
+                        >
+                          <div className="flex items-start gap-3 min-w-0 flex-1">
+                            <button
+                              onClick={() =>
+                                updateTask(action.id, {
+                                  status:
+                                    action.status === "Completed"
+                                      ? "Pending"
+                                      : "Completed",
+                                })
+                              }
+                              className="mt-0.5 shrink-0"
+                            >
+                              {action.status === "Completed" ? (
+                                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                              ) : (
+                                <Circle className="w-5 h-5 text-slate-300 group-hover:text-indigo-400" />
+                              )}
+                            </button>
+                            <div className="min-w-0 flex-1">
+                              <p
+                                className={clsx(
+                                  "text-sm font-medium break-words",
+                                  action.status === "Completed"
+                                    ? "text-slate-400 line-through"
+                                    : "text-slate-700",
+                                )}
+                              >
+                                {action.title}
+                              </p>
+                              <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-1 text-[10px] text-slate-400">
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="w-3 h-3 shrink-0" />
+                                  {action.dueDate
+                                    ? format(
+                                        new Date(action.dueDate),
+                                        "dd MMM yyyy",
+                                      )
+                                    : "No date"}
+                                </span>
+                                <span className="flex items-center gap-1 truncate">
+                                  <User className="w-3 h-3 shrink-0" />
+                                  <span className="truncate">
+                                    {action.owner || "Unassigned"}
+                                  </span>
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => deleteTask(action.id)}
+                            className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-rose-500 rounded-lg transition-all shrink-0"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))
+                    )}
+
+                    {isAddingAction && (
+                      <div className="bg-white border-2 border-indigo-100 p-4 rounded-xl shadow-md animate-in slide-in-from-top-2 duration-200">
+                        <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+                          <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">
+                            New Action
+                          </span>
+                          <AIWriter
+                            context={
+                              newActionTitle?.trim()
+                                ? `Rewrite and improve this mitigation action title. ONLY return the improved action text, no explanations or commentary. Current: "${newActionTitle}". Risk: ${formData.title}.`
+                                : `Write a specific, actionable mitigation task. ONLY return the task description, no explanations. Risk: ${formData.title}. Description: ${formData.desc || "Not provided"}. Context: ${formData.project || formData.programme || "Programme Level"}.`
+                            }
+                            onSuggest={(val) => setNewActionTitle(val)}
+                            placeholder="e.g. a short action title to reduce or transfer this risk"
+                            className="scale-90"
+                          />
+                        </div>
+                        <input
+                          autoFocus
+                          type="text"
+                          value={newActionTitle}
+                          onChange={(e) => setNewActionTitle(e.target.value)}
+                          placeholder="What needs to be done?"
+                          disabled={isAddingTask}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 mb-3 disabled:opacity-50"
+                          onKeyDown={async (e) => {
+                            if (
+                              e.key === "Enter" &&
+                              newActionTitle &&
+                              !isAddingTask
+                            ) {
+                              try {
+                                setIsAddingTask(true);
+                                await addTask({
+                                  id: generateId("TSK"),
+                                  title: newActionTitle,
+                                  status: "Pending",
+                                  priority: "Medium",
+                                  dueDate: new Date()
+                                    .toISOString()
+                                    .split("T")[0],
+                                  riskId: initialData?.id || "",
+                                  projectId: formData.projectId || "",
+                                  owner: formData.owner || "",
+                                });
+                                toast.success("Task added successfully");
+                                setNewActionTitle("");
+                                setIsAddingAction(false);
+                              } catch (err: any) {
+                                toast.error(
+                                  err.message || "Failed to add task",
+                                );
+                              } finally {
+                                setIsAddingTask(false);
+                              }
+                            }
+                          }}
+                        />
+                        <div className="flex justify-end gap-2">
+                          <button
+                            disabled={isAddingTask}
+                            onClick={() => setIsAddingAction(false)}
+                            className="px-3 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-100 rounded-lg disabled:opacity-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            disabled={!newActionTitle || isAddingTask}
+                            onClick={async () => {
+                              try {
+                                setIsAddingTask(true);
+                                await addTask({
+                                  id: generateId("TSK"),
+                                  title: newActionTitle,
+                                  status: "Pending",
+                                  priority: "Medium",
+                                  dueDate: new Date()
+                                    .toISOString()
+                                    .split("T")[0],
+                                  riskId: initialData?.id || "",
+                                  projectId: formData.projectId || "",
+                                  owner: formData.owner || "",
+                                });
+                                toast.success("Task added successfully");
+                                setNewActionTitle("");
+                                setIsAddingAction(false);
+                              } catch (err: any) {
+                                toast.error(
+                                  err.message || "Failed to add task",
+                                );
+                              } finally {
+                                setIsAddingTask(false);
+                              }
+                            }}
+                            className="px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2"
+                          >
+                            {isAddingTask ? (
+                              <>
+                                <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                Adding...
+                              </>
+                            ) : (
+                              "Add Task"
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="min-w-0">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Risk Owner
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.owner || ""}
+                    onChange={(e) => handleChange("owner", e.target.value)}
+                    disabled={isSaving}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 disabled:opacity-60"
+                    placeholder="E.g., Project Manager"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Due Date
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.dueDate || ""}
+                    onChange={(e) => handleChange("dueDate", e.target.value)}
+                    disabled={isSaving}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 disabled:opacity-60"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Status
+                  </label>
+                  <select
+                    value={formData.status || "Open"}
+                    onChange={(e) => handleChange("status", e.target.value)}
+                    disabled={isSaving}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 disabled:opacity-60"
+                  >
+                    {RISK_STATUSES.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex flex-col mt-2 min-w-0">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={!!formData.escalated}
+                      onChange={(e) =>
+                        handleChange("escalated", e.target.checked)
+                      }
+                      disabled={isSaving}
+                      className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 shrink-0 disabled:opacity-60"
+                    />
+                    <span className="text-sm font-medium text-slate-700">
+                      Escalate to Programme Level
+                    </span>
+                  </label>
+                  {!!formData.escalated && !formData.programmeId && (
+                    <p className="text-xs text-rose-600 mt-1.5 ml-8 flex items-start gap-1">
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                      <span>
+                        Cannot escalate — this project is not linked to a
+                        programme. Set the programme link in Project Initiation
+                        first.
+                      </span>
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
-        </fieldset>
+        </div>
 
-        {/* Footer */}
-        <div className="p-6 border-t border-slate-100 bg-slate-50 rounded-b-2xl flex justify-end gap-3 shrink-0">
+        {/* Footer — fixed, never scrolls */}
+        <div className="p-4 sm:p-6 border-t border-slate-100 bg-slate-50 rounded-b-2xl flex justify-end gap-3 shrink-0">
           <button
             onClick={onClose}
             disabled={isSaving}
-            className="px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 sm:px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            disabled={!formData.title || isSaving || (!!formData.escalated && !formData.programmeId)}
-            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center gap-2"
+            disabled={
+              !formData.title ||
+              isSaving ||
+              (!!formData.escalated && !formData.programmeId)
+            }
+            className="px-4 sm:px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center gap-2"
           >
             {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
             {isSaving ? "Saving..." : "Save Risk"}

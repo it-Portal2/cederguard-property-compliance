@@ -205,6 +205,11 @@ export function MeetingModal({
         setBodies(((res?.bodies ?? []) as FrameworkBody[]) || []);
       } catch (e: any) {
         console.error('[MeetingModal] framework load failed', e);
+        if (!cancelled) {
+          toast.error(
+            e?.message ?? 'Failed to load governance bodies — body picker disabled.',
+          );
+        }
       } finally {
         if (!cancelled) setLoadingBodies(false);
       }
