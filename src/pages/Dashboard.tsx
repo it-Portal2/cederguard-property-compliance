@@ -1258,7 +1258,7 @@ export function Dashboard() {
                   </div>
                   <Link
                     to={
-                      activeProject ? "/initiate" : "/projects/programme-setup"
+                      activeProject ? "/project/plan" : "/projects/programme-setup"
                     }
                     className="text-[10px] font-black text-indigo-600 hover:text-indigo-700 uppercase tracking-widest flex items-center gap-1.5"
                   >
