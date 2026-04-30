@@ -77,6 +77,7 @@ import { GovernanceTemplatesPage } from './pages/governance/TemplatesPage';
 import { GovernanceMeetingsPage } from './pages/governance/MeetingsPage';
 import { GovernanceFrameworkPage } from './pages/governance/FrameworkPage';
 import { GovernanceArchivePage } from './pages/governance/ArchivePage';
+import { GovernanceBoardCalendarPage } from './pages/governance/BoardCalendarPage';
 // Programme Governance (Phase 1 — editor sandbox)
 import { GovernanceEditorSandboxPage } from './pages/governance/EditorSandboxPage';
 // Programme Governance (Phase 6a — Reports CRUD shell)
@@ -253,6 +254,10 @@ function AppContent() {
               <Route path="/governance/meetings" element={<RoleGuard requirePM><GovernanceMeetingsPage /></RoleGuard>} />
               <Route path="/governance/framework" element={<RoleGuard requireClientAdmin><GovernanceFrameworkPage /></RoleGuard>} />
               <Route path="/governance/archive" element={<RoleGuard requirePM><GovernanceArchivePage /></RoleGuard>} />
+              {/* Phase 5.5c — public board calendar. Q14 = c.
+                  Read-only view of every scheduled meeting; available
+                  to all signed-in workspace members (no PM role gate). */}
+              <Route path="/governance/board-calendar" element={<GovernanceBoardCalendarPage />} />
               <Route path="/governance/editor-sandbox" element={<RoleGuard requireClientAdmin><GovernanceEditorSandboxPage /></RoleGuard>} />
 
               <Route path="*" element={<Navigate to="/dashboard" replace />} />

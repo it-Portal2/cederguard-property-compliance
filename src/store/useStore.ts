@@ -2001,8 +2001,23 @@ export const useStore = create<AppState>((set, get) => {
         const photoURL = firestoreProfile.photoURL || authUser?.photoURL || null;
         const displayName = firestoreProfile.displayName || authUser?.displayName || null;
 
+        // BUG FIX (5.5b post-audit): preserve `uid` from Firebase Auth when
+        // we overwrite the user with the Firestore profile. The profile
+        // doc doesn't store uid as a field (uid IS the doc id), so without
+        // this merge `user.uid` ended up undefined after init — which
+        // silently broke every governance page that filters by
+        // `r.ownerUid === user?.uid` (MyReports, MeetingsPage,
+        // ForwardPlanPage owner checks, etc.). PMs saw empty MyReports
+        // even after creating a report. PgMs didn't notice because the
+        // `isAdmin || ...` short-circuit hid it.
         set({
-          user: { ...firestoreProfile, photoURL, displayName },
+          user: {
+            ...firestoreProfile,
+            uid: authUser?.uid ?? firestoreProfile.uid,
+            email: firestoreProfile.email ?? authUser?.email,
+            photoURL,
+            displayName,
+          },
           clientId: firestoreProfile.clientId || null,
         });
 

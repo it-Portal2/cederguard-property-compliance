@@ -33,6 +33,10 @@ export interface Report {
   partClassification: Classification;
   isHRB: boolean;
   targetBoardDate: string | null;
+  // Phase 5.5b — additive meeting reference. Replaces (functionally)
+  // the legacy `targetBoardDate` string for new reports. Both kept
+  // for back-compat (ADD-never-MODIFY).
+  targetMeetingId?: string | null;
 
   softDeleted: boolean;
   deletionReason: string | null;

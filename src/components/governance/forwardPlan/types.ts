@@ -2,6 +2,7 @@
 
 export type ForwardPlanStatus =
   | 'Draft'
+  | 'Proposed'   // Phase 5.5b — PM raised via Report meeting picker, awaits PgM Confirm
   | 'Published'
   | 'Decided'
   | 'Deferred'
@@ -57,6 +58,16 @@ export interface ForwardPlanItem {
   fileLink?: string;
   decisionLink?: string;
 
+  // Phase 5.5b — additive fields
+  meetingId?: string | null;
+  requestedBy?: string | null;
+  requestedAt?: string | null;
+  lastDeclineReason?: string | null;
+  lastDeclinedBy?: string | null;
+  lastDeclinedAt?: string | null;
+  needsRerouting?: boolean;
+  reportId?: string | null;
+
   createdAt?: string;
   createdBy?: string;
   updatedAt?: string;
@@ -73,6 +84,11 @@ export const STATUS_STYLES: Record<
     label: 'Draft',
     cls: 'bg-amber-50 text-amber-700 border-amber-200',
     dot: 'bg-amber-500',
+  },
+  Proposed: {
+    label: 'Proposed',
+    cls: 'bg-sky-50 text-sky-700 border-sky-200',
+    dot: 'bg-sky-500',
   },
   Published: {
     label: 'Published',
@@ -102,6 +118,7 @@ export const STATUS_FILTERS: Array<{
 }> = [
   { key: 'all', label: 'All' },
   { key: 'Draft', label: 'Draft' },
+  { key: 'Proposed', label: 'Proposed' },
   { key: 'Published', label: 'Published' },
   { key: 'Decided', label: 'Decided' },
   { key: 'softDeleted', label: 'Soft-deleted' },

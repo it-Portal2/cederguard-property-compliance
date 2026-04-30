@@ -164,6 +164,17 @@ function seedToDoc(seed: SeedForwardPlanItem, ctx: ApiContext, ts: string) {
     comments: seed.comments ?? '',
     fileLink: seed.fileLink ?? '',
     decisionLink: seed.decisionLink ?? '',
+    // Phase 5.5b/5.5c — demo data on new shape (Q34). Resolves
+    // `meetingId` etc. to ctx where applicable so the same seed file
+    // works across workspaces.
+    meetingId: seed.meetingId ?? null,
+    reportId: seed.reportId ?? null,
+    requestedBy: seed.requestedBy === '__seed__' ? ctx.uid : seed.requestedBy ?? null,
+    requestedAt: seed.requestedBy ? ts : null,
+    lastDeclineReason: seed.lastDeclineReason ?? null,
+    lastDeclinedBy: seed.lastDeclinedBy === '__seed__' ? ctx.uid : seed.lastDeclinedBy ?? null,
+    lastDeclinedAt: seed.lastDeclinedAt ?? null,
+    needsRerouting: !!seed.needsRerouting,
     createdAt: ts,
     createdBy: ctx.uid,
     updatedAt: ts,
@@ -744,6 +755,441 @@ function parsedItemToDoc(
   };
 }
 
+// ── Phase 5.5b · Proposed/Confirm/Decline/Withdraw flow ─────────────────
+
+const PROPOSED_PENDING_STATES: ForwardPlanStatus[] = ['Proposed'];
+
+function isOwnerOrAdmin(ctx: ApiContext, ownerUid?: string | null): boolean {
+  if (ctx.isClientAdmin) return true;
+  if (!ownerUid) return false;
+  return ownerUid === ctx.uid;
+}
+
+/**
+ * Phase 5.5b — auto-create or update an FP item when a PM picks a
+ * meeting on a report. Status lands as `Proposed` (Q3 = a strict
+ * approval). Inherits what we can from the report; PgM fills the
+ * rest on Confirm.
+ *
+ * Idempotency: if a Proposed/Draft FP item already exists for this
+ * `reportId`, update it (re-pointing meetingId, flipping back to
+ * Proposed). Never duplicates.
+ */
+export async function ensureFpItemFromReport(
+  ctx: ApiContext,
+  report: {
+    id: string;
+    title: string;
+    scheme: string;
+    partClassification: string;
+    isHRB: boolean;
+  },
+  meetingId: string | null,
+): Promise<void> {
+  const ts = nowIso();
+
+  // BUG FIX (5.5b post-audit): if the PM CLEARED `targetMeetingId`
+  // (passed null) but a Proposed FP item still references this report,
+  // soft-delete that FP item — otherwise it sits as a zombie pending
+  // request the PgM has to clean up by hand. Silent fix per audit.
+  if (!meetingId) {
+    try {
+      const orphanSnap = await ctx.db
+        .collection('forwardPlanItems')
+        .where('clientId', '==', ctx.primaryUid)
+        .where('reportId', '==', report.id)
+        .where('status', '==', 'Proposed')
+        .get();
+      const batch = ctx.db.batch();
+      let count = 0;
+      for (const d of orphanSnap.docs) {
+        const data = d.data() ?? {};
+        if (data.softDeleted) continue;
+        batch.set(
+          d.ref,
+          {
+            softDeleted: true,
+            deletionReason: 'PM cleared the meeting reference on the report.',
+            deletedAt: ts,
+            deletedBy: ctx.uid,
+            updatedAt: ts,
+            updatedBy: ctx.uid,
+          },
+          { merge: true },
+        );
+        count += 1;
+      }
+      if (count > 0) await batch.commit();
+    } catch (orphanErr) {
+      console.error('[ensureFpItemFromReport] orphan cleanup failed', orphanErr);
+    }
+    return;
+  }
+
+  // Look for an existing FP item linked to this report (any status).
+  const snap = await ctx.db
+    .collection('forwardPlanItems')
+    .where('clientId', '==', ctx.primaryUid)
+    .where('reportId', '==', report.id)
+    .get();
+
+  const existing = snap.docs.find((d) => !d.data()?.softDeleted);
+
+  // Resolve target meeting date (used for `targetDecisionDate` mirror).
+  let targetDecisionDate: string | null = null;
+  try {
+    const meetingDoc = await ctx.db
+      .collection('meetings')
+      .doc(`${ctx.primaryUid}_${meetingId}`)
+      .get();
+    if (meetingDoc.exists) {
+      targetDecisionDate = (meetingDoc.data()?.date ?? null) as string | null;
+    }
+  } catch (e) {
+    console.error('[ensureFpItemFromReport] meeting lookup failed', e);
+  }
+
+  if (existing) {
+    // Update — re-point + flip back to Proposed for PgM re-confirm.
+    const data = existing.data() ?? {};
+    if (data.meetingId === meetingId && data.status === 'Proposed') {
+      // Idempotent — nothing to change.
+      return;
+    }
+    await existing.ref.set(
+      {
+        meetingId,
+        targetDecisionDate: targetDecisionDate ?? data.targetDecisionDate ?? null,
+        status: 'Proposed',
+        requestedBy: ctx.uid,
+        requestedAt: ts,
+        // Clear any decline-state when PM re-pitches.
+        lastDeclineReason: null,
+        lastDeclinedBy: null,
+        lastDeclinedAt: null,
+        needsRerouting: false,
+        updatedAt: ts,
+        updatedBy: ctx.uid,
+      },
+      { merge: true },
+    );
+    return;
+  }
+
+  // Create — auto-inherit fields from the report.
+  const itemId = `fp-${report.id}-${Math.floor(Math.random() * 36 ** 4).toString(36)}`;
+  const ref = ctx.db.collection('forwardPlanItems').doc(fpDocId(ctx, itemId));
+  // BUG FIX (5.5b post-audit): compute isKeyDecision from the inherited
+  // fields. Earlier hardcoded `false` lost the HRB → key-decision rule
+  // (rule §11 + §16) for HRB reports until a PgM edited the FP item.
+  const isKey = computeIsKeyDecision({
+    value: 0,
+    wards: [],
+    isHRB: !!report.isHRB,
+  });
+  await ref.set({
+    id: itemId,
+    clientId: ctx.primaryUid,
+    title: report.title,
+    scheme: report.scheme,
+    reportType: '',
+    typeOfEntry: 'New',
+    classification: report.partClassification,
+    isHRB: !!report.isHRB,
+    wards: [],
+    value: 0,
+    targetDecisionDate,
+    decisionRoute: '',
+    routingMode: 'sequential',
+    boardGates: {}, // legacy fallback empty for new items
+    strategicLead: '',
+    reportAuthor: '',
+    status: 'Proposed' as ForwardPlanStatus,
+    isKeyDecision: isKey,
+    softDeleted: false,
+    deletionReason: null,
+    deletedAt: null,
+    deletedBy: null,
+    meetingId,
+    reportId: report.id,
+    requestedBy: ctx.uid,
+    requestedAt: ts,
+    createdAt: ts,
+    createdBy: ctx.uid,
+    updatedAt: ts,
+    updatedBy: ctx.uid,
+  });
+}
+
+async function loadFpItemForTransition(
+  ctx: ApiContext,
+  itemId: string,
+  res: any,
+  allowedStatuses: ForwardPlanStatus[],
+  ownerCheck: 'owner-or-admin' | 'admin-only' | 'requester-only' = 'owner-or-admin',
+): Promise<{ ref: FirebaseFirestore.DocumentReference; data: any } | null> {
+  if (typeof itemId !== 'string' || !itemId) {
+    res.status(400).json({
+      success: false,
+      error: 'itemId required.',
+      code: 'INVALID_INPUT',
+    });
+    return null;
+  }
+  const ref = ctx.db.collection('forwardPlanItems').doc(fpDocId(ctx, itemId));
+  const snap = await ref.get();
+  if (!snap.exists) {
+    res.status(404).json({
+      success: false,
+      error: 'Forward Plan item not found.',
+      code: 'NOT_FOUND',
+    });
+    return null;
+  }
+  const data = snap.data() ?? {};
+  if (data.clientId !== ctx.primaryUid) {
+    res.status(403).json({
+      success: false,
+      error: 'Item belongs to another workspace.',
+      code: 'FORBIDDEN',
+    });
+    return null;
+  }
+  if (ownerCheck === 'admin-only' && !ctx.isClientAdmin) {
+    res.status(403).json({
+      success: false,
+      error: 'Only a Client Admin can perform this action.',
+      code: 'FORBIDDEN',
+    });
+    return null;
+  }
+  if (ownerCheck === 'requester-only' && data.requestedBy !== ctx.uid) {
+    res.status(403).json({
+      success: false,
+      error: 'Only the PM who raised the request can withdraw it.',
+      code: 'FORBIDDEN',
+    });
+    return null;
+  }
+  if (
+    ownerCheck === 'owner-or-admin' &&
+    !isOwnerOrAdmin(ctx, data.requestedBy ?? data.createdBy)
+  ) {
+    res.status(403).json({
+      success: false,
+      error: 'Only the owner or a Client Admin can perform this action.',
+      code: 'FORBIDDEN',
+    });
+    return null;
+  }
+  if (!allowedStatuses.includes(data.status as ForwardPlanStatus)) {
+    res.status(400).json({
+      success: false,
+      error: `This action requires the item to be in one of: ${allowedStatuses.join(', ')}.`,
+      code: 'INVALID_STATE',
+    });
+    return null;
+  }
+  return { ref, data };
+}
+
+async function governanceConfirmFpItem(req: any, res: any, ctx: ApiContext) {
+  try {
+    if (!ctx.isClientAdmin) {
+      return res.status(403).json({
+        success: false,
+        error: 'Only a Client Admin can confirm a request.',
+        code: 'FORBIDDEN',
+      });
+    }
+    const { itemId } = req.body ?? {};
+    const loaded = await loadFpItemForTransition(
+      ctx,
+      itemId,
+      res,
+      PROPOSED_PENDING_STATES,
+      'admin-only',
+    );
+    if (!loaded) return;
+    const ts = nowIso();
+    await loaded.ref.set(
+      {
+        status: 'Published' as ForwardPlanStatus,
+        confirmedAt: ts,
+        confirmedBy: ctx.uid,
+        updatedAt: ts,
+        updatedBy: ctx.uid,
+      },
+      { merge: true },
+    );
+
+    // Sync to meeting.linkedReportIds — append if not present.
+    const data = loaded.data;
+    if (data.meetingId && data.reportId) {
+      try {
+        const meetingRef = ctx.db
+          .collection('meetings')
+          .doc(`${ctx.primaryUid}_${data.meetingId}`);
+        const meetingSnap = await meetingRef.get();
+        if (meetingSnap.exists) {
+          const m = meetingSnap.data() ?? {};
+          const linked: string[] = Array.isArray(m.linkedReportIds)
+            ? m.linkedReportIds
+            : [];
+          if (!linked.includes(data.reportId)) {
+            await meetingRef.set(
+              {
+                linkedReportIds: [...linked, data.reportId],
+                updatedAt: ts,
+                updatedBy: ctx.uid,
+              },
+              { merge: true },
+            );
+          }
+        }
+      } catch (linkErr) {
+        console.error('[governanceConfirmFpItem] link sync failed', linkErr);
+      }
+    }
+
+    // Audit row (Q25 = yes).
+    try {
+      await ctx.db.collection('auditEvents').add({
+        clientId: ctx.primaryUid,
+        action: 'forwardPlan.confirmed',
+        actorUid: ctx.uid,
+        timestamp: ts,
+        meta: { itemId, reportId: data.reportId, meetingId: data.meetingId },
+      });
+    } catch (auditErr) {
+      console.error('[governanceConfirmFpItem] audit failed', auditErr);
+    }
+
+    const latest = (await loaded.ref.get()).data();
+    return res.status(200).json({ success: true, item: { _id: loaded.ref.id, ...latest } });
+  } catch (e: any) {
+    console.error('[governanceConfirmFpItem] failed:', e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? 'Confirm failed.',
+      code: 'CONFIRM_FAILED',
+    });
+  }
+}
+
+async function governanceDeclineFpItem(req: any, res: any, ctx: ApiContext) {
+  try {
+    if (!ctx.isClientAdmin) {
+      return res.status(403).json({
+        success: false,
+        error: 'Only a Client Admin can decline a request.',
+        code: 'FORBIDDEN',
+      });
+    }
+    const { itemId, reason } = req.body ?? {};
+    const trimmedReason = typeof reason === 'string' ? reason.trim() : '';
+    if (trimmedReason.length < 5) {
+      return res.status(400).json({
+        success: false,
+        error: 'A decline reason of at least 5 characters is required.',
+        code: 'INVALID_INPUT',
+      });
+    }
+    const loaded = await loadFpItemForTransition(
+      ctx,
+      itemId,
+      res,
+      PROPOSED_PENDING_STATES,
+      'admin-only',
+    );
+    if (!loaded) return;
+    const ts = nowIso();
+    // Q10 = c — flip back to Draft (PM-owned again, no separate Declined state).
+    await loaded.ref.set(
+      {
+        status: 'Draft' as ForwardPlanStatus,
+        lastDeclineReason: trimmedReason,
+        lastDeclinedBy: ctx.uid,
+        lastDeclinedAt: ts,
+        updatedAt: ts,
+        updatedBy: ctx.uid,
+      },
+      { merge: true },
+    );
+    try {
+      await ctx.db.collection('auditEvents').add({
+        clientId: ctx.primaryUid,
+        action: 'forwardPlan.declined',
+        actorUid: ctx.uid,
+        timestamp: ts,
+        meta: { itemId, reason: trimmedReason },
+      });
+    } catch (auditErr) {
+      console.error('[governanceDeclineFpItem] audit failed', auditErr);
+    }
+    const latest = (await loaded.ref.get()).data();
+    return res.status(200).json({ success: true, item: { _id: loaded.ref.id, ...latest } });
+  } catch (e: any) {
+    console.error('[governanceDeclineFpItem] failed:', e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? 'Decline failed.',
+      code: 'DECLINE_FAILED',
+    });
+  }
+}
+
+async function governanceWithdrawFpItem(req: any, res: any, ctx: ApiContext) {
+  try {
+    const { itemId } = req.body ?? {};
+    const loaded = await loadFpItemForTransition(
+      ctx,
+      itemId,
+      res,
+      PROPOSED_PENDING_STATES,
+      'requester-only',
+    );
+    if (!loaded) return;
+    const ts = nowIso();
+    // Q21 = c — soft-delete + audit (PgM sees the trail).
+    await loaded.ref.set(
+      {
+        softDeleted: true,
+        deletionReason: 'PM withdrew the request.',
+        deletedAt: ts,
+        deletedBy: ctx.uid,
+        updatedAt: ts,
+        updatedBy: ctx.uid,
+      },
+      { merge: true },
+    );
+    try {
+      await ctx.db.collection('auditEvents').add({
+        clientId: ctx.primaryUid,
+        action: 'forwardPlan.withdrawn',
+        actorUid: ctx.uid,
+        timestamp: ts,
+        meta: {
+          itemId,
+          reportId: loaded.data.reportId,
+          meetingId: loaded.data.meetingId,
+        },
+      });
+    } catch (auditErr) {
+      console.error('[governanceWithdrawFpItem] audit failed', auditErr);
+    }
+    const latest = (await loaded.ref.get()).data();
+    return res.status(200).json({ success: true, item: { _id: loaded.ref.id, ...latest } });
+  } catch (e: any) {
+    console.error('[governanceWithdrawFpItem] failed:', e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? 'Withdraw failed.',
+      code: 'WITHDRAW_FAILED',
+    });
+  }
+}
+
 export const governanceForwardPlanRoutes: Record<string, any> = {
   governanceListForwardPlanItems,
   governanceGetForwardPlanItem,
@@ -752,4 +1198,8 @@ export const governanceForwardPlanRoutes: Record<string, any> = {
   governanceMarkForwardPlanItemDecided,
   governanceImportForwardPlanDryRun,
   governanceImportForwardPlanCommit,
+  // Phase 5.5b — Proposed/Confirm/Decline/Withdraw flow
+  governanceConfirmFpItem,
+  governanceDeclineFpItem,
+  governanceWithdrawFpItem,
 };

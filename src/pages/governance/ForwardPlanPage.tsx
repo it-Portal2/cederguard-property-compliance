@@ -39,8 +39,9 @@ import { ForwardPlanCalendarView } from '../../components/governance/forwardPlan
 import { ForwardPlanTimelineView } from '../../components/governance/forwardPlan/ForwardPlanTimelineView';
 import { ForwardPlanWorkflowView } from '../../components/governance/forwardPlan/ForwardPlanWorkflowView';
 import { ForwardPlanImportModal } from '../../components/governance/forwardPlan/ForwardPlanImportModal';
+import { SchedulePlannerView } from '../../components/governance/forwardPlan/SchedulePlannerView';
 
-type ViewMode = 'list' | 'calendar' | 'timeline' | 'workflow';
+type ViewMode = 'schedule' | 'list' | 'calendar' | 'timeline' | 'workflow';
 
 function formatGBP(value: number): string {
   if (!value || Number.isNaN(value)) return '—';
@@ -66,6 +67,40 @@ export function GovernanceForwardPlanPage() {
   const [restoringId, setRestoringId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [importOpen, setImportOpen] = useState(false);
+  // Phase 5.5b — Proposed/Confirm/Decline/Withdraw flow
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [withdrawingId, setWithdrawingId] = useState<string | null>(null);
+  const [pendingDecline, setPendingDecline] = useState<ForwardPlanItem | null>(null);
+  const [declineBusy, setDeclineBusy] = useState(false);
+  // Q8 = b — Schedule view becomes default ONLY when workspace has zero
+  // meetings yet (onboarding-aware). Single mount-time check; once
+  // user picks a different view, we honour their choice.
+  const [scheduleEmptyChecked, setScheduleEmptyChecked] = useState(false);
+
+  useEffect(() => {
+    if (scheduleEmptyChecked) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await api.governanceListMeetings();
+        if (cancelled) return;
+        const live = ((res?.items ?? []) as Array<{ softDeleted?: boolean }>).filter(
+          (m) => !m.softDeleted,
+        );
+        if (live.length === 0) {
+          setViewMode('schedule');
+        }
+      } catch (e: any) {
+        // Non-fatal — fall through to List default.
+        console.error('[ForwardPlanPage] empty-check failed', e);
+      } finally {
+        if (!cancelled) setScheduleEmptyChecked(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [scheduleEmptyChecked]);
 
   // Reason-required action queue (soft-delete + mark-as-decided).
   const [pendingReason, setPendingReason] = useState<PendingReason | null>(null);
@@ -96,15 +131,24 @@ export function GovernanceForwardPlanPage() {
 
   // ── StatsCard counts ────────────────────────────────────────────────────
   const counts = useMemo(() => {
-    const totals = { Draft: 0, Published: 0, Decided: 0, softDeleted: 0 };
+    const totals = {
+      Draft: 0,
+      Proposed: 0,
+      Published: 0,
+      Decided: 0,
+      softDeleted: 0,
+      needsRerouting: 0,
+    };
     for (const it of items) {
       if (it.softDeleted) {
         totals.softDeleted += 1;
         continue;
       }
       if (it.status === 'Draft') totals.Draft += 1;
+      else if (it.status === 'Proposed') totals.Proposed += 1;
       else if (it.status === 'Published') totals.Published += 1;
       else if (it.status === 'Decided') totals.Decided += 1;
+      if (it.needsRerouting) totals.needsRerouting += 1;
     }
     return totals;
   }, [items]);
@@ -144,6 +188,69 @@ export function GovernanceForwardPlanPage() {
       return next.sort((a, b) => (a.title ?? '').localeCompare(b.title ?? ''));
     });
     setOpened(item);
+  };
+
+  // Phase 5.5b — PgM confirms a Proposed FP item (auto-publishes + syncs
+  // to meeting.linkedReportIds server-side).
+  const handleConfirmFp = async (item: ForwardPlanItem) => {
+    if (confirmingId) return;
+    setConfirmingId(item.id);
+    try {
+      const res = await api.governanceConfirmFpItem(item.id);
+      if (!res?.success) throw new Error(res?.error ?? 'Confirm failed.');
+      setItems((prev) =>
+        prev.map((i) => (i.id === item.id ? (res.item as ForwardPlanItem) : i)),
+      );
+      toast.success('Request confirmed — published to the board.');
+    } catch (e: any) {
+      console.error('[ForwardPlanPage] confirm failed', e);
+      toast.error(e?.message ?? 'Confirm failed.');
+    } finally {
+      setConfirmingId(null);
+    }
+  };
+
+  // PM withdraws their own Proposed item before PgM acts (Q21 = c —
+  // soft-delete + audit row).
+  const handleWithdrawFp = async (item: ForwardPlanItem) => {
+    if (withdrawingId) return;
+    setWithdrawingId(item.id);
+    try {
+      const res = await api.governanceWithdrawFpItem(item.id);
+      if (!res?.success) throw new Error(res?.error ?? 'Withdraw failed.');
+      setItems((prev) =>
+        prev.map((i) => (i.id === item.id ? (res.item as ForwardPlanItem) : i)),
+      );
+      toast.success('Request withdrawn');
+    } catch (e: any) {
+      console.error('[ForwardPlanPage] withdraw failed', e);
+      toast.error(e?.message ?? 'Withdraw failed.');
+    } finally {
+      setWithdrawingId(null);
+    }
+  };
+
+  // PgM declines a Proposed FP item (Q10 = c — flips back to Draft +
+  // captures lastDeclineReason). Reason ≥5 chars enforced server-side.
+  const handleDeclineConfirm = async (reason: string) => {
+    if (!pendingDecline) return;
+    setDeclineBusy(true);
+    try {
+      const res = await api.governanceDeclineFpItem(pendingDecline.id, reason);
+      if (!res?.success) throw new Error(res?.error ?? 'Decline failed.');
+      setItems((prev) =>
+        prev.map((i) =>
+          i.id === pendingDecline.id ? (res.item as ForwardPlanItem) : i,
+        ),
+      );
+      toast.success('Request declined — PM notified to pick another meeting.');
+      setPendingDecline(null);
+    } catch (e: any) {
+      console.error('[ForwardPlanPage] decline failed', e);
+      toast.error(e?.message ?? 'Decline failed.');
+    } finally {
+      setDeclineBusy(false);
+    }
   };
 
   const handleRestore = async (item: ForwardPlanItem) => {
@@ -379,6 +486,25 @@ export function GovernanceForwardPlanPage() {
     ...(canEdit
       ? ([
           {
+            key: 'confirm',
+            label: 'Confirm request',
+            icon: CheckCircle2,
+            onClick: (r: ForwardPlanItem) => handleConfirmFp(r),
+            isLoading: (r: ForwardPlanItem) => confirmingId === r.id,
+            isVisible: (r: ForwardPlanItem) =>
+              r.status === 'Proposed' && !r.softDeleted,
+          },
+          {
+            key: 'decline',
+            label: 'Decline request',
+            icon: ShieldAlert,
+            isDanger: true,
+            onClick: (r: ForwardPlanItem) =>
+              setPendingDecline(r),
+            isVisible: (r: ForwardPlanItem) =>
+              r.status === 'Proposed' && !r.softDeleted,
+          },
+          {
             key: 'mark-decided',
             label: 'Mark as Decided',
             icon: CheckCircle2,
@@ -406,6 +532,19 @@ export function GovernanceForwardPlanPage() {
           },
         ] as RowAction<ForwardPlanItem>[])
       : []),
+    // PM withdraw — only their own Proposed items
+    {
+      key: 'withdraw',
+      label: 'Withdraw request',
+      icon: RotateCcw,
+      onClick: (r: ForwardPlanItem) => handleWithdrawFp(r),
+      isLoading: (r: ForwardPlanItem) => withdrawingId === r.id,
+      isVisible: (r: ForwardPlanItem) =>
+        r.status === 'Proposed' &&
+        !r.softDeleted &&
+        !!user?.uid &&
+        r.requestedBy === user.uid,
+    },
   ];
 
   return (
@@ -438,6 +577,7 @@ export function GovernanceForwardPlanPage() {
 
         <div className="inline-flex self-start rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-[11px] font-semibold md:mt-1">
           {([
+            { key: 'schedule' as const, label: 'Schedule', Icon: CalendarIcon },
             { key: 'list' as const, label: 'List', Icon: ListIcon },
             { key: 'calendar' as const, label: 'Calendar', Icon: CalendarIcon },
             { key: 'timeline' as const, label: 'Timeline', Icon: BarChart3 },
@@ -497,7 +637,56 @@ export function GovernanceForwardPlanPage() {
         />
       </section>
 
-      {/* View body — list table or calendar grid */}
+      {/* Phase 5.5c — re-routing banner. Server flags FP items + reports
+          when their linked meeting gets cancelled (Q5 = a). PM/PgM picks
+          a new meeting on each. Banner sits above the Proposed banner so
+          re-routing is the more urgent signal. */}
+      {!loading && counts.needsRerouting > 0 && (
+        <div className="flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+            <div>
+              <p className="text-sm font-bold text-amber-900">
+                {counts.needsRerouting} item{counts.needsRerouting === 1 ? '' : 's'} need re-routing
+              </p>
+              <p className="text-[11px] text-amber-700">
+                Their linked meeting was cancelled — open each item and pick a new meeting from the schedule.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Phase 5.5b — rose banner above the body when Proposed items exist.
+          Click filters list to Proposed; PgM acts on each row via Confirm/Decline. */}
+      {!loading && counts.Proposed > 0 && (
+        <div className="flex items-center justify-between rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
+          <div className="flex items-start gap-3">
+            <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
+            <div>
+              <p className="text-sm font-bold text-rose-900">
+                {counts.Proposed} pending request{counts.Proposed === 1 ? '' : 's'} from PMs
+              </p>
+              <p className="text-[11px] text-rose-700">
+                {canEdit
+                  ? 'Confirm to publish to the board, or decline with a reason so the PM can pick another meeting.'
+                  : 'Your Programme Manager will confirm or decline soon.'}
+              </p>
+            </div>
+          </div>
+          {viewMode !== 'list' && (
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              className="inline-flex h-8 items-center rounded-md bg-rose-600 px-3 text-[11px] font-semibold text-white transition-colors hover:bg-rose-700"
+            >
+              Open list
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* View body — schedule planner / list table / calendar / timeline / workflow */}
       {loading ? (
         <div className="space-y-2">
           <div className="h-12 animate-pulse rounded-lg bg-slate-100" />
@@ -505,6 +694,8 @@ export function GovernanceForwardPlanPage() {
           <div className="h-12 animate-pulse rounded-lg bg-slate-100" />
           <div className="h-12 animate-pulse rounded-lg bg-slate-100" />
         </div>
+      ) : viewMode === 'schedule' ? (
+        <SchedulePlannerView canEdit={canEdit} />
       ) : viewMode === 'list' ? (
         <DynamicTable<ForwardPlanItem>
           data={tableData}
@@ -613,6 +804,18 @@ export function GovernanceForwardPlanPage() {
         loading={reasonBusy}
         onConfirm={handleReasonConfirm}
         onCancel={() => (reasonBusy ? null : setPendingReason(null))}
+      />
+      <ReasonDialog
+        open={pendingDecline !== null}
+        title={`Decline "${pendingDecline?.title ?? ''}"?`}
+        message="The item flips back to Draft so the PM can pick another meeting. Reason is captured for the audit trail."
+        reasonLabel="Reason for decline"
+        reasonPlaceholder="e.g. May 8 DPB already at capacity — please pick June."
+        confirmLabel="Decline request"
+        variant="danger"
+        loading={declineBusy}
+        onConfirm={handleDeclineConfirm}
+        onCancel={() => (declineBusy ? null : setPendingDecline(null))}
       />
     </motion.div>
   );

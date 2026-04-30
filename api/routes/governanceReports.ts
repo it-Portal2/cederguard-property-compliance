@@ -30,6 +30,7 @@ import {
   reportPdfFilename,
 } from '../lib/reportPdf.js';
 import { uploadAsset, readAssetAsDataUri } from '../lib/storage.js';
+import { ensureFpItemFromReport } from './governanceForwardPlan.js';
 
 const REPORT_ID_RE = /^[a-z0-9_-]{1,80}$/i;
 
@@ -43,6 +44,7 @@ const REPORT_WRITABLE_FIELDS = [
   'partClassification',
   'isHRB',
   'targetBoardDate',
+  'targetMeetingId', // Phase 5.5b — optional meeting reference
   'reviewerUid',
   'reviewerLabel',
   // Status restricted: 6a allows only 'Draft'. State transitions land in 6c.
@@ -354,6 +356,61 @@ async function governanceUpsertReport(req: any, res: any, ctx: ApiContext) {
       });
     }
 
+    // Phase 5.5b — 72h lock (Q9 = a + 3-day rule). PM can change
+    // `targetMeetingId` freely EXCEPT within 72 hours of the chosen
+    // meeting date. After the lock, only the workspace admin can change
+    // it. Server-enforced (lesson #75 — UI gate must agree, but server
+    // is truth).
+    if (
+      safePatch.targetMeetingId !== undefined &&
+      safePatch.targetMeetingId !== null &&
+      typeof safePatch.targetMeetingId === 'string'
+    ) {
+      try {
+        const meetingDoc = await ctx.db
+          .collection('meetings')
+          .doc(`${ctx.primaryUid}_${safePatch.targetMeetingId}`)
+          .get();
+        if (!meetingDoc.exists) {
+          return res.status(400).json({
+            success: false,
+            error: 'Selected meeting not found in this workspace.',
+            code: 'NOT_FOUND',
+          });
+        }
+        const m = meetingDoc.data() ?? {};
+        if (m.status === 'Cancelled') {
+          return res.status(400).json({
+            success: false,
+            error: 'Selected meeting is cancelled — pick another.',
+            code: 'INVALID_STATE',
+          });
+        }
+        // 72h lock — applies to non-admin callers only.
+        // KNOWN LIMITATION (5.5b post-audit): meeting times stored as
+        // UK-local strings ("10:00") parsed here as UTC. During BST
+        // (last Sun of Mar → last Sun of Oct), real meeting time is 1h
+        // earlier than calculated, so the lock kicks in ~1h LATER than
+        // ideal. Acceptable for a soft rule on a UK-only product;
+        // proper TZ-aware fix lands in the Phase 12 polish pass when
+        // we have a full date library budget.
+        if (!ctx.isClientAdmin && typeof m.date === 'string') {
+          const meetingTs = new Date(`${m.date}T${m.timeStart ?? '00:00'}:00Z`).getTime();
+          const lockTs = meetingTs - 72 * 60 * 60 * 1000;
+          if (Date.now() > lockTs) {
+            return res.status(400).json({
+              success: false,
+              error:
+                'This meeting is within 72 hours — only the Programme Manager can change the slot now.',
+              code: 'LOCKED_72H',
+            });
+          }
+        }
+      } catch (e) {
+        console.error('[governanceUpsertReport] meeting validate failed', e);
+      }
+    }
+
     const ref = ctx.db.collection('reports').doc(reportDocId(ctx, reportId));
     const snap = await ref.get();
     const exists = snap.exists;
@@ -409,7 +466,35 @@ async function governanceUpsertReport(req: any, res: any, ctx: ApiContext) {
       payload.abandonmentReason = null;
     }
     await ref.set(payload, { merge: true });
-    const latest = (await ref.get()).data();
+    const latest = (await ref.get()).data() ?? {};
+
+    // Phase 5.5b — when `targetMeetingId` is set, auto-create or update
+    // the linked Forward Plan item as `Proposed`. This is the "tell"
+    // signal Anthony described — PM picks meeting on report → PgM sees
+    // it in the FP page → confirms or declines.
+    if (
+      typeof latest.targetMeetingId === 'string' &&
+      latest.targetMeetingId &&
+      latest.id
+    ) {
+      try {
+        await ensureFpItemFromReport(
+          ctx,
+          {
+            id: latest.id as string,
+            title: (latest.title ?? '') as string,
+            scheme: (latest.scheme ?? '') as string,
+            partClassification: (latest.partClassification ?? 'Open') as string,
+            isHRB: !!latest.isHRB,
+          },
+          latest.targetMeetingId as string,
+        );
+      } catch (fpErr) {
+        console.error('[governanceUpsertReport] FP auto-create failed', fpErr);
+        // Non-fatal — report still saves; PM can re-pick meeting to retry.
+      }
+    }
+
     return res.status(200).json({ success: true, item: { _id: ref.id, ...latest } });
   } catch (e: any) {
     console.error('[governanceUpsertReport] failed:', e);

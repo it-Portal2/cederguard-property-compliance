@@ -17,8 +17,19 @@
 // field (lesson #10). 8b adds the `minutes` / `decisions` /
 // `actionItems` / `linkedReportIds` / `linkedProjectIds` fields.
 
+import * as XLSX from 'xlsx';
 import type { ApiContext } from '../lib/context.js';
 import { SEED_MEETINGS, type MeetingStatus } from '../lib/meetingsSeed.js';
+import {
+  parseMeetingsXlsx,
+  type ParsedMeeting,
+  type FrameworkBodyLite,
+} from '../lib/meetingsXlsxImport.js';
+import {
+  isWorkingDay,
+  nextWorkingDay,
+  shiftIfNonWorking,
+} from '../lib/ukBankHolidays.js';
 
 const MEETING_ID_RE = /^[a-z0-9_-]{1,80}$/i;
 
@@ -536,15 +547,251 @@ async function governanceCancelMeeting(
       },
       { merge: true },
     );
+
+    // Phase 5.5c — flag linked FP items + reports for re-routing.
+    // Q5 = a (manual re-route via banner), Q16 = a (auto-decline
+    // Proposed items so PgM doesn't have to clean them up by hand).
+    let flaggedFpItems = 0;
+    let flaggedReports = 0;
+    try {
+      // FP items pointing at this meeting.
+      const fpSnap = await ctx.db
+        .collection('forwardPlanItems')
+        .where('clientId', '==', ctx.primaryUid)
+        .where('meetingId', '==', meetingId)
+        .get();
+      const fpBatch = ctx.db.batch();
+      for (const d of fpSnap.docs) {
+        const fp = d.data() ?? {};
+        if (fp.softDeleted) continue;
+        const update: Record<string, any> = {
+          needsRerouting: true,
+          updatedAt: ts,
+          updatedBy: ctx.uid,
+        };
+        // Q16 = a — Proposed items awaiting confirm flip back to Draft
+        // with the cancellation as `lastDeclineReason`. PM picks new meeting.
+        if (fp.status === 'Proposed') {
+          update.status = 'Draft';
+          update.lastDeclineReason = `Linked meeting cancelled: ${trimmedReason}`;
+          update.lastDeclinedBy = ctx.uid;
+          update.lastDeclinedAt = ts;
+        }
+        fpBatch.set(d.ref, update, { merge: true });
+        flaggedFpItems += 1;
+      }
+      if (flaggedFpItems > 0) await fpBatch.commit();
+
+      // Reports referencing this meeting via targetMeetingId.
+      const repSnap = await ctx.db
+        .collection('reports')
+        .where('clientId', '==', ctx.primaryUid)
+        .where('targetMeetingId', '==', meetingId)
+        .get();
+      const repBatch = ctx.db.batch();
+      for (const d of repSnap.docs) {
+        const r = d.data() ?? {};
+        if (r.softDeleted) continue;
+        repBatch.set(
+          d.ref,
+          {
+            needsRerouting: true,
+            updatedAt: ts,
+            updatedBy: ctx.uid,
+          },
+          { merge: true },
+        );
+        flaggedReports += 1;
+      }
+      if (flaggedReports > 0) await repBatch.commit();
+    } catch (cascadeErr) {
+      // Non-fatal — meeting still gets cancelled even if the cascade
+      // hits a Firestore hiccup. Log loud so it surfaces in monitoring.
+      console.error('[governanceCancelMeeting] cascade flag failed', cascadeErr);
+    }
+
+    // Audit row.
+    try {
+      await ctx.db.collection('auditEvents').add({
+        clientId: ctx.primaryUid,
+        action: 'meeting.cancelled',
+        actorUid: ctx.uid,
+        timestamp: ts,
+        meta: {
+          meetingId,
+          reason: trimmedReason,
+          flaggedFpItems,
+          flaggedReports,
+        },
+      });
+    } catch (auditErr) {
+      console.error('[governanceCancelMeeting] audit failed', auditErr);
+    }
+
     const latest = (await ref.get()).data();
-    return res
-      .status(200)
-      .json({ success: true, item: { _id: ref.id, ...latest } });
+    return res.status(200).json({
+      success: true,
+      item: { _id: ref.id, ...latest },
+      flaggedFpItems,
+      flaggedReports,
+    });
   } catch (e: any) {
     console.error('[governanceCancelMeeting] failed:', e);
     return res.status(500).json({
       success: false,
       error: e?.message ?? 'Cancel failed.',
+      code: 'ACTION_FAILED',
+    });
+  }
+}
+
+async function governanceRescheduleMeeting(
+  req: any,
+  res: any,
+  ctx: ApiContext,
+) {
+  try {
+    const { meetingId, newDate, newTimeStart, newTimeEnd, reason } = req.body ?? {};
+    if (!MEETING_ID_RE.test(meetingId ?? '')) {
+      return res.status(400).json({
+        success: false,
+        error: 'meetingId required.',
+        code: 'INVALID_INPUT',
+      });
+    }
+    if (typeof newDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(newDate)) {
+      return res.status(400).json({
+        success: false,
+        error: 'newDate must be ISO yyyy-mm-dd.',
+        code: 'INVALID_INPUT',
+      });
+    }
+    const trimmedReason = typeof reason === 'string' ? reason.trim() : '';
+    if (trimmedReason.length < 5) {
+      return res.status(400).json({
+        success: false,
+        error: 'A reschedule reason of at least 5 characters is required.',
+        code: 'INVALID_INPUT',
+      });
+    }
+    const ref = ctx.db.collection('meetings').doc(meetingDocId(ctx, meetingId));
+    const snap = await ref.get();
+    if (!snap.exists) {
+      return res
+        .status(404)
+        .json({ success: false, error: 'Meeting not found.', code: 'NOT_FOUND' });
+    }
+    const data = snap.data() ?? {};
+    if (data.clientId !== ctx.primaryUid) {
+      return res.status(403).json({
+        success: false,
+        error: 'Meeting belongs to another workspace.',
+        code: 'FORBIDDEN',
+      });
+    }
+    if (!isOwnerOrAdmin(ctx, data.ownerUid)) {
+      return res.status(403).json({
+        success: false,
+        error:
+          'Only the meeting owner or a Client Admin can reschedule this meeting.',
+        code: 'FORBIDDEN',
+      });
+    }
+    if (data.status !== 'Scheduled') {
+      return res.status(400).json({
+        success: false,
+        error: 'Only Scheduled meetings can be rescheduled.',
+        code: 'INVALID_STATE',
+      });
+    }
+    const ts = nowIso();
+    const oldDate = data.date as string | undefined;
+    const oldTimeStart = data.timeStart as string | undefined;
+    const oldTimeEnd = data.timeEnd as string | undefined;
+
+    const update: Record<string, any> = {
+      date: newDate,
+      updatedAt: ts,
+      updatedBy: ctx.uid,
+      // Append to a `rescheduleHistory[]` so the trail survives multiple
+      // moves. Audit-clean — every move is recorded with reason.
+      rescheduleHistory: [
+        ...(Array.isArray(data.rescheduleHistory) ? data.rescheduleHistory : []),
+        {
+          at: ts,
+          by: ctx.uid,
+          reason: trimmedReason,
+          fromDate: oldDate ?? null,
+          fromTimeStart: oldTimeStart ?? null,
+          fromTimeEnd: oldTimeEnd ?? null,
+          toDate: newDate,
+          toTimeStart: newTimeStart ?? oldTimeStart ?? null,
+          toTimeEnd: newTimeEnd ?? oldTimeEnd ?? null,
+        },
+      ],
+    };
+    if (typeof newTimeStart === 'string' && /^\d{2}:\d{2}$/.test(newTimeStart)) {
+      update.timeStart = newTimeStart;
+    }
+    if (typeof newTimeEnd === 'string' && /^\d{2}:\d{2}$/.test(newTimeEnd)) {
+      update.timeEnd = newTimeEnd;
+    }
+    await ref.set(update, { merge: true });
+
+    // Sync linked FP items' targetDecisionDate so the rendered list
+    // stays accurate. Linked items keep their `meetingId` — they just
+    // get the new date mirrored.
+    try {
+      const fpSnap = await ctx.db
+        .collection('forwardPlanItems')
+        .where('clientId', '==', ctx.primaryUid)
+        .where('meetingId', '==', meetingId)
+        .get();
+      if (!fpSnap.empty) {
+        const fpBatch = ctx.db.batch();
+        for (const d of fpSnap.docs) {
+          fpBatch.set(
+            d.ref,
+            {
+              targetDecisionDate: newDate,
+              updatedAt: ts,
+              updatedBy: ctx.uid,
+            },
+            { merge: true },
+          );
+        }
+        await fpBatch.commit();
+      }
+    } catch (cascadeErr) {
+      console.error('[governanceRescheduleMeeting] cascade failed', cascadeErr);
+    }
+
+    try {
+      await ctx.db.collection('auditEvents').add({
+        clientId: ctx.primaryUid,
+        action: 'meeting.rescheduled',
+        actorUid: ctx.uid,
+        timestamp: ts,
+        meta: {
+          meetingId,
+          fromDate: oldDate ?? null,
+          toDate: newDate,
+          reason: trimmedReason,
+        },
+      });
+    } catch (auditErr) {
+      console.error('[governanceRescheduleMeeting] audit failed', auditErr);
+    }
+
+    const latest = (await ref.get()).data();
+    return res
+      .status(200)
+      .json({ success: true, item: { _id: ref.id, ...latest } });
+  } catch (e: any) {
+    console.error('[governanceRescheduleMeeting] failed:', e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? 'Reschedule failed.',
       code: 'ACTION_FAILED',
     });
   }
@@ -1028,6 +1275,473 @@ async function governanceListWorkspaceMembers(
   }
 }
 
+// ── Phase 5.5a · Schedule view + bulk creation ──────────────────────────
+
+// PgM-only gate — bulk-create + import + export are workspace-level
+// operations. Server enforces, UI mirrors.
+function requireClientAdmin(ctx: ApiContext, res: any): boolean {
+  if (!ctx.isClientAdmin) {
+    res.status(403).json({
+      success: false,
+      error: 'Only a Client Admin can perform schedule operations.',
+      code: 'FORBIDDEN',
+    });
+    return false;
+  }
+  return true;
+}
+
+async function loadFrameworkBodies(ctx: ApiContext): Promise<FrameworkBodyLite[]> {
+  const snap = await ctx.db
+    .collection('governanceBodies')
+    .where('clientId', '==', ctx.primaryUid)
+    .get();
+  return snap.docs.map((d) => {
+    const data = d.data() ?? {};
+    return {
+      _id: d.id,
+      id: data.id ?? d.id,
+      name: data.name ?? '',
+    };
+  });
+}
+
+interface BulkCreateInput {
+  governanceBodyId: string;
+  pattern: 'weekly' | 'monthly' | 'quarterly';
+  dayOfMonth?: number;     // 1-31, used for monthly + quarterly
+  weekDay?: number;        // 0-6, Mon=1...Sun=0, used for weekly
+  startDate: string;       // ISO yyyy-mm-dd
+  numOccurrences: number;  // 1-60
+  timeStart: string;       // HH:mm
+  timeEnd: string;         // HH:mm
+  location: string;
+  chairLabel: string;
+  shiftBankHolidays?: boolean; // Q11 = a (default true)
+}
+
+function generateRecurringDates(input: BulkCreateInput): Array<{
+  date: string;
+  shiftedFrom?: string;
+}> {
+  const out: Array<{ date: string; shiftedFrom?: string }> = [];
+  const start = new Date(`${input.startDate}T00:00:00Z`);
+  if (Number.isNaN(start.getTime())) return out;
+
+  for (let i = 0; i < input.numOccurrences; i += 1) {
+    const cursor = new Date(start);
+    if (input.pattern === 'weekly') {
+      cursor.setUTCDate(cursor.getUTCDate() + i * 7);
+    } else if (input.pattern === 'monthly') {
+      cursor.setUTCMonth(cursor.getUTCMonth() + i);
+      if (input.dayOfMonth) {
+        cursor.setUTCDate(input.dayOfMonth);
+      }
+    } else {
+      // quarterly
+      cursor.setUTCMonth(cursor.getUTCMonth() + i * 3);
+      if (input.dayOfMonth) {
+        cursor.setUTCDate(input.dayOfMonth);
+      }
+    }
+    const iso = cursor.toISOString().slice(0, 10);
+    if (input.shiftBankHolidays !== false && !isWorkingDay(iso)) {
+      out.push({ date: nextWorkingDay(iso), shiftedFrom: iso });
+    } else {
+      out.push({ date: iso });
+    }
+  }
+  return out;
+}
+
+async function governanceBulkCreateRecurringMeetings(
+  req: any,
+  res: any,
+  ctx: ApiContext,
+) {
+  try {
+    if (!requireClientAdmin(ctx, res)) return;
+    const input = req.body as BulkCreateInput;
+    if (!input || typeof input !== 'object') {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid input.',
+        code: 'INVALID_INPUT',
+      });
+    }
+    if (!input.governanceBodyId || typeof input.governanceBodyId !== 'string') {
+      return res.status(400).json({
+        success: false,
+        error: 'governanceBodyId is required.',
+        code: 'INVALID_INPUT',
+      });
+    }
+    if (!['weekly', 'monthly', 'quarterly'].includes(input.pattern)) {
+      return res.status(400).json({
+        success: false,
+        error: 'pattern must be weekly, monthly, or quarterly.',
+        code: 'INVALID_INPUT',
+      });
+    }
+    if (
+      typeof input.numOccurrences !== 'number' ||
+      input.numOccurrences < 1 ||
+      input.numOccurrences > 60
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: 'numOccurrences must be between 1 and 60.',
+        code: 'INVALID_INPUT',
+      });
+    }
+    if (!input.startDate || !/^\d{4}-\d{2}-\d{2}$/.test(input.startDate)) {
+      return res.status(400).json({
+        success: false,
+        error: 'startDate must be ISO yyyy-mm-dd.',
+        code: 'INVALID_INPUT',
+      });
+    }
+
+    // Resolve body label.
+    const bodies = await loadFrameworkBodies(ctx);
+    const body = bodies.find(
+      (b) => b.id === input.governanceBodyId || b._id === input.governanceBodyId,
+    );
+    if (!body) {
+      return res.status(400).json({
+        success: false,
+        error: 'Governance body not found in this workspace.',
+        code: 'NOT_FOUND',
+      });
+    }
+
+    const dates = generateRecurringDates(input);
+    if (dates.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Could not generate any dates from the input.',
+        code: 'INVALID_INPUT',
+      });
+    }
+
+    const ts = nowIso();
+    const batch = ctx.db.batch();
+    const created: any[] = [];
+
+    for (const d of dates) {
+      const idSlug = `${(body.name ?? 'meeting')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 30)}-${d.date}`;
+      const meetingId = `${idSlug}-${Math.floor(
+        Math.random() * 36 ** 4,
+      ).toString(36)}`;
+      const ref = ctx.db
+        .collection('meetings')
+        .doc(meetingDocId(ctx, meetingId));
+      const payload = {
+        id: meetingId,
+        clientId: ctx.primaryUid,
+        title: `${body.name ?? 'Meeting'} · ${d.date}`,
+        governanceBodyId: body.id ?? body._id,
+        governanceBodyLabel: body.name ?? '',
+        date: d.date,
+        timeStart: input.timeStart || '10:00',
+        timeEnd: input.timeEnd || '12:00',
+        location: input.location ?? '',
+        chairUid: null,
+        chairLabel: input.chairLabel ?? '',
+        status: 'Scheduled' as MeetingStatus,
+        attendees: [],
+        agenda: [],
+        ownerUid: ctx.uid,
+        softDeleted: false,
+        deletionReason: null,
+        deletedAt: null,
+        deletedBy: null,
+        heldAt: null,
+        heldBy: null,
+        cancelledAt: null,
+        cancelledBy: null,
+        cancellationReason: null,
+        bulkCreated: true,
+        shiftedFrom: d.shiftedFrom ?? null,
+        createdAt: ts,
+        createdBy: ctx.uid,
+        updatedAt: ts,
+        updatedBy: ctx.uid,
+      };
+      batch.set(ref, payload);
+      created.push({ ...payload, _id: ref.id });
+    }
+    await batch.commit();
+    return res.status(200).json({ success: true, created: created.length, meetings: created });
+  } catch (e: any) {
+    console.error('[governanceBulkCreateRecurringMeetings] failed:', e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? 'Bulk create failed.',
+      code: 'CREATE_FAILED',
+    });
+  }
+}
+
+// ── Excel import (dry-run + commit) ─────────────────────────────────────
+
+const IMPORT_MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+
+function decodeBase64Buffer(b64: string): Buffer | null {
+  try {
+    const stripped = b64.replace(/^data:[^,]+,/, '');
+    const buf = Buffer.from(stripped, 'base64');
+    if (buf.length > IMPORT_MAX_BYTES) return null;
+    return buf;
+  } catch {
+    return null;
+  }
+}
+
+async function governanceImportMeetingsDryRun(
+  req: any,
+  res: any,
+  ctx: ApiContext,
+) {
+  try {
+    if (!requireClientAdmin(ctx, res)) return;
+    const { fileBase64 } = req.body ?? {};
+    if (typeof fileBase64 !== 'string' || !fileBase64) {
+      return res.status(400).json({
+        success: false,
+        error: 'fileBase64 required.',
+        code: 'INVALID_INPUT',
+      });
+    }
+    const buf = decodeBase64Buffer(fileBase64);
+    if (!buf) {
+      return res.status(400).json({
+        success: false,
+        error: 'File too large or invalid base64 (max 5 MB).',
+        code: 'FILE_TOO_LARGE',
+      });
+    }
+    const bodies = await loadFrameworkBodies(ctx);
+    if (bodies.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Set up the Governance Framework before importing — body column resolution requires bodies to exist.',
+        code: 'FRAMEWORK_EMPTY',
+      });
+    }
+    const { rows, summary } = parseMeetingsXlsx(buf, bodies);
+    return res.status(200).json({ success: true, rows, summary });
+  } catch (e: any) {
+    console.error('[governanceImportMeetingsDryRun] failed:', e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? 'Parse failed.',
+      code: 'PARSE_FAILED',
+    });
+  }
+}
+
+async function governanceImportMeetingsCommit(
+  req: any,
+  res: any,
+  ctx: ApiContext,
+) {
+  try {
+    if (!requireClientAdmin(ctx, res)) return;
+    const { fileBase64 } = req.body ?? {};
+    if (typeof fileBase64 !== 'string' || !fileBase64) {
+      return res.status(400).json({
+        success: false,
+        error: 'fileBase64 required.',
+        code: 'INVALID_INPUT',
+      });
+    }
+    const buf = decodeBase64Buffer(fileBase64);
+    if (!buf) {
+      return res.status(400).json({
+        success: false,
+        error: 'File too large or invalid base64 (max 5 MB).',
+        code: 'FILE_TOO_LARGE',
+      });
+    }
+    const bodies = await loadFrameworkBodies(ctx);
+    if (bodies.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Set up the Governance Framework before importing.',
+        code: 'FRAMEWORK_EMPTY',
+      });
+    }
+    // Re-parse on commit (lesson #55) — never trust client-held rows.
+    const { rows, summary } = parseMeetingsXlsx(buf, bodies);
+    const valid = rows.filter(
+      (r) => !r.flags.some((f) => f.severity === 'error'),
+    );
+
+    const ts = nowIso();
+    let batch = ctx.db.batch();
+    let written = 0;
+    let opsInBatch = 0;
+    const allWritten: any[] = [];
+
+    for (const row of valid) {
+      const m: ParsedMeeting = row.meeting;
+      // Suffix the ID until unique within the workspace (avoids collisions
+      // on re-import of the same file).
+      let candidateId = m.id;
+      let attempts = 0;
+      // eslint-disable-next-line no-await-in-loop
+      while (attempts < 8) {
+        const ref = ctx.db
+          .collection('meetings')
+          .doc(meetingDocId(ctx, candidateId));
+        // eslint-disable-next-line no-await-in-loop
+        const existing = await ref.get();
+        if (!existing.exists) break;
+        candidateId = `${m.id}-${Math.floor(Math.random() * 36 ** 3).toString(
+          36,
+        )}`;
+        attempts += 1;
+      }
+      const ref = ctx.db
+        .collection('meetings')
+        .doc(meetingDocId(ctx, candidateId));
+      const payload = {
+        id: candidateId,
+        clientId: ctx.primaryUid,
+        title: `${m.governanceBodyLabel || 'Meeting'} · ${m.date}`,
+        governanceBodyId: m.governanceBodyId,
+        governanceBodyLabel: m.governanceBodyLabel,
+        date: m.date,
+        timeStart: m.timeStart,
+        timeEnd: m.timeEnd,
+        location: m.location,
+        chairUid: null,
+        chairLabel: m.chairLabel,
+        status: 'Scheduled' as MeetingStatus,
+        attendees: m.attendees,
+        agenda: [],
+        ownerUid: ctx.uid,
+        softDeleted: false,
+        deletionReason: null,
+        deletedAt: null,
+        deletedBy: null,
+        heldAt: null,
+        heldBy: null,
+        cancelledAt: null,
+        cancelledBy: null,
+        cancellationReason: null,
+        importedAt: ts,
+        importedBy: ctx.uid,
+        createdAt: ts,
+        createdBy: ctx.uid,
+        updatedAt: ts,
+        updatedBy: ctx.uid,
+      };
+      batch.set(ref, payload);
+      allWritten.push({ ...payload, _id: ref.id });
+      written += 1;
+      opsInBatch += 1;
+      // Firestore batch limit is 500 ops. Flush every 400 to leave headroom.
+      if (opsInBatch >= 400) {
+        // eslint-disable-next-line no-await-in-loop
+        await batch.commit();
+        batch = ctx.db.batch();
+        opsInBatch = 0;
+      }
+    }
+    if (opsInBatch > 0) await batch.commit();
+
+    // Single audit event for the import (non-blocking — best-effort).
+    try {
+      await ctx.db.collection('auditEvents').add({
+        clientId: ctx.primaryUid,
+        action: 'meetings.imported',
+        actorUid: ctx.uid,
+        timestamp: ts,
+        meta: {
+          written,
+          skipped: rows.length - written,
+          totalRows: rows.length,
+        },
+      });
+    } catch (auditErr) {
+      console.error('[importMeetingsCommit] audit write failed:', auditErr);
+    }
+
+    return res.status(200).json({
+      success: true,
+      written,
+      skipped: rows.length - written,
+      totalRows: rows.length,
+      summary,
+    });
+  } catch (e: any) {
+    console.error('[governanceImportMeetingsCommit] failed:', e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? 'Import failed.',
+      code: 'IMPORT_FAILED',
+    });
+  }
+}
+
+// ── Excel export ────────────────────────────────────────────────────────
+
+async function governanceExportMeetingsXlsx(
+  _req: any,
+  res: any,
+  ctx: ApiContext,
+) {
+  try {
+    if (!requireClientAdmin(ctx, res)) return;
+    const snap = await ctx.db
+      .collection('meetings')
+      .where('clientId', '==', ctx.primaryUid)
+      .get();
+    const meetings = snap.docs
+      .map((d) => d.data() ?? {})
+      .filter((m: any) => !m.softDeleted)
+      .sort((a: any, b: any) => (a.date ?? '').localeCompare(b.date ?? ''));
+
+    const data: Record<string, any>[] = meetings.map((m: any) => ({
+      Body: m.governanceBodyLabel ?? '',
+      Date: m.date ?? '',
+      'Time Start': m.timeStart ?? '',
+      'Time End': m.timeEnd ?? '',
+      Location: m.location ?? '',
+      Chair: m.chairLabel ?? '',
+      Status: m.status ?? '',
+      Attendees: Array.isArray(m.attendees)
+        ? m.attendees.map((a: any) => a.label).join('; ')
+        : '',
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Meetings');
+    const buf: Buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    const fileBase64 = buf.toString('base64');
+    const filename = `meetings-schedule-${nowIso().slice(0, 10)}.xlsx`;
+    return res.status(200).json({ success: true, fileBase64, filename });
+  } catch (e: any) {
+    console.error('[governanceExportMeetingsXlsx] failed:', e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? 'Export failed.',
+      code: 'EXPORT_FAILED',
+    });
+  }
+}
+
+// Suppress unused-import warning — `shiftIfNonWorking` reserved for the
+// preview UI to indicate which dates would be shifted before commit.
+void shiftIfNonWorking;
+
 export const governanceMeetingsRoutes: Record<string, any> = {
   governanceListMeetings,
   governanceGetMeeting,
@@ -1035,6 +1749,7 @@ export const governanceMeetingsRoutes: Record<string, any> = {
   governanceSoftDeleteMeeting,
   governanceMarkMeetingHeld,
   governanceCancelMeeting,
+  governanceRescheduleMeeting,
   // Phase 8b
   governanceSaveMeetingMinutes,
   governanceAddMeetingDecision,
@@ -1044,6 +1759,11 @@ export const governanceMeetingsRoutes: Record<string, any> = {
   governanceDeleteMeetingActionItem,
   governanceUpdateMeetingLinks,
   governanceListWorkspaceMembers,
+  // Phase 5.5a — Schedule view + bulk creation
+  governanceBulkCreateRecurringMeetings,
+  governanceImportMeetingsDryRun,
+  governanceImportMeetingsCommit,
+  governanceExportMeetingsXlsx,
 };
 
 export { VALID_STATUSES };

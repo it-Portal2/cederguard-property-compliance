@@ -384,6 +384,20 @@ export const api = {
     callApi("governanceMarkMeetingHeld", { meetingId }),
   governanceCancelMeeting: (meetingId: string, reason: string) =>
     callApi("governanceCancelMeeting", { meetingId, reason }),
+  governanceRescheduleMeeting: (
+    meetingId: string,
+    newDate: string,
+    reason: string,
+    newTimeStart?: string,
+    newTimeEnd?: string,
+  ) =>
+    callApi("governanceRescheduleMeeting", {
+      meetingId,
+      newDate,
+      newTimeStart,
+      newTimeEnd,
+      reason,
+    }),
   // Phase 8b — Meetings tabs
   governanceSaveMeetingMinutes: (
     meetingId: string,
@@ -424,4 +438,31 @@ export const api = {
   // Phase 8c — workspace member picker (reusable primitive)
   governanceListWorkspaceMembers: () =>
     callApi("governanceListWorkspaceMembers"),
+  // Phase 5.5a — Schedule view + bulk creation
+  governanceBulkCreateRecurringMeetings: (params: {
+    governanceBodyId: string;
+    pattern: "weekly" | "monthly" | "quarterly";
+    dayOfMonth?: number;
+    weekDay?: number;
+    startDate: string;
+    numOccurrences: number;
+    timeStart: string;
+    timeEnd: string;
+    location: string;
+    chairLabel: string;
+    shiftBankHolidays?: boolean;
+  }) => callApi("governanceBulkCreateRecurringMeetings", params),
+  governanceImportMeetingsDryRun: (fileBase64: string) =>
+    callApi("governanceImportMeetingsDryRun", { fileBase64 }),
+  governanceImportMeetingsCommit: (fileBase64: string) =>
+    callApi("governanceImportMeetingsCommit", { fileBase64 }),
+  governanceExportMeetingsXlsx: () =>
+    callApi("governanceExportMeetingsXlsx"),
+  // Phase 5.5b — Proposed/Confirm/Decline/Withdraw flow
+  governanceConfirmFpItem: (itemId: string) =>
+    callApi("governanceConfirmFpItem", { itemId }),
+  governanceDeclineFpItem: (itemId: string, reason: string) =>
+    callApi("governanceDeclineFpItem", { itemId, reason }),
+  governanceWithdrawFpItem: (itemId: string) =>
+    callApi("governanceWithdrawFpItem", { itemId }),
 };

@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   XCircle,
   CalendarDays,
+  CalendarClock,
   ClipboardList,
   List,
   CalendarRange,
@@ -29,6 +30,7 @@ import {
 } from '../../components/governance/meetings/types';
 import { MeetingModal } from '../../components/governance/meetings/MeetingModal';
 import { MeetingsCalendarView } from '../../components/governance/meetings/MeetingsCalendarView';
+import { RescheduleMeetingDialog } from '../../components/governance/meetings/RescheduleMeetingDialog';
 
 type ViewMode = 'list' | 'calendar';
 
@@ -65,6 +67,8 @@ export function GovernanceMeetingsPage() {
   const [restoringId, setRestoringId] = useState<string | null>(null);
   const [holdingId, setHoldingId] = useState<string | null>(null);
   const [confirmHold, setConfirmHold] = useState<Meeting | null>(null);
+  const [reschedTarget, setReschedTarget] = useState<Meeting | null>(null);
+  const [reschedBusy, setReschedBusy] = useState(false);
   const [pendingReason, setPendingReason] = useState<PendingReason | null>(null);
   const [reasonBusy, setReasonBusy] = useState(false);
 
@@ -121,6 +125,38 @@ export function GovernanceMeetingsPage() {
       return next.sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''));
     });
     setOpened(saved);
+  };
+
+  // Phase 5.5c — Reschedule. Server keeps linked FP items + reports
+  // attached and mirrors the new date onto their `targetDecisionDate`.
+  const handleReschedule = async (params: {
+    newDate: string;
+    newTimeStart?: string;
+    newTimeEnd?: string;
+    reason: string;
+  }) => {
+    if (!reschedTarget) return;
+    setReschedBusy(true);
+    try {
+      const res = await api.governanceRescheduleMeeting(
+        reschedTarget.id,
+        params.newDate,
+        params.reason,
+        params.newTimeStart,
+        params.newTimeEnd,
+      );
+      if (!res?.success) throw new Error(res?.error ?? 'Reschedule failed.');
+      setItems((prev) =>
+        prev.map((i) => (i.id === reschedTarget.id ? (res.item as Meeting) : i)),
+      );
+      toast.success('Meeting rescheduled — linked items updated.');
+      setReschedTarget(null);
+    } catch (e: any) {
+      console.error('[MeetingsPage] reschedule failed', e);
+      toast.error(e?.message ?? 'Reschedule failed.');
+    } finally {
+      setReschedBusy(false);
+    }
   };
 
   const handleHold = async (item: Meeting) => {
@@ -316,6 +352,14 @@ export function GovernanceMeetingsPage() {
       icon: CheckCircle2,
       onClick: (r) => setConfirmHold(r),
       isLoading: (r) => holdingId === r.id,
+      isVisible: (r) =>
+        !r.softDeleted && r.status === 'Scheduled' && canDeleteRow(r),
+    },
+    {
+      key: 'reschedule',
+      label: 'Reschedule',
+      icon: CalendarClock,
+      onClick: (r) => setReschedTarget(r),
       isVisible: (r) =>
         !r.softDeleted && r.status === 'Scheduled' && canDeleteRow(r),
     },
@@ -535,6 +579,17 @@ export function GovernanceMeetingsPage() {
         loading={reasonBusy}
         onConfirm={handleReasonConfirm}
         onCancel={() => (reasonBusy ? null : setPendingReason(null))}
+      />
+
+      <RescheduleMeetingDialog
+        open={reschedTarget !== null}
+        meetingTitle={reschedTarget?.title ?? ''}
+        currentDate={reschedTarget?.date ?? ''}
+        currentTimeStart={reschedTarget?.timeStart ?? '10:00'}
+        currentTimeEnd={reschedTarget?.timeEnd ?? '12:00'}
+        loading={reschedBusy}
+        onConfirm={handleReschedule}
+        onCancel={() => (reschedBusy ? null : setReschedTarget(null))}
       />
     </motion.div>
   );

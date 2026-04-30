@@ -31,6 +31,11 @@ export interface SeedReport {
   partClassification: 'Open' | 'Closed' | 'Part 1 and 2';
   isHRB: boolean;
   targetBoardDate?: string;
+  // Phase 5.5b — optional meeting reference. When set, the report's
+  // "next board date" derives from `meetings/{id}.date` and an FP item
+  // auto-gets created/updated as `Proposed`. Required at Submit-for-
+  // Review time per Q18; optional at Draft.
+  targetMeetingId?: string | null;
   /** Free-text scheme name surfaced in the list. */
   scheme: string;
   softDeleted: boolean;

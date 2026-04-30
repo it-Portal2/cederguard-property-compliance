@@ -23,6 +23,7 @@ import {
 } from './types';
 import { TemplatePickerModal } from './TemplatePickerModal';
 import { FpItemPickerModal } from './FpItemPickerModal';
+import { MeetingPicker } from '../MeetingPicker';
 import { ReviewerPickerModal } from './ReviewerPickerModal';
 import { UserCheck } from 'lucide-react';
 
@@ -41,6 +42,7 @@ interface FormState {
   partClassification: Classification;
   isHRB: boolean;
   targetBoardDate: string;
+  targetMeetingId: string | null; // Phase 5.5b
   reviewerUid: string;
   reviewerLabel: string;
 }
@@ -56,6 +58,7 @@ function emptyState(): FormState {
     partClassification: 'Open',
     isHRB: false,
     targetBoardDate: '',
+    targetMeetingId: null,
     reviewerUid: '',
     reviewerLabel: '',
   };
@@ -122,6 +125,7 @@ export function ReportModal({
         partClassification: report.partClassification ?? 'Open',
         isHRB: !!report.isHRB,
         targetBoardDate: report.targetBoardDate ?? '',
+        targetMeetingId: report.targetMeetingId ?? null,
         reviewerUid: report.reviewerUid ?? '',
         reviewerLabel: report.reviewerLabel ?? '',
       };
@@ -180,6 +184,7 @@ export function ReportModal({
         partClassification: form.partClassification,
         isHRB: form.isHRB,
         targetBoardDate: form.targetBoardDate || null,
+        targetMeetingId: form.targetMeetingId || null,
         reviewerUid: form.reviewerUid || null,
         reviewerLabel: form.reviewerLabel.trim() || null,
       };
@@ -365,18 +370,33 @@ export function ReportModal({
               </Section>
 
               <Section title="Routing">
-                <Field label="Target board date">
-                  <div className="relative">
-                    <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="date"
-                      value={form.targetBoardDate}
-                      onChange={(e) => set('targetBoardDate', e.target.value)}
-                      disabled={isLocked || !canEdit}
-                      className={clsx(inputCls, 'pl-9')}
-                    />
-                  </div>
+                <Field
+                  label="Board meeting"
+                  hint="Pick a board, then a date from your PgM's year-ahead schedule. The PgM is notified to confirm."
+                >
+                  <MeetingPicker
+                    value={form.targetMeetingId}
+                    onChange={(id) => set('targetMeetingId', id)}
+                    disabled={isLocked || !canEdit}
+                  />
                 </Field>
+                {/* Legacy `targetBoardDate` kept for back-compat; only
+                    surfaces when there's a value AND no meeting picked
+                    (e.g. pre-5.5b reports). New reports use the picker. */}
+                {form.targetBoardDate && !form.targetMeetingId && (
+                  <Field label="Legacy target board date">
+                    <div className="relative">
+                      <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="date"
+                        value={form.targetBoardDate}
+                        onChange={(e) => set('targetBoardDate', e.target.value)}
+                        disabled={isLocked || !canEdit}
+                        className={clsx(inputCls, 'pl-9')}
+                      />
+                    </div>
+                  </Field>
+                )}
                 <Field
                   label="Reviewer"
                   hint="The Programme Manager (or Senior PM / Strategic Director) who'll review this report once submitted."

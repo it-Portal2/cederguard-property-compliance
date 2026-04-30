@@ -5,6 +5,7 @@
 
 export type ForwardPlanStatus =
   | 'Draft'
+  | 'Proposed'   // Phase 5.5b — PM raised via report meeting picker, awaits PgM Confirm
   | 'Published'
   | 'Decided'
   | 'Deferred'
@@ -48,6 +49,24 @@ export interface SeedForwardPlanItem {
   comments?: string;
   fileLink?: string;
   decisionLink?: string;
+  // Phase 5.5b — meeting reference (replaces per-body boardGates for new
+  // items; legacy `boardGates` stays as read-only fallback per ADD-never-MODIFY).
+  meetingId?: string | null;
+  // Set when a PM raised the item via the Report meeting picker;
+  // referenced by Confirm / Decline / Withdraw endpoints to verify
+  // ownership.
+  requestedBy?: string | null;
+  requestedAt?: string | null;
+  // PgM-set on Decline; surfaces as a hint to PM when item flips back
+  // to Draft so they can pick a different meeting.
+  lastDeclineReason?: string | null;
+  lastDeclinedBy?: string | null;
+  lastDeclinedAt?: string | null;
+  // Phase 5.5c — flag set by server when the meeting this FP item
+  // references gets cancelled. UI surfaces a re-routing pill.
+  needsRerouting?: boolean;
+  // Optional report linkage when the FP item was raised from a Report.
+  reportId?: string | null;
 }
 
 // 5 items spanning the variety of states the list view filters expose.
@@ -97,6 +116,10 @@ export const SEED_FORWARD_PLAN_ITEMS: SeedForwardPlanItem[] = [
     softDeleted: false,
     fileLink: 'https://example.gov.uk/forwardplan/materials-fp.pdf',
     comments: 'Pre-agreed framework; supplier shortlist already vetted.',
+    // Phase 5.5b — confirmed slot at the seeded May DPB. The Confirm
+    // path appends report.id to meeting.linkedReportIds[].
+    meetingId: 'mtg-dpb-2026-05',
+    reportId: 'rpt-inreview-materials-gw2',
   },
   {
     id: 'fp-published-non-key-policy',
@@ -142,6 +165,32 @@ export const SEED_FORWARD_PLAN_ITEMS: SeedForwardPlanItem[] = [
     softDeleted: false,
     decisionLink: 'https://moderngov.example.gov.uk/aspen-court-decision',
     comments: 'HRB Gateway 2 sign-off concurrent with Cabinet approval.',
+  },
+  {
+    // Phase 5.5b/5.5c demo — PM raised this via the Report meeting
+    // picker; awaiting PgM Confirm. Renders the rose "pending requests"
+    // banner on the FP page so the new flow is visible from first load.
+    id: 'fp-proposed-cladding-amendment',
+    title: 'Brixton Hill cladding remediation — GW3 amendment',
+    scheme: 'Brixton Hill cladding',
+    reportType: 'GW3',
+    typeOfEntry: 'Change',
+    classification: 'Open',
+    isHRB: true,
+    wards: [],
+    value: 0,
+    targetDecisionDate: '2026-05-08',
+    decisionRoute: '',
+    routingMode: 'sequential',
+    boardGates: {},
+    strategicLead: '',
+    reportAuthor: 'PM · Cladding',
+    status: 'Proposed',
+    softDeleted: false,
+    meetingId: 'mtg-dpb-2026-05',
+    reportId: 'rpt-amendments-cladding',
+    requestedBy: '__seed__', // resolved to ctx.uid in seedToDoc
+    comments: 'PM raised via report — awaiting PgM confirmation for May DPB slot.',
   },
   {
     id: 'fp-deleted-merged',

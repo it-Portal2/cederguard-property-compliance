@@ -343,84 +343,113 @@ export const Landing: React.FC = () => {
     return (
         <div className="bg-slate-50 dark:bg-[#030303] text-slate-800 dark:text-white/80 font-sans antialiased selection:bg-indigo-500/30 selection:text-indigo-900 dark:selection:text-white min-h-screen transition-colors duration-500">
             
-            {/* ── HERO SECTION ── */}
-            <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-6 overflow-hidden">
+            {/* ── HERO SECTION (2-col split) ── */}
+            <section className="relative min-h-dvh flex items-center px-6 lg:px-12 overflow-hidden pt-32 md:pt-36 pb-16 md:pb-24">
                 {/* Background ambient lighting */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-slate-100 dark:bg-white/[0.02] blur-[120px] rounded-[100%] pointer-events-none" />
-                
-                <div className="relative z-10 max-w-5xl mx-auto flex flex-col items-center w-full mt-32 md:mt-40">
-                    <motion.div
-                        initial={{ opacity: 0, filter: 'blur(10px)', y: 20 }}
-                        animate={{ opacity: 1, filter: 'blur(0px)', y: 0 }}
-                        transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-                    >
-                        <p className="text-[10px] font-medium tracking-[0.3em] text-indigo-600 dark:text-indigo-400 uppercase mb-8">Cedar Guard</p>
-                    </motion.div>
+                <div className="absolute top-0 right-0 w-200 h-150 bg-indigo-100/40 dark:bg-indigo-500/10 blur-[120px] rounded-[100%] pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-150 h-100 bg-purple-100/30 dark:bg-purple-500/10 blur-[120px] rounded-[100%] pointer-events-none" />
 
-                    <motion.h1 
-                        initial={{ opacity: 0, y: 40 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 1.2, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                        className="text-6xl sm:text-7xl md:text-[6rem] font-medium text-slate-900 dark:text-white leading-[1.05] tracking-[-0.04em] mb-6"
-                    >
-                        Compliance & <br className="hidden md:block" />
-                        <span className="text-indigo-600 dark:text-white/40">Risk Suite</span>
-                    </motion.h1>
+                <div className="relative z-10 mx-auto w-full max-w-7xl grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] gap-12 lg:gap-16 items-center">
 
-                    <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 1, delay: 0.6 }}
-                        className="relative h-16 w-full flex items-center justify-center mb-12 text-2xl sm:text-3xl font-light tracking-tight text-slate-500 dark:text-white/60"
-                    >
-                        <DynamicText />
-                    </motion.div>
-
-                    <motion.p 
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 1.2, delay: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                        className="text-lg sm:text-xl text-indigo-600 dark:text-white/40 font-light max-w-2xl mb-16"
-                    >
-                        A definitive, intelligent platform designed specifically for UK Social Housing Providers.
-                    </motion.p>
-
-                    <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 1.2, delay: 1, ease: [0.16, 1, 0.3, 1] }}
-                        className="flex flex-col sm:flex-row items-center justify-center gap-6 w-full max-w-md"
-                    >
-                        <Link 
-                            to="/login" 
-                            className="w-full sm:w-auto px-10 py-4 text-sm font-medium bg-indigo-600 text-white dark:bg-white dark:text-slate-950 shadow-lg dark:shadow-[0_0_20px_rgba(255,255,255,0.3)] rounded-full hover:bg-indigo-700 dark:hover:bg-cyan-50 hover:scale-[1.02] transition-all duration-500 flex items-center justify-center gap-3"
+                    {/* LEFT — copy column */}
+                    <div className="flex flex-col">
+                        <motion.div
+                            initial={{ opacity: 0, y: 12 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                            className="inline-flex items-center gap-2 self-start rounded-full bg-indigo-50 dark:bg-indigo-500/10 px-3 py-1.5 mb-8"
                         >
-                            Enter Portal <ArrowRight className="w-4 h-4" />
-                        </Link>
-                        <a 
-                            href="#solution" 
-                            className="w-full sm:w-auto px-10 py-4 text-sm font-medium text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 rounded-full hover:bg-slate-200 dark:bg-white/5 transition-all duration-500"
-                        >
-                            Explore Solution
-                        </a>
-                    </motion.div>
+                            <span className="h-1.5 w-1.5 rounded-full bg-indigo-600 dark:bg-indigo-400" />
+                            <span className="text-[11px] font-semibold uppercase tracking-widest text-indigo-700 dark:text-indigo-300">
+                                Built for UK Social Housing Governance
+                            </span>
+                        </motion.div>
 
-                    {/* Hero Dashboard Showcase Image */}
+                        <motion.h1
+                            initial={{ opacity: 0, y: 24 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 1, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+                            className="text-4xl sm:text-5xl md:text-6xl font-bold text-slate-900 dark:text-white leading-[1.05] tracking-[-0.03em] mb-6"
+                        >
+                            The operating system for{' '}
+                            <span className="text-indigo-600 dark:text-indigo-400">
+                                social housing governance
+                            </span>
+                        </motion.h1>
+
+                        <motion.p
+                            initial={{ opacity: 0, y: 16 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 1, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                            className="text-base md:text-lg text-slate-600 dark:text-white/60 leading-relaxed max-w-xl mb-10"
+                        >
+                            Manage governance, control risk and prove compliance across
+                            your housing programmes — in one intelligent system.
+                        </motion.p>
+
+                        <motion.div
+                            initial={{ opacity: 0, y: 12 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 1, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                            className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 mb-12"
+                        >
+                            <Link
+                                to="/contact"
+                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-200 dark:shadow-indigo-900/40 transition-all duration-300 hover:bg-indigo-700 hover:scale-[1.02]"
+                            >
+                                Book a demo
+                            </Link>
+                            <a
+                                href="#solution"
+                                className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors group"
+                            >
+                                See how it works
+                                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                            </a>
+                        </motion.div>
+
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 1, delay: 0.7 }}
+                            className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-6 text-[11px] text-slate-500 dark:text-white/40"
+                        >
+                            <p>Trusted by UK social housing delivery teams</p>
+                            <span className="hidden sm:inline-block h-1 w-1 rounded-full bg-slate-300 dark:bg-white/20" />
+                            <p>Built for real council governance workflows</p>
+                        </motion.div>
+                    </div>
+
+                    {/* RIGHT — laptop showcase */}
                     <motion.div
-                        initial={{ opacity: 0, y: 40 }}
+                        initial={{ opacity: 0, y: 32 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 1.2, delay: 1.2, ease: [0.16, 1, 0.3, 1] }}
-                        className="w-full max-w-[1200px] mt-24 relative z-20 group hidden md:block"
+                        transition={{ duration: 1.2, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                        className="relative w-full hidden lg:block"
                         style={{ perspective: "2000px" }}
                     >
-                        <div className="absolute -inset-1.5 bg-gradient-to-tr from-indigo-500 via-cyan-400 to-purple-500 rounded-[2.5rem] blur-xl opacity-20 group-hover:opacity-40 transition-opacity duration-1000" />
-                        <motion.img 
-                            whileHover={{ rotateX: 2, rotateY: 2, scale: 1.02 }}
+                        <div className="absolute -inset-1.5 bg-gradient-to-tr from-indigo-500 via-cyan-400 to-purple-500 rounded-4xl blur-xl opacity-15 dark:opacity-25" />
+                        <motion.img
+                            whileHover={{ rotateX: 1, rotateY: -1, scale: 1.01 }}
                             transition={{ duration: 0.5 }}
-                            src="/dashboard_showcase.png" 
-                            alt="Cedar Guard Risk Intelligence Dashboard - Tower A Retrofit Showcase" 
-                            title="Interactive Risk Trends and AI Insights Dashboard" 
-                            className="relative w-full h-auto rounded-[2.5rem] shadow-[0_40px_100px_rgba(0,0,0,0.2)] dark:shadow-[0_40px_100px_rgba(0,0,0,0.6)] border-4 border-white/40 dark:border-white/5 object-cover object-top"
+                            src="/dashboard_showcase.png"
+                            alt="CedarGuard Risk Management dashboard preview"
+                            title="CedarGuard — Risk Management dashboard"
+                            className="relative w-full h-auto rounded-4xl shadow-[0_40px_100px_rgba(0,0,0,0.18)] dark:shadow-[0_40px_100px_rgba(0,0,0,0.6)] border-4 border-white/60 dark:border-white/5 object-cover object-top"
+                        />
+                    </motion.div>
+
+                    {/* Mobile / tablet: showcase below the copy */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 24 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 1, delay: 0.6 }}
+                        className="lg:hidden w-full"
+                    >
+                        <img
+                            src="/dashboard_showcase.png"
+                            alt="CedarGuard dashboard preview"
+                            className="w-full h-auto rounded-2xl shadow-xl border border-slate-200 dark:border-white/10"
                         />
                     </motion.div>
                 </div>
@@ -563,7 +592,7 @@ export const Landing: React.FC = () => {
                         </motion.div>
 
                         {/* Right */}
-                        <motion.div {...fadeIn} transition={{ delay: 0.2 }} className="lg:mt-32 border border-slate-200 dark:border-white/10 bg-white dark:bg-[#030303] p-12 lg:p-16 rounded-[2rem]">
+                        <motion.div {...fadeIn} transition={{ delay: 0.2 }} className="lg:mt-32 border border-slate-200 dark:border-white/10 bg-white dark:bg-[#030303] p-12 lg:p-16 rounded-4xl">
                             <h3 className="text-2xl font-light text-slate-900 dark:text-white mb-12">Immediate Action Plan</h3>
                             <ul className="space-y-12">
                                 {[
