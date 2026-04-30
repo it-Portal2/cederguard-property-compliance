@@ -21,8 +21,8 @@ export function MobileHeader() {
   const hasUnread = notifications.some(n => !n.read);
 
   return (
-    <header className="md:hidden print:hidden bg-white/80 backdrop-blur-md border-b border-slate-200/60 min-h-[3.5rem] pt-safe flex items-center px-4 justify-between sticky top-0 z-40 transition-all duration-300 no-select relative">
-      <div className="flex items-center gap-1">
+    <header className="md:hidden print:hidden bg-white/80 backdrop-blur-md border-b border-slate-200/60 min-h-16 pt-safe grid grid-cols-[4.5rem_minmax(0,1fr)_6rem] items-center gap-2 px-4 sticky top-0 z-40 transition-all duration-300 no-select">
+      <div className="flex items-center justify-start">
         <button
           onClick={() => setMobileMenuOpen(!isMobileMenuOpen)}
           className="p-3 -ml-3 text-slate-500 hover:bg-slate-100 rounded-xl transition-colors touch-target"
@@ -32,11 +32,15 @@ export function MobileHeader() {
       </div>
 
       {/* Centered Logo for Native App Feel */}
-      <div className="absolute left-1/2 -translate-x-1/2 pointer-events-none">
-        <img src="/logo.png" alt="CedarGuard" className="h-[22px] w-auto object-contain" />
+      <div className="pointer-events-none flex min-w-0 items-center justify-center">
+        <img
+          src="/logo.png"
+          alt="CedarGuard"
+          className="h-11 w-full max-w-[13.5rem] object-contain sm:h-12"
+        />
       </div>
 
-      <div className="flex items-center gap-1">
+      <div className="flex items-center justify-end gap-1">
         <button className="p-3 text-slate-500 hover:bg-slate-50 rounded-xl relative transition-all touch-target">
           {hasUnread ? (
             <BellDot className="w-5 h-5 text-indigo-500" />
