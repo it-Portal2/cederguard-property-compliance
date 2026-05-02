@@ -17,6 +17,7 @@ import toast from 'react-hot-toast';
 import { api } from '../../../lib/api';
 import ConfirmDialog from '../../table/ConfirmDialog';
 import {
+  type ApprovalStatus,
   type BoardGate,
   type Classification,
   type EntryType,
@@ -26,6 +27,7 @@ import {
   ENTRY_TYPE_OPTIONS,
   ROUTING_MODE_OPTIONS,
   BOARD_GATE_STATUS_OPTIONS,
+  APPROVAL_STATUS_OPTIONS,
 } from './types';
 
 // Framework body — minimum shape we need from the framework page so this
@@ -72,6 +74,9 @@ interface FormState {
   fileLink: string;
   decisionLink: string;
   status: 'Draft' | 'Published';
+  // Phase 5.5e — Excel Column F. Empty string in form = not set; serialised
+  // to `null` on save.
+  approvalStatus: '' | ApprovalStatus;
 }
 
 function emptyState(): FormState {
@@ -97,6 +102,7 @@ function emptyState(): FormState {
     fileLink: '',
     decisionLink: '',
     status: 'Draft',
+    approvalStatus: '',
   };
 }
 
@@ -123,6 +129,10 @@ function itemToForm(item: ForwardPlanItem): FormState {
     fileLink: item.fileLink ?? '',
     decisionLink: item.decisionLink ?? '',
     status: item.status === 'Published' ? 'Published' : 'Draft',
+    approvalStatus:
+      item.approvalStatus === 'Pending' || item.approvalStatus === 'Approved'
+        ? item.approvalStatus
+        : '',
   };
 }
 
@@ -245,6 +255,9 @@ export function ForwardPlanItemModal({
       fileLink: form.fileLink.trim(),
       decisionLink: form.decisionLink.trim(),
       status: form.status,
+      // Phase 5.5e — Excel Column F. Empty form value clears the field on
+      // the server (server validator accepts null + undefined as "clear").
+      approvalStatus: form.approvalStatus === '' ? null : form.approvalStatus,
     };
   };
 
@@ -376,6 +389,23 @@ export function ForwardPlanItemModal({
                   {ENTRY_TYPE_OPTIONS.map((o) => (
                     <option key={o} value={o}>
                       {o}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              {/* Phase 5.5e — Excel Column F. Independent of FP status. */}
+              <Field label="Report approval status">
+                <select
+                  value={form.approvalStatus}
+                  onChange={(e) =>
+                    set('approvalStatus', e.target.value as '' | ApprovalStatus)
+                  }
+                  disabled={!canEdit}
+                  className={inputCls}
+                >
+                  {APPROVAL_STATUS_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
                     </option>
                   ))}
                 </select>

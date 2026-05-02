@@ -15,6 +15,10 @@ export type EntryType = 'New' | 'Change' | 'Delete';
 export type Classification = 'Open' | 'Closed' | 'Part 1 and 2';
 export type RoutingMode = 'sequential' | 'parallel';
 export type BoardGateStatus = 'scheduled' | 'held' | 'deferred' | 'na';
+// Phase 5.5e — Column F on the real Southwark FP sheet. Distinct from
+// `status` (Draft/Proposed/Published/Decided/...). Tracks whether the
+// underlying report has been ratified at the decision point.
+export type ApprovalStatus = 'Pending' | 'Approved';
 
 export interface BoardGate {
   targetDate?: string;
@@ -67,6 +71,8 @@ export interface SeedForwardPlanItem {
   needsRerouting?: boolean;
   // Optional report linkage when the FP item was raised from a Report.
   reportId?: string | null;
+  // Phase 5.5e — Approval Status (Excel Column F). Independent of `status`.
+  approvalStatus?: ApprovalStatus | null;
 }
 
 // 5 items spanning the variety of states the list view filters expose.
@@ -120,6 +126,7 @@ export const SEED_FORWARD_PLAN_ITEMS: SeedForwardPlanItem[] = [
     // path appends report.id to meeting.linkedReportIds[].
     meetingId: 'mtg-dpb-2026-05',
     reportId: 'rpt-inreview-materials-gw2',
+    approvalStatus: 'Pending',
   },
   {
     id: 'fp-published-non-key-policy',
@@ -165,6 +172,7 @@ export const SEED_FORWARD_PLAN_ITEMS: SeedForwardPlanItem[] = [
     softDeleted: false,
     decisionLink: 'https://moderngov.example.gov.uk/aspen-court-decision',
     comments: 'HRB Gateway 2 sign-off concurrent with Cabinet approval.',
+    approvalStatus: 'Approved',
   },
   {
     // Phase 5.5b/5.5c demo — PM raised this via the Report meeting

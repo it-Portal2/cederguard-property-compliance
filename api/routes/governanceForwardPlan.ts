@@ -52,6 +52,8 @@ const FP_WRITABLE_FIELDS = [
   'comments',
   'fileLink',
   'decisionLink',
+  // Phase 5.5e — Excel Column F. Independent of `status`.
+  'approvalStatus',
   // status is allowed via patch but only between Draft / Published. Other
   // transitions go through dedicated endpoints (mark-as-decided, soft-delete).
   'status',
@@ -62,6 +64,7 @@ const VALID_ENTRY_TYPES = ['New', 'Change', 'Delete'];
 const VALID_CLASSIFICATIONS = ['Open', 'Closed', 'Part 1 and 2'];
 const VALID_ROUTING_MODES = ['sequential', 'parallel'];
 const VALID_GATE_STATUSES = ['scheduled', 'held', 'deferred', 'na'];
+const VALID_APPROVAL_STATUSES = ['Pending', 'Approved'];
 
 function pickFields<T extends readonly string[]>(input: any, allowed: T): Record<string, any> {
   if (!input || typeof input !== 'object') return {};
@@ -164,6 +167,9 @@ function seedToDoc(seed: SeedForwardPlanItem, ctx: ApiContext, ts: string) {
     comments: seed.comments ?? '',
     fileLink: seed.fileLink ?? '',
     decisionLink: seed.decisionLink ?? '',
+    // Phase 5.5e — Excel Column F. Carried through from seed; null when
+    // the seed didn't set it (most starter rows).
+    approvalStatus: seed.approvalStatus ?? null,
     // Phase 5.5b/5.5c — demo data on new shape (Q34). Resolves
     // `meetingId` etc. to ctx where applicable so the same seed file
     // works across workspaces.
@@ -300,6 +306,19 @@ async function governanceUpsertForwardPlanItem(req: any, res: any, ctx: ApiConte
       return res.status(400).json({
         success: false,
         error: 'status must be Draft or Published. Use mark-as-decided / soft-delete for other transitions.',
+        code: 'INVALID_INPUT',
+      });
+    }
+    // Phase 5.5e — Approval Status (Excel Column F). null/undefined clears
+    // the field; otherwise must be one of the locked enum values.
+    if (
+      safePatch.approvalStatus !== undefined &&
+      safePatch.approvalStatus !== null &&
+      !VALID_APPROVAL_STATUSES.includes(safePatch.approvalStatus)
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: 'approvalStatus must be Pending, Approved, or null.',
         code: 'INVALID_INPUT',
       });
     }
@@ -746,6 +765,9 @@ function parsedItemToDoc(
     comments: parsed.comments,
     fileLink: parsed.fileLink,
     decisionLink: parsed.decisionLink,
+    // Phase 5.5e — Excel Column F. Importer normalises to Pending /
+    // Approved / null; commit just persists the parsed value.
+    approvalStatus: parsed.approvalStatus,
     createdAt: ts,
     createdBy: ctx.uid,
     updatedAt: ts,

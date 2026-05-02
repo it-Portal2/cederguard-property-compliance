@@ -54,6 +54,8 @@ export interface ParsedItem {
   fileLink: string;
   decisionLink: string;
   status: 'Draft' | 'Published';
+  // Phase 5.5e — Excel Column F. null when missing / unrecognised.
+  approvalStatus: 'Pending' | 'Approved' | null;
 }
 
 export interface ImportSummary {
@@ -110,6 +112,11 @@ const FIELD_ALIASES: Record<string, keyof ParsedItem> = {
   'high-rise': 'isHRB',
   'decision route': 'decisionRoute',
   'routing mode': 'routingMode',
+  // Phase 5.5e — Excel Column F. Matches the real Southwark sheet header
+  // text ("Report Approval Status (Pending/Approved)") plus shorter forms
+  // for any alternative templates.
+  'report approval status': 'approvalStatus',
+  'approval status': 'approvalStatus',
 };
 
 // Header tokens that should be recognised as body-date columns even if
@@ -369,6 +376,7 @@ function parseRow(
     fileLink: '',
     decisionLink: '',
     status: 'Draft',
+    approvalStatus: null,
   };
 
   // Apply field columns.
@@ -419,6 +427,27 @@ function parseRow(
             severity: 'warning',
             field: 'targetDecisionDate',
             message: `Couldn't parse decision date "${parseCellString(cell)}".`,
+          });
+        }
+        break;
+      }
+      // Phase 5.5e — Excel Column F. Real Southwark cells include trailing
+      // whitespace ("Pending "); trim before matching. Anything outside the
+      // two known states becomes null + a warning so PgM can fix in place.
+      case 'approvalStatus': {
+        const raw = parseCellString(cell).trim();
+        if (!raw) {
+          item.approvalStatus = null;
+        } else if (/^pending$/i.test(raw)) {
+          item.approvalStatus = 'Pending';
+        } else if (/^approved$/i.test(raw)) {
+          item.approvalStatus = 'Approved';
+        } else {
+          item.approvalStatus = null;
+          flags.push({
+            severity: 'warning',
+            field: 'approvalStatus',
+            message: `Approval status "${raw}" not recognised — set to blank.`,
           });
         }
         break;

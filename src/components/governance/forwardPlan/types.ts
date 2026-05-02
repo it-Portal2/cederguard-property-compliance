@@ -12,6 +12,8 @@ export type EntryType = 'New' | 'Change' | 'Delete';
 export type Classification = 'Open' | 'Closed' | 'Part 1 and 2';
 export type RoutingMode = 'sequential' | 'parallel';
 export type BoardGateStatus = 'scheduled' | 'held' | 'deferred' | 'na';
+// Phase 5.5e — Excel Column F. Independent of `ForwardPlanStatus`.
+export type ApprovalStatus = 'Pending' | 'Approved';
 
 export interface BoardGate {
   targetDate?: string;
@@ -67,6 +69,10 @@ export interface ForwardPlanItem {
   lastDeclinedAt?: string | null;
   needsRerouting?: boolean;
   reportId?: string | null;
+
+  // Phase 5.5e — Excel Column F. Pending / Approved / null. Independent
+  // of `status` (the FP item's lifecycle).
+  approvalStatus?: ApprovalStatus | null;
 
   createdAt?: string;
   createdBy?: string;
@@ -142,4 +148,31 @@ export const BOARD_GATE_STATUS_OPTIONS: Array<{
   { value: 'held', label: 'Held' },
   { value: 'deferred', label: 'Deferred' },
   { value: 'na', label: 'N/A' },
+];
+
+// Phase 5.5e — Excel Column F pill chrome. Same palette discipline as
+// STATUS_STYLES — amber for in-flight, emerald for ratified.
+export const APPROVAL_STATUS_STYLES: Record<
+  ApprovalStatus,
+  { label: string; cls: string; dot: string }
+> = {
+  Pending: {
+    label: 'Pending',
+    cls: 'bg-amber-50 text-amber-700 border-amber-200',
+    dot: 'bg-amber-500',
+  },
+  Approved: {
+    label: 'Approved',
+    cls: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    dot: 'bg-emerald-500',
+  },
+};
+
+export const APPROVAL_STATUS_OPTIONS: Array<{
+  value: '' | ApprovalStatus;
+  label: string;
+}> = [
+  { value: '', label: 'Not set' },
+  { value: 'Pending', label: 'Pending' },
+  { value: 'Approved', label: 'Approved' },
 ];

@@ -306,6 +306,13 @@ async function governanceExportArchiveFoi(_req: any, res: any, ctx: ApiContext) 
       });
     }
 
+    // Phase 5.5e — header gains 4 trailing columns to mirror the
+    // Southwark FP sheet's people fields + approval state. The current
+    // archive only emits Sealed reports / Held meetings / Published
+    // docs (no FP-item kind), so these columns are blank for v1 rows.
+    // When FP items become an archive kind in v2 they populate cleanly,
+    // and any consumer parsing by header name keeps working today
+    // (append-at-end, Q-E in the locked plan).
     const header = [
       'Kind',
       'Reference',
@@ -316,6 +323,10 @@ async function governanceExportArchiveFoi(_req: any, res: any, ctx: ApiContext) 
       'HRB',
       'Part classification',
       'Golden Thread hash',
+      'Approval status',
+      'Strategic Lead',
+      'Report Author',
+      'Decision Maker',
     ];
     const lines = [header.map(csvEscape).join(',')];
     for (const it of aggregator.items) {
@@ -330,6 +341,12 @@ async function governanceExportArchiveFoi(_req: any, res: any, ctx: ApiContext) 
           it.isHRB ? 'Yes' : 'No',
           it.partClassification ?? '',
           it.goldenThreadHash ?? '',
+          // Reserved for future FP-item archive kind. Blank for current
+          // report / meeting / projectDoc rows.
+          '',
+          '',
+          '',
+          '',
         ]
           .map(csvEscape)
           .join(','),
