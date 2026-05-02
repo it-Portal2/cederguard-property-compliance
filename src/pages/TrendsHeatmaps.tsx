@@ -1,4 +1,4 @@
-import { TrendingUp } from 'lucide-react';
+import { TrendingUp, Grid3x3, PoundSterling, ArrowUpRight } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import {
@@ -6,14 +6,36 @@ import {
   STRATEGIC_WORKSTREAMS,
   getWorkstreamName,
 } from '../data/riskTaxonomy';
+import {
+  LIKELIHOOD_LABELS,
+  IMPACT_LABELS,
+  calculateMatrixScore,
+  bandForScore,
+  BAND_STYLES,
+  BAND_RANGES,
+  aleEscalation,
+  resolveLinkedValue,
+  formatAlePercent,
+  DEFAULT_ALE_ONE_BAND_PCT,
+  DEFAULT_ALE_FORCE_CRITICAL_PCT,
+} from '../data/riskScoringMatrix';
 
-// Bug 5 fix: explicit null-safe colour + tier computation
+// Workstream heatmap cell colour — derived from the client's 4-band scheme
+// so the supplementary workstream view shares the same visual language as the
+// primary 5×5 matrix above.
 function cellColor(score: number) {
-  if (score >= 16) return 'bg-red-900 text-white';
-  if (score >= 12) return 'bg-red-200 text-red-900';
-  if (score >= 9)  return 'bg-orange-200 text-orange-900';
-  if (score >= 6)  return 'bg-yellow-100 text-yellow-800';
-  return 'bg-emerald-100 text-emerald-800';
+  return BAND_STYLES[bandForScore(score)].cell;
+}
+
+// Compact GBP formatter for the Financial Risk Exposure card. Uses K/M/B
+// suffixes so cards stay one line on mobile and table cells don't wrap.
+function formatGBP(n: number): string {
+  const v = Number(n) || 0;
+  if (v <= 0) return '£0';
+  if (v >= 1_000_000_000) return `£${(v / 1_000_000_000).toFixed(2)}B`;
+  if (v >= 1_000_000) return `£${(v / 1_000_000).toFixed(2)}M`;
+  if (v >= 1_000) return `£${(v / 1_000).toFixed(0)}k`;
+  return `£${v.toFixed(0)}`;
 }
 
 export function TrendsHeatmaps() {
@@ -61,22 +83,85 @@ export function TrendsHeatmaps() {
     ? STRATEGIC_WORKSTREAMS
     : OPERATIONAL_WORKSTREAMS;
 
-  // Bug 1 + 2: Build workstream → max risk score using resolved names
+  // Build workstream → max risk score using resolved names.
+  // Score is recomputed via calculateMatrixScore (calibrated 5×5 matrix)
+  // ONLY for this heatmap page — every other surface in the app continues
+  // to read r.grossRating which is the existing L × I product. Per client
+  // spec (2026-05-03): the heatmap calculates risk scores from the matrix.
   const heatmapData = useMemo(() => {
     return activeWorkstreams.map(ws => {
       const wsRisks = contextRisks.filter(r => {
         if (!r.workstream) return false;
-        // Bug 2: resolve ID → display name before comparing
         const resolvedName = getWorkstreamName(r.workstream);
         return resolvedName === ws;
       });
       const score = wsRisks.length > 0
-        ? Math.max(...wsRisks.map(r => r.grossRating || 0))
+        ? Math.max(...wsRisks.map(r => calculateMatrixScore(r.grossL, r.grossI)))
         : 0;
       return { ws, score, count: wsRisks.length };
     }).filter(row => row.count > 0 || contextRisks.length === 0);
     // When no risks yet, show all rows so heatmap skeleton is visible
   }, [activeWorkstreams, contextRisks]);
+
+  // Financial Risk Exposure rows — per-risk ALE linked to project/programme
+  // value, with escalation applied on top of the matrix-derived base band.
+  // Per client spec (2026-05-03): cost linkage drives the financial threshold
+  // for Gross ALE and Residual ALE. Local to this page only — does not
+  // change r.grossRating or any other persisted field anywhere in the app.
+  const financialExposureRows = useMemo(() => {
+    return contextRisks
+      .map((r: any) => {
+        const linkedValue = resolveLinkedValue(
+          { projectId: r.projectId, programmeId: r.programmeId },
+          safeProjects as any,
+        );
+        if (!linkedValue) return null;
+        const matrixScore = calculateMatrixScore(r.grossL, r.grossI);
+        const baseBand = bandForScore(matrixScore);
+        const grossEsc = aleEscalation(r.grossALE, linkedValue, baseBand);
+        const residualMatrixScore = calculateMatrixScore(r.residualL, r.residualI);
+        const residualBaseBand = bandForScore(residualMatrixScore);
+        const residualEsc = aleEscalation(r.residualALE, linkedValue, residualBaseBand);
+        const grossPct = grossEsc.pct ?? 0;
+        const residualPct = residualEsc.pct ?? 0;
+        // Suppress rows that have nothing meaningful to show (no ALE on either side).
+        if (grossPct <= 0 && residualPct <= 0) return null;
+        const project = r.projectId
+          ? safeProjects.find((p: any) => p.id === r.projectId)
+          : null;
+        const projectsInProgramme = r.programmeId
+          ? safeProjects.filter((p: any) => p.programmeId === r.programmeId).length
+          : 0;
+        const linkedTo = project
+          ? ((project as any).name || (project as any).id || 'Linked project')
+          : r.programmeId
+            ? `Programme · ${projectsInProgramme} project${projectsInProgramme !== 1 ? 's' : ''}`
+            : '—';
+        return {
+          id: r.id,
+          title: r.title || '(untitled risk)',
+          linkedTo,
+          linkedValue,
+          grossL: r.grossL,
+          grossI: r.grossI,
+          matrixScore,
+          baseBand,
+          grossALE: Number(r.grossALE) || 0,
+          residualALE: Number(r.residualALE) || 0,
+          grossEsc,
+          residualEsc,
+        };
+      })
+      .filter((row): row is NonNullable<typeof row> => row !== null)
+      .sort((a, b) => {
+        // Escalated first; then by gross % desc.
+        if (a.grossEsc.escalated && !b.grossEsc.escalated) return -1;
+        if (!a.grossEsc.escalated && b.grossEsc.escalated) return 1;
+        return (b.grossEsc.pct ?? 0) - (a.grossEsc.pct ?? 0);
+      });
+  }, [contextRisks, safeProjects]);
+
+  const escalatedCount = financialExposureRows.filter(r => r.grossEsc.escalated).length;
 
   // Category breakdown for supplementary section
   const categoryBreakdown = useMemo(() => {
@@ -90,8 +175,11 @@ export function TrendsHeatmaps() {
       .slice(0, 6);
   }, [contextRisks]);
 
-  // Bug 5: null-safe comparisons for all KPIs
-  const severeRisks = contextRisks.filter(r => (r.grossRating || 0) >= 16).length;
+  // KPI counts. Severe count uses the matrix-based score (≥20 = Critical band)
+  // — local to this page only; other surfaces continue using r.grossRating.
+  const severeRisks = contextRisks.filter(
+    r => calculateMatrixScore(r.grossL, r.grossI) >= 20,
+  ).length;
   const openRisks   = contextRisks.filter(r => r.status === 'Open').length;
   const totalRisks  = contextRisks.length;
 
@@ -119,7 +207,7 @@ export function TrendsHeatmaps() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
         <div className="bg-white border-b-4 md:border-t-4 md:border-b-0 border-red-500 border border-slate-200 rounded-[1.5rem] p-5 md:p-6 shadow-sm hover:shadow-md transition-shadow">
           <div className="text-3xl md:text-4xl font-black text-red-600 tabular-nums tracking-tighter">{severeRisks}</div>
-          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Severe Risks (≥16)</div>
+          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Critical Risks (≥20)</div>
         </div>
         <div className="bg-white border-b-4 md:border-t-4 md:border-b-0 border-amber-500 border border-slate-200 rounded-[1.5rem] p-5 md:p-6 shadow-sm hover:shadow-md transition-shadow">
           <div className="text-3xl md:text-4xl font-black text-amber-600 tabular-nums tracking-tighter">{openRisks}</div>
@@ -128,6 +216,105 @@ export function TrendsHeatmaps() {
         <div className="bg-white border-b-4 md:border-t-4 md:border-b-0 border-indigo-500 border border-slate-200 rounded-[1.5rem] p-5 md:p-6 shadow-sm hover:shadow-md transition-shadow">
           <div className="text-3xl md:text-4xl font-black text-indigo-600 tabular-nums tracking-tighter">{totalRisks}</div>
           <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Total Risks</div>
+        </div>
+      </div>
+
+      {/* Client Risk Scoring Matrix (5×5 calibrated lookup, per spec 2026-05-03) */}
+      <div className="bg-white rounded-[1.5rem] md:rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
+        <div className="px-6 md:px-8 py-4 md:py-5 border-b border-slate-100 flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="p-1.5 bg-indigo-100 rounded-lg">
+              <Grid3x3 className="w-4 h-4 text-indigo-600" />
+            </div>
+            <div>
+              <span className="block font-black text-slate-900 text-xs md:text-sm uppercase tracking-widest">Risk Scoring Matrix</span>
+              <span className="block text-[10px] text-slate-400 mt-0.5">Calibrated 5×5 lookup · Likelihood × Impact → Score (1–25)</span>
+            </div>
+          </div>
+          <span className="hidden md:inline text-[10px] font-bold text-indigo-500 uppercase tracking-tighter bg-indigo-50 px-3 py-1 rounded-full">Client spec</span>
+        </div>
+        <div className="p-4 md:p-8 overflow-x-auto">
+          <table className="border-collapse mx-auto select-none">
+            <thead>
+              <tr>
+                <th className="p-2"></th>
+                <th className="p-2"></th>
+                <th
+                  colSpan={5}
+                  className="text-center text-[10px] font-black text-slate-500 uppercase tracking-widest pb-2"
+                >
+                  Likelihood →
+                </th>
+              </tr>
+              <tr>
+                <th className="p-2"></th>
+                <th className="p-2"></th>
+                {LIKELIHOOD_LABELS.map((label, idx) => (
+                  <th
+                    key={label}
+                    className="px-2 py-2 text-center text-[10px] font-bold text-slate-600 uppercase tracking-wider align-bottom"
+                    style={{ minWidth: '4.5rem' }}
+                  >
+                    <div>{label}</div>
+                    <div className="text-slate-400 text-[10px] font-bold">{idx + 1}</div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {/* Render rows top-down with Severe (I=5) at the top, matching the client's matrix orientation */}
+              {[5, 4, 3, 2, 1].map((impact, rowIdx) => (
+                <tr key={impact}>
+                  {rowIdx === 0 && (
+                    <td
+                      rowSpan={5}
+                      className="text-center text-[10px] font-black text-slate-500 uppercase tracking-widest align-middle pr-2"
+                      style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', whiteSpace: 'nowrap' }}
+                    >
+                      ↑ Impact
+                    </td>
+                  )}
+                  <td className="px-2 py-2 text-right align-middle">
+                    <div className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                      {IMPACT_LABELS[impact - 1]}
+                    </div>
+                    <div className="text-[10px] font-bold text-slate-400">{impact}</div>
+                  </td>
+                  {[1, 2, 3, 4, 5].map(likelihood => {
+                    const score = calculateMatrixScore(likelihood, impact);
+                    const band = bandForScore(score);
+                    const styles = BAND_STYLES[band];
+                    return (
+                      <td
+                        key={likelihood}
+                        className={`text-center font-black tabular-nums border border-white transition-transform hover:scale-105 cursor-default ${styles.cell}`}
+                        style={{ width: '4.5rem', height: '3rem', fontSize: '0.95rem' }}
+                        title={`${LIKELIHOOD_LABELS[likelihood - 1]} × ${IMPACT_LABELS[impact - 1]} = ${score} (${styles.label})`}
+                      >
+                        {score}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* Band legend — 4-band scheme matching the matrix's colour distribution */}
+          <div className="flex flex-wrap items-center justify-center gap-3 mt-6 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Bands:</span>
+            {BAND_RANGES.map(({ band, range }) => {
+              const styles = BAND_STYLES[band];
+              return (
+                <span
+                  key={band}
+                  className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border ${styles.pill}`}
+                >
+                  {range} {styles.label}
+                </span>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -173,24 +360,126 @@ export function TrendsHeatmaps() {
             </div>
           )}
 
-          {/* Score Legend */}
+          {/* Score Legend — uses the same 4 bands as the calibrated matrix above */}
           <div className="flex flex-wrap items-center gap-3 mt-10 p-5 bg-slate-50 rounded-2xl border border-slate-100">
             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-2">Score Legend:</span>
-            {[
-              ['bg-emerald-100 text-emerald-800 border-emerald-200',  '1–5 Low'],
-              ['bg-yellow-100 text-yellow-800 border-yellow-200',     '6–8 Minor'],
-              ['bg-orange-200 text-orange-900 border-orange-300',     '9–11 Moderate'],
-              ['bg-red-200 text-red-900 border-red-300',              '12–15 Major'],
-              ['bg-red-900 text-white border-red-950',                '16–25 Severe'],
-            ].map(([cls, label]) => (
-              <span
-                key={label}
-                className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-transform hover:scale-105 ${cls}`}
-              >
-                {label}
-              </span>
-            ))}
+            {BAND_RANGES.map(({ band, range }) => {
+              const styles = BAND_STYLES[band];
+              return (
+                <span
+                  key={band}
+                  className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-transform hover:scale-105 ${styles.pill}`}
+                >
+                  {range} {styles.label}
+                </span>
+              );
+            })}
           </div>
+        </div>
+      </div>
+
+      {/* Financial Risk Exposure — ALE % of project/programme value with escalation.
+          Per client spec (2026-05-03): project/programme cost linked to risks so
+          financial threshold is determined correctly for Gross ALE and Residual ALE. */}
+      <div className="bg-white rounded-[1.5rem] md:rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
+        <div className="px-6 md:px-8 py-4 md:py-5 border-b border-slate-100 flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="p-1.5 bg-indigo-100 rounded-lg">
+              <PoundSterling className="w-4 h-4 text-indigo-600" />
+            </div>
+            <div>
+              <span className="block font-black text-slate-900 text-xs md:text-sm uppercase tracking-widest">Financial Risk Exposure</span>
+              <span className="block text-[10px] text-slate-400 mt-0.5">
+                ALE as % of linked project / programme value · ≥{Math.round(DEFAULT_ALE_ONE_BAND_PCT * 100)}% escalates one band · ≥{Math.round(DEFAULT_ALE_FORCE_CRITICAL_PCT * 100)}% forces Critical
+              </span>
+            </div>
+          </div>
+          {escalatedCount > 0 && (
+            <span className="text-[10px] font-bold text-rose-600 uppercase tracking-tighter bg-rose-50 px-3 py-1 rounded-full border border-rose-100">
+              {escalatedCount} escalated
+            </span>
+          )}
+        </div>
+        <div className="p-4 md:p-6">
+          {financialExposureRows.length === 0 ? (
+            <p className="text-slate-400 text-sm text-center py-6">
+              No risks with linked project/programme cost in this context. Add a contract value to the project, or link risks to a project, to see ALE thresholds here.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {financialExposureRows.map(row => (
+                <div
+                  key={row.id}
+                  className="flex flex-col gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-white hover:ring-2 hover:ring-indigo-500/10 transition-all"
+                >
+                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-slate-900 text-sm truncate" title={row.title}>
+                          {row.title}
+                        </span>
+                        {row.grossEsc.escalated && (
+                          <ArrowUpRight className="w-3.5 h-3.5 text-rose-600" aria-label="ALE escalated" />
+                        )}
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-1 truncate" title={row.linkedTo}>
+                        {row.linkedTo} · L={row.grossL} I={row.grossI} · matrix score {row.matrixScore}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${BAND_STYLES[row.baseBand].pill}`}
+                        title="Base band from L×I matrix score"
+                      >
+                        Base · {BAND_STYLES[row.baseBand].label}
+                      </span>
+                      {row.grossEsc.band !== row.baseBand && (
+                        <>
+                          <span className="text-slate-400 text-xs">→</span>
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${BAND_STYLES[row.grossEsc.band].pill}`}
+                            title="Effective band after ALE escalation"
+                          >
+                            Effective · {BAND_STYLES[row.grossEsc.band].label}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-1">
+                    <div className="bg-white rounded-xl px-3 py-2 border border-slate-100">
+                      <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Linked Value</div>
+                      <div className="text-sm font-bold text-slate-900 tabular-nums mt-0.5">{formatGBP(row.linkedValue)}</div>
+                    </div>
+                    <div className="bg-white rounded-xl px-3 py-2 border border-slate-100">
+                      <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Gross ALE</div>
+                      <div className="flex items-baseline gap-2 mt-0.5 flex-wrap">
+                        <span className="text-sm font-bold text-slate-900 tabular-nums">{formatGBP(row.grossALE)}</span>
+                        <span className="text-[11px] font-medium text-slate-500 tabular-nums">{formatAlePercent(row.grossEsc.pct)}</span>
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-xl px-3 py-2 border border-slate-100">
+                      <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Residual ALE</div>
+                      <div className="flex items-baseline gap-2 mt-0.5 flex-wrap">
+                        <span className="text-sm font-bold text-slate-900 tabular-nums">{formatGBP(row.residualALE)}</span>
+                        <span className="text-[11px] font-medium text-slate-500 tabular-nums">{formatAlePercent(row.residualEsc.pct)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  {row.grossEsc.reason && (
+                    <div className="text-[11px] font-medium text-rose-700 bg-rose-50 border border-rose-100 rounded-lg px-3 py-1.5 mt-1">
+                      {row.grossEsc.reason}
+                    </div>
+                  )}
+                  {!row.grossEsc.reason && row.residualEsc.reason && (
+                    <div className="text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-1.5 mt-1">
+                      Residual: {row.residualEsc.reason}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

@@ -38,7 +38,7 @@ export function EditorDragHandle({ editor }: EditorDragHandleProps) {
       className="hidden md:block md:z-60"
     >
       <AnimatePresence>
-        {target && (
+        {target && editor.isEditable && (
           <motion.div
             initial={{ opacity: 0, x: -4 }}
             animate={{ opacity: 1, x: 0 }}

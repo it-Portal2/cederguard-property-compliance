@@ -191,12 +191,20 @@ export function GovernanceEditor({
         }, AUTOSAVE_DEBOUNCE_MS);
       },
     },
-    [extensions.length, editable, assets?.logoUrl, assets?.signatureUrl],
+    [extensions.length, assets?.logoUrl, assets?.signatureUrl],
   );
 
   useEffect(() => {
     if (editor && onEditorReady) onEditorReady(editor);
   }, [editor, onEditorReady]);
+
+  // Toggle editable in place rather than recreating the editor — recreating
+  // tears down the DragHandle's DOM bindings mid-animation, which races with
+  // Motion's AnimatePresence parent and throws `removeChild` NotFoundError
+  // (seen on ProjectDocModal publish flow).
+  useEffect(() => {
+    if (editor && editor.isEditable !== editable) editor.setEditable(editable);
+  }, [editor, editable]);
 
   // On unmount, flush any pending auto-save attempt so we don't lose work.
   useEffect(() => {
@@ -222,9 +230,17 @@ export function GovernanceEditor({
       }
     >
       {editable && editor && <EditorToolbar editor={editor} aiContext={aiContext} />}
-      {editable && editor && <EditorBubbleMenu editor={editor} />}
-      {editable && editor && <EditorFloatingMenu editor={editor} />}
-      {editable && editor && <EditorDragHandle editor={editor} />}
+      {/*
+        BubbleMenu, FloatingMenu, and DragHandle manage their own DOM via
+        Tippy.js portals (outside React's tree). Conditionally unmounting
+        them on `editable` toggle causes their cleanup `removeChild` to race
+        with React's commit and throw NotFoundError (seen on
+        ProjectDocModal publish flow). Always mount when editor exists;
+        they self-disable on read-only editors.
+      */}
+      {editor && <EditorBubbleMenu editor={editor} />}
+      {editor && <EditorFloatingMenu editor={editor} />}
+      {editor && <EditorDragHandle editor={editor} />}
       <style>{`
         .cedar-editor h1.cedar-heading { font-size: 1.5rem; line-height: 2rem; }
         .cedar-editor h2.cedar-heading { font-size: 1.25rem; line-height: 1.75rem; }
