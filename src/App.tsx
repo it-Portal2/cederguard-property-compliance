@@ -68,6 +68,7 @@ import { ProjectPlan } from './pages/ProjectPlan';
 import { BillingPanel } from './pages/BillingPanel';
 import { MobileHeader } from './components/MobileHeader';
 import { ProfileSettingsModal } from './components/ProfileSettingsModal';
+import { GlobalAIAssistant } from './components/GlobalAIAssistant';
 
 // Programme Governance (Phase 0 — placeholder pages)
 import { GovernanceDashboardPage } from './pages/governance/DashboardPage';
@@ -269,6 +270,11 @@ function AppContent() {
           </div>
         </main>
         <MobileNav />
+        {/* Global CedarGuard AI floating button — appears on every authenticated
+            route except those with their own per-page AI button (skip set inside
+            the component) and routes where it doesn't fit (login, editor sandbox,
+            report authoring). */}
+        <GlobalAIAssistant />
         {/* Global Modals rendered at the root to avoid CSS positioning traps */}
         {isProfileSettingsOpen && (
           <ProfileSettingsModal

@@ -778,14 +778,6 @@ export function ReportAuthoringPage() {
           </p>
           <div className="space-y-3 text-[11px] text-slate-600">
             <div>
-              <p className="font-semibold text-slate-700">Linked Forward Plan</p>
-              <p className="mt-0.5 text-slate-500">
-                {report.forwardPlanItemLabel || (
-                  <span className="italic text-slate-400">none</span>
-                )}
-              </p>
-            </div>
-            <div>
               <p className="font-semibold text-slate-700">Reviewer</p>
               <p className="mt-0.5 text-slate-500">
                 {report.reviewerLabel || (

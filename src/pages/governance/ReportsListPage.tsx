@@ -236,34 +236,6 @@ export function GovernanceReportsListPage() {
       },
     },
     {
-      key: 'forwardPlanItemLabel',
-      label: 'Forward Plan',
-      render: (_v, row) => {
-        if (!row.forwardPlanItemLabel) {
-          return <span className="text-xs text-slate-300">—</span>;
-        }
-        const linked = !!row.forwardPlanItemId;
-        return (
-          <span
-            className={clsx(
-              'inline-flex items-start gap-1 text-xs',
-              linked ? 'text-slate-700' : 'italic text-slate-500',
-            )}
-            title={
-              linked
-                ? row.forwardPlanItemLabel
-                : `Label only — no real Forward Plan item linked. Open Edit details to pick one.`
-            }
-          >
-            {!linked && (
-              <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-500" />
-            )}
-            <span className="line-clamp-2 max-w-xs">{row.forwardPlanItemLabel}</span>
-          </span>
-        );
-      },
-    },
-    {
       key: 'flags',
       label: 'Type',
       render: (_v, row) => (

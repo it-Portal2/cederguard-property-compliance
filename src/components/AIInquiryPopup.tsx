@@ -18,9 +18,13 @@ interface AIInquiryPopupProps {
   context?: string;
   initialQuestion?: string;
   trigger?: React.ReactNode;
+  /** Page-specific structured data (FP items / meetings / reports / framework / etc.).
+   *  Only set by GlobalAIAssistant when the popup opens on a governance route.
+   *  Existing per-page callers omit this and behave exactly as before. */
+  pageContext?: { kind: string; payload: any } | null;
 }
 
-export function AIInquiryPopup({ isOpen: controlledIsOpen, onClose: controlledOnClose, context, initialQuestion, trigger }: AIInquiryPopupProps) {
+export function AIInquiryPopup({ isOpen: controlledIsOpen, onClose: controlledOnClose, context, initialQuestion, trigger, pageContext }: AIInquiryPopupProps) {
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   
   const isControlled = controlledIsOpen !== undefined;
@@ -181,7 +185,7 @@ export function AIInquiryPopup({ isOpen: controlledIsOpen, onClose: controlledOn
 
     try {
       // Use the new chatWithAI service for dynamic, context-aware responses
-      const response = await chatWithAI(text, projectInfo, context, lastAnalysisResults, user, buildContextData());
+      const response = await chatWithAI(text, projectInfo, context, lastAnalysisResults, user, buildContextData(), pageContext ?? null);
       
       const assistantMsg: Message = {
         id: (Date.now() + 1).toString(),

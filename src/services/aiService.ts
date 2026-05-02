@@ -1119,6 +1119,7 @@ export async function chatWithAI(
   lastAnalysis?: any,
   user?: any,
   contextData?: any,
+  pageContext?: { kind: string; payload: any } | null,
 ) {
   // Extract real data for more specific context
   const analysisContext = lastAnalysis
@@ -1151,6 +1152,14 @@ export async function chatWithAI(
     ? `ISSUES (live):\nTotal: ${contextData.issues.total} | Open: ${contextData.issues.open} | Escalated: ${contextData.issues.escalated}\nTop Open Issues: ${JSON.stringify(contextData.issues.topOpen)}`
     : "";
 
+  // Governance lazy-fetched data (only present when the popup is opened on a
+  // /governance/* route via GlobalAIAssistant). Each `kind` carries a different
+  // shape — render it generically as JSON so the AI sees the live state of FP
+  // items / meetings / reports / framework / archive / project-docs.
+  const governanceSection = pageContext?.kind
+    ? `GOVERNANCE DATA (live, scoped to current page):\nKind: ${pageContext.kind}\n${JSON.stringify(pageContext.payload, null, 2)}`
+    : "";
+
   const prompt = `
     You are CedarGuard AI, a professional compliance and risk expert for the Cedar Property Compliance & Risk Manager Suite.
 
@@ -1170,6 +1179,8 @@ export async function chatWithAI(
     ${riskSection}
 
     ${issueSection}
+
+    ${governanceSection}
 
     CURRENT PAGE/USER CONTEXT:
     ${context || "General Overview"}

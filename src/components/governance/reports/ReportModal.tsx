@@ -9,7 +9,6 @@ import {
   CalendarDays,
   FileText,
   ChevronRight,
-  Calendar as CalendarIcon,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
@@ -22,7 +21,6 @@ import {
   STATUS_STYLES,
 } from './types';
 import { TemplatePickerModal } from './TemplatePickerModal';
-import { FpItemPickerModal } from './FpItemPickerModal';
 import { MeetingPicker } from '../MeetingPicker';
 import { ReviewerPickerModal } from './ReviewerPickerModal';
 import { UserCheck } from 'lucide-react';
@@ -37,8 +35,6 @@ interface FormState {
   scheme: string;
   templateId: string;
   templateLabel: string;
-  forwardPlanItemId: string;
-  forwardPlanItemLabel: string;
   partClassification: Classification;
   isHRB: boolean;
   targetBoardDate: string;
@@ -53,8 +49,6 @@ function emptyState(): FormState {
     scheme: '',
     templateId: '',
     templateLabel: '',
-    forwardPlanItemId: '',
-    forwardPlanItemLabel: '',
     partClassification: 'Open',
     isHRB: false,
     targetBoardDate: '',
@@ -98,7 +92,6 @@ export function ReportModal({
   const [saving, setSaving] = useState(false);
   const [discardOpen, setDiscardOpen] = useState(false);
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
-  const [fpPickerOpen, setFpPickerOpen] = useState(false);
   const [reviewerPickerOpen, setReviewerPickerOpen] = useState(false);
   const initialFormRef = useRef<FormState>(emptyState());
 
@@ -120,8 +113,6 @@ export function ReportModal({
         scheme: report.scheme ?? '',
         templateId: report.templateId ?? '',
         templateLabel: report.templateLabel ?? '',
-        forwardPlanItemId: report.forwardPlanItemId ?? '',
-        forwardPlanItemLabel: report.forwardPlanItemLabel ?? '',
         partClassification: report.partClassification ?? 'Open',
         isHRB: !!report.isHRB,
         targetBoardDate: report.targetBoardDate ?? '',
@@ -179,8 +170,6 @@ export function ReportModal({
         scheme: form.scheme.trim(),
         templateId: form.templateId || null,
         templateLabel: form.templateLabel.trim(),
-        forwardPlanItemId: form.forwardPlanItemId || null,
-        forwardPlanItemLabel: form.forwardPlanItemLabel.trim(),
         partClassification: form.partClassification,
         isHRB: form.isHRB,
         targetBoardDate: form.targetBoardDate || null,
@@ -310,26 +299,6 @@ export function ReportModal({
                   />
                   {!form.templateId && form.templateLabel && (
                     <UnlinkedLabelHint label={form.templateLabel} kind="template" />
-                  )}
-                </Field>
-                <Field
-                  label="Forward Plan item"
-                  hint="The report inherits the FP entry's decision pipeline."
-                >
-                  <PickerTrigger
-                    icon={CalendarIcon}
-                    placeholder="Choose a Forward Plan item…"
-                    selectedLabel={
-                      form.forwardPlanItemId ? form.forwardPlanItemLabel : ''
-                    }
-                    onClick={() => setFpPickerOpen(true)}
-                    disabled={isLocked || !canEdit}
-                  />
-                  {!form.forwardPlanItemId && form.forwardPlanItemLabel && (
-                    <UnlinkedLabelHint
-                      label={form.forwardPlanItemLabel}
-                      kind="Forward Plan item"
-                    />
                   )}
                 </Field>
               </Section>
@@ -467,24 +436,6 @@ export function ReportModal({
           const label = t.code ? `${t.code} · ${t.title}` : t.title;
           setForm((f) => ({ ...f, templateId: t.id, templateLabel: label }));
           setTemplatePickerOpen(false);
-        }}
-      />
-
-      <FpItemPickerModal
-        isOpen={fpPickerOpen}
-        selectedId={form.forwardPlanItemId || null}
-        onClose={() => setFpPickerOpen(false)}
-        onSelect={(it) => {
-          setForm((f) => ({
-            ...f,
-            forwardPlanItemId: it.id,
-            forwardPlanItemLabel: it.title,
-            // Auto-mirror HRB flag from the FP item — saves PMs from re-toggling.
-            isHRB: f.isHRB || !!it.isHRB,
-            // Default the target board date to the FP entry's decision date if blank.
-            targetBoardDate: f.targetBoardDate || it.targetDecisionDate || '',
-          }));
-          setFpPickerOpen(false);
         }}
       />
 
