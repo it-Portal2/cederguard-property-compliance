@@ -14,6 +14,10 @@ import { governanceTemplatesRoutes } from './governanceTemplates.js';
 import { governanceForwardPlanRoutes } from './governanceForwardPlan.js';
 import { governanceReportsRoutes } from './governanceReports.js';
 import { governanceMeetingsRoutes } from './governanceMeetings.js';
+import { governanceProjectDocsRoutes } from './governanceProjectDocs.js';
+import { governanceArchiveRoutes } from './governanceArchive.js';
+import { governanceDashboardRoutes } from './governanceDashboard.js';
+import { governanceCronRoutes } from './governanceCron.js';
 
 export const allRoutes: Record<string, any> = {
   ...projectRoutes,
@@ -31,5 +35,9 @@ export const allRoutes: Record<string, any> = {
   ...governanceTemplatesRoutes,
   ...governanceForwardPlanRoutes,
   ...governanceReportsRoutes,
-  ...governanceMeetingsRoutes
+  ...governanceMeetingsRoutes,
+  ...governanceProjectDocsRoutes,
+  ...governanceArchiveRoutes,
+  ...governanceDashboardRoutes,
+  ...governanceCronRoutes
 };

@@ -23,6 +23,11 @@ interface ReportPdfInputs {
   /** Optional: include a specific signer's signature for Part A. The
    *  caller resolves this from `users/{uid}.signatureUrl` via Storage. */
   partASignatureDataUri?: string | null;
+  /** Phase 13 — when true, sections marked Part 2 / Closed are
+   *  replaced by a placeholder line ("[Section N — Part 2, exempt
+   *  from publication]"). FOI-safe by construction. Defaults false
+   *  (full publication) so internal previews still show everything. */
+  redactPart2?: boolean;
 }
 
 type Node = Record<string, any>;
@@ -111,8 +116,16 @@ export async function buildReportPdfBuffer(
 
   // Build the merged Tiptap doc — for each section, render an H2 heading
   // (so it acts as a section divider in the PDF) followed by its content.
-  // Skip the heading prefix for sections that already lead with their own
-  // heading (e.g. Header metadata table).
+  //
+  // Phase 13 redaction (FOI-safe by construction): when `redactPart2` is
+  // set, sections whose `partClassification` is "Closed" / "Part 2" emit
+  // ONLY a heading + a single placeholder paragraph in the output. The
+  // closed body is never written to the PDF buffer at all (so it can't
+  // leak via grep / OCR / metadata).
+  const isPart2 = (s: any): boolean => {
+    const v = (s?.partClassification ?? '').toString().toLowerCase();
+    return v === 'closed' || v === 'part 2' || v === 'part-2' || v === 'part2';
+  };
   const merged: Node = {
     type: 'doc',
     content: [
@@ -121,8 +134,21 @@ export async function buildReportPdfBuffer(
         const sectionContent: Node[] = Array.isArray(sectionDoc.content)
           ? sectionDoc.content
           : [];
+        const heading = h(2, `${s.order ?? ''}. ${s.name ?? ''}`.trim());
+        if (inputs.redactPart2 && isPart2(s)) {
+          return [
+            heading,
+            p([
+              text(
+                `[Section ${s.order ?? ''} — Part 2, exempt from publication]`,
+                [{ type: 'italic' }],
+              ),
+            ]),
+            p([]),
+          ];
+        }
         return [
-          h(2, `${s.order ?? ''}. ${s.name ?? ''}`.trim()),
+          heading,
           ...sectionContent,
           // Spacer paragraph between sections.
           p([]),

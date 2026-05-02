@@ -6,7 +6,8 @@ import {
   ShieldAlert, Brain, BarChart, BellRing, Layers, TrendingUp,
   ClipboardList, PieChart, ScrollText, Gavel, Users, User, LogOut,
   ChevronDown, ChevronRight, FileBarChart, LayoutTemplate, Plus, Target, Wand2,
-  Terminal, KeyRound, HelpCircle, Calculator, Rocket, CreditCard, FileText, Calendar as CalendarIcon, X, Map
+  Terminal, KeyRound, HelpCircle, Calculator, Rocket, CreditCard, FileText, Calendar as CalendarIcon, X, Map,
+  FolderClosed
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useStore } from '../store/useStore';
@@ -326,6 +327,7 @@ export function Sidebar() {
             )}
             <NavItem to="/governance/reports" icon={ClipboardList} label="Templates" />
             <NavItem to="/governance/meetings" icon={Users} label="Meetings" />
+            <NavItem to="/governance/project-docs" icon={FolderClosed} label="Project Governance" />
             {isClientAdmin && (
               <NavItem to="/governance/framework" icon={Gavel} label="Framework" iconClass="text-indigo-600" />
             )}

@@ -9,6 +9,7 @@
 // once the licensed TTF is provisioned.
 
 import { jsPDF } from 'jspdf';
+import { registerCedarFonts } from './pdfFonts.js';
 
 // --- Types matching the Tiptap node shapes from src/components/governance/extensions ----
 
@@ -53,13 +54,17 @@ const PAGE_MARGIN_X = 56; // ~20mm at 72dpi
 const PAGE_MARGIN_TOP = 56;
 const PAGE_MARGIN_BOTTOM = 56;
 const LINE_HEIGHT_RATIO = 1.35;
-const FONT_FAMILY = 'helvetica'; // jspdf built-in; Arial-equivalent
+// Font family resolved per-instance via `registerCedarFonts(pdf)`. When
+// the Arimo TTFs are present in `api/lib/fonts/`, returns `'Arimo'` (a
+// licensed-clean Arial-equivalent — Apache 2.0); otherwise falls back
+// to `'helvetica'` (jspdf built-in, Arial-metric-equivalent).
 
 // --- Public entry point ---------------------------------------------------
 
 export function renderReportPdf(options: PDFRenderOptions): Buffer {
   const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
-  pdf.setFont(FONT_FAMILY, 'normal');
+  const fontFamily = registerCedarFonts(pdf);
+  pdf.setFont(fontFamily, 'normal');
   pdf.setFontSize(11);
 
   const ctx: RenderContext = {
@@ -70,6 +75,7 @@ export function renderReportPdf(options: PDFRenderOptions): Buffer {
     contentWidth: pdf.internal.pageSize.getWidth() - 2 * PAGE_MARGIN_X,
     options,
     paragraphCounter: 0,
+    fontFamily,
   };
 
   walkContent(options.doc.content ?? [], ctx);
@@ -88,7 +94,7 @@ export function renderReportPdf(options: PDFRenderOptions): Buffer {
       pdf.saveGraphicsState();
       pdf.setFontSize(64);
       pdf.setTextColor(wmColor[0], wmColor[1], wmColor[2]);
-      pdf.setFont(FONT_FAMILY, 'bold');
+      pdf.setFont(ctx.fontFamily, 'bold');
       pdf.text(
         options.watermarkText,
         ctx.pageWidth / 2,
@@ -97,7 +103,7 @@ export function renderReportPdf(options: PDFRenderOptions): Buffer {
       );
       pdf.restoreGraphicsState();
       // Restore default font weight + size for whatever runs next.
-      pdf.setFont(FONT_FAMILY, 'normal');
+      pdf.setFont(ctx.fontFamily, 'normal');
       pdf.setFontSize(11);
       pdf.setTextColor(0);
     }
@@ -130,6 +136,8 @@ interface RenderContext {
   contentWidth: number;
   options: PDFRenderOptions;
   paragraphCounter: number;
+  /** Resolved per-instance: 'Arimo' when TTFs present; else 'helvetica'. */
+  fontFamily: string;
 }
 
 function ensureSpace(ctx: RenderContext, needed: number) {
@@ -268,7 +276,7 @@ function renderTable(node: PMNode, ctx: RenderContext) {
 
     cells.forEach((cell, cIdx) => {
       const isHeader = cell.type === 'tableHeader' || rIdx === 0;
-      ctx.pdf.setFont(FONT_FAMILY, isHeader ? 'bold' : 'normal');
+      ctx.pdf.setFont(ctx.fontFamily, isHeader ? 'bold' : 'normal');
       ctx.pdf.setFontSize(10);
       ctx.pdf.setTextColor(20);
 
@@ -390,10 +398,10 @@ function renderKeyValueTable(
     ctx.pdf.setFillColor(248, 250, 252);
     ctx.pdf.rect(PAGE_MARGIN_X, ctx.cursorY, labelW, lineHeight + 2, 'FD');
     ctx.pdf.rect(PAGE_MARGIN_X + labelW, ctx.cursorY, ctx.contentWidth - labelW, lineHeight + 2);
-    ctx.pdf.setFont(FONT_FAMILY, 'bold');
+    ctx.pdf.setFont(ctx.fontFamily, 'bold');
     ctx.pdf.setTextColor(60);
     ctx.pdf.text(f.label, PAGE_MARGIN_X + 4, ctx.cursorY + 12);
-    ctx.pdf.setFont(FONT_FAMILY, 'normal');
+    ctx.pdf.setFont(ctx.fontFamily, 'normal');
     ctx.pdf.setTextColor(20);
     ctx.pdf.text(value, PAGE_MARGIN_X + labelW + 4, ctx.cursorY + 12);
     ctx.cursorY += lineHeight + 2;
@@ -497,7 +505,7 @@ interface DrawTextOpts {
 
 function drawWrappedText(text: string, ctx: RenderContext, opts: DrawTextOpts) {
   if (!text) return;
-  ctx.pdf.setFont(FONT_FAMILY, opts.style);
+  ctx.pdf.setFont(ctx.fontFamily, opts.style);
   ctx.pdf.setFontSize(opts.fontSize);
   ctx.pdf.setTextColor(opts.color ?? 20);
   const lines = ctx.pdf.splitTextToSize(text, ctx.contentWidth);

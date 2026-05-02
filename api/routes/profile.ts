@@ -19,6 +19,14 @@ export const profileRoutes: Record<string, (req: any, res: any, ctx: ApiContext)
         allowedFields.forEach(field => {
           if (profile[field] !== undefined) sanitizedProfile[field] = profile[field];
         });
+        // Phase 13 — sanitise nested `notificationPreferences.chase`.
+        if (profile.notificationPreferences && typeof profile.notificationPreferences === 'object') {
+          const np: Record<string, any> = {};
+          if (typeof profile.notificationPreferences.chase === 'boolean') {
+            np.chase = profile.notificationPreferences.chase;
+          }
+          if (Object.keys(np).length > 0) sanitizedProfile.notificationPreferences = np;
+        }
 
         await db.collection('users').doc(uid).set(sanitizedProfile, { merge: true });
         return res.status(200).json({ success: true });

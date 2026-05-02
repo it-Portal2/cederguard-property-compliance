@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../lib/api';
-import { X, Save, Loader2, Key, Trash2, AlertTriangle } from 'lucide-react';
+import { X, Save, Loader2, Key, Trash2, AlertTriangle, BellRing } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { logout } from '../lib/firebase';
 import { useStore } from '../store/useStore';
@@ -16,7 +16,10 @@ export function ProfileSettingsModal({ isOpen, onClose }: ProfileSettingsModalPr
         companyName: '',
         jobTitle: '',
         contactPhone: '',
-        geminiBackupKey: ''
+        geminiBackupKey: '',
+        // Phase 13 — chase notification opt-out. Default opt-IN
+        // (true) so existing users keep getting chases.
+        chaseEnabled: true,
     });
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -43,7 +46,9 @@ export function ProfileSettingsModal({ isOpen, onClose }: ProfileSettingsModalPr
                     companyName: res.profile.companyName || '',
                     jobTitle: res.profile.jobTitle || '',
                     contactPhone: res.profile.contactPhone || '',
-                    geminiBackupKey: res.profile.geminiBackupKey || ''
+                    geminiBackupKey: res.profile.geminiBackupKey || '',
+                    chaseEnabled:
+                        res.profile.notificationPreferences?.chase !== false,
                 });
             }
         } catch (error) {
@@ -58,7 +63,17 @@ export function ProfileSettingsModal({ isOpen, onClose }: ProfileSettingsModalPr
         setIsSaving(true);
         setMessage(null);
         try {
-            await api.saveProfile(profile);
+            // Phase 13 — fold the local `chaseEnabled` toggle back into
+            // the canonical `notificationPreferences.chase` shape that
+            // `governanceCron.ts` reads.
+            const payload = {
+                companyName: profile.companyName,
+                jobTitle: profile.jobTitle,
+                contactPhone: profile.contactPhone,
+                geminiBackupKey: profile.geminiBackupKey,
+                notificationPreferences: { chase: profile.chaseEnabled },
+            };
+            await api.saveProfile(payload);
             setMessage({ type: 'success', text: 'Profile settings saved successfully.' });
             setTimeout(() => {
                 onClose();
@@ -174,6 +189,31 @@ export function ProfileSettingsModal({ isOpen, onClose }: ProfileSettingsModalPr
                                         {showGeminiKey ? <X className="w-4 h-4" /> : <Key className="w-4 h-4" />}
                                     </button>
                                 </div>
+                            </div>
+
+                            {/* Phase 13 — chase notification opt-out */}
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+                                    <BellRing className="w-4 h-4 text-slate-400" />
+                                    Chase notifications
+                                </label>
+                                <p className="text-xs text-slate-500">
+                                    Governance chase reminders fire 72h / 24h / at-deadline + escalate after 24h. Turn off if you'd rather rely on dashboard signals only — every chase is still recorded in the audit log.
+                                </p>
+                                <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                                    <input
+                                        type="checkbox"
+                                        checked={profile.chaseEnabled}
+                                        onChange={(e) =>
+                                            setProfile((p) => ({
+                                                ...p,
+                                                chaseEnabled: e.target.checked,
+                                            }))
+                                        }
+                                        className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-2 focus:ring-indigo-500/20"
+                                    />
+                                    Send me chase notifications
+                                </label>
                             </div>
 
                             {message && (

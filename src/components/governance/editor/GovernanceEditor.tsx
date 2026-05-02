@@ -43,6 +43,13 @@ export interface GovernanceEditorProps {
    * Stamp extension exposes the uploaded stamps to the insert menu.
    */
   assets?: GovernanceAssets;
+  /**
+   * Forwarded to the toolbar's "Draft with AI" action so the Gemini
+   * prompt is context-aware (e.g. "Cabinet KM4 — Recommendations
+   * section" or "DPB · May 2026 minutes"). Optional; the AI button
+   * still works without it but produces more generic prose.
+   */
+  aiContext?: string;
 }
 
 export function GovernanceEditor({
@@ -54,6 +61,7 @@ export function GovernanceEditor({
   onEditorReady,
   className,
   assets,
+  aiContext,
 }: GovernanceEditorProps) {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -213,7 +221,7 @@ export function GovernanceEditor({
         (className ?? '')
       }
     >
-      {editable && editor && <EditorToolbar editor={editor} />}
+      {editable && editor && <EditorToolbar editor={editor} aiContext={aiContext} />}
       {editable && editor && <EditorBubbleMenu editor={editor} />}
       {editable && editor && <EditorFloatingMenu editor={editor} />}
       {editable && editor && <EditorDragHandle editor={editor} />}

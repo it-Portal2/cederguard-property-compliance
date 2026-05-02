@@ -763,6 +763,9 @@ export function ReportAuthoringPage() {
                     : 'Start drafting…'
                 }
                 assets={assets}
+                aiContext={[report?.title, activeSection?.name]
+                  .filter(Boolean)
+                  .join(' — ')}
               />
             </>
           )}

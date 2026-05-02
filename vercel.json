@@ -45,5 +45,11 @@
             "source": "/((?!api(?:/|$)|@|__|src/|node_modules/|.*\\..*).*)",
             "destination": "/"
         }
+    ],
+    "crons": [
+        {
+            "path": "/api?action=runChaseEngine",
+            "schedule": "0 * * * *"
+        }
     ]
 }

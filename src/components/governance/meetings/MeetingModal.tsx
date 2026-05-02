@@ -455,6 +455,15 @@ export function MeetingModal({
                 wordCount={meetingState.minutes?.wordCount ?? 0}
                 readOnly={!!minutesLocked}
                 onSaved={acceptServerUpdate}
+                aiContext={[
+                  meetingState.governanceBodyLabel || meetingState.title || 'Meeting',
+                  meetingState.date ? `held ${meetingState.date}` : null,
+                  Array.isArray(meetingState.agenda) && meetingState.agenda.length
+                    ? `agenda: ${meetingState.agenda.slice(0, 5).join('; ')}`
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
               />
             )}
             {activeTab === 'decisions' && meetingState && (
@@ -1127,6 +1136,7 @@ function MinutesTab({
   wordCount: initialWordCount,
   readOnly,
   onSaved,
+  aiContext,
 }: {
   meetingId: string;
   initialContent: any | null;
@@ -1134,6 +1144,7 @@ function MinutesTab({
   wordCount: number;
   readOnly: boolean;
   onSaved: (m: Meeting) => void;
+  aiContext?: string;
 }) {
   // Auto-save on every doc change (debounced inside the editor) →
   // hits governanceSaveMeetingMinutes → server merges + returns
@@ -1168,6 +1179,7 @@ function MinutesTab({
           editable={!readOnly}
           placeholder="Capture minutes — discussion, decisions, follow-up notes."
           onAutoSave={onAutoSave}
+          aiContext={aiContext}
         />
       </div>
     </div>

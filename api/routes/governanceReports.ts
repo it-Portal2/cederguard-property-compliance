@@ -1452,7 +1452,7 @@ async function governanceResolveAmendment(req: any, res: any, ctx: ApiContext) {
 
 async function governanceRenderReportPdf(req: any, res: any, ctx: ApiContext) {
   try {
-    const { reportId, noWatermark } = req.body ?? {};
+    const { reportId, noWatermark, redactPart2 } = req.body ?? {};
     if (!REPORT_ID_RE.test(reportId ?? '')) {
       return res.status(400).json({
         success: false,
@@ -1497,6 +1497,7 @@ async function governanceRenderReportPdf(req: any, res: any, ctx: ApiContext) {
       // Caller can opt out of the status watermark — used by the preview
       // modal's "show/hide" toggle. Sealed PDFs already have no watermark.
       watermarkOverride: noWatermark === true ? null : undefined,
+      redactPart2: redactPart2 === true,
     });
     return res.status(200).json({
       success: true,

@@ -169,8 +169,12 @@ export function GovernanceMyReportsPage() {
       );
   }, [items]);
 
-  // ── Briefing copy (data-driven, no AI yet — Phase 12 wires Gemini) ─────
-  const briefing = useMemo(() => {
+  // ── Briefing copy ──────────────────────────────────────────────────────
+  // Stub lines are computed locally for instant render (lesson #61).
+  // Phase 12: a background call to `governanceGenerateBriefing` rewrites
+  // them into a Gemini paragraph; if the call falls back to stub (no
+  // key / quota / timeout), we just render the local stub.
+  const stubBriefingLines = useMemo<string[]>(() => {
     const parts: string[] = [];
     const greeting =
       (user?.displayName as string) ||
@@ -216,8 +220,56 @@ export function GovernanceMyReportsPage() {
     if (parts.length === 1) {
       parts.push(`No outstanding work — start a new report when you're ready.`);
     }
-    return parts.join(' ');
+    return parts;
   }, [counts, upcomingDeadlines, user?.displayName, user?.email]);
+
+  const stubBriefing = useMemo(
+    () => stubBriefingLines.join(' '),
+    [stubBriefingLines],
+  );
+
+  // Background Gemini rewrite. Falls back silently to the stub when
+  // no key / quota / timeout / garbage. Routes through the canonical
+  // `aiRoutes.geminiPrompt` chain via `governanceGenerateBriefing`.
+  const [aiBriefing, setAiBriefing] = useState<string | null>(null);
+  const [aiSource, setAiSource] = useState<'rule-based-stub' | 'gemini'>(
+    'rule-based-stub',
+  );
+  useEffect(() => {
+    let cancelled = false;
+    setAiBriefing(null);
+    setAiSource('rule-based-stub');
+    if (stubBriefingLines.length <= 1) return;
+    const greeting =
+      (user?.displayName as string) ||
+      (user?.email ? String(user.email).split('@')[0] : '');
+    api
+      .governanceGenerateBriefing({
+        role: 'pm',
+        stubLines: stubBriefingLines,
+        greetingName: greeting,
+      })
+      .then((res: any) => {
+        if (cancelled) return;
+        if (
+          res?.success &&
+          res.briefing?.source === 'gemini' &&
+          Array.isArray(res.briefing?.lines) &&
+          res.briefing.lines.length > 0
+        ) {
+          setAiBriefing(res.briefing.lines.join(' '));
+          setAiSource('gemini');
+        }
+      })
+      .catch(() => {
+        // Silent fallback — stub already rendered.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [stubBriefingLines, user?.displayName, user?.email]);
+
+  const briefing = aiBriefing ?? stubBriefing;
 
   // ── Row handlers (mirror ReportsListPage — instant-open modal) ─────────
   const handleEditDetails = (item: Report) => {
@@ -525,9 +577,11 @@ export function GovernanceMyReportsPage() {
             <p className="mt-1 text-sm leading-relaxed text-slate-800">
               {briefing}
             </p>
-            <p className="mt-2 text-[10px] italic text-slate-400">
-              Counts only — AI summaries land with the chase engine.
-            </p>
+            {aiSource === 'rule-based-stub' && (
+              <p className="mt-2 text-[10px] italic text-slate-400">
+                Counts only — AI rewrite falls back to this when no key is configured.
+              </p>
+            )}
           </div>
         </div>
       </section>

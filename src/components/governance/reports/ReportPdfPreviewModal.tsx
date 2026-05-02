@@ -8,6 +8,8 @@ import {
   FileText,
   Eye,
   EyeOff,
+  Shield,
+  ShieldOff,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
@@ -46,20 +48,33 @@ export function ReportPdfPreviewModal({
   // for reading dense content. Disabled when the caller pre-supplied a PDF
   // (e.g. sealed download — already finalised).
   const [hideWatermark, setHideWatermark] = useState(false);
+  // Phase 13 — FOI / public-publication mode. When true, sections marked
+  // Part 2 / Closed are replaced by a placeholder line in the rendered
+  // PDF (the closed body is never written to the buffer). Defaults
+  // false so internal previews show everything.
+  const [redactPart2, setRedactPart2] = useState(false);
 
-  // Reset toggle on open so each session starts with the watermark visible
-  // — keeps the audit signal as the default.
+  // Reset toggles on open so each session starts with the audit-true
+  // defaults (watermark visible, Part 2 NOT redacted).
   useEffect(() => {
-    if (isOpen) setHideWatermark(false);
+    if (isOpen) {
+      setHideWatermark(false);
+      setRedactPart2(false);
+    }
   }, [isOpen]);
 
   const renderPreview = useCallback(
-    async (cancelledRef: { current: boolean }, withoutWatermark: boolean) => {
+    async (
+      cancelledRef: { current: boolean },
+      withoutWatermark: boolean,
+      withRedaction: boolean,
+    ) => {
       setLoading(true);
       setError(null);
       try {
         const res = await api.governanceRenderReportPdf(reportId, {
           noWatermark: withoutWatermark,
+          redactPart2: withRedaction,
         });
         if (cancelledRef.current) return;
         if (!res?.success) throw new Error(res?.error ?? 'Render failed.');
@@ -90,11 +105,18 @@ export function ReportPdfPreviewModal({
       return;
     }
     const cancelledRef = { current: false };
-    void renderPreview(cancelledRef, hideWatermark);
+    void renderPreview(cancelledRef, hideWatermark, redactPart2);
     return () => {
       cancelledRef.current = true;
     };
-  }, [isOpen, pdfBase64, filenameOverride, renderPreview, hideWatermark]);
+  }, [
+    isOpen,
+    pdfBase64,
+    filenameOverride,
+    renderPreview,
+    hideWatermark,
+    redactPart2,
+  ]);
 
   // Hide the toggle when the caller pre-rendered (sealed downloads etc.)
   // — there's no server round-trip to flip the watermark on those.
@@ -143,6 +165,31 @@ export function ReportPdfPreviewModal({
               </div>
             </div>
             <div className="flex items-center gap-1.5">
+              {canToggleWatermark && (
+                <button
+                  type="button"
+                  onClick={() => setRedactPart2((v) => !v)}
+                  disabled={loading}
+                  className={clsx(
+                    'inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold transition-colors disabled:opacity-60',
+                    redactPart2
+                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+                  )}
+                  title={
+                    redactPart2
+                      ? 'Public / FOI mode — Part 2 sections replaced with placeholders'
+                      : 'Redact Part 2 / Closed sections for FOI publication'
+                  }
+                >
+                  {redactPart2 ? (
+                    <Shield className="h-3.5 w-3.5" />
+                  ) : (
+                    <ShieldOff className="h-3.5 w-3.5" />
+                  )}
+                  {redactPart2 ? 'FOI mode (Part 2 redacted)' : 'FOI mode'}
+                </button>
+              )}
               {canToggleWatermark && (
                 <button
                   type="button"

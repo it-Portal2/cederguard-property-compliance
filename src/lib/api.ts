@@ -350,10 +350,14 @@ export const api = {
   governanceResolveAmendment: (amendmentId: string) =>
     callApi("governanceResolveAmendment", { amendmentId }),
   // Phase 6d — Report PDF + sign Part A
-  governanceRenderReportPdf: (reportId: string, opts?: { noWatermark?: boolean }) =>
+  governanceRenderReportPdf: (
+    reportId: string,
+    opts?: { noWatermark?: boolean; redactPart2?: boolean },
+  ) =>
     callApi("governanceRenderReportPdf", {
       reportId,
       noWatermark: opts?.noWatermark === true,
+      redactPart2: opts?.redactPart2 === true,
     }),
   governanceSignPartA: (reportId: string) =>
     callApi("governanceSignPartA", { reportId }),
@@ -465,4 +469,36 @@ export const api = {
     callApi("governanceDeclineFpItem", { itemId, reason }),
   governanceWithdrawFpItem: (itemId: string) =>
     callApi("governanceWithdrawFpItem", { itemId }),
+  // Phase 9 — Project Governance Folder
+  governanceListProjectDocs: (projectId?: string) =>
+    callApi("governanceListProjectDocs", { projectId }),
+  governanceGetProjectDoc: (docId: string) =>
+    callApi("governanceGetProjectDoc", { docId }),
+  governanceUpsertProjectDoc: (docId: string, patch: any) =>
+    callApi("governanceUpsertProjectDoc", { docId, patch }),
+  governancePublishProjectDoc: (docId: string) =>
+    callApi("governancePublishProjectDoc", { docId }),
+  governanceListProjectDocVersions: (docId: string) =>
+    callApi("governanceListProjectDocVersions", { docId }),
+  governanceSoftDeleteProjectDoc: (docId: string, reason: string) =>
+    callApi("governanceSoftDeleteProjectDoc", { docId, reason }),
+  governanceRestoreProjectDoc: (docId: string) =>
+    callApi("governanceSoftDeleteProjectDoc", { docId, restore: true }),
+  // Phase 10 — Archive & Audit
+  governanceListArchive: () => callApi("governanceListArchive"),
+  governanceGetArchiveAuditTrail: (entityId: string) =>
+    callApi("governanceGetArchiveAuditTrail", { entityId }),
+  governanceExportArchiveFoi: () => callApi("governanceExportArchiveFoi"),
+  // Phase 11 — Governance Dashboard (role-aware aggregator)
+  governanceGetDashboard: () => callApi("governanceGetDashboard"),
+  // Phase 12 — Standalone briefing rewrite (Gemini with stub fallback)
+  governanceGenerateBriefing: (params: {
+    role: "pgm" | "pm";
+    stubLines: string[];
+    greetingName?: string;
+  }) => callApi("governanceGenerateBriefing", params),
+  // Phase 12 — Chase engine + manual nudge + chase log
+  governanceNudgeItem: (itemId: string) =>
+    callApi("governanceNudgeItem", { itemId }),
+  governanceListChaseEvents: () => callApi("governanceListChaseEvents"),
 };

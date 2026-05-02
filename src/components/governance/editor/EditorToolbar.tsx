@@ -19,6 +19,8 @@ import { AIDraftActions } from './AIDraftActions';
 
 interface EditorToolbarProps {
   editor: Editor;
+  /** Forwarded to AIDraftActions so the prompt is context-aware. */
+  aiContext?: string;
 }
 
 interface ToolButton {
@@ -29,7 +31,7 @@ interface ToolButton {
   disabled?: boolean;
 }
 
-export function EditorToolbar({ editor }: EditorToolbarProps) {
+export function EditorToolbar({ editor, aiContext }: EditorToolbarProps) {
   const buttons: ToolButton[] = [
     {
       icon: Bold,
@@ -160,7 +162,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
       <span className="mx-1 h-5 w-px bg-slate-200 dark:bg-slate-700" />
       <InsertNodeMenu editor={editor} />
       <div className="ml-auto">
-        <AIDraftActions editor={editor} />
+        <AIDraftActions editor={editor} aiContext={aiContext} />
       </div>
     </div>
   );
