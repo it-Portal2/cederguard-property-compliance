@@ -252,6 +252,70 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Historical Reporting Capability (HRC) — month-end snapshots and
+    // field-level history collections. All writes go through the server
+    // (cron + super_admin correction endpoint). Reads gated by the same
+    // signed-in admin/client-admin pattern as the rest of the audit
+    // surface; tenant scoping is enforced inside the server reader
+    // because doc IDs include the {clientId} prefix.
+    match /monthlySnapshots/{snapshotId} {
+      allow read: if isAdmin() || isClientAdminOrAbove();
+      allow write: if false;
+
+      match /{collection}/{docId} {
+        allow read: if isAdmin() || isClientAdminOrAbove();
+        allow write: if false;
+      }
+    }
+    match /risksHistory/{rowId} {
+      allow read: if isAdmin() || isClientAdminOrAbove();
+      allow write: if false;
+    }
+    match /complianceItemsHistory/{rowId} {
+      allow read: if isAdmin() || isClientAdminOrAbove();
+      allow write: if false;
+    }
+    match /issuesHistory/{rowId} {
+      allow read: if isAdmin() || isClientAdminOrAbove();
+      allow write: if false;
+    }
+    match /krisHistory/{rowId} {
+      allow read: if isAdmin() || isClientAdminOrAbove();
+      allow write: if false;
+    }
+    match /forwardPlanItemsHistory/{rowId} {
+      allow read: if isAdmin() || isClientAdminOrAbove();
+      allow write: if false;
+    }
+    match /meetingsHistory/{rowId} {
+      allow read: if isAdmin() || isClientAdminOrAbove();
+      allow write: if false;
+    }
+    match /reportsHistory/{rowId} {
+      allow read: if isAdmin() || isClientAdminOrAbove();
+      allow write: if false;
+    }
+    match /projectGovernanceDocsHistory/{rowId} {
+      allow read: if isAdmin() || isClientAdminOrAbove();
+      allow write: if false;
+    }
+    match /frameworkHistory/{rowId} {
+      allow read: if isAdmin() || isClientAdminOrAbove();
+      allow write: if false;
+    }
+    match /templatesHistory/{rowId} {
+      allow read: if isAdmin() || isClientAdminOrAbove();
+      allow write: if false;
+    }
+    match /torsHistory/{rowId} {
+      allow read: if isAdmin() || isClientAdminOrAbove();
+      allow write: if false;
+    }
+    match /correctionHistory/{rowId} {
+      allow read: if isAdmin() || isClientAdminOrAbove();
+      allow write: if false;
+    }
+
     // --- Deny all unmatched paths ---
     match /{document=**} {
       allow read, write: if false;

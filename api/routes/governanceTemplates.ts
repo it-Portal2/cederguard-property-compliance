@@ -17,9 +17,31 @@
 
 import type { ApiContext } from '../lib/context.js';
 import { SEED_TEMPLATES, type SeedTemplate } from '../lib/templateSeed.js';
+import { appendHistoryRow } from '../lib/historyRows.js';
+import type { ChangeKind } from '../../src/types/historicalReporting.js';
 
 const TEMPLATE_ID_RE = /^[a-z0-9_-]{1,80}$/i;
 const SECTION_ID_RE = /^[a-z0-9_-]{1,80}$/i;
+
+// HRC HR-4 — fire-and-forget history capture for template mutations.
+function captureTemplateHistory(
+  ctx: ApiContext,
+  args: {
+    templateId: string;
+    prevState: Record<string, any> | null;
+    newState: Record<string, any> | null;
+    changeKind: ChangeKind;
+  },
+): void {
+  void appendHistoryRow(ctx, {
+    kind: 'governanceDoc',
+    collection: 'templates',
+    ownerScope: args.templateId,
+    prevState: args.prevState,
+    newState: args.newState,
+    changeKind: args.changeKind,
+  });
+}
 
 const TEMPLATE_WRITABLE_FIELDS = [
   'title',
@@ -298,6 +320,12 @@ async function governanceUpsertTemplate(req: any, res: any, ctx: ApiContext) {
     }
     await ref.set(payload, { merge: true });
     const latest = (await ref.get()).data();
+    captureTemplateHistory(ctx, {
+      templateId,
+      prevState: exists ? (snap.data() ?? null) : null,
+      newState: latest ?? null,
+      changeKind: exists ? 'update' : 'create',
+    });
     return res.status(200).json({
       success: true,
       template: { _id: ref.id, ...latest },
@@ -333,10 +361,12 @@ async function governancePublishTemplate(req: any, res: any, ctx: ApiContext) {
     }
     const ref = ctx.db.collection('reportTemplates').doc(templateDocId(ctx, templateId));
 
+    let prevTemplateState: Record<string, any> | null = null;
     const nextVersion = await ctx.db.runTransaction(async (txn) => {
       const snap = await txn.get(ref);
       if (!snap.exists) throw new Error('Template not found.');
       const data = snap.data() ?? {};
+      prevTemplateState = data;
       if (data.clientId !== ctx.primaryUid) {
         throw new Error('Template belongs to another workspace.');
       }
@@ -363,6 +393,15 @@ async function governancePublishTemplate(req: any, res: any, ctx: ApiContext) {
         { merge: true },
       );
       return next;
+    });
+
+    // HRC HR-4 — capture publish as a template history row.
+    const latest = (await ref.get()).data() ?? null;
+    captureTemplateHistory(ctx, {
+      templateId,
+      prevState: prevTemplateState,
+      newState: latest,
+      changeKind: 'update',
     });
 
     return res.status(200).json({ success: true, version: nextVersion });
@@ -442,6 +481,14 @@ async function governanceDuplicateTemplate(req: any, res: any, ctx: ApiContext) 
       };
       txn.set(dstRef, next);
       return next;
+    });
+
+    // HRC HR-4 — capture the duplicate as a create on the new template id.
+    captureTemplateHistory(ctx, {
+      templateId: newId,
+      prevState: null,
+      newState: duplicated,
+      changeKind: 'create',
     });
 
     return res.status(200).json({

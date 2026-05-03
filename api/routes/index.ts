@@ -18,6 +18,7 @@ import { governanceProjectDocsRoutes } from './governanceProjectDocs.js';
 import { governanceArchiveRoutes } from './governanceArchive.js';
 import { governanceDashboardRoutes } from './governanceDashboard.js';
 import { governanceCronRoutes } from './governanceCron.js';
+import { historicalReportingRoutes } from './historicalReporting.js';
 
 export const allRoutes: Record<string, any> = {
   ...projectRoutes,
@@ -39,5 +40,6 @@ export const allRoutes: Record<string, any> = {
   ...governanceProjectDocsRoutes,
   ...governanceArchiveRoutes,
   ...governanceDashboardRoutes,
-  ...governanceCronRoutes
+  ...governanceCronRoutes,
+  ...historicalReportingRoutes,
 };

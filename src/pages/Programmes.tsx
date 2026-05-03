@@ -6,6 +6,21 @@ import { clsx } from 'clsx';
 import { isAtLeastClientAdmin, isSuperAdmin, UserRole, isPM } from '../lib/roles';
 import { calculateProgrammeProgress } from '../lib/progress';
 
+function parseAnyDate(val: any): Date | null {
+    if (!val) return null;
+    const secs = val?.seconds ?? val?._seconds;
+    if (typeof secs === 'number' && secs > 0) return new Date(secs * 1000);
+    if (typeof val === 'string' && val.trim()) {
+        const d = new Date(val);
+        if (!isNaN(d.getTime())) return d;
+    }
+    if (typeof val === 'number' && val > 0) {
+        const d = new Date(val);
+        if (!isNaN(d.getTime())) return d;
+    }
+    return null;
+}
+
 export function Programmes() {
     const navigate = useNavigate();
     const { programmes, setActiveProgramme, setActiveProject, activeProgrammeId, projects, deleteProgramme, archiveProgramme, unarchiveProgramme, loadProgrammeData, user, addNotification } = useStore();
@@ -290,12 +305,16 @@ export function Programmes() {
                                         <Calendar className="w-3.5 h-3.5 shrink-0" />
                                         <span className="text-xs truncate">{programme.programmeStartDate || 'Jan 24'}</span>
                                     </div>
-                                    {programme.updatedAt && (
-                                        <div className="flex items-center gap-1 text-slate-400 whitespace-nowrap border-l border-slate-200 pl-3">
-                                            <Clock className="w-3.5 h-3.5 shrink-0" />
-                                            <span className="text-xs truncate">Updated {new Date(programme.updatedAt).toLocaleDateString()}</span>
-                                        </div>
-                                    )}
+                                    {(() => {
+                                        const updated = parseAnyDate(programme.updatedAt);
+                                        if (!updated) return null;
+                                        return (
+                                            <div className="flex items-center gap-1 text-slate-400 whitespace-nowrap border-l border-slate-200 pl-3">
+                                                <Clock className="w-3.5 h-3.5 shrink-0" />
+                                                <span className="text-xs truncate">Updated {updated.toLocaleDateString()}</span>
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                                 <button
                                     onClick={() => { loadProgrammeData(programme.id); navigate('/risk/programme-context'); }}

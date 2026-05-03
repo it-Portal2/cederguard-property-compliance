@@ -30,8 +30,32 @@ import {
   nextWorkingDay,
   shiftIfNonWorking,
 } from '../lib/ukBankHolidays.js';
+import { appendHistoryRow } from '../lib/historyRows.js';
+import type { ChangeKind } from '../../src/types/historicalReporting.js';
 
 const MEETING_ID_RE = /^[a-z0-9_-]{1,80}$/i;
+
+// HRC HR-4 — fire-and-forget history capture for meeting mutations.
+// Called after the primary write succeeds. Errors are swallowed inside
+// appendHistoryRow so a history failure never blocks the user's save.
+function captureMeetingHistory(
+  ctx: ApiContext,
+  args: {
+    meetingId: string;
+    prevState: Record<string, any> | null;
+    newState: Record<string, any> | null;
+    changeKind: ChangeKind;
+  },
+): void {
+  void appendHistoryRow(ctx, {
+    kind: 'governanceDoc',
+    collection: 'meetings',
+    ownerScope: args.meetingId,
+    prevState: args.prevState,
+    newState: args.newState,
+    changeKind: args.changeKind,
+  });
+}
 
 const MEETING_WRITABLE_FIELDS = [
   'title',
@@ -303,6 +327,12 @@ async function governanceUpsertMeeting(req: any, res: any, ctx: ApiContext) {
     }
     await ref.set(payload, { merge: true });
     const latest = (await ref.get()).data();
+    captureMeetingHistory(ctx, {
+      meetingId,
+      prevState: exists ? (snap.data() ?? null) : null,
+      newState: latest ?? null,
+      changeKind: exists ? 'update' : 'create',
+    });
     return res
       .status(200)
       .json({ success: true, item: { _id: ref.id, ...latest } });
@@ -398,6 +428,12 @@ async function governanceSoftDeleteMeeting(
         };
     await ref.set(update, { merge: true });
     const latest = (await ref.get()).data();
+    captureMeetingHistory(ctx, {
+      meetingId,
+      prevState: data,
+      newState: latest ?? null,
+      changeKind: wantRestore ? 'restore' : 'softDelete',
+    });
     return res
       .status(200)
       .json({ success: true, item: { _id: ref.id, ...latest } });
@@ -468,6 +504,12 @@ async function governanceMarkMeetingHeld(
       { merge: true },
     );
     const latest = (await ref.get()).data();
+    captureMeetingHistory(ctx, {
+      meetingId,
+      prevState: data,
+      newState: latest ?? null,
+      changeKind: 'update',
+    });
     return res
       .status(200)
       .json({ success: true, item: { _id: ref.id, ...latest } });
@@ -629,6 +671,12 @@ async function governanceCancelMeeting(
     }
 
     const latest = (await ref.get()).data();
+    captureMeetingHistory(ctx, {
+      meetingId,
+      prevState: data,
+      newState: latest ?? null,
+      changeKind: 'update',
+    });
     return res.status(200).json({
       success: true,
       item: { _id: ref.id, ...latest },
@@ -784,6 +832,12 @@ async function governanceRescheduleMeeting(
     }
 
     const latest = (await ref.get()).data();
+    captureMeetingHistory(ctx, {
+      meetingId,
+      prevState: data,
+      newState: latest ?? null,
+      changeKind: 'update',
+    });
     return res
       .status(200)
       .json({ success: true, item: { _id: ref.id, ...latest } });
@@ -888,6 +942,12 @@ async function governanceSaveMeetingMinutes(
       { merge: true },
     );
     const latest = (await loaded.ref.get()).data();
+    captureMeetingHistory(ctx, {
+      meetingId,
+      prevState: loaded.data ?? null,
+      newState: latest ?? null,
+      changeKind: 'update',
+    });
     return res
       .status(200)
       .json({ success: true, item: { _id: loaded.ref.id, ...latest } });
@@ -937,6 +997,12 @@ async function governanceAddMeetingDecision(
       { merge: true },
     );
     const latest = (await loaded.ref.get()).data();
+    captureMeetingHistory(ctx, {
+      meetingId,
+      prevState: loaded.data ?? null,
+      newState: latest ?? null,
+      changeKind: 'update',
+    });
     return res
       .status(200)
       .json({ success: true, item: { _id: loaded.ref.id, ...latest } });
@@ -979,6 +1045,12 @@ async function governanceDeleteMeetingDecision(
       { merge: true },
     );
     const latest = (await loaded.ref.get()).data();
+    captureMeetingHistory(ctx, {
+      meetingId,
+      prevState: loaded.data ?? null,
+      newState: latest ?? null,
+      changeKind: 'update',
+    });
     return res
       .status(200)
       .json({ success: true, item: { _id: loaded.ref.id, ...latest } });
@@ -1037,6 +1109,12 @@ async function governanceAddMeetingActionItem(
       { merge: true },
     );
     const latest = (await loaded.ref.get()).data();
+    captureMeetingHistory(ctx, {
+      meetingId,
+      prevState: loaded.data ?? null,
+      newState: latest ?? null,
+      changeKind: 'update',
+    });
     return res
       .status(200)
       .json({ success: true, item: { _id: loaded.ref.id, ...latest } });
@@ -1088,6 +1166,12 @@ async function governanceToggleMeetingActionItem(
       { merge: true },
     );
     const latest = (await loaded.ref.get()).data();
+    captureMeetingHistory(ctx, {
+      meetingId,
+      prevState: loaded.data ?? null,
+      newState: latest ?? null,
+      changeKind: 'update',
+    });
     return res
       .status(200)
       .json({ success: true, item: { _id: loaded.ref.id, ...latest } });
@@ -1130,6 +1214,12 @@ async function governanceDeleteMeetingActionItem(
       { merge: true },
     );
     const latest = (await loaded.ref.get()).data();
+    captureMeetingHistory(ctx, {
+      meetingId,
+      prevState: loaded.data ?? null,
+      newState: latest ?? null,
+      changeKind: 'update',
+    });
     return res
       .status(200)
       .json({ success: true, item: { _id: loaded.ref.id, ...latest } });
@@ -1189,6 +1279,12 @@ async function governanceUpdateMeetingLinks(
     }
     await loaded.ref.set(update, { merge: true });
     const latest = (await loaded.ref.get()).data();
+    captureMeetingHistory(ctx, {
+      meetingId,
+      prevState: loaded.data ?? null,
+      newState: latest ?? null,
+      changeKind: 'update',
+    });
     return res
       .status(200)
       .json({ success: true, item: { _id: loaded.ref.id, ...latest } });
@@ -1473,9 +1569,20 @@ async function governanceBulkCreateRecurringMeetings(
         updatedBy: ctx.uid,
       };
       batch.set(ref, payload);
-      created.push({ ...payload, _id: ref.id });
+      created.push({ ...payload, _id: ref.id, _historyMeetingId: meetingId });
     }
     await batch.commit();
+    // HRC HR-4 — fire one history row per created meeting after the batch
+    // commits. Best-effort, doesn't await each call to keep response time
+    // tight; appendHistoryRow swallows errors internally.
+    for (const m of created) {
+      captureMeetingHistory(ctx, {
+        meetingId: m._historyMeetingId,
+        prevState: null,
+        newState: m,
+        changeKind: 'create',
+      });
+    }
     return res.status(200).json({ success: true, created: created.length, meetings: created });
   } catch (e: any) {
     console.error('[governanceBulkCreateRecurringMeetings] failed:', e);
@@ -1643,7 +1750,7 @@ async function governanceImportMeetingsCommit(
         updatedBy: ctx.uid,
       };
       batch.set(ref, payload);
-      allWritten.push({ ...payload, _id: ref.id });
+      allWritten.push({ ...payload, _id: ref.id, _historyMeetingId: candidateId });
       written += 1;
       opsInBatch += 1;
       // Firestore batch limit is 500 ops. Flush every 400 to leave headroom.
@@ -1655,6 +1762,17 @@ async function governanceImportMeetingsCommit(
       }
     }
     if (opsInBatch > 0) await batch.commit();
+
+    // HRC HR-4 — fire one history row per imported meeting after the
+    // batch commits. Best-effort, doesn't block on errors.
+    for (const m of allWritten) {
+      captureMeetingHistory(ctx, {
+        meetingId: m._historyMeetingId,
+        prevState: null,
+        newState: m,
+        changeKind: 'create',
+      });
+    }
 
     // Single audit event for the import (non-blocking — best-effort).
     try {

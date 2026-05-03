@@ -15,6 +15,11 @@ import { format, isValid } from 'date-fns';
 import toast from 'react-hot-toast';
 import { ServiceManagementBar } from '../components/ServiceManagementBar';
 import { canCreateCompliance } from '../lib/roles';
+import { useHistoricalView } from '../hooks/useHistoricalView';
+import { MonthPicker } from '../components/historicalReporting/MonthPicker';
+import { HistoricalBanner } from '../components/historicalReporting/HistoricalBanner';
+import { HistoricalContentSkeleton } from '../components/historicalReporting/HistoricalContentSkeleton';
+import type { LegacyArraySnapshot } from '../types/historicalReporting';
 
 /* ═══════════════════════════════════════════════════
    CONSTANTS
@@ -102,6 +107,24 @@ export function ComplianceTracker() {
 
   const [isLoading, setIsLoading] = useState(false);
 
+  // HRC HR-5 — historical view hook. When the user picks a past month,
+  // the page swaps live compliance items + active/pending derivations
+  // for the snapshot's frozen state and disables every edit affordance.
+  const historicalView = useHistoricalView<LegacyArraySnapshot<ComplianceItem>>({
+    collection: 'complianceItems',
+  });
+  const isHistorical = historicalView.isHistorical;
+  const historicalCompliance = useMemo<ComplianceItem[]>(() => {
+    if (!isHistorical) return [];
+    const out: ComplianceItem[] = [];
+    for (const entry of historicalView.entries) {
+      if (entry?.kind === 'legacyArray' && Array.isArray(entry.array)) {
+        out.push(...entry.array);
+      }
+    }
+    return out;
+  }, [isHistorical, historicalView.entries]);
+
   // Ref keeps the latest complianceItems readable inside the effect without
   // adding it to the dependency array (that would cause an infinite loop).
   const complianceItemsRef = useRef(complianceItems);
@@ -148,8 +171,31 @@ export function ComplianceTracker() {
   const isPM = !isAtLeastClientAdmin(currentUser?.profile?.role);
   // Explicit useMemo so that stats, domainStats, and filteredItems all recompute
   // the instant complianceItems changes in the store (e.g. after an optimistic add/update).
-  const activeItems = useMemo(() => getActiveItems(), [complianceItems, activeProjectId, activeProgrammeId]); // eslint-disable-line react-hooks/exhaustive-deps
-  const pendingItems = useMemo(() => getPendingItems(), [complianceItems, activeProjectId, activeProgrammeId]); // eslint-disable-line react-hooks/exhaustive-deps
+  // HRC HR-5 — when historical, derive equivalents from snapshot data using
+  // the same status filters + activeProject/activeProgramme scope as the
+  // store selectors.
+  const liveActiveItems = useMemo(() => getActiveItems(), [complianceItems, activeProjectId, activeProgrammeId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const livePendingItems = useMemo(() => getPendingItems(), [complianceItems, activeProjectId, activeProgrammeId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const historicalActiveItems = useMemo<ComplianceItem[]>(() => {
+    if (!isHistorical) return [];
+    return historicalCompliance.filter(c => {
+      if (c.status !== 'applicable') return false;
+      if (activeProjectId) return c.projectId === activeProjectId;
+      if (activeProgrammeId) return c.programmeId === activeProgrammeId;
+      return true;
+    });
+  }, [isHistorical, historicalCompliance, activeProjectId, activeProgrammeId]);
+  const historicalPendingItems = useMemo<ComplianceItem[]>(() => {
+    if (!isHistorical) return [];
+    return historicalCompliance.filter(c => {
+      if (c.status !== 'pending') return false;
+      if (activeProjectId) return c.projectId === activeProjectId;
+      if (activeProgrammeId) return c.programmeId === activeProgrammeId;
+      return true;
+    });
+  }, [isHistorical, historicalCompliance, activeProjectId, activeProgrammeId]);
+  const activeItems = isHistorical ? historicalActiveItems : liveActiveItems;
+  const pendingItems = isHistorical ? historicalPendingItems : livePendingItems;
   const [searchTerm, setSearchTerm] = useState('');
   const [showFullQueue, setShowFullQueue] = useState(false);
   const [showDismissed, setShowDismissed] = useState(false);
@@ -331,8 +377,10 @@ export function ComplianceTracker() {
   };
 
   const dismissedItems = useMemo(() => {
-    return (complianceItems || []).filter(i => i.status === 'dismissed');
-  }, [complianceItems]);
+    // HRC HR-5 — historical view sources from frozen snapshot.
+    const source = isHistorical ? historicalCompliance : (complianceItems || []);
+    return source.filter(i => i.status === 'dismissed');
+  }, [complianceItems, isHistorical, historicalCompliance]);
 
   const displayItems = useMemo(() => {
     return showDismissed ? dismissedItems : activeItems;
@@ -440,7 +488,33 @@ export function ComplianceTracker() {
   return (
     <div className="max-w-7xl mx-auto min-h-screen bg-slate-50/50 p-4 sm:p-6 lg:px-8 space-y-6 sm:space-y-8">
       <ServiceManagementBar className="mb-4" />
-      
+
+      {/* HRC HR-5 — month picker + historical banner. Placed AFTER
+          ServiceManagementBar so the service status row stays the
+          page's primary header signal. */}
+      <div className="flex justify-end">
+        <MonthPicker
+          monthEnd={historicalView.monthEnd}
+          availableMonths={historicalView.availableMonths}
+          onChange={historicalView.setMonthEnd}
+          loading={historicalView.loading}
+        />
+      </div>
+      {isHistorical && historicalView.monthEnd && (
+        <HistoricalBanner
+          monthEnd={historicalView.monthEnd}
+          meta={historicalView.meta}
+          onExit={() => historicalView.setMonthEnd(null)}
+          defaultCorrectionCollection="complianceItems"
+          emptyReason={historicalView.emptyReason}
+          activatedYearMonth={historicalView.activatedYearMonth}
+          surfaceLabel="compliance tracker"
+        />
+      )}
+
+      {historicalView.loading && <HistoricalContentSkeleton variant="table" />}
+      {!historicalView.loading && <>
+
       {/* Verification Queue (Dynamic) */}
       <AnimatePresence>
         {pendingItems.length > 0 && (
@@ -1532,6 +1606,7 @@ export function ComplianceTracker() {
           </div>
         </div>
       )}
+      </>}
       {/* AI Inquiry Popup */}
       <AIInquiryPopup
         isOpen={isAIInquiryOpen}

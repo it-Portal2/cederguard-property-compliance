@@ -20,6 +20,9 @@ import { motion, AnimatePresence } from 'motion/react';
 import DynamicTable from '../components/table/DynamicTable';
 import type { ColumnDef, RowAction, BulkAction, FilterDef } from '../components/table/types';
 import { StatsCard } from '../components/common/StatsCard';
+import { useHistoricalView } from '../hooks/useHistoricalView';
+import { MonthPicker } from '../components/historicalReporting/MonthPicker';
+import { HistoricalBanner } from '../components/historicalReporting/HistoricalBanner';
 
 // ── Helper functions (byte-for-byte match with RiskRegister) ──────────────────
 
@@ -115,8 +118,22 @@ export function ProgrammeRiskRegister() {
 
     const userRole = (user?.role || user?.profile?.role) as UserRole | undefined;
     const userIsSuperAdmin = isSuperAdmin(user?.email, userRole);
-    const canModify = isAtLeastPM(userRole) || userIsSuperAdmin;
-    const canDelete = isAtLeastPM(userRole) || userIsSuperAdmin;
+
+    // HRC HR-3 — historical view hook. When the user picks a past month
+    // via the MonthPicker, the page swaps live `risks` for the snapshot
+    // (LegacyArraySnapshot[] — one entry per project containing a frozen
+    // risk array) and disables every edit affordance.
+    const historicalView = useHistoricalView<{
+        kind: 'legacyArray';
+        projectId: string;
+        array: RiskItem[];
+    }>({ collection: 'risks' });
+    const isHistorical = historicalView.isHistorical;
+
+    const userCanModify = isAtLeastPM(userRole) || userIsSuperAdmin;
+    const userCanDelete = isAtLeastPM(userRole) || userIsSuperAdmin;
+    const canModify = userCanModify && !isHistorical;
+    const canDelete = userCanDelete && !isHistorical;
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingRisk, setEditingRisk] = useState<RiskItem | null>(null);
@@ -139,7 +156,20 @@ export function ProgrammeRiskRegister() {
     }, [searchParams, navigate]);
 
     // ── Scoping — byte-for-byte preservation of original derivation ──────────
-    const safeRisks = Array.isArray(risks) ? risks : [];
+    // HRC HR-3 — when historical, replace `safeRisks` with the flattened
+    // snapshot data so the existing escalated/programme-level scoping
+    // logic below runs unchanged on frozen data.
+    const liveRisks = Array.isArray(risks) ? risks : [];
+    const historicalRisks: RiskItem[] = isHistorical
+        ? historicalView.entries.flatMap((entry) => {
+              const arr = (entry?.array ?? []) as RiskItem[];
+              return arr.map((r) => ({
+                  ...r,
+                  projectId: r.projectId ?? entry?.projectId,
+              } as RiskItem));
+          })
+        : [];
+    const safeRisks = isHistorical ? historicalRisks : liveRisks;
     const safeProjects = Array.isArray(projects) ? projects : [];
     const progProjectIds = new Set(
         safeProjects.filter(p => p.programmeId === activeProgrammeId).map(p => p.id)
@@ -792,6 +822,33 @@ export function ProgrammeRiskRegister() {
                 className="max-w-[98%] mx-auto p-2 sm:p-4 lg:p-6 space-y-6 sm:space-y-8"
             >
 
+                {/* HRC HR-3 — month picker + read-only banner. The chip
+                    sits at the top of the page so it's the first thing
+                    the user sees; the amber banner below appears once
+                    a past month is selected. */}
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                        Risk Register · Programme Level
+                    </div>
+                    <MonthPicker
+                        monthEnd={historicalView.monthEnd}
+                        availableMonths={historicalView.availableMonths}
+                        onChange={historicalView.setMonthEnd}
+                        loading={historicalView.loading}
+                    />
+                </div>
+                {isHistorical && historicalView.monthEnd && (
+                    <HistoricalBanner
+                        monthEnd={historicalView.monthEnd}
+                        meta={historicalView.meta}
+                        onExit={() => historicalView.setMonthEnd(null)}
+                        defaultCorrectionCollection="risks"
+                        emptyReason={historicalView.emptyReason}
+                        activatedYearMonth={historicalView.activatedYearMonth}
+                        surfaceLabel="programme risk register"
+                    />
+                )}
+
                 {/* AI Risk Advisor Banner — unchanged */}
                 <div className="bg-linear-to-br from-indigo-700 via-indigo-800 to-slate-900 rounded-xl p-8 text-white shadow-2xl shadow-indigo-200/50 relative overflow-hidden group border border-white/10">
                     <div className="absolute right-0 top-0 w-96 h-96 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl group-hover:bg-white/10 transition-all duration-1000"></div>
@@ -983,6 +1040,7 @@ export function ProgrammeRiskRegister() {
                     searchFields={['title', 'id', 'workstream', 'desc']}
                     selectable
                     stickyHeader
+                    loading={historicalView.loading}
                     pagination={{ enabled: true, pageSize: 20 }}
                     getRowId={(r) => r.id}
                     rowClassName={(r) => {

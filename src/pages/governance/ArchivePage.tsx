@@ -30,6 +30,10 @@ import {
   KIND_STYLES,
 } from '../../components/governance/archive/types';
 import { AuditTrailDrawer } from '../../components/governance/archive/AuditTrailDrawer';
+import { useHistoricalView } from '../../hooks/useHistoricalView';
+import { MonthPicker } from '../../components/historicalReporting/MonthPicker';
+import { HistoricalBanner } from '../../components/historicalReporting/HistoricalBanner';
+import { HistoricalContentSkeleton } from '../../components/historicalReporting/HistoricalContentSkeleton';
 
 const EMPTY_SUMMARY: ArchiveSummary = {
   total: 0,
@@ -54,6 +58,17 @@ function formatGbDate(iso: string | null | undefined): string {
 
 export function GovernanceArchivePage() {
   const navigate = useNavigate();
+
+  // HRC HR-7 — historical view hook is wired even though Archive is
+  // an aggregator: the server endpoint accepts `asOfMonth` and
+  // re-runs the query against snapshot collections. We don't read
+  // entries directly here — we only need the picker state +
+  // empty/loading signals. Use a lightweight collection (`reports`)
+  // as the source for available-month population.
+  const historicalView = useHistoricalView<any>({ collection: 'reports' });
+  const isHistorical = historicalView.isHistorical;
+  const asOfMonth = historicalView.monthEnd;
+
   const [items, setItems] = useState<ArchiveItem[]>([]);
   const [summary, setSummary] = useState<ArchiveSummary>(EMPTY_SUMMARY);
   const [loading, setLoading] = useState(true);
@@ -85,7 +100,9 @@ export function GovernanceArchivePage() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.governanceListArchive();
+      const res = await api.governanceListArchive(
+        asOfMonth ? { asOfMonth } : {},
+      );
       if (res?.success) {
         setItems((res.items ?? []) as ArchiveItem[]);
         setSummary((res.summary ?? EMPTY_SUMMARY) as ArchiveSummary);
@@ -97,7 +114,7 @@ export function GovernanceArchivePage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [asOfMonth]);
 
   useEffect(() => {
     refresh();
@@ -291,10 +308,23 @@ export function GovernanceArchivePage() {
           </div>
         </div>
         <div className="inline-flex shrink-0 items-center gap-2 self-start">
+          {/* HRC HR-7 — month picker drives `asOfMonth` on the
+              aggregator endpoint. */}
+          <MonthPicker
+            monthEnd={historicalView.monthEnd}
+            availableMonths={historicalView.availableMonths}
+            onChange={historicalView.setMonthEnd}
+            loading={historicalView.loading}
+          />
           <button
             type="button"
             onClick={handleExport}
-            disabled={exporting || items.length === 0}
+            disabled={exporting || items.length === 0 || isHistorical}
+            title={
+              isHistorical
+                ? 'Exit historical view to export — FOI exports always use live data.'
+                : undefined
+            }
             className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {exporting ? (
@@ -306,6 +336,19 @@ export function GovernanceArchivePage() {
           </button>
         </div>
       </header>
+
+      {isHistorical && historicalView.monthEnd && (
+        <HistoricalBanner
+          monthEnd={historicalView.monthEnd}
+          meta={historicalView.meta}
+          onExit={() => historicalView.setMonthEnd(null)}
+          activatedYearMonth={historicalView.activatedYearMonth}
+          surfaceLabel="archive"
+        />
+      )}
+
+      {historicalView.loading && <HistoricalContentSkeleton variant="stats-grid" />}
+      {!historicalView.loading && <>
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatsCard
@@ -362,6 +405,7 @@ export function GovernanceArchivePage() {
           }}
         />
       )}
+      </>}
 
       <AuditTrailDrawer
         isOpen={!!trailItem}

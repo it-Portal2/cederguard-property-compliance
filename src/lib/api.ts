@@ -484,13 +484,17 @@ export const api = {
     callApi("governanceSoftDeleteProjectDoc", { docId, reason }),
   governanceRestoreProjectDoc: (docId: string) =>
     callApi("governanceSoftDeleteProjectDoc", { docId, restore: true }),
-  // Phase 10 — Archive & Audit
-  governanceListArchive: () => callApi("governanceListArchive"),
+  // Phase 10 — Archive & Audit. HR-7 — optional `asOfMonth` switches
+  // the aggregator to the monthly snapshot.
+  governanceListArchive: (args: { asOfMonth?: string } = {}) =>
+    callApi("governanceListArchive", args),
   governanceGetArchiveAuditTrail: (entityId: string) =>
     callApi("governanceGetArchiveAuditTrail", { entityId }),
   governanceExportArchiveFoi: () => callApi("governanceExportArchiveFoi"),
-  // Phase 11 — Governance Dashboard (role-aware aggregator)
-  governanceGetDashboard: () => callApi("governanceGetDashboard"),
+  // Phase 11 — Governance Dashboard (role-aware aggregator). HR-7 —
+  // optional `asOfMonth` switches the dashboard to the monthly snapshot.
+  governanceGetDashboard: (args: { asOfMonth?: string } = {}) =>
+    callApi("governanceGetDashboard", args),
   // Phase 12 — Standalone briefing rewrite (Gemini with stub fallback)
   governanceGenerateBriefing: (params: {
     role: "pgm" | "pm";
@@ -501,4 +505,32 @@ export const api = {
   governanceNudgeItem: (itemId: string) =>
     callApi("governanceNudgeItem", { itemId }),
   governanceListChaseEvents: () => callApi("governanceListChaseEvents"),
+
+  // Historical Reporting Capability (HRC) — month-end snapshot reads.
+  // Cron-driven write paths are not exposed to the client. Super-admin
+  // correction endpoint lands in HR-6.
+  hrcListAvailableMonths: () => callApi("hrcListAvailableMonths"),
+  hrcReadSnapshot: (yearMonth: string, collection: string) =>
+    callApi("hrcReadSnapshot", { yearMonth, collection }),
+  hrcRunMonthlySnapshot: (
+    args: { yearMonth?: string; force?: boolean } = {},
+  ) => callApi("hrcRunMonthlySnapshot", args),
+  hrcInspectSnapshot: (yearMonth: string, clientId?: string) =>
+    callApi("hrcInspectSnapshot", clientId ? { yearMonth, clientId } : { yearMonth }),
+  hrcGetDeploymentMeta: () => callApi("hrcGetDeploymentMeta"),
+  // HR-6 — super_admin correction.
+  hrcCorrectSnapshotRow: (args: {
+    yearMonth: string;
+    collection: string;
+    docId: string;
+    patch: Record<string, any>;
+    reason: string;
+    clientId?: string;
+  }) => callApi("hrcCorrectSnapshotRow", args),
+  hrcListCorrections: (args: {
+    yearMonth: string;
+    collection?: string;
+    docId?: string;
+    clientId?: string;
+  }) => callApi("hrcListCorrections", args),
 };

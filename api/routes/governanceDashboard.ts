@@ -95,13 +95,66 @@ function diffDays(iso: string | null | undefined): number | null {
 
 // ── Endpoint ───────────────────────────────────────────────────────────
 
-async function governanceGetDashboard(_req: any, res: any, ctx: ApiContext) {
+async function governanceGetDashboard(req: any, res: any, ctx: ApiContext) {
   try {
     const isPm = isPureProjectManager(ctx);
 
-    // Common pulls (used by both views) — parallel.
-    const [reportsSnap, fpSnap, meetingsSnap, amendmentsSnap, projectsSnap] =
-      await Promise.all([
+    // HRC HR-7 — when `asOfMonth` (YYYY-MM) is passed, dashboard data
+    // sources swap to the monthly snapshot. Inbox + workload counts
+    // reflect "what was true at month-end" rather than now. The
+    // dynamic comparators (today / horizon / quarterStart) still run
+    // against current time — there's no point computing "boards in
+    // the next 14 days" for a frozen month.
+    const asOfMonth: string | null =
+      typeof req?.body?.asOfMonth === 'string' &&
+      req.body.asOfMonth.match(/^\d{4}-\d{2}$/)
+        ? req.body.asOfMonth
+        : null;
+
+    let reports: any[] = [];
+    let fpItems: any[] = [];
+    let meetings: any[] = [];
+    let amendments: any[] = [];
+    let projectsSnap: any = { docs: [] };
+
+    if (asOfMonth) {
+      // Lazy-import to avoid pulling the helper into the live path's
+      // hot module graph.
+      const { readMonthlySnapshot } = await import(
+        '../lib/historicalSnapshots.js'
+      );
+      const [r, fp, m, p] = await Promise.all([
+        readMonthlySnapshot(ctx, ctx.primaryUid, asOfMonth, 'reports'),
+        readMonthlySnapshot(ctx, ctx.primaryUid, asOfMonth, 'forwardPlanItems'),
+        readMonthlySnapshot(ctx, ctx.primaryUid, asOfMonth, 'meetings'),
+        ctx.db
+          .collection('projects')
+          .where('clientId', '==', ctx.primaryUid)
+          .limit(50)
+          .get(),
+      ]);
+      const fromEntries = (entries: any[]) =>
+        entries
+          .filter((e) => e?.kind === 'governanceDoc' && e.doc)
+          .map((e) => ({ _docId: e.docId ?? e.doc.id ?? '', ...e.doc }));
+      reports = fromEntries(r?.entries ?? []);
+      fpItems = fromEntries(fp?.entries ?? []);
+      meetings = fromEntries(m?.entries ?? []).filter(
+        (mt: any) => mt.status === 'Scheduled' && !mt.softDeleted,
+      );
+      // Amendments aren't currently snapshotted — degrade gracefully
+      // by returning an empty list rather than throwing.
+      amendments = [];
+      projectsSnap = p;
+    } else {
+      // Live path — original parallel fetch.
+      const [
+        reportsSnap,
+        fpSnap,
+        meetingsSnap,
+        amendmentsSnap,
+        liveProjectsSnap,
+      ] = await Promise.all([
         ctx.db
           .collection('reports')
           .where('clientId', '==', ctx.primaryUid)
@@ -126,16 +179,23 @@ async function governanceGetDashboard(_req: any, res: any, ctx: ApiContext) {
           .limit(50)
           .get(),
       ]);
-
-    const reports = reportsSnap.docs.map((d) => ({ _docId: d.id, ...(d.data() as any) }));
-    const fpItems = fpSnap.docs.map((d) => ({ _docId: d.id, ...(d.data() as any) }));
-    const meetings = meetingsSnap.docs
-      .map((d) => ({ _docId: d.id, ...(d.data() as any) }))
-      .filter((m: any) => !m.softDeleted);
-    const amendments = amendmentsSnap.docs.map((d) => ({
-      _docId: d.id,
-      ...(d.data() as any),
-    }));
+      reports = reportsSnap.docs.map((d: any) => ({
+        _docId: d.id,
+        ...(d.data() as any),
+      }));
+      fpItems = fpSnap.docs.map((d: any) => ({
+        _docId: d.id,
+        ...(d.data() as any),
+      }));
+      meetings = meetingsSnap.docs
+        .map((d: any) => ({ _docId: d.id, ...(d.data() as any) }))
+        .filter((m: any) => !m.softDeleted);
+      amendments = amendmentsSnap.docs.map((d: any) => ({
+        _docId: d.id,
+        ...(d.data() as any),
+      }));
+      projectsSnap = liveProjectsSnap;
+    }
 
     const todayIso = todayMidnightIso();
     const horizonIso = daysFromNow(14);

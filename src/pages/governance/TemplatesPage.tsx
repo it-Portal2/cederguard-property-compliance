@@ -15,6 +15,9 @@ import {
 } from '../../components/governance/templates/types';
 import { useStore } from '../../store/useStore';
 import { isAtLeastClientAdmin, isSuperAdmin } from '../../lib/roles';
+import { useHistoricalView } from '../../hooks/useHistoricalView';
+import { MonthPicker } from '../../components/historicalReporting/MonthPicker';
+import { HistoricalBanner } from '../../components/historicalReporting/HistoricalBanner';
 
 // Replaces the Phase-0 placeholder. Library grid + AI recommendation +
 // filter chips + editor modal. Accessible to PMs in read mode (open the
@@ -22,7 +25,17 @@ import { isAtLeastClientAdmin, isSuperAdmin } from '../../lib/roles';
 export function GovernanceTemplatesPage() {
   const user = useStore((s) => s.user);
   const isSuperAdminUser = isSuperAdmin(user?.email, user?.role);
-  const canEdit = isAtLeastClientAdmin(user?.role) || isSuperAdminUser;
+  const canEditLive = isAtLeastClientAdmin(user?.role) || isSuperAdminUser;
+
+  // HRC HR-5 — historical view hook. When the user picks a past month,
+  // the page swaps live templates for the snapshot's frozen state and
+  // disables every edit affordance.
+  const historicalView = useHistoricalView<{
+    kind: 'governanceDoc';
+    doc: ReportTemplate;
+  }>({ collection: 'templates' });
+  const isHistorical = historicalView.isHistorical;
+  const canEdit = canEditLive && !isHistorical;
 
   const [templates, setTemplates] = useState<ReportTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,9 +68,18 @@ export function GovernanceTemplatesPage() {
     void refresh();
   }, [refresh]);
 
+  // HRC HR-5 — effective list source. Snapshot-derived list when historical.
+  const historicalTemplates = useMemo<ReportTemplate[]>(() => {
+    if (!isHistorical) return [];
+    return historicalView.entries
+      .map((e) => (e?.doc as ReportTemplate | undefined))
+      .filter((d): d is ReportTemplate => !!d);
+  }, [isHistorical, historicalView.entries]);
+  const effectiveTemplates = isHistorical ? historicalTemplates : templates;
+
   const filtered = useMemo(() => {
     const needle = search.trim().toLowerCase();
-    return templates.filter((t) => {
+    return effectiveTemplates.filter((t) => {
       if (filter !== 'all' && t.category !== filter) return false;
       if (needle) {
         const hay = `${t.code} ${t.title} ${t.description} ${t.defaultRoute}`.toLowerCase();
@@ -65,7 +87,7 @@ export function GovernanceTemplatesPage() {
       }
       return true;
     });
-  }, [templates, filter, search]);
+  }, [effectiveTemplates, filter, search]);
 
   const handleOpen = async (template: ReportTemplate) => {
     // Reload fresh — list call may return shallow / stale section content.
@@ -153,22 +175,41 @@ export function GovernanceTemplatesPage() {
             </p>
           </div>
         </div>
-        {canEdit && (
-          <button
-            type="button"
-            onClick={() => {
-              setOpened(null);
-              setModalOpen(true);
-            }}
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-indigo-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-indigo-700"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            New template
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {/* HRC HR-5 — month picker for historical view. */}
+          <MonthPicker
+            monthEnd={historicalView.monthEnd}
+            availableMonths={historicalView.availableMonths}
+            onChange={historicalView.setMonthEnd}
+            loading={historicalView.loading}
+          />
+          {canEdit && (
+            <button
+              type="button"
+              onClick={() => {
+                setOpened(null);
+                setModalOpen(true);
+              }}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-indigo-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-indigo-700"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              New template
+            </button>
+          )}
+        </div>
       </header>
 
-      <AiRecommendationCard onSelect={handleOpen} openingId={openingId} />
+      {isHistorical && historicalView.monthEnd && (
+        <HistoricalBanner
+          monthEnd={historicalView.monthEnd}
+          meta={historicalView.meta}
+          onExit={() => historicalView.setMonthEnd(null)}
+        />
+      )}
+
+      {!isHistorical && (
+        <AiRecommendationCard onSelect={handleOpen} openingId={openingId} />
+      )}
 
       {/* Filters + search */}
       <section className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -195,8 +236,8 @@ export function GovernanceTemplatesPage() {
                 )}
               >
                 {f.key === 'all'
-                  ? templates.length
-                  : templates.filter((t) => t.category === f.key).length}
+                  ? effectiveTemplates.length
+                  : effectiveTemplates.filter((t) => t.category === f.key).length}
               </span>
             </button>
           ))}
@@ -214,7 +255,7 @@ export function GovernanceTemplatesPage() {
       </section>
 
       {/* Grid */}
-      {loading ? (
+      {loading || historicalView.loading ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
             <div key={i} className="h-48 animate-pulse rounded-xl bg-slate-100" />

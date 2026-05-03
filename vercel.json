@@ -50,6 +50,14 @@
         {
             "path": "/api?action=runChaseEngine",
             "schedule": "0 * * * *"
+        },
+        {
+            "path": "/api?action=hrcRunMonthlySnapshot",
+            "schedule": "5 0 1 * *"
+        },
+        {
+            "path": "/api?action=hrcRunRetentionPurge",
+            "schedule": "0 1 1 1 *"
         }
     ]
 }

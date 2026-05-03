@@ -15,6 +15,9 @@ import { api } from '../../lib/api';
 import { type Meeting, STATUS_STYLES } from '../../components/governance/meetings/types';
 import { MeetingsCalendarView } from '../../components/governance/meetings/MeetingsCalendarView';
 import { MeetingModal } from '../../components/governance/meetings/MeetingModal';
+import { useHistoricalView } from '../../hooks/useHistoricalView';
+import { MonthPicker } from '../../components/historicalReporting/MonthPicker';
+import { HistoricalBanner } from '../../components/historicalReporting/HistoricalBanner';
 
 type ViewMode = 'list' | 'calendar';
 
@@ -32,6 +35,15 @@ function formatGbDate(iso: string | null | undefined): string {
 }
 
 export function GovernanceBoardCalendarPage() {
+  // HRC HR-5 — historical view hook. The page is already read-only,
+  // so the only behavioural change in historical mode is the data
+  // source swap.
+  const historicalView = useHistoricalView<{
+    kind: 'governanceDoc';
+    doc: Meeting;
+  }>({ collection: 'meetings' });
+  const isHistorical = historicalView.isHistorical;
+
   const [items, setItems] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<ViewMode>('calendar');
@@ -58,9 +70,19 @@ export function GovernanceBoardCalendarPage() {
     void refresh();
   }, [refresh]);
 
+  // HRC HR-5 — effective items: live or snapshot based on MonthPicker.
+  const historicalItems = useMemo<Meeting[]>(() => {
+    if (!isHistorical) return [];
+    return historicalView.entries
+      .map((e) => (e?.doc as Meeting | undefined))
+      .filter((d): d is Meeting => !!d && !d.softDeleted)
+      .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''));
+  }, [isHistorical, historicalView.entries]);
+  const effectiveItems = isHistorical ? historicalItems : items;
+
   const visibleItems = useMemo(
-    () => (showCancelled ? items : items.filter((m) => m.status !== 'Cancelled')),
-    [items, showCancelled],
+    () => (showCancelled ? effectiveItems : effectiveItems.filter((m) => m.status !== 'Cancelled')),
+    [effectiveItems, showCancelled],
   );
 
   const handleOpen = (m: Meeting) => {
@@ -94,7 +116,14 @@ export function GovernanceBoardCalendarPage() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 self-start">
+        <div className="flex flex-wrap items-center gap-2 self-start">
+          {/* HRC HR-5 — month picker for historical view. */}
+          <MonthPicker
+            monthEnd={historicalView.monthEnd}
+            availableMonths={historicalView.availableMonths}
+            onChange={historicalView.setMonthEnd}
+            loading={historicalView.loading}
+          />
           <label className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700">
             <input
               type="checkbox"
@@ -131,7 +160,15 @@ export function GovernanceBoardCalendarPage() {
         </div>
       </header>
 
-      {loading ? (
+      {isHistorical && historicalView.monthEnd && (
+        <HistoricalBanner
+          monthEnd={historicalView.monthEnd}
+          meta={historicalView.meta}
+          onExit={() => historicalView.setMonthEnd(null)}
+        />
+      )}
+
+      {loading || historicalView.loading ? (
         <div className="space-y-2">
           <div className="h-12 animate-pulse rounded-lg bg-slate-100" />
           <div className="h-12 animate-pulse rounded-lg bg-slate-100" />

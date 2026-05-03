@@ -13,6 +13,11 @@ import { isAtLeastPM, isAtLeastClientAdmin } from '../lib/roles';
 import { KRI_METADATA, SEED_KRIS } from '../data/riskData';
 import { generateId } from '../lib/utils';
 import toast from 'react-hot-toast';
+import { useHistoricalView } from '../hooks/useHistoricalView';
+import { MonthPicker } from '../components/historicalReporting/MonthPicker';
+import { HistoricalBanner } from '../components/historicalReporting/HistoricalBanner';
+import { HistoricalContentSkeleton } from '../components/historicalReporting/HistoricalContentSkeleton';
+import type { LegacyArraySnapshot } from '../types/historicalReporting';
 
 export function KRITracker() {
   const {
@@ -25,8 +30,27 @@ export function KRITracker() {
   const navigate = useNavigate();
 
   const userRole = user?.role || (user as any)?.profile?.role;
-  const canModify = isAtLeastPM(userRole);
-  const canDelete = isAtLeastClientAdmin(userRole);
+
+  // HRC HR-5 — historical view hook. When the user picks a past month,
+  // the page swaps live KRIs for the snapshot's frozen state and
+  // disables every edit affordance.
+  const historicalView = useHistoricalView<LegacyArraySnapshot<KRI>>({
+    collection: 'kris',
+  });
+  const isHistorical = historicalView.isHistorical;
+  const historicalKris = useMemo<KRI[]>(() => {
+    if (!isHistorical) return [];
+    const out: KRI[] = [];
+    for (const entry of historicalView.entries) {
+      if (entry?.kind === 'legacyArray' && Array.isArray(entry.array)) {
+        out.push(...entry.array);
+      }
+    }
+    return out;
+  }, [isHistorical, historicalView.entries]);
+
+  const canModify = isAtLeastPM(userRole) && !isHistorical;
+  const canDelete = isAtLeastClientAdmin(userRole) && !isHistorical;
 
   const [hoveredKri, setHoveredKri] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -35,7 +59,8 @@ export function KRITracker() {
 
   const safeRisks = Array.isArray(risks) ? risks : [];
   const safeProjects = Array.isArray(projects) ? projects : [];
-  const safeKris = Array.isArray(kris) ? kris : [];
+  const liveKris = Array.isArray(kris) ? kris : [];
+  const safeKris = isHistorical ? historicalKris : liveKris;
 
   // When the page mounts with a context but empty KRIs:
   //   1. Trigger a context data load (which includes fallback + auto-seed in the store).
@@ -219,6 +244,30 @@ export function KRITracker() {
 
   return (
     <div className="max-w-full px-8 space-y-12 pb-20 mt-4">
+
+      {/* HRC HR-5 — month picker + historical banner. */}
+      <div className="flex justify-end">
+        <MonthPicker
+          monthEnd={historicalView.monthEnd}
+          availableMonths={historicalView.availableMonths}
+          onChange={historicalView.setMonthEnd}
+          loading={historicalView.loading}
+        />
+      </div>
+      {isHistorical && historicalView.monthEnd && (
+        <HistoricalBanner
+          monthEnd={historicalView.monthEnd}
+          meta={historicalView.meta}
+          onExit={() => historicalView.setMonthEnd(null)}
+          defaultCorrectionCollection="kris"
+          emptyReason={historicalView.emptyReason}
+          activatedYearMonth={historicalView.activatedYearMonth}
+          surfaceLabel="KRI tracker"
+        />
+      )}
+
+      {historicalView.loading && <HistoricalContentSkeleton variant="stats-grid" />}
+      {!historicalView.loading && <>
 
       {/* ─── HEADER ─── */}
       <div className="flex justify-between items-end">
@@ -522,6 +571,7 @@ export function KRITracker() {
         </div>
       </div>
 
+      </>}
       {isModalOpen && (
         <KRIModal
           isOpen={isModalOpen}

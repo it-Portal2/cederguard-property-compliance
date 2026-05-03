@@ -42,6 +42,9 @@ import { ForwardPlanTimelineView } from '../../components/governance/forwardPlan
 import { ForwardPlanWorkflowView } from '../../components/governance/forwardPlan/ForwardPlanWorkflowView';
 import { ForwardPlanImportModal } from '../../components/governance/forwardPlan/ForwardPlanImportModal';
 import { SchedulePlannerView } from '../../components/governance/forwardPlan/SchedulePlannerView';
+import { useHistoricalView } from '../../hooks/useHistoricalView';
+import { MonthPicker } from '../../components/historicalReporting/MonthPicker';
+import { HistoricalBanner } from '../../components/historicalReporting/HistoricalBanner';
 
 type ViewMode = 'schedule' | 'list' | 'calendar' | 'timeline' | 'workflow';
 
@@ -82,8 +85,18 @@ interface PendingReason {
 
 export function GovernanceForwardPlanPage() {
   const user = useStore((s) => s.user);
-  const canEdit =
+  const userCanEdit =
     isAtLeastClientAdmin(user?.role) || isSuperAdmin(user?.email, user?.role);
+
+  // HRC HR-3 — historical view hook. When the user picks a past month,
+  // the page swaps `items` for the snapshot's frozen state and disables
+  // every edit affordance.
+  const historicalView = useHistoricalView<{
+    kind: 'governanceDoc';
+    doc: ForwardPlanItem;
+  }>({ collection: 'forwardPlanItems' });
+  const isHistorical = historicalView.isHistorical;
+  const canEdit = userCanEdit && !isHistorical;
 
   const [items, setItems] = useState<ForwardPlanItem[]>([]);
   const [bodies, setBodies] = useState<FpBodyOption[]>([]);
@@ -156,6 +169,19 @@ export function GovernanceForwardPlanPage() {
     void refresh();
   }, [refresh]);
 
+  // HRC HR-3 — effective items source. Switches between live `items` and
+  // the historical snapshot's frozen rows based on the MonthPicker. All
+  // downstream derivations (counts, proposed list, table data, calendar
+  // / timeline / workflow views) use this so historical mode renders the
+  // correct dataset without per-component branching.
+  const historicalItems = useMemo<ForwardPlanItem[]>(() => {
+    if (!isHistorical) return [];
+    return historicalView.entries
+      .map((e) => (e?.doc as ForwardPlanItem | undefined))
+      .filter((d): d is ForwardPlanItem => !!d);
+  }, [isHistorical, historicalView.entries]);
+  const effectiveItems = isHistorical ? historicalItems : items;
+
   // ── StatsCard counts ────────────────────────────────────────────────────
   const counts = useMemo(() => {
     const totals = {
@@ -166,7 +192,7 @@ export function GovernanceForwardPlanPage() {
       softDeleted: 0,
       needsRerouting: 0,
     };
-    for (const it of items) {
+    for (const it of effectiveItems) {
       if (it.softDeleted) {
         totals.softDeleted += 1;
         continue;
@@ -178,7 +204,7 @@ export function GovernanceForwardPlanPage() {
       if (it.needsRerouting) totals.needsRerouting += 1;
     }
     return totals;
-  }, [items]);
+  }, [effectiveItems]);
 
   // Proposed items surfaced in the pending-requests banner so the PgM can
   // identify exactly which submissions need their action (client feedback
@@ -205,14 +231,19 @@ export function GovernanceForwardPlanPage() {
       }
       return 0;
     };
-    return items
+    // HRC HR-3 — banner is suppressed in historical mode (no actions to
+    // take on frozen data) by returning [] when isHistorical, so we read
+    // from `effectiveItems` which already collapses to live or historical
+    // depending on picker state.
+    if (isHistorical) return [];
+    return effectiveItems
       .filter(it => it.status === 'Proposed' && !it.softDeleted)
       .sort((a, b) => {
         const aMs = toMillis((a as any).requestedAt) || toMillis(a.updatedAt);
         const bMs = toMillis((b as any).requestedAt) || toMillis(b.updatedAt);
         return aMs - bMs;
       });
-  }, [items]);
+  }, [effectiveItems, isHistorical]);
 
   // ── Row handlers ────────────────────────────────────────────────────────
   // List-view Open button: fetches the freshest copy from the server before
@@ -817,8 +848,9 @@ export function GovernanceForwardPlanPage() {
   // level breaks the filter toggle — the user picks "Show soft-deleted" but
   // the items have already been stripped out upstream. Soft-deleted rows get
   // line-through styling on the title to stay visually distinct in the
-  // default view.
-  const tableData = items;
+  // default view. `effectiveItems` is computed near the top of the component
+  // and resolves to historical-snapshot rows when the MonthPicker is set.
+  const tableData = effectiveItems;
 
   const rowActions: RowAction<ForwardPlanItem>[] = [
     {
@@ -920,31 +952,56 @@ export function GovernanceForwardPlanPage() {
           </div>
         </div>
 
-        <div className="inline-flex self-start rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-[11px] font-semibold md:mt-1">
-          {([
-            { key: 'schedule' as const, label: 'Schedule', Icon: CalendarIcon },
-            { key: 'list' as const, label: 'List', Icon: ListIcon },
-            { key: 'calendar' as const, label: 'Calendar', Icon: CalendarIcon },
-            { key: 'timeline' as const, label: 'Timeline', Icon: BarChart3 },
-            { key: 'workflow' as const, label: 'Workflow', Icon: LayoutGrid },
-          ]).map(({ key, label, Icon }) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setViewMode(key)}
-              className={clsx(
-                'inline-flex h-8 items-center gap-1.5 rounded-md px-3 transition-colors',
-                viewMode === key
-                  ? 'bg-white text-indigo-700 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900',
-              )}
-            >
-              <Icon className="h-3.5 w-3.5" />
-              {label}
-            </button>
-          ))}
+        <div className="flex flex-col items-start gap-2 self-start md:items-end md:gap-2 md:mt-1">
+          {/* HRC HR-3 — month picker for historical view. Sits above the
+              view-mode toggle so it's the first thing the eye lands on
+              when switching modes. */}
+          <MonthPicker
+            monthEnd={historicalView.monthEnd}
+            availableMonths={historicalView.availableMonths}
+            onChange={historicalView.setMonthEnd}
+            loading={historicalView.loading}
+          />
+          <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-[11px] font-semibold">
+            {([
+              { key: 'schedule' as const, label: 'Schedule', Icon: CalendarIcon },
+              { key: 'list' as const, label: 'List', Icon: ListIcon },
+              { key: 'calendar' as const, label: 'Calendar', Icon: CalendarIcon },
+              { key: 'timeline' as const, label: 'Timeline', Icon: BarChart3 },
+              { key: 'workflow' as const, label: 'Workflow', Icon: LayoutGrid },
+            ]).map(({ key, label, Icon }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setViewMode(key)}
+                className={clsx(
+                  'inline-flex h-8 items-center gap-1.5 rounded-md px-3 transition-colors',
+                  viewMode === key
+                    ? 'bg-white text-indigo-700 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900',
+                )}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
+
+      {/* HRC HR-3 — read-only banner appears when MonthPicker is set to a
+          past month. Sits above StatsCards so the user can't miss it. */}
+      {isHistorical && historicalView.monthEnd && (
+        <HistoricalBanner
+          monthEnd={historicalView.monthEnd}
+          meta={historicalView.meta}
+          onExit={() => historicalView.setMonthEnd(null)}
+          defaultCorrectionCollection="forwardPlanItems"
+          emptyReason={historicalView.emptyReason}
+          activatedYearMonth={historicalView.activatedYearMonth}
+          surfaceLabel="forward plan"
+        />
+      )}
 
       {/* Stats row */}
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -1090,8 +1147,11 @@ export function GovernanceForwardPlanPage() {
         </div>
       )}
 
-      {/* View body — schedule planner / list table / calendar / timeline / workflow */}
-      {loading ? (
+      {/* View body — schedule planner / list table / calendar / timeline / workflow.
+          HRC HR-3 — `historicalView.loading` flips true while a past
+          month is being fetched. Showing the wrapper skeleton during
+          that window prevents the "data suddenly appears" flash. */}
+      {loading || historicalView.loading ? (
         <div className="space-y-2">
           <div className="h-12 animate-pulse rounded-lg bg-slate-100" />
           <div className="h-12 animate-pulse rounded-lg bg-slate-100" />

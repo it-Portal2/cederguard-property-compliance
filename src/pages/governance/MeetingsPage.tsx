@@ -31,6 +31,9 @@ import {
 import { MeetingModal } from '../../components/governance/meetings/MeetingModal';
 import { MeetingsCalendarView } from '../../components/governance/meetings/MeetingsCalendarView';
 import { RescheduleMeetingDialog } from '../../components/governance/meetings/RescheduleMeetingDialog';
+import { useHistoricalView } from '../../hooks/useHistoricalView';
+import { MonthPicker } from '../../components/historicalReporting/MonthPicker';
+import { HistoricalBanner } from '../../components/historicalReporting/HistoricalBanner';
 
 type ViewMode = 'list' | 'calendar';
 
@@ -56,8 +59,18 @@ function formatGbDate(iso: string | null | undefined): string {
 
 export function GovernanceMeetingsPage() {
   const user = useStore((s) => s.user);
-  const isAdmin =
+  const userIsAdmin =
     isAtLeastClientAdmin(user?.role) || isSuperAdmin(user?.email, user?.role);
+
+  // HRC HR-5 — historical view hook. When the user picks a past month,
+  // the page swaps live meetings for the snapshot's frozen state and
+  // disables every edit affordance.
+  const historicalView = useHistoricalView<{
+    kind: 'governanceDoc';
+    doc: Meeting;
+  }>({ collection: 'meetings' });
+  const isHistorical = historicalView.isHistorical;
+  const isAdmin = userIsAdmin && !isHistorical;
 
   const [items, setItems] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
@@ -91,9 +104,19 @@ export function GovernanceMeetingsPage() {
     void refresh();
   }, [refresh]);
 
+  // HRC HR-5 — effective items source. Switches between live `items`
+  // and the historical snapshot's frozen rows based on the MonthPicker.
+  const historicalItems = useMemo<Meeting[]>(() => {
+    if (!isHistorical) return [];
+    return historicalView.entries
+      .map((e) => (e?.doc as Meeting | undefined))
+      .filter((d): d is Meeting => !!d);
+  }, [isHistorical, historicalView.entries]);
+  const effectiveItems = isHistorical ? historicalItems : items;
+
   const counts = useMemo(() => {
     const totals = { Scheduled: 0, Held: 0, Cancelled: 0, softDeleted: 0 };
-    for (const it of items) {
+    for (const it of effectiveItems) {
       if (it.softDeleted) {
         totals.softDeleted += 1;
         continue;
@@ -101,7 +124,7 @@ export function GovernanceMeetingsPage() {
       totals[it.status] += 1;
     }
     return totals;
-  }, [items]);
+  }, [effectiveItems]);
 
   const handleEdit = (item: Meeting) => {
     setOpened(item);
@@ -417,8 +440,16 @@ export function GovernanceMeetingsPage() {
             </p>
           </div>
         </div>
-        {/* View mode toggle — same chrome as Forward Plan (lesson #47:
-            calendar = read-only surface; CRUD stays in modal). */}
+        <div className="flex flex-col items-start gap-3 md:flex-row md:items-center">
+          {/* HRC HR-5 — month picker for historical view. */}
+          <MonthPicker
+            monthEnd={historicalView.monthEnd}
+            availableMonths={historicalView.availableMonths}
+            onChange={historicalView.setMonthEnd}
+            loading={historicalView.loading}
+          />
+          {/* View mode toggle — same chrome as Forward Plan (lesson #47:
+              calendar = read-only surface; CRUD stays in modal). */}
         <div className="inline-flex shrink-0 items-center gap-0.5 self-start rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
           <button
             type="button"
@@ -447,7 +478,16 @@ export function GovernanceMeetingsPage() {
             Calendar
           </button>
         </div>
+        </div>
       </header>
+
+      {isHistorical && historicalView.monthEnd && (
+        <HistoricalBanner
+          monthEnd={historicalView.monthEnd}
+          meta={historicalView.meta}
+          onExit={() => historicalView.setMonthEnd(null)}
+        />
+      )}
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatsCard
@@ -484,7 +524,7 @@ export function GovernanceMeetingsPage() {
         />
       </section>
 
-      {loading ? (
+      {loading || historicalView.loading ? (
         <div className="space-y-2">
           <div className="h-12 animate-pulse rounded-lg bg-slate-100" />
           <div className="h-12 animate-pulse rounded-lg bg-slate-100" />
@@ -492,10 +532,10 @@ export function GovernanceMeetingsPage() {
           <div className="h-12 animate-pulse rounded-lg bg-slate-100" />
         </div>
       ) : viewMode === 'calendar' ? (
-        <MeetingsCalendarView items={items} onOpenItem={handleEdit} />
+        <MeetingsCalendarView items={effectiveItems} onOpenItem={handleEdit} />
       ) : (
         <DynamicTable<Meeting>
-          data={items}
+          data={effectiveItems}
           columns={columns}
           rowActions={rowActions}
           filters={filters}

@@ -1,5 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { useStore, type RiskItem, type IssueItem } from '../store/useStore';
+import { useHistoricalView } from '../hooks/useHistoricalView';
+import { MonthPicker } from '../components/historicalReporting/MonthPicker';
+import { HistoricalBanner } from '../components/historicalReporting/HistoricalBanner';
+import { HistoricalContentSkeleton } from '../components/historicalReporting/HistoricalContentSkeleton';
+import type { LegacyArraySnapshot } from '../types/historicalReporting';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
@@ -169,7 +174,26 @@ export function RiskDashboard() {
   const [isAIInquiryOpen, setIsAIInquiryOpen] = useState(false);
   const generatingRef = useRef(false);
 
-  const safeRisks = Array.isArray(risks) ? risks : [];
+  // HRC HR-5 — historical view hook. When the user picks a past month
+  // via the MonthPicker, the page swaps `safeRisks` for the snapshot's
+  // frozen state and disables every action affordance.
+  const historicalView = useHistoricalView<LegacyArraySnapshot<RiskItem>>({
+    collection: 'risks',
+  });
+  const isHistorical = historicalView.isHistorical;
+  const historicalRisks = useMemo<RiskItem[]>(() => {
+    if (!isHistorical) return [];
+    const out: RiskItem[] = [];
+    for (const entry of historicalView.entries) {
+      if (entry?.kind === 'legacyArray' && Array.isArray(entry.array)) {
+        out.push(...entry.array);
+      }
+    }
+    return out;
+  }, [isHistorical, historicalView.entries]);
+
+  const liveRisks = Array.isArray(risks) ? risks : [];
+  const safeRisks = isHistorical ? historicalRisks : liveRisks;
   const safeIssues = Array.isArray(issues) ? issues : [];
   const safeProjects = Array.isArray(projects) ? projects : [];
   const safeProgrammes = Array.isArray(programmes) ? programmes : [];
@@ -210,6 +234,11 @@ export function RiskDashboard() {
   });
 
   const handleGenerateStrategicInsights = async () => {
+    // HRC HR-5 — block AI generation while viewing a frozen snapshot.
+    if (isHistorical) {
+      toast.error('Switch to live data to generate fresh strategic insights.');
+      return;
+    }
     // Bug 6 fix: useRef double-submit guard
     if (generatingRef.current) return;
     generatingRef.current = true;
@@ -397,8 +426,35 @@ export function RiskDashboard() {
     <div className="max-w-7xl mx-auto space-y-5 px-4 md:px-0 pb-12 pb-safe">
       <ServiceManagementBar className="mb-4" />
 
+      {/* HRC HR-5 — month picker for historical view. Placed AFTER
+          ServiceManagementBar so the service status row stays the
+          page's primary header signal. */}
+      <div className="flex justify-end">
+        <MonthPicker
+          monthEnd={historicalView.monthEnd}
+          availableMonths={historicalView.availableMonths}
+          onChange={historicalView.setMonthEnd}
+          loading={historicalView.loading}
+        />
+      </div>
+      {isHistorical && historicalView.monthEnd && (
+        <HistoricalBanner
+          monthEnd={historicalView.monthEnd}
+          meta={historicalView.meta}
+          onExit={() => historicalView.setMonthEnd(null)}
+          defaultCorrectionCollection="risks"
+          emptyReason={historicalView.emptyReason}
+          activatedYearMonth={historicalView.activatedYearMonth}
+          surfaceLabel="risk dashboard"
+        />
+      )}
 
-      <PremiumAIBanner 
+      {historicalView.loading && <HistoricalContentSkeleton variant="stats-grid" />}
+
+      {!historicalView.loading && <>
+
+
+      <PremiumAIBanner
         title="Deep Risk Inquiry"
         description="Analyze project risks, identify strategic blindspots, or seek guidance on mitigation strategies. Our CedarGuard AI will scan your entire risk register to provide instant, field-specific insights."
         buttonText="Launch AI Risk Advisor"
@@ -850,9 +906,10 @@ export function RiskDashboard() {
           </div>
         </DashCard>
       </div>
+    </>}
     </div>
 
-    <AIInquiryPopup 
+    <AIInquiryPopup
       isOpen={isAIInquiryOpen} 
       onClose={() => setIsAIInquiryOpen(false)} 
       context={`Risk Dashboard Analysis for ${activeProgName || activeProjName || 'Portfolio'}. Risks: ${totalRisks}, Issues: ${filteredIssues.length}, High/Severe: ${highSevere}, Escalated: ${escalated}, Potential Loss: ${fmt(totalResidualALE)}`}

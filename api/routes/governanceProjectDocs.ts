@@ -31,8 +31,30 @@ import {
   type ProjectDocStatus,
   type ProjectDocCategory,
 } from '../lib/projectGovernanceSeed.js';
+import { appendHistoryRow } from '../lib/historyRows.js';
+import type { ChangeKind } from '../../src/types/historicalReporting.js';
 
 const DOC_ID_RE = /^[a-z0-9_-]{1,80}$/i;
+
+// HRC HR-4 — fire-and-forget history capture for project-doc mutations.
+function captureProjectDocHistory(
+  ctx: ApiContext,
+  args: {
+    docId: string;
+    prevState: Record<string, any> | null;
+    newState: Record<string, any> | null;
+    changeKind: ChangeKind;
+  },
+): void {
+  void appendHistoryRow(ctx, {
+    kind: 'governanceDoc',
+    collection: 'projectGovernanceDocs',
+    ownerScope: args.docId,
+    prevState: args.prevState,
+    newState: args.newState,
+    changeKind: args.changeKind,
+  });
+}
 
 const DOC_WRITABLE_FIELDS = [
   'title',
@@ -299,6 +321,12 @@ async function governanceUpsertProjectDoc(req: any, res: any, ctx: ApiContext) {
     }
     await ref.set(payload, { merge: true });
     const latest = (await ref.get()).data();
+    captureProjectDocHistory(ctx, {
+      docId,
+      prevState: exists ? (snap.data() ?? null) : null,
+      newState: latest ?? null,
+      changeKind: exists ? 'update' : 'create',
+    });
     return res
       .status(200)
       .json({ success: true, item: { _id: ref.id, ...latest } });
@@ -373,7 +401,7 @@ async function governancePublishProjectDoc(
         },
         { merge: true },
       );
-      return { ok: true as const, version: nextVersion };
+      return { ok: true as const, version: nextVersion, prevState: data };
     });
 
     if ('error' in result) {
@@ -411,6 +439,12 @@ async function governancePublishProjectDoc(
     }
 
     const latest = (await ref.get()).data();
+    captureProjectDocHistory(ctx, {
+      docId,
+      prevState: 'prevState' in result ? (result.prevState ?? null) : null,
+      newState: latest ?? null,
+      changeKind: 'update',
+    });
     return res
       .status(200)
       .json({ success: true, item: { _id: ref.id, ...latest } });
@@ -534,6 +568,12 @@ async function governanceSoftDeleteProjectDoc(
         };
     await ref.set(update, { merge: true });
     const latest = (await ref.get()).data();
+    captureProjectDocHistory(ctx, {
+      docId,
+      prevState: data,
+      newState: latest ?? null,
+      changeKind: wantRestore ? 'restore' : 'softDelete',
+    });
     return res
       .status(200)
       .json({ success: true, item: { _id: ref.id, ...latest } });

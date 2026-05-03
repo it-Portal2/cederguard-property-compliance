@@ -25,8 +25,32 @@ import {
   type ParsedItem,
   type ParsedRow,
 } from '../lib/forwardPlanXlsxImport.js';
+import { appendHistoryRow } from '../lib/historyRows.js';
+import type { ChangeKind } from '../../src/types/historicalReporting.js';
 
 const ITEM_ID_RE = /^[a-z0-9_-]{1,80}$/i;
+
+// HRC HR-2 — fire-and-forget history capture for FP item mutations.
+// Called after the primary write succeeds. Errors are swallowed inside
+// appendHistoryRow so a history failure never blocks the user's save.
+function captureFpHistory(
+  ctx: ApiContext,
+  args: {
+    itemId: string;
+    prevState: Record<string, any> | null;
+    newState: Record<string, any> | null;
+    changeKind: ChangeKind;
+  },
+): void {
+  void appendHistoryRow(ctx, {
+    kind: 'governanceDoc',
+    collection: 'forwardPlanItems',
+    ownerScope: args.itemId,
+    prevState: args.prevState,
+    newState: args.newState,
+    changeKind: args.changeKind,
+  });
+}
 
 // Whitelist locks down which client-supplied fields persist. Fields the
 // server controls (status, isKeyDecision, soft-delete state, decided
@@ -374,6 +398,12 @@ async function governanceUpsertForwardPlanItem(req: any, res: any, ctx: ApiConte
     }
     await ref.set(payload, { merge: true });
     const latest = (await ref.get()).data();
+    captureFpHistory(ctx, {
+      itemId,
+      prevState: exists ? (snap.data() ?? null) : null,
+      newState: latest ?? null,
+      changeKind: exists ? 'update' : 'create',
+    });
     return res.status(200).json({ success: true, item: { _id: ref.id, ...latest } });
   } catch (e: any) {
     console.error('[governanceUpsertForwardPlanItem] failed:', e);
@@ -449,6 +479,12 @@ async function governanceSoftDeleteForwardPlanItem(req: any, res: any, ctx: ApiC
         };
     await ref.set(update, { merge: true });
     const latest = (await ref.get()).data();
+    captureFpHistory(ctx, {
+      itemId,
+      prevState: snap.data() ?? null,
+      newState: latest ?? null,
+      changeKind: wantRestore ? 'restore' : 'softDelete',
+    });
     return res.status(200).json({ success: true, item: { _id: ref.id, ...latest } });
   } catch (e: any) {
     console.error('[governanceSoftDeleteForwardPlanItem] failed:', e);
@@ -514,6 +550,12 @@ async function governanceMarkForwardPlanItemDecided(req: any, res: any, ctx: Api
       { merge: true },
     );
     const latest = (await ref.get()).data();
+    captureFpHistory(ctx, {
+      itemId,
+      prevState: data,
+      newState: latest ?? null,
+      changeKind: 'update',
+    });
     return res.status(200).json({ success: true, item: { _id: ref.id, ...latest } });
   } catch (e: any) {
     console.error('[governanceMarkForwardPlanItemDecided] failed:', e);
@@ -681,6 +723,10 @@ async function governanceImportForwardPlanCommit(
     const ts = nowIso();
     const batch = ctx.db.batch();
     let written = 0;
+    // Track imported items so we can fire history rows after the batch
+    // commit (HR-2). Each imported item is brand new — prevState=null,
+    // changeKind='create'.
+    const importedForHistory: Array<{ id: string; doc: Record<string, any> }> = [];
     for (const row of commitable) {
       let id = row.item.id;
       // Suffix on collision.
@@ -694,9 +740,22 @@ async function governanceImportForwardPlanCommit(
       const ref = ctx.db.collection('forwardPlanItems').doc(fpDocId(ctx, id));
       const item = parsedItemToDoc(row.item, id, ctx, ts);
       batch.set(ref, item);
+      importedForHistory.push({ id, doc: item });
       written += 1;
     }
     await batch.commit();
+
+    // HRC HR-2 — fire one history row per imported item. Best-effort,
+    // doesn't await each call to keep response time tight; appendHistoryRow
+    // swallows errors internally.
+    for (const { id, doc } of importedForHistory) {
+      captureFpHistory(ctx, {
+        itemId: id,
+        prevState: null,
+        newState: doc,
+        changeKind: 'create',
+      });
+    }
 
     // Audit trail — single entry for the whole import.
     try {
@@ -895,6 +954,16 @@ export async function ensureFpItemFromReport(
       },
       { merge: true },
     );
+    // HRC HR-2 — capture the re-point as an update history row.
+    try {
+      const latest = (await existing.ref.get()).data();
+      captureFpHistory(ctx, {
+        itemId: data.id ?? existing.id,
+        prevState: data,
+        newState: latest ?? null,
+        changeKind: 'update',
+      });
+    } catch {}
     return;
   }
 
@@ -941,6 +1010,16 @@ export async function ensureFpItemFromReport(
     updatedAt: ts,
     updatedBy: ctx.uid,
   });
+  // HRC HR-2 — capture create as a history row.
+  try {
+    const latest = (await ref.get()).data();
+    captureFpHistory(ctx, {
+      itemId,
+      prevState: null,
+      newState: latest ?? null,
+      changeKind: 'create',
+    });
+  } catch {}
 }
 
 async function loadFpItemForTransition(
@@ -1088,6 +1167,12 @@ async function governanceConfirmFpItem(req: any, res: any, ctx: ApiContext) {
     }
 
     const latest = (await loaded.ref.get()).data();
+    captureFpHistory(ctx, {
+      itemId,
+      prevState: loaded.data ?? null,
+      newState: latest ?? null,
+      changeKind: 'update',
+    });
     return res.status(200).json({ success: true, item: { _id: loaded.ref.id, ...latest } });
   } catch (e: any) {
     console.error('[governanceConfirmFpItem] failed:', e);
@@ -1150,6 +1235,12 @@ async function governanceDeclineFpItem(req: any, res: any, ctx: ApiContext) {
       console.error('[governanceDeclineFpItem] audit failed', auditErr);
     }
     const latest = (await loaded.ref.get()).data();
+    captureFpHistory(ctx, {
+      itemId,
+      prevState: loaded.data ?? null,
+      newState: latest ?? null,
+      changeKind: 'update',
+    });
     return res.status(200).json({ success: true, item: { _id: loaded.ref.id, ...latest } });
   } catch (e: any) {
     console.error('[governanceDeclineFpItem] failed:', e);
@@ -1201,6 +1292,12 @@ async function governanceWithdrawFpItem(req: any, res: any, ctx: ApiContext) {
       console.error('[governanceWithdrawFpItem] audit failed', auditErr);
     }
     const latest = (await loaded.ref.get()).data();
+    captureFpHistory(ctx, {
+      itemId,
+      prevState: loaded.data ?? null,
+      newState: latest ?? null,
+      changeKind: 'softDelete',
+    });
     return res.status(200).json({ success: true, item: { _id: loaded.ref.id, ...latest } });
   } catch (e: any) {
     console.error('[governanceWithdrawFpItem] failed:', e);

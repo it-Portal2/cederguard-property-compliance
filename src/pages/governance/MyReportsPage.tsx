@@ -31,6 +31,9 @@ import {
 } from '../../components/governance/reports/types';
 import { ReportModal } from '../../components/governance/reports/ReportModal';
 import { ReasonDialog } from '../../components/governance/ReasonDialog';
+import { useHistoricalView } from '../../hooks/useHistoricalView';
+import { MonthPicker } from '../../components/historicalReporting/MonthPicker';
+import { HistoricalBanner } from '../../components/historicalReporting/HistoricalBanner';
 
 interface MyAmendment {
   _id: string;
@@ -68,8 +71,18 @@ function daysUntil(iso: string | null | undefined): number | null {
 export function GovernanceMyReportsPage() {
   const navigate = useNavigate();
   const user = useStore((s) => s.user);
-  const isAdmin =
+  const userIsAdmin =
     isAtLeastClientAdmin(user?.role) || isSuperAdmin(user?.email, user?.role);
+
+  // HRC HR-5 — historical view hook. When the user picks a past month,
+  // the page swaps live items for the snapshot's frozen state and
+  // disables every edit affordance.
+  const historicalView = useHistoricalView<{
+    kind: 'governanceDoc';
+    doc: Report;
+  }>({ collection: 'reports' });
+  const isHistorical = historicalView.isHistorical;
+  const isAdmin = userIsAdmin && !isHistorical;
 
   const [items, setItems] = useState<Report[]>([]);
   const [amendments, setAmendments] = useState<MyAmendment[]>([]);
@@ -111,6 +124,17 @@ export function GovernanceMyReportsPage() {
     void refresh();
   }, [refresh]);
 
+  // HRC HR-5 — effective items source. Switches between live `items`
+  // (filtered to caller's reports) and the snapshot's frozen rows
+  // (also filtered to caller's reports) based on the MonthPicker.
+  const historicalItems = useMemo<Report[]>(() => {
+    if (!isHistorical) return [];
+    return historicalView.entries
+      .map((e) => (e?.doc as Report | undefined))
+      .filter((d): d is Report => !!d && d.ownerUid === user?.uid);
+  }, [isHistorical, historicalView.entries, user?.uid]);
+  const effectiveItems = isHistorical ? historicalItems : items;
+
   // ── StatsCards ─────────────────────────────────────────────────────────
   // PM-facing tiles (different from PgM list page):
   //  • Drafting          — status === 'Draft'
@@ -127,7 +151,7 @@ export function GovernanceMyReportsPage() {
     let amendmentsCount = 0;
     let approvedThisQuarter = 0;
 
-    for (const it of items) {
+    for (const it of effectiveItems) {
       if (it.softDeleted) continue;
       switch (it.status) {
         case 'Draft':
@@ -151,12 +175,12 @@ export function GovernanceMyReportsPage() {
       }
     }
     return { drafting, withPgm, amendmentsCount, approvedThisQuarter };
-  }, [items]);
+  }, [effectiveItems]);
 
   // Upcoming deadlines: own reports with targetBoardDate in the next 30 days
   // and not already sealed/abandoned. Sort ascending.
   const upcomingDeadlines = useMemo(() => {
-    return items
+    return effectiveItems
       .filter((r) => {
         if (r.softDeleted) return false;
         if (!r.targetBoardDate) return false;
@@ -167,7 +191,7 @@ export function GovernanceMyReportsPage() {
       .sort((a, b) =>
         (a.targetBoardDate ?? '').localeCompare(b.targetBoardDate ?? ''),
       );
-  }, [items]);
+  }, [effectiveItems]);
 
   // ── Briefing copy ──────────────────────────────────────────────────────
   // Stub lines are computed locally for instant render (lesson #61).
@@ -562,7 +586,24 @@ export function GovernanceMyReportsPage() {
             </p>
           </div>
         </div>
+        {/* HRC HR-5 — month picker for historical view. */}
+        <div className="self-start md:mt-1">
+          <MonthPicker
+            monthEnd={historicalView.monthEnd}
+            availableMonths={historicalView.availableMonths}
+            onChange={historicalView.setMonthEnd}
+            loading={historicalView.loading}
+          />
+        </div>
       </header>
+
+      {isHistorical && historicalView.monthEnd && (
+        <HistoricalBanner
+          monthEnd={historicalView.monthEnd}
+          meta={historicalView.meta}
+          onExit={() => historicalView.setMonthEnd(null)}
+        />
+      )}
 
       {/* Briefing card (PM variant) */}
       <section className="rounded-xl border border-indigo-100 bg-linear-to-br from-indigo-50 via-white to-white p-5 shadow-sm">
@@ -625,7 +666,7 @@ export function GovernanceMyReportsPage() {
       {/* Two-column: table on left, side panels on right */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          {loading ? (
+          {loading || historicalView.loading ? (
             <div className="space-y-2">
               <div className="h-12 animate-pulse rounded-lg bg-slate-100" />
               <div className="h-12 animate-pulse rounded-lg bg-slate-100" />
@@ -634,7 +675,7 @@ export function GovernanceMyReportsPage() {
             </div>
           ) : (
             <DynamicTable<Report>
-              data={items}
+              data={effectiveItems}
               columns={columns}
               rowActions={rowActions}
               filters={filters}

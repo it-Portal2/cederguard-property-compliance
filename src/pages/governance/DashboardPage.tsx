@@ -33,6 +33,9 @@ import type {
   PgmDashboardPayload,
   PmDashboardPayload,
 } from '../../components/governance/dashboard/types';
+import { useHistoricalView } from '../../hooks/useHistoricalView';
+import { MonthPicker } from '../../components/historicalReporting/MonthPicker';
+import { HistoricalBanner } from '../../components/historicalReporting/HistoricalBanner';
 
 function formatGbDate(iso: string | null | undefined): string {
   if (!iso) return '—';
@@ -74,24 +77,36 @@ const INBOX_KIND_META: Record<
 };
 
 export function GovernanceDashboardPage() {
+  // HRC HR-7 — picker + asOfMonth wiring. The dashboard endpoint
+  // accepts `asOfMonth`; we feed it from the picker. `reports` is the
+  // source for available months.
+  const historicalView = useHistoricalView<any>({ collection: 'reports' });
+  const isHistorical = historicalView.isHistorical;
+  const asOfMonth = historicalView.monthEnd;
+
   const [payload, setPayload] = useState<DashboardPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const refresh = useCallback(async (silent = false) => {
-    if (silent) setRefreshing(true);
-    else setLoading(true);
-    try {
-      const res = await api.governanceGetDashboard();
-      if (!res?.success) throw new Error(res?.error ?? 'Failed to load dashboard.');
-      setPayload(res as DashboardPayload);
-    } catch (e: any) {
-      toast.error(e?.message ?? 'Failed to load dashboard.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
+  const refresh = useCallback(
+    async (silent = false) => {
+      if (silent) setRefreshing(true);
+      else setLoading(true);
+      try {
+        const res = await api.governanceGetDashboard(
+          asOfMonth ? { asOfMonth } : {},
+        );
+        if (!res?.success) throw new Error(res?.error ?? 'Failed to load dashboard.');
+        setPayload(res as DashboardPayload);
+      } catch (e: any) {
+        toast.error(e?.message ?? 'Failed to load dashboard.');
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [asOfMonth],
+  );
 
   useEffect(() => {
     refresh();
@@ -123,22 +138,42 @@ export function GovernanceDashboardPage() {
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => refresh(true)}
-          disabled={loading || refreshing}
-          className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 self-start rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:opacity-50"
-        >
-          {refreshing ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <RefreshCw className="h-3.5 w-3.5" />
-          )}
-          Refresh
-        </button>
+        <div className="inline-flex shrink-0 items-center gap-2 self-start">
+          {/* HRC HR-7 — month picker drives `asOfMonth` on the
+              dashboard aggregator. */}
+          <MonthPicker
+            monthEnd={historicalView.monthEnd}
+            availableMonths={historicalView.availableMonths}
+            onChange={historicalView.setMonthEnd}
+            loading={historicalView.loading}
+          />
+          <button
+            type="button"
+            onClick={() => refresh(true)}
+            disabled={loading || refreshing}
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:opacity-50"
+          >
+            {refreshing ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="h-3.5 w-3.5" />
+            )}
+            Refresh
+          </button>
+        </div>
       </header>
 
-      {loading && !payload ? (
+      {isHistorical && historicalView.monthEnd && (
+        <HistoricalBanner
+          monthEnd={historicalView.monthEnd}
+          meta={historicalView.meta}
+          onExit={() => historicalView.setMonthEnd(null)}
+          activatedYearMonth={historicalView.activatedYearMonth}
+          surfaceLabel="dashboard"
+        />
+      )}
+
+      {(loading && !payload) || historicalView.loading ? (
         <DashboardSkeleton />
       ) : payload?.role === 'pm' ? (
         <PmDashboard payload={payload} />

@@ -24,11 +24,24 @@ import type {
   FrameworkThreshold,
   TermsOfReference,
 } from '../../components/governance/framework/types';
+import { useHistoricalView } from '../../hooks/useHistoricalView';
+import { MonthPicker } from '../../components/historicalReporting/MonthPicker';
+import { HistoricalBanner } from '../../components/historicalReporting/HistoricalBanner';
 
 // Replaces the Phase-0 placeholder. Authenticated PgMs land here, see the
 // full 4-tier canvas, can toggle to edit mode, open per-body modals, edit
 // thresholds + ToRs, and publish a new framework version.
 export function GovernanceFrameworkPage() {
+  // HRC HR-5 — historical view hook. Framework is multi-source (bodies +
+  // thresholds + ToRs) so historical mode here is read-only-safe: we
+  // force off edit mode + disable Publish, but the detail surfaces still
+  // read from the live snapshot. Full per-collection swap lands in HR-7.
+  const historicalView = useHistoricalView<{
+    kind: 'governanceDoc';
+    doc: any;
+  }>({ collection: 'framework' });
+  const isHistorical = historicalView.isHistorical;
+
   const [snapshot, setSnapshot] = useState<FrameworkSnapshot>({
     framework: null,
     bodies: [],
@@ -188,6 +201,13 @@ export function GovernanceFrameworkPage() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {/* HRC HR-5 — month picker for historical view. */}
+          <MonthPicker
+            monthEnd={historicalView.monthEnd}
+            availableMonths={historicalView.availableMonths}
+            onChange={historicalView.setMonthEnd}
+            loading={historicalView.loading}
+          />
           {statusBadge && (
             <span
               className={clsx(
@@ -199,35 +219,53 @@ export function GovernanceFrameworkPage() {
               {statusBadge.label}
             </span>
           )}
-          <FrameworkExportMenu />
-          <button
-            type="button"
-            onClick={() => setEditMode((v) => !v)}
-            className={clsx(
-              'inline-flex h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors',
-              editMode
-                ? 'border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
-                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
-            )}
-          >
-            {editMode ? <Eye className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
-            {editMode ? 'View mode' : 'Edit framework'}
-          </button>
-          <button
-            type="button"
-            onClick={handlePublish}
-            disabled={
-              publishing || loading || snapshot.framework?.status !== 'draft'
-            }
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-indigo-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {publishing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UploadCloud className="h-3.5 w-3.5" />}
-            Publish new version
-          </button>
+          {!isHistorical && <FrameworkExportMenu />}
+          {!isHistorical && (
+            <button
+              type="button"
+              onClick={() => setEditMode((v) => !v)}
+              className={clsx(
+                'inline-flex h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors',
+                editMode
+                  ? 'border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                  : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+              )}
+            >
+              {editMode ? <Eye className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
+              {editMode ? 'View mode' : 'Edit framework'}
+            </button>
+          )}
+          {!isHistorical && (
+            <button
+              type="button"
+              onClick={handlePublish}
+              disabled={
+                publishing || loading || snapshot.framework?.status !== 'draft'
+              }
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-indigo-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {publishing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UploadCloud className="h-3.5 w-3.5" />}
+              Publish new version
+            </button>
+          )}
         </div>
       </header>
 
-      {loading ? (
+      {isHistorical && historicalView.monthEnd && (
+        <div className="mb-6">
+          <HistoricalBanner
+            monthEnd={historicalView.monthEnd}
+            meta={historicalView.meta}
+            onExit={() => historicalView.setMonthEnd(null)}
+            defaultCorrectionCollection="framework"
+            emptyReason={historicalView.emptyReason}
+            activatedYearMonth={historicalView.activatedYearMonth}
+            surfaceLabel="framework"
+          />
+        </div>
+      )}
+
+      {loading || historicalView.loading ? (
         <div className="space-y-4">
           <div className="h-40 animate-pulse rounded-xl bg-slate-100" />
           <div className="h-40 animate-pulse rounded-xl bg-slate-100" />

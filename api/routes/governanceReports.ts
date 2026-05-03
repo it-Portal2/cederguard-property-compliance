@@ -31,8 +31,33 @@ import {
 } from '../lib/reportPdf.js';
 import { uploadAsset, readAssetAsDataUri } from '../lib/storage.js';
 import { ensureFpItemFromReport } from './governanceForwardPlan.js';
+import { appendHistoryRow } from '../lib/historyRows.js';
+import type { ChangeKind } from '../../src/types/historicalReporting.js';
 
 const REPORT_ID_RE = /^[a-z0-9_-]{1,80}$/i;
+
+// HRC HR-4 — fire-and-forget history capture for report-doc mutations.
+// Reports already version on submit/seal (Phase 6d), so this complements
+// existing version snapshots by capturing every smaller mutation
+// (Draft → InReview transitions, soft-delete, etc.) with prev/new state.
+function captureReportHistory(
+  ctx: ApiContext,
+  args: {
+    reportId: string;
+    prevState: Record<string, any> | null;
+    newState: Record<string, any> | null;
+    changeKind: ChangeKind;
+  },
+): void {
+  void appendHistoryRow(ctx, {
+    kind: 'governanceDoc',
+    collection: 'reports',
+    ownerScope: args.reportId,
+    prevState: args.prevState,
+    newState: args.newState,
+    changeKind: args.changeKind,
+  });
+}
 
 const REPORT_WRITABLE_FIELDS = [
   'title',
@@ -467,6 +492,12 @@ async function governanceUpsertReport(req: any, res: any, ctx: ApiContext) {
     }
     await ref.set(payload, { merge: true });
     const latest = (await ref.get()).data() ?? {};
+    captureReportHistory(ctx, {
+      reportId,
+      prevState: exists ? (snap.data() ?? null) : null,
+      newState: latest ?? null,
+      changeKind: exists ? 'update' : 'create',
+    });
 
     // Phase 5.5b — when `targetMeetingId` is set, auto-create or update
     // the linked Forward Plan item as `Proposed`. This is the "tell"
@@ -571,6 +602,12 @@ async function governanceSoftDeleteReport(req: any, res: any, ctx: ApiContext) {
         };
     await ref.set(update, { merge: true });
     const latest = (await ref.get()).data();
+    captureReportHistory(ctx, {
+      reportId,
+      prevState: data,
+      newState: latest ?? null,
+      changeKind: wantRestore ? 'restore' : 'softDelete',
+    });
     return res.status(200).json({ success: true, item: { _id: ref.id, ...latest } });
   } catch (e: any) {
     console.error('[governanceSoftDeleteReport] failed:', e);
@@ -1016,6 +1053,12 @@ async function governanceSubmitReport(req: any, res: any, ctx: ApiContext) {
       },
     );
     const latest = (await ref.get()).data();
+    captureReportHistory(ctx, {
+      reportId,
+      prevState: typeof data !== 'undefined' ? (data ?? null) : null,
+      newState: latest ?? null,
+      changeKind: 'update',
+    });
     return res.status(200).json({ success: true, item: { _id: ref.id, ...latest } });
   } catch (e: any) {
     console.error('[governanceSubmitReport] failed:', e);
@@ -1103,6 +1146,12 @@ async function governanceWithdrawReport(req: any, res: any, ctx: ApiContext) {
       afterStatus: 'Draft',
     });
     const latest = (await ref.get()).data();
+    captureReportHistory(ctx, {
+      reportId,
+      prevState: typeof data !== 'undefined' ? (data ?? null) : null,
+      newState: latest ?? null,
+      changeKind: 'update',
+    });
     return res.status(200).json({ success: true, item: { _id: ref.id, ...latest } });
   } catch (e: any) {
     console.error('[governanceWithdrawReport] failed:', e);
@@ -1245,6 +1294,12 @@ async function governanceApproveReport(req: any, res: any, ctx: ApiContext) {
       afterStatus: 'Approved',
     });
     const latest = (await ref.get()).data();
+    captureReportHistory(ctx, {
+      reportId,
+      prevState: typeof data !== 'undefined' ? (data ?? null) : null,
+      newState: latest ?? null,
+      changeKind: 'update',
+    });
     return res.status(200).json({ success: true, item: { _id: ref.id, ...latest } });
   } catch (e: any) {
     console.error('[governanceApproveReport] failed:', e);
@@ -1314,6 +1369,12 @@ async function governanceAbandonReport(req: any, res: any, ctx: ApiContext) {
       extra: { reason: trimmedReason },
     });
     const latest = (await ref.get()).data();
+    captureReportHistory(ctx, {
+      reportId,
+      prevState: typeof data !== 'undefined' ? (data ?? null) : null,
+      newState: latest ?? null,
+      changeKind: 'update',
+    });
     return res.status(200).json({ success: true, item: { _id: ref.id, ...latest } });
   } catch (e: any) {
     console.error('[governanceAbandonReport] failed:', e);
@@ -1645,6 +1706,12 @@ async function governanceSignPartA(req: any, res: any, ctx: ApiContext) {
     });
 
     const latest = (await ref.get()).data();
+    captureReportHistory(ctx, {
+      reportId,
+      prevState: typeof data !== 'undefined' ? (data ?? null) : null,
+      newState: latest ?? null,
+      changeKind: 'update',
+    });
     return res.status(200).json({ success: true, item: { _id: ref.id, ...latest } });
   } catch (e: any) {
     console.error('[governanceSignPartA] failed:', e);
@@ -1759,6 +1826,12 @@ async function governanceSeniorPmApprove(req: any, res: any, ctx: ApiContext) {
       afterStatus: 'InReview',
     });
     const latest = (await ref.get()).data();
+    captureReportHistory(ctx, {
+      reportId,
+      prevState: typeof data !== 'undefined' ? (data ?? null) : null,
+      newState: latest ?? null,
+      changeKind: 'update',
+    });
     return res.status(200).json({ success: true, item: { _id: ref.id, ...latest } });
   } catch (e: any) {
     console.error('[governanceSeniorPmApprove] failed:', e);
@@ -1971,6 +2044,12 @@ async function governanceUnlockReport(req: any, res: any, ctx: ApiContext) {
       },
     });
     const latest = (await ref.get()).data();
+    captureReportHistory(ctx, {
+      reportId,
+      prevState: typeof data !== 'undefined' ? (data ?? null) : null,
+      newState: latest ?? null,
+      changeKind: 'update',
+    });
     return res.status(200).json({ success: true, item: { _id: ref.id, ...latest } });
   } catch (e: any) {
     console.error('[governanceUnlockReport] failed:', e);

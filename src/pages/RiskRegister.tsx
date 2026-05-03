@@ -38,6 +38,9 @@ import { StatsCard } from "../components/common/StatsCard";
 import toast from "react-hot-toast";
 import DynamicTable from "../components/table/DynamicTable";
 import type { ColumnDef, RowAction, BulkAction, FilterDef } from "../components/table/types";
+import { useHistoricalView } from "../hooks/useHistoricalView";
+import { MonthPicker } from "../components/historicalReporting/MonthPicker";
+import { HistoricalBanner } from "../components/historicalReporting/HistoricalBanner";
 
 // ── Helper functions (unchanged) ──────────────────────────────────────────────
 
@@ -147,8 +150,22 @@ export function RiskRegister() {
   const userRole = (user?.role || user?.profile?.role) as UserRole | undefined;
   const userIsSuperAdmin = isSuperAdmin(user?.email, userRole);
   const isPM = !isAtLeastClientAdmin(userRole) && !userIsSuperAdmin;
-  const canModify = isAtLeastPM(userRole) || userIsSuperAdmin;
-  const canDelete = isAtLeastPM(userRole) || userIsSuperAdmin;
+
+  // HRC HR-3 — historical view hook. When the user picks a past month
+  // via the MonthPicker, the page swaps live `risks` for the snapshot
+  // (LegacyArraySnapshot[] — one entry per project containing a frozen
+  // risk array) and disables every edit affordance.
+  const historicalView = useHistoricalView<{
+    kind: "legacyArray";
+    projectId: string;
+    array: RiskItem[];
+  }>({ collection: "risks" });
+  const isHistorical = historicalView.isHistorical;
+
+  const userCanModify = isAtLeastPM(userRole) || userIsSuperAdmin;
+  const userCanDelete = isAtLeastPM(userRole) || userIsSuperAdmin;
+  const canModify = userCanModify && !isHistorical;
+  const canDelete = userCanDelete && !isHistorical;
   const progLevelLabel = isPM ? "Shared Portfolio" : "Programme Level";
 
   const scopedProjects = activeProgrammeId
@@ -191,9 +208,31 @@ export function RiskRegister() {
     }
   }, [searchParams, setSearchParams]);
 
+  // HRC HR-3 — effective risks source. Historical mode flattens the
+  // snapshot's per-project arrays into one big risk list so the existing
+  // context-scoping + filter + sort logic below runs unchanged.
+  const historicalRisks = useMemo<RiskItem[]>(() => {
+    if (!isHistorical) return [];
+    const out: RiskItem[] = [];
+    for (const entry of historicalView.entries) {
+      const arr = (entry?.array ?? []) as RiskItem[];
+      for (const r of arr) {
+        // Snapshot may not carry projectId on the row itself for legacy
+        // shapes; preserve from the entry as a safety net.
+        out.push({ ...r, projectId: r.projectId ?? entry?.projectId } as RiskItem);
+      }
+    }
+    return out;
+  }, [isHistorical, historicalView.entries]);
+  const effectiveRisks = isHistorical
+    ? historicalRisks
+    : Array.isArray(risks)
+      ? risks
+      : [];
+
   // Context-scoped data: project/programme scoping + projectFilter + sort — unchanged logic
   const contextScoped = useMemo(() => {
-    return (Array.isArray(risks) ? risks : [])
+    return effectiveRisks
       .filter((r) => {
         if (activeProjectId) {
           if (r.projectId !== activeProjectId) return false;
@@ -221,7 +260,7 @@ export function RiskRegister() {
         if (dateB !== dateA) return dateB - dateA;
         return (b.id || "").localeCompare(a.id || "");
       });
-  }, [risks, activeProjectId, activeProgrammeId, projects, projectFilter, progLevelLabel]);
+  }, [effectiveRisks, activeProjectId, activeProgrammeId, projects, projectFilter, progLevelLabel]);
 
   // Action handlers — pessimistic: await the store call, return the promise so
   // ConfirmDialog (inside DynamicTable) can hold open with a spinner until the
@@ -901,7 +940,13 @@ export function RiskRegister() {
             <p className="text-sm text-slate-500 mt-0.5">{contextLabel}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-
+            {/* HRC HR-3 — month picker for historical view. */}
+            <MonthPicker
+              monthEnd={historicalView.monthEnd}
+              availableMonths={historicalView.availableMonths}
+              onChange={historicalView.setMonthEnd}
+              loading={historicalView.loading}
+            />
             {canModify && (
               <button
                 onClick={() => {
@@ -916,6 +961,21 @@ export function RiskRegister() {
             )}
           </div>
         </div>
+
+        {/* HRC HR-3 — read-only banner appears when MonthPicker is set
+            to a past month. HR-7 — banner also renders the friendly
+            empty-state panel when there's nothing to show for that month. */}
+        {isHistorical && historicalView.monthEnd && (
+          <HistoricalBanner
+            monthEnd={historicalView.monthEnd}
+            meta={historicalView.meta}
+            onExit={() => historicalView.setMonthEnd(null)}
+            defaultCorrectionCollection="risks"
+            emptyReason={historicalView.emptyReason}
+            activatedYearMonth={historicalView.activatedYearMonth}
+            surfaceLabel="risk register"
+          />
+        )}
 
         {/* Summary Tiles */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
@@ -1023,7 +1083,7 @@ export function RiskRegister() {
             title: "No risks found matching your filters.",
             icon: ShieldOff,
           }}
-          loading={!isInitialized}
+          loading={!isInitialized || historicalView.loading}
           headerVariant="light"
           stickyHeader
         />

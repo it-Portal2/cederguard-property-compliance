@@ -33,6 +33,10 @@ import type {
   BulkAction,
   FilterDef,
 } from "../components/table/types";
+import { useHistoricalView } from "../hooks/useHistoricalView";
+import { MonthPicker } from "../components/historicalReporting/MonthPicker";
+import { HistoricalBanner } from "../components/historicalReporting/HistoricalBanner";
+import type { LegacyArraySnapshot } from "../types/historicalReporting";
 
 // ── Helper functions (unchanged) ───────────────────────────────────────────────
 
@@ -117,14 +121,34 @@ export function RiskIssues() {
   const userRole = (user?.role || user?.profile?.role) as UserRole | undefined;
   const userIsSuperAdmin = isSuperAdmin(user?.email, userRole);
   const isPM = !isAtLeastClientAdmin(userRole) && !userIsSuperAdmin;
-  const canModify = isAtLeastPM(userRole) || userIsSuperAdmin;
-  const canDelete = isAtLeastPM(userRole) || userIsSuperAdmin;
+
+  // HRC HR-8 — historical view hook. When the user picks a past month,
+  // the page swaps live `issues` for the snapshot's frozen state and
+  // disables every edit affordance (add / edit / delete / bulk delete).
+  const historicalView = useHistoricalView<LegacyArraySnapshot<IssueItem>>({
+    collection: "issues",
+  });
+  const isHistorical = historicalView.isHistorical;
+  const historicalIssues = useMemo<IssueItem[]>(() => {
+    if (!isHistorical) return [];
+    const out: IssueItem[] = [];
+    for (const entry of historicalView.entries) {
+      if (entry?.kind === "legacyArray" && Array.isArray(entry.array)) {
+        out.push(...entry.array);
+      }
+    }
+    return out;
+  }, [isHistorical, historicalView.entries]);
+
+  const canModify = (isAtLeastPM(userRole) || userIsSuperAdmin) && !isHistorical;
+  const canDelete = (isAtLeastPM(userRole) || userIsSuperAdmin) && !isHistorical;
   const progLevelLabel = isPM ? "Shared Portfolio" : "Programme Level";
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingIssue, setEditingIssue] = useState<IssueItem | null>(null);
 
-  const safeIssues = Array.isArray(issues) ? issues : [];
+  const liveIssues = Array.isArray(issues) ? issues : [];
+  const safeIssues = isHistorical ? historicalIssues : liveIssues;
   const safeProjects = Array.isArray(projects) ? projects : [];
   const safeProgs = Array.isArray(programmes) ? programmes : [];
 
@@ -503,6 +527,13 @@ export function RiskIssues() {
             <p className="text-sm text-slate-500 mt-0.5">{contextLabel}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            {/* HRC HR-8 — month picker for historical view. */}
+            <MonthPicker
+              monthEnd={historicalView.monthEnd}
+              availableMonths={historicalView.availableMonths}
+              onChange={historicalView.setMonthEnd}
+              loading={historicalView.loading}
+            />
             {canModify && (
               <button
                 onClick={() => {
@@ -517,6 +548,20 @@ export function RiskIssues() {
             )}
           </div>
         </div>
+
+        {/* HRC HR-8 — read-only banner appears when MonthPicker is set
+            to a past month. */}
+        {isHistorical && historicalView.monthEnd && (
+          <HistoricalBanner
+            monthEnd={historicalView.monthEnd}
+            meta={historicalView.meta}
+            onExit={() => historicalView.setMonthEnd(null)}
+            defaultCorrectionCollection="issues"
+            emptyReason={historicalView.emptyReason}
+            activatedYearMonth={historicalView.activatedYearMonth}
+            surfaceLabel="issues"
+          />
+        )}
 
         {/* Summary Tiles */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -651,7 +696,7 @@ export function RiskIssues() {
           rowClassName={(r) =>
             r.status === "2. Escalated" ? "bg-red-50/30 hover:bg-red-50/50" : ""
           }
-          loading={!isInitialized}
+          loading={!isInitialized || historicalView.loading}
           emptyState={{
             title: "No issues found matching your filters.",
             icon: ShieldOff,

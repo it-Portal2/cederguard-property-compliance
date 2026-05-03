@@ -28,6 +28,9 @@ import {
   STATUS_STYLES,
 } from '../../components/governance/reports/types';
 import { ReportModal } from '../../components/governance/reports/ReportModal';
+import { useHistoricalView } from '../../hooks/useHistoricalView';
+import { MonthPicker } from '../../components/historicalReporting/MonthPicker';
+import { HistoricalBanner } from '../../components/historicalReporting/HistoricalBanner';
 
 interface PendingReason {
   kind: 'softDelete';
@@ -37,8 +40,18 @@ interface PendingReason {
 export function GovernanceReportsListPage() {
   const navigate = useNavigate();
   const user = useStore((s) => s.user);
-  const isAdmin =
+  const userIsAdmin =
     isAtLeastClientAdmin(user?.role) || isSuperAdmin(user?.email, user?.role);
+
+  // HRC HR-3 — historical view hook. When the user picks a past month
+  // via the MonthPicker, the page swaps `items` for the snapshot's
+  // frozen state and disables every edit affordance.
+  const historicalView = useHistoricalView<{
+    kind: 'governanceDoc';
+    doc: Report;
+  }>({ collection: 'reports' });
+  const isHistorical = historicalView.isHistorical;
+  const isAdmin = userIsAdmin && !isHistorical;
 
   const [items, setItems] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,6 +81,16 @@ export function GovernanceReportsListPage() {
     void refresh();
   }, [refresh]);
 
+  // HRC HR-3 — effective items source. Switches between live `items` and
+  // the historical snapshot's frozen rows based on the MonthPicker.
+  const historicalItems = useMemo<Report[]>(() => {
+    if (!isHistorical) return [];
+    return historicalView.entries
+      .map((e) => (e?.doc as Report | undefined))
+      .filter((d): d is Report => !!d);
+  }, [isHistorical, historicalView.entries]);
+  const effectiveItems = isHistorical ? historicalItems : items;
+
   // ── StatsCard counts ────────────────────────────────────────────────────
   // Senior-PM stage rolls into the "In review" tile so the dashboard
   // doesn't fragment when only some templates require it.
@@ -79,7 +102,7 @@ export function GovernanceReportsListPage() {
       Sealed: 0,
       softDeleted: 0,
     };
-    for (const it of items) {
+    for (const it of effectiveItems) {
       if (it.softDeleted) {
         totals.softDeleted += 1;
         continue;
@@ -95,7 +118,7 @@ export function GovernanceReportsListPage() {
       else if (it.status === 'Sealed') totals.Sealed += 1;
     }
     return totals;
-  }, [items]);
+  }, [effectiveItems]);
 
   // ── Row handlers ────────────────────────────────────────────────────────
   // Two row actions on each report:
@@ -346,7 +369,7 @@ export function GovernanceReportsListPage() {
 
   // Pass all items (including soft-deleted) so the filter chrome can toggle
   // visibility — same pattern as Forward Plan (lesson #43).
-  const tableData = items;
+  const tableData = effectiveItems;
 
   // ── Row actions ─────────────────────────────────────────────────────────
   const canDeleteRow = (r: Report) =>
@@ -410,7 +433,30 @@ export function GovernanceReportsListPage() {
             </p>
           </div>
         </div>
+        {/* HRC HR-3 — month picker for historical view. */}
+        <div className="self-start md:mt-1">
+          <MonthPicker
+            monthEnd={historicalView.monthEnd}
+            availableMonths={historicalView.availableMonths}
+            onChange={historicalView.setMonthEnd}
+            loading={historicalView.loading}
+          />
+        </div>
       </header>
+
+      {/* HRC HR-3 — read-only banner appears when MonthPicker is set to a
+          past month. */}
+      {isHistorical && historicalView.monthEnd && (
+        <HistoricalBanner
+          monthEnd={historicalView.monthEnd}
+          meta={historicalView.meta}
+          onExit={() => historicalView.setMonthEnd(null)}
+          defaultCorrectionCollection="reports"
+          emptyReason={historicalView.emptyReason}
+          activatedYearMonth={historicalView.activatedYearMonth}
+          surfaceLabel="reports"
+        />
+      )}
 
       {/* Stats row */}
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -456,8 +502,10 @@ export function GovernanceReportsListPage() {
         />
       </section>
 
-      {/* List */}
-      {loading ? (
+      {/* List — HRC HR-3 includes historicalView.loading in the skeleton
+          condition so swapping to a past month visibly transitions through
+          a loading state instead of the data popping in suddenly. */}
+      {loading || historicalView.loading ? (
         <div className="space-y-2">
           <div className="h-12 animate-pulse rounded-lg bg-slate-100" />
           <div className="h-12 animate-pulse rounded-lg bg-slate-100" />

@@ -32,6 +32,9 @@ import {
   STATUS_STYLES,
 } from '../../components/governance/projectDocs/types';
 import { ProjectDocModal } from '../../components/governance/projectDocs/ProjectDocModal';
+import { useHistoricalView } from '../../hooks/useHistoricalView';
+import { MonthPicker } from '../../components/historicalReporting/MonthPicker';
+import { HistoricalBanner } from '../../components/historicalReporting/HistoricalBanner';
 
 function formatGbDate(iso: string | null | undefined): string {
   if (!iso) return '—';
@@ -50,8 +53,18 @@ export function ProjectGovernanceDocsPage() {
   const user = useStore((s) => s.user);
   const activeProject = useStore((s) => s.activeProject);
   const activeProjectId = useStore((s) => s.activeProjectId);
-  const isAdmin =
+  const userIsAdmin =
     isAtLeastClientAdmin(user?.role) || isSuperAdmin(user?.email, user?.role);
+
+  // HRC HR-5 — historical view hook. When the user picks a past month,
+  // the page swaps live docs for the snapshot's frozen state and
+  // disables every edit affordance.
+  const historicalView = useHistoricalView<{
+    kind: 'governanceDoc';
+    doc: ProjectDoc;
+  }>({ collection: 'projectGovernanceDocs' });
+  const isHistorical = historicalView.isHistorical;
+  const isAdmin = userIsAdmin && !isHistorical;
 
   const [items, setItems] = useState<ProjectDoc[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,12 +99,23 @@ export function ProjectGovernanceDocsPage() {
     refresh();
   }, [refresh]);
 
+  // HRC HR-5 — effective items source. Snapshot data is project-scoped
+  // post-filter so we only show docs that belonged to the active project
+  // at the snapshot point.
+  const historicalItems = useMemo<ProjectDoc[]>(() => {
+    if (!isHistorical) return [];
+    return historicalView.entries
+      .map((e) => (e?.doc as ProjectDoc | undefined))
+      .filter((d): d is ProjectDoc => !!d && d.projectId === activeProjectId);
+  }, [isHistorical, historicalView.entries, activeProjectId]);
+  const effectiveItems = isHistorical ? historicalItems : items;
+
   const counts = useMemo(() => {
     let draft = 0;
     let published = 0;
     let archived = 0;
     let softDeleted = 0;
-    for (const it of items) {
+    for (const it of effectiveItems) {
       if (it.softDeleted) {
         softDeleted += 1;
         continue;
@@ -101,7 +125,7 @@ export function ProjectGovernanceDocsPage() {
       else if (it.status === 'Archived') archived += 1;
     }
     return { draft, published, archived, softDeleted };
-  }, [items]);
+  }, [effectiveItems]);
 
   const handleOpen = useCallback((doc: ProjectDoc) => {
     setOpened(doc);
@@ -357,7 +381,24 @@ export function ProjectGovernanceDocsPage() {
             </p>
           </div>
         </div>
+        {/* HRC HR-5 — month picker for historical view. */}
+        <div className="self-start md:mt-1">
+          <MonthPicker
+            monthEnd={historicalView.monthEnd}
+            availableMonths={historicalView.availableMonths}
+            onChange={historicalView.setMonthEnd}
+            loading={historicalView.loading}
+          />
+        </div>
       </header>
+
+      {isHistorical && historicalView.monthEnd && (
+        <HistoricalBanner
+          monthEnd={historicalView.monthEnd}
+          meta={historicalView.meta}
+          onExit={() => historicalView.setMonthEnd(null)}
+        />
+      )}
 
       {noProject ? (
         <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center">
@@ -406,7 +447,7 @@ export function ProjectGovernanceDocsPage() {
             />
           </section>
 
-          {loading ? (
+          {loading || historicalView.loading ? (
             <div className="space-y-2">
               <div className="h-12 animate-pulse rounded-lg bg-slate-100" />
               <div className="h-12 animate-pulse rounded-lg bg-slate-100" />
@@ -414,7 +455,7 @@ export function ProjectGovernanceDocsPage() {
             </div>
           ) : (
             <DynamicTable<ProjectDoc>
-              data={items}
+              data={effectiveItems}
               columns={columns}
               rowActions={rowActions}
               filters={filters}

@@ -1,6 +1,15 @@
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { ApiContext } from '../lib/context.js';
 import crypto from 'crypto';
+import { appendHistoryRow } from '../lib/historyRows.js';
+import {
+  HRC_LEGACY_COLLECTIONS,
+  type LegacyCollection,
+} from '../../src/types/historicalReporting.js';
+
+// HRC HR-2 — collections persisted via the generic saveData chokepoint
+// that need field-level history captured pre-mutation.
+const HRC_TRACKED_LEGACY_COLLECTIONS: ReadonlyArray<string> = HRC_LEGACY_COLLECTIONS;
 
 export const dataRoutes: Record<string, (req: any, res: any, ctx: ApiContext) => Promise<any>> = {
   saveData: async (req, res, ctx) => {
@@ -15,10 +24,49 @@ export const dataRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
       }
       pathRef = db.collection('projects').doc(projectId).collection('data').doc(collection);
 
+      // HRC HR-2 — capture pre-mutation array state for tracked legacy
+      // collections (risks, complianceItems, issues, kris) so any future
+      // point-in-time query can replay state at any timestamp. We read
+      // BEFORE writing so prevState reflects the actual pre-mutation
+      // doc. Best-effort — appendHistoryRow swallows errors so a history
+      // failure never blocks the user's save.
+      const isHrcTracked =
+        HRC_TRACKED_LEGACY_COLLECTIONS.includes(collection) && data !== undefined;
+      let hrcPrevArray: unknown[] | null = null;
+      if (isHrcTracked) {
+        try {
+          const existing = await pathRef.get();
+          const existingArr = existing.exists ? (existing.data() as any)?.data : null;
+          hrcPrevArray = Array.isArray(existingArr) ? existingArr : null;
+        } catch (err) {
+          console.error('[hrc] saveData prev-state read failed:', err);
+        }
+      }
+
       if (data === null) {
         await pathRef.delete();
       } else {
         await pathRef.set({ data, updatedAt: Timestamp.fromMillis(Date.now()) });
+      }
+
+      if (isHrcTracked) {
+        const newArr = data === null ? null : (Array.isArray(data) ? data : []);
+        const changeKind =
+          data === null
+            ? 'softDelete'
+            : hrcPrevArray === null
+              ? 'create'
+              : 'update';
+        // Fire-and-forget — caller doesn't await and we don't await
+        // either, since errors are swallowed inside appendHistoryRow.
+        void appendHistoryRow(ctx, {
+          kind: 'legacyArray',
+          collection: collection as LegacyCollection,
+          ownerScope: projectId,
+          prevState: hrcPrevArray,
+          newState: newArr,
+          changeKind,
+        });
       }
 
       if (['risks', 'issues', 'complianceItems', 'complianceAnalysis'].includes(collection)) {

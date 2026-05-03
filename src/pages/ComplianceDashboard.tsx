@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import { DOMAINS } from '../data/complianceData';
 import { Link, useSearchParams, useNavigate } from 'react-router';
@@ -8,6 +8,11 @@ import { isAtLeastClientAdmin, UserRole, isSuperAdmin, isAtLeastPM } from '../li
 import { stripMarkdown } from '../lib/utils';
 import { AIInquiryPopup } from '../components/AIInquiryPopup';
 import { ServiceManagementBar } from '../components/ServiceManagementBar';
+import { useHistoricalView } from '../hooks/useHistoricalView';
+import { MonthPicker } from '../components/historicalReporting/MonthPicker';
+import { HistoricalBanner } from '../components/historicalReporting/HistoricalBanner';
+import { HistoricalContentSkeleton } from '../components/historicalReporting/HistoricalContentSkeleton';
+import type { LegacyArraySnapshot } from '../types/historicalReporting';
 
 export function ComplianceDashboard() {
     const { 
@@ -29,6 +34,24 @@ export function ComplianceDashboard() {
     const safeComplianceItems = Array.isArray(complianceItems) ? complianceItems : [];
     const safeProjects = Array.isArray(projects) ? projects : [];
     const safeProgrammes = Array.isArray(programmes) ? programmes : [];
+
+    // HRC HR-5 — historical view hook. When the user picks a past month,
+    // the page swaps live compliance items for the snapshot's frozen
+    // state and bypasses the "setup required" gate.
+    const historicalView = useHistoricalView<LegacyArraySnapshot<any>>({
+        collection: 'complianceItems',
+    });
+    const isHistorical = historicalView.isHistorical;
+    const historicalCompliance = useMemo<any[]>(() => {
+        if (!isHistorical) return [];
+        const out: any[] = [];
+        for (const entry of historicalView.entries) {
+            if (entry?.kind === 'legacyArray' && Array.isArray(entry.array)) {
+                out.push(...entry.array);
+            }
+        }
+        return out;
+    }, [isHistorical, historicalView.entries]);
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const userRole = (user?.role || user?.profile?.role) as UserRole | undefined;
@@ -80,7 +103,9 @@ export function ComplianceDashboard() {
 
     const activeDetails = (activeProjectId ? safeProjects.find(p => p.id === activeProjectId) : safeProgrammes.find(p => p.id === activeProgrammeId)) || {} as any;
 
-    if (!activeDetails || !activeDetails.complianceSetupDone || !complianceAnalysis) {
+    // HRC HR-5 — historical view bypasses the "setup required" gate;
+    // we just render whatever was frozen at month-end.
+    if (!isHistorical && (!activeDetails || !activeDetails.complianceSetupDone || !complianceAnalysis)) {
         return (
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 shadow-sm border-l-4 border-l-amber-500 text-center max-w-2xl mx-auto mt-12">
                 <FileWarning className="w-12 h-12 text-amber-500 mx-auto mb-3" />
@@ -106,8 +131,30 @@ export function ComplianceDashboard() {
     // Use the same store selectors as ComplianceTracker so both pages always agree.
     // getActiveItems() → status === 'applicable', scoped to activeProjectId / activeProgrammeId
     // getPendingItems() → status === 'pending', scoped to active context
-    const contextCompliance = getActiveItems();
-    const pendingReview = getPendingItems();
+    // HRC HR-5 — when historical, derive equivalents from snapshot data
+    // using the same status filters + activeProject/activeProgramme scope.
+    const liveContextCompliance = getActiveItems();
+    const livePendingReview = getPendingItems();
+    const historicalContextCompliance = useMemo(() => {
+        if (!isHistorical) return [];
+        return historicalCompliance.filter((c: any) => {
+            if (c.status !== 'applicable') return false;
+            if (activeProjectId) return c.projectId === activeProjectId;
+            if (activeProgrammeId) return c.programmeId === activeProgrammeId;
+            return true;
+        });
+    }, [isHistorical, historicalCompliance, activeProjectId, activeProgrammeId]);
+    const historicalPendingReview = useMemo(() => {
+        if (!isHistorical) return [];
+        return historicalCompliance.filter((c: any) => {
+            if (c.status !== 'pending') return false;
+            if (activeProjectId) return c.projectId === activeProjectId;
+            if (activeProgrammeId) return c.programmeId === activeProgrammeId;
+            return true;
+        });
+    }, [isHistorical, historicalCompliance, activeProjectId, activeProgrammeId]);
+    const contextCompliance = isHistorical ? historicalContextCompliance : liveContextCompliance;
+    const pendingReview = isHistorical ? historicalPendingReview : livePendingReview;
 
     // Stage values stored by ComplianceTracker:
     //   Live / Archived  → "complete" for progress purposes
@@ -146,6 +193,31 @@ export function ComplianceDashboard() {
         <>
         <div className="max-w-7xl mx-auto space-y-8 px-4 md:px-0 pb-12 pb-safe">
             <ServiceManagementBar className="mb-4" />
+
+            {/* HRC HR-5 — month picker + historical banner. Placed AFTER
+                ServiceManagementBar so the service status row stays the
+                page's primary header signal. */}
+            <div className="flex justify-end">
+                <MonthPicker
+                    monthEnd={historicalView.monthEnd}
+                    availableMonths={historicalView.availableMonths}
+                    onChange={historicalView.setMonthEnd}
+                    loading={historicalView.loading}
+                />
+            </div>
+            {isHistorical && historicalView.monthEnd && (
+                <HistoricalBanner
+                    monthEnd={historicalView.monthEnd}
+                    meta={historicalView.meta}
+                    onExit={() => historicalView.setMonthEnd(null)}
+                    defaultCorrectionCollection="complianceItems"
+                    emptyReason={historicalView.emptyReason}
+                    activatedYearMonth={historicalView.activatedYearMonth}
+                    surfaceLabel="compliance dashboard"
+                />
+            )}
+            {historicalView.loading && <HistoricalContentSkeleton variant="stats-grid" />}
+            {!historicalView.loading && <>
             {fromInitiation && (
                 <div className="flex justify-start mb-6 -mt-2">
                     <Link 
@@ -457,10 +529,11 @@ export function ComplianceDashboard() {
                     </div>
                 </div>
             )}
+            </>}
         </div>
 
         {/* AI Inquiry Assistant */}
-        <AIInquiryPopup 
+        <AIInquiryPopup
             isOpen={isAIInquiryOpen} 
             onClose={() => setIsAIInquiryOpen(false)} 
             context="Compliance Dashboard & Regulatory Standards"

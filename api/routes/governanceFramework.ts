@@ -29,9 +29,52 @@ import {
   type FrameworkPdfInput,
 } from '../lib/frameworkPdfRenderer.js';
 import { readAssetAsDataUri, assetPaths } from '../lib/storage.js';
+import { appendHistoryRow } from '../lib/historyRows.js';
+import type { ChangeKind } from '../../src/types/historicalReporting.js';
 
 const BODY_ID_RE = /^[a-z0-9_-]{1,80}$/i;
 const STAMP_LIKE_RE = /^[a-z0-9_-]{1,80}$/i;
+
+// HRC HR-4 — fire-and-forget history capture for framework + ToR mutations.
+// Bodies and thresholds are children of the framework — their changes are
+// captured against the framework doc's history so a single timeline tells
+// the whole story. ToRs are a separate collection per HRC types.
+function captureFrameworkHistory(
+  ctx: ApiContext,
+  args: {
+    prevState: Record<string, any> | null;
+    newState: Record<string, any> | null;
+    changeKind: ChangeKind;
+  },
+): void {
+  void appendHistoryRow(ctx, {
+    kind: 'governanceDoc',
+    collection: 'framework',
+    ownerScope: ctx.primaryUid, // one framework per workspace
+    prevState: args.prevState,
+    newState: args.newState,
+    changeKind: args.changeKind,
+  });
+}
+
+function captureTorHistory(
+  ctx: ApiContext,
+  args: {
+    torId: string;
+    prevState: Record<string, any> | null;
+    newState: Record<string, any> | null;
+    changeKind: ChangeKind;
+  },
+): void {
+  void appendHistoryRow(ctx, {
+    kind: 'governanceDoc',
+    collection: 'tors',
+    ownerScope: args.torId,
+    prevState: args.prevState,
+    newState: args.newState,
+    changeKind: args.changeKind,
+  });
+}
 
 // Allow-listed writable fields per entity. Anything a client sends outside
 // these keys is silently dropped before we hit Firestore — prevents clients
@@ -214,12 +257,14 @@ async function governancePublishFramework(_req: any, res: any, ctx: ApiContext) 
       .where('clientId', '==', ctx.primaryUid);
     const thresholdsColl = fwRef.collection('thresholds');
 
+    let prevFrameworkState: Record<string, any> | null = null;
     const nextVersion = await ctx.db.runTransaction(async (txn) => {
       const snap = await txn.get(fwRef);
       if (!snap.exists) {
         throw new Error('No draft framework to publish.');
       }
       const data = snap.data() ?? {};
+      prevFrameworkState = data;
       const current = (data.version ?? 1) as number;
       const next = current + 1;
 
@@ -258,6 +303,13 @@ async function governancePublishFramework(_req: any, res: any, ctx: ApiContext) 
       return next;
     });
 
+    // HRC HR-4 — capture publish as a framework history row.
+    const fwAfter = (await fwRef.get()).data() ?? null;
+    captureFrameworkHistory(ctx, {
+      prevState: prevFrameworkState,
+      newState: fwAfter,
+      changeKind: 'update',
+    });
     return res.status(200).json({ success: true, version: nextVersion });
   } catch (e: any) {
     console.error('[governancePublishFramework] failed:', e);
@@ -325,12 +377,21 @@ async function governanceUpsertBody(req: any, res: any, ctx: ApiContext) {
     await ref.set(payload, { merge: true });
 
     // Bump framework's updatedAt so UI knows there's unpublished change.
+    const fwBefore = (await frameworkDoc(ctx).get()).data() ?? null;
     await frameworkDoc(ctx).set(
       { updatedAt: nowIso(), status: 'draft' },
       { merge: true },
     );
 
     const latest = (await ref.get()).data();
+    // HRC HR-4 — body changes are framework changes; capture against
+    // framework history so the timeline shows the body edit alongside
+    // the framework's draft/published status flip.
+    captureFrameworkHistory(ctx, {
+      prevState: fwBefore,
+      newState: { ...(fwBefore ?? {}), updatedAt: payload.updatedAt, status: 'draft', _bodyEdited: { bodyId, exists } },
+      changeKind: exists ? 'update' : 'create',
+    });
     return res.status(200).json({ success: true, body: { _id: docId, ...latest } });
   } catch (e: any) {
     console.error('[governanceUpsertBody] failed:', e);
@@ -373,11 +434,18 @@ async function governanceDeleteBody(req: any, res: any, ctx: ApiContext) {
         code: 'FORBIDDEN',
       });
     }
+    const bodyDataBefore = snap.data() ?? null;
     await ref.delete();
+    const fwBefore = (await frameworkDoc(ctx).get()).data() ?? null;
     await frameworkDoc(ctx).set(
       { updatedAt: nowIso(), status: 'draft' },
       { merge: true },
     );
+    captureFrameworkHistory(ctx, {
+      prevState: fwBefore,
+      newState: { ...(fwBefore ?? {}), status: 'draft', _bodyDeleted: { bodyId, body: bodyDataBefore } },
+      changeKind: 'update',
+    });
     return res.status(200).json({ success: true });
   } catch (e: any) {
     console.error('[governanceDeleteBody] failed:', e);
@@ -431,15 +499,22 @@ async function governanceUpsertThreshold(req: any, res: any, ctx: ApiContext) {
       });
     }
     const ref = frameworkDoc(ctx).collection('thresholds').doc(thresholdId);
+    const thresholdBefore = (await ref.get()).data() ?? null;
     await ref.set(
       { ...safePatch, id: thresholdId, updatedAt: nowIso() },
       { merge: true },
     );
+    const fwBefore = (await frameworkDoc(ctx).get()).data() ?? null;
     await frameworkDoc(ctx).set(
       { updatedAt: nowIso(), status: 'draft' },
       { merge: true },
     );
     const latest = (await ref.get()).data();
+    captureFrameworkHistory(ctx, {
+      prevState: fwBefore,
+      newState: { ...(fwBefore ?? {}), status: 'draft', _thresholdEdited: { thresholdId, was: thresholdBefore } },
+      changeKind: thresholdBefore ? 'update' : 'create',
+    });
     return res.status(200).json({ success: true, threshold: { _id: thresholdId, ...latest } });
   } catch (e: any) {
     console.error('[governanceUpsertThreshold] failed:', e);
@@ -468,11 +543,19 @@ async function governanceDeleteThreshold(req: any, res: any, ctx: ApiContext) {
         code: 'INVALID_INPUT',
       });
     }
-    await frameworkDoc(ctx).collection('thresholds').doc(thresholdId).delete();
+    const tRef = frameworkDoc(ctx).collection('thresholds').doc(thresholdId);
+    const thresholdBefore = (await tRef.get()).data() ?? null;
+    await tRef.delete();
+    const fwBefore = (await frameworkDoc(ctx).get()).data() ?? null;
     await frameworkDoc(ctx).set(
       { updatedAt: nowIso(), status: 'draft' },
       { merge: true },
     );
+    captureFrameworkHistory(ctx, {
+      prevState: fwBefore,
+      newState: { ...(fwBefore ?? {}), status: 'draft', _thresholdDeleted: { thresholdId, was: thresholdBefore } },
+      changeKind: 'update',
+    });
     return res.status(200).json({ success: true });
   } catch (e: any) {
     console.error('[governanceDeleteThreshold] failed:', e);
@@ -556,9 +639,11 @@ async function governanceUpsertToR(req: any, res: any, ctx: ApiContext) {
       let isNewDoc = false;
       const existingDraft = allSnap.docs.find((d) => d.data().status === 'draft');
 
+      let prevTorState: Record<string, any> | null = null;
       if (existingDraft) {
         docRef = existingDraft.ref;
         version = (existingDraft.data().version ?? 0) as number;
+        prevTorState = existingDraft.data() ?? null;
       } else {
         const maxVersion = allSnap.docs.reduce(
           (m, d) => Math.max(m, (d.data().version ?? 0) as number),
@@ -598,7 +683,15 @@ async function governanceUpsertToR(req: any, res: any, ctx: ApiContext) {
         }
       }
 
-      return { docId: docRef.id, payload };
+      return { docId: docRef.id, payload, prevTorState, isNewDoc };
+    });
+
+    // HRC HR-4 — capture ToR mutation as a tor history row.
+    captureTorHistory(ctx, {
+      torId: result.docId,
+      prevState: result.prevTorState,
+      newState: result.payload,
+      changeKind: result.isNewDoc ? 'create' : 'update',
     });
 
     return res.status(200).json({

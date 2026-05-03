@@ -25,6 +25,10 @@
 //                                         FOI-safe by construction.
 
 import type { ApiContext } from '../lib/context.js';
+import {
+  readMonthlySnapshot,
+  monthEndIso,
+} from '../lib/historicalSnapshots.js';
 
 export type ArchiveKind = 'report' | 'meeting' | 'projectDoc';
 
@@ -66,31 +70,95 @@ function toIsoOrNull(v: any): string | null {
 
 // ── Aggregator ─────────────────────────────────────────────────────────
 
-async function governanceListArchive(_req: any, res: any, ctx: ApiContext) {
+async function governanceListArchive(req: any, res: any, ctx: ApiContext) {
   try {
-    // Parallel-fetch from every source. Each collection already enforces
-    // tenant scoping via its `clientId` field.
-    const [reportsSnap, meetingsSnap, docsSnap, goldenSnap] = await Promise.all([
-      ctx.db
-        .collection('reports')
-        .where('clientId', '==', ctx.primaryUid)
-        .where('status', '==', 'Sealed')
-        .get(),
-      ctx.db
-        .collection('meetings')
-        .where('clientId', '==', ctx.primaryUid)
-        .where('status', '==', 'Held')
-        .get(),
-      ctx.db
-        .collection('projectGovernanceDocs')
-        .where('clientId', '==', ctx.primaryUid)
-        .where('status', '==', 'Published')
-        .get(),
-      ctx.db
-        .collection('goldenThread')
-        .where('clientId', '==', ctx.primaryUid)
-        .get(),
-    ]);
+    // HRC HR-7 — when `asOfMonth` (YYYY-MM) is in the request body, the
+    // archive renders the historical snapshot instead of live data:
+    // reports/meetings/projectGovernanceDocs come from the snapshot
+    // collections, and goldenThread rows are filtered to those whose
+    // sealedAt is on/before month-end. The Golden Thread itself is
+    // already immutable WORM, so a date filter is sufficient.
+    const asOfMonth: string | null =
+      typeof req?.body?.asOfMonth === 'string' &&
+      req.body.asOfMonth.match(/^\d{4}-\d{2}$/)
+        ? req.body.asOfMonth
+        : null;
+
+    let reportsDocs: Array<{ data: () => any; id: string }> = [];
+    let meetingsDocs: Array<{ data: () => any; id: string }> = [];
+    let docsDocs: Array<{ data: () => any; id: string }> = [];
+    let goldenDocs: Array<{ data: () => any; id: string }> = [];
+
+    if (asOfMonth) {
+      const monthCutoff = monthEndIso(asOfMonth);
+      const [reportsSnap, meetingsSnap, projectDocsSnap, goldenSnap] =
+        await Promise.all([
+          readMonthlySnapshot(ctx, ctx.primaryUid, asOfMonth, 'reports'),
+          readMonthlySnapshot(ctx, ctx.primaryUid, asOfMonth, 'meetings'),
+          readMonthlySnapshot(ctx, ctx.primaryUid, asOfMonth, 'projectGovernanceDocs'),
+          ctx.db
+            .collection('goldenThread')
+            .where('clientId', '==', ctx.primaryUid)
+            .get(),
+        ]);
+
+      const wrapEntries = (entries: any[]) =>
+        entries
+          .filter((e) => e?.kind === 'governanceDoc' && e.doc)
+          .map((e) => ({
+            id: e.docId ?? e.doc.id ?? '',
+            data: () => e.doc,
+          }));
+
+      reportsDocs = wrapEntries(reportsSnap?.entries ?? []).filter(
+        (d) => d.data().status === 'Sealed',
+      );
+      meetingsDocs = wrapEntries(meetingsSnap?.entries ?? []).filter(
+        (d) => d.data().status === 'Held',
+      );
+      docsDocs = wrapEntries(projectDocsSnap?.entries ?? []).filter(
+        (d) => d.data().status === 'Published',
+      );
+      goldenDocs = goldenSnap.docs.filter((d: any) => {
+        const data = d.data() ?? {};
+        const ts = (data.sealedAt ?? data.createdAt ?? '') as string;
+        return typeof ts === 'string' && ts <= monthCutoff;
+      });
+    } else {
+      // Live path — original parallel fetch.
+      const [reportsSnap, meetingsSnap, projectDocsSnap, goldenSnap] =
+        await Promise.all([
+          ctx.db
+            .collection('reports')
+            .where('clientId', '==', ctx.primaryUid)
+            .where('status', '==', 'Sealed')
+            .get(),
+          ctx.db
+            .collection('meetings')
+            .where('clientId', '==', ctx.primaryUid)
+            .where('status', '==', 'Held')
+            .get(),
+          ctx.db
+            .collection('projectGovernanceDocs')
+            .where('clientId', '==', ctx.primaryUid)
+            .where('status', '==', 'Published')
+            .get(),
+          ctx.db
+            .collection('goldenThread')
+            .where('clientId', '==', ctx.primaryUid)
+            .get(),
+        ]);
+      reportsDocs = reportsSnap.docs;
+      meetingsDocs = meetingsSnap.docs;
+      docsDocs = projectDocsSnap.docs;
+      goldenDocs = goldenSnap.docs;
+    }
+
+    // Backwards-compat aliases for the rest of the function.
+    const reportsSnap = { docs: reportsDocs };
+    const meetingsSnap = { docs: meetingsDocs };
+    const docsSnap = { docs: docsDocs };
+    const goldenSnap = { docs: goldenDocs };
 
     // Index Golden Thread chain by reportId so report rows can surface
     // the latest hash (the WORM chain head).
