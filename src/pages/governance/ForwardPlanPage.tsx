@@ -180,6 +180,20 @@ export function GovernanceForwardPlanPage() {
     return totals;
   }, [items]);
 
+  // Proposed items surfaced in the pending-requests banner so the PgM can
+  // identify exactly which submissions need their action (client feedback
+  // 2026-05-03: "how do they identify which one it is"). Sorted oldest-
+  // requested first so the longest-waiting PM is at the top.
+  const proposedItems = useMemo(() => {
+    return items
+      .filter(it => it.status === 'Proposed' && !it.softDeleted)
+      .sort((a, b) => {
+        const aTs = (a as any).requestedAt ?? a.updatedAt ?? '';
+        const bTs = (b as any).requestedAt ?? b.updatedAt ?? '';
+        return String(aTs).localeCompare(String(bTs));
+      });
+  }, [items]);
+
   // ── Row handlers ────────────────────────────────────────────────────────
   // List-view Open button: fetches the freshest copy from the server before
   // rendering the modal (audit/concurrency safety).
@@ -969,30 +983,89 @@ export function GovernanceForwardPlanPage() {
       )}
 
       {/* Phase 5.5b — rose banner above the body when Proposed items exist.
-          Click filters list to Proposed; PgM acts on each row via Confirm/Decline. */}
+          Lists the pending items inline so PgM can click straight through to
+          confirm/decline (client feedback 2026-05-03: "how do they identify
+          which one it is"). Up to 5 listed inline; "+N more" link jumps to
+          the list view if there are more. */}
       {!loading && counts.Proposed > 0 && (
-        <div className="flex items-center justify-between rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
-          <div className="flex items-start gap-3">
-            <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
-            <div>
-              <p className="text-sm font-bold text-rose-900">
-                {counts.Proposed} pending request{counts.Proposed === 1 ? '' : 's'} from PMs
-              </p>
-              <p className="text-[11px] text-rose-700">
-                {canEdit
-                  ? 'Confirm to publish to the board, or decline with a reason so the PM can pick another meeting.'
-                  : 'Your Programme Manager will confirm or decline soon.'}
-              </p>
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div className="flex items-start gap-3 min-w-0 flex-1">
+              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-rose-900">
+                  {counts.Proposed} pending request{counts.Proposed === 1 ? '' : 's'} from PMs
+                </p>
+                <p className="text-[11px] text-rose-700">
+                  {canEdit
+                    ? 'Confirm to publish to the board, or decline with a reason so the PM can pick another meeting.'
+                    : 'Your Programme Manager will confirm or decline soon.'}
+                </p>
+              </div>
             </div>
+            {viewMode !== 'list' && (
+              <button
+                type="button"
+                onClick={() => setViewMode('list')}
+                className="inline-flex h-8 shrink-0 items-center rounded-md bg-rose-600 px-3 text-[11px] font-semibold text-white transition-colors hover:bg-rose-700"
+              >
+                Open list
+              </button>
+            )}
           </div>
-          {viewMode !== 'list' && (
-            <button
-              type="button"
-              onClick={() => setViewMode('list')}
-              className="inline-flex h-8 items-center rounded-md bg-rose-600 px-3 text-[11px] font-semibold text-white transition-colors hover:bg-rose-700"
-            >
-              Open list
-            </button>
+          {proposedItems.length > 0 && (
+            <ul className="mt-3 space-y-1.5 border-t border-rose-200/70 pt-2.5">
+              {proposedItems.slice(0, 5).map(item => {
+                const titleText = item.title || '(untitled FP item)';
+                const requestedBy = (item as any).requestedBy;
+                return (
+                  <li key={item.id} className="flex items-center gap-2 text-[12px]">
+                    <span className="inline-flex h-1.5 w-1.5 shrink-0 rounded-full bg-rose-500" aria-hidden />
+                    <button
+                      type="button"
+                      onClick={() => void handleOpen(item)}
+                      disabled={openingId === item.id}
+                      className="truncate text-left font-semibold text-rose-900 underline-offset-2 hover:underline disabled:opacity-60"
+                      title={`Open ${titleText}`}
+                    >
+                      {titleText}
+                    </button>
+                    {item.scheme && (
+                      <span className="shrink-0 text-rose-700/80" aria-hidden>·</span>
+                    )}
+                    {item.scheme && (
+                      <span className="shrink-0 truncate text-rose-700/80" title={item.scheme}>
+                        {item.scheme}
+                      </span>
+                    )}
+                    {requestedBy && (
+                      <>
+                        <span className="shrink-0 text-rose-700/80" aria-hidden>·</span>
+                        <span className="shrink-0 truncate text-[11px] text-rose-700/80" title={`Requested by ${requestedBy}`}>
+                          requested by {String(requestedBy).split('@')[0]}
+                        </span>
+                      </>
+                    )}
+                    {openingId === item.id && (
+                      <span className="ml-auto shrink-0 text-[10px] font-medium text-rose-700/80">
+                        Opening…
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
+              {proposedItems.length > 5 && (
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('list')}
+                    className="text-[11px] font-semibold text-rose-800 underline-offset-2 hover:underline"
+                  >
+                    + {proposedItems.length - 5} more — open list
+                  </button>
+                </li>
+              )}
+            </ul>
           )}
         </div>
       )}
