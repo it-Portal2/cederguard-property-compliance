@@ -184,13 +184,33 @@ export function GovernanceForwardPlanPage() {
   // identify exactly which submissions need their action (client feedback
   // 2026-05-03: "how do they identify which one it is"). Sorted oldest-
   // requested first so the longest-waiting PM is at the top.
+  //
+  // Sort handles three at-rest shapes for `requestedAt` defensively because
+  // Firestore Timestamps can arrive as {seconds, nanoseconds}, ISO strings,
+  // or epoch millis depending on the route serialiser:
+  //   1. ISO string  → Date.parse
+  //   2. Object with `seconds` field (Firestore-style) → seconds × 1000
+  //   3. Number      → epoch millis
+  //   4. anything else → 0 (sorts to the top — visible, won't crash)
   const proposedItems = useMemo(() => {
+    const toMillis = (v: any): number => {
+      if (v == null) return 0;
+      if (typeof v === 'number' && Number.isFinite(v)) return v;
+      if (typeof v === 'string') {
+        const t = Date.parse(v);
+        return Number.isFinite(t) ? t : 0;
+      }
+      if (typeof v === 'object' && typeof v.seconds === 'number') {
+        return v.seconds * 1000;
+      }
+      return 0;
+    };
     return items
       .filter(it => it.status === 'Proposed' && !it.softDeleted)
       .sort((a, b) => {
-        const aTs = (a as any).requestedAt ?? a.updatedAt ?? '';
-        const bTs = (b as any).requestedAt ?? b.updatedAt ?? '';
-        return String(aTs).localeCompare(String(bTs));
+        const aMs = toMillis((a as any).requestedAt) || toMillis(a.updatedAt);
+        const bMs = toMillis((b as any).requestedAt) || toMillis(b.updatedAt);
+        return aMs - bMs;
       });
   }, [items]);
 
