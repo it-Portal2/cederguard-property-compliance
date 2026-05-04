@@ -46,6 +46,10 @@ import { clsx } from "clsx";
 import { analyzeStrategicInsights } from "../services/aiService";
 import { stripMarkdown, parseAISuggestion } from "../lib/utils";
 import { motion, AnimatePresence } from "motion/react";
+import { canCreateProgramme as canCreateProgrammeFn } from "../lib/roles";
+import { auth } from "../lib/firebase";
+import { GetStartedModal } from "../components/onboarding/GetStartedModal";
+import { getOnboardingSteps } from "../components/onboarding/onboardingSteps";
 
 export function Dashboard() {
   const {
@@ -76,6 +80,13 @@ export function Dashboard() {
   const [loadingClear, setLoadingClear] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
 
+  // OB-1 — Get Started modal state. Fires only on first login: dual gate
+  // is the auth user's `metadata.creationTime` (within 24h) AND the
+  // server-side `hasSeenOnboardingModal` preference flag (not yet set).
+  // After dismissal the flag persists, never shown again.
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const onboardingCheckedRef = useRef(false);
+
   const userRole = (user?.role || user?.profile?.role) as UserRole | undefined;
   const userIsSuperAdmin = isSuperAdmin(user?.email, userRole);
   const isClientAdmin =
@@ -84,6 +95,49 @@ export function Dashboard() {
     isAtLeastPM(userRole) ||
     isAtLeastProgrammeManager(userRole) ||
     userIsSuperAdmin;
+
+  // OB-1 — first-login detection effect.
+  // Runs once when the store finishes hydrating + the user is signed in.
+  // Dual gate: (a) auth user created within last 24h, (b) preference
+  // flag absent or false. The 24h gate naturally protects existing
+  // users who never saw onboarding from being suddenly modal'd.
+  useEffect(() => {
+    if (!isInitialized || !user?.uid || onboardingCheckedRef.current) return;
+    onboardingCheckedRef.current = true;
+    const creationTime = auth.currentUser?.metadata?.creationTime;
+    if (!creationTime) return;
+    const createdMs = new Date(creationTime).getTime();
+    if (Number.isNaN(createdMs)) return;
+    const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+    if (Date.now() - createdMs > ONE_DAY_MS) return;
+    (async () => {
+      try {
+        const res = await api.getPreferences();
+        const prefs = res?.preferences || res?.data || {};
+        if (prefs.hasSeenOnboardingModal === true) return;
+        setOnboardingOpen(true);
+      } catch (err) {
+        console.error("[Dashboard] onboarding preference check failed", err);
+      }
+    })();
+  }, [isInitialized, user?.uid]);
+
+  const handleOnboardingDismiss = (navigateToFirstStep: boolean) => {
+    setOnboardingOpen(false);
+    api.savePreference("hasSeenOnboardingModal", true).catch((err) => {
+      console.error("[Dashboard] onboarding flag save failed", err);
+    });
+    if (navigateToFirstStep) {
+      const steps = getOnboardingSteps(userRole, canCreateProgrammeFn(userRole));
+      const first = steps[0];
+      if (first?.href) navigate(first.href);
+    }
+  };
+
+  const onboardingSteps = getOnboardingSteps(
+    userRole,
+    canCreateProgrammeFn(userRole),
+  );
 
   const [loadingOverview, setLoadingOverview] = useState(false);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
@@ -379,6 +433,16 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6 max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
+      {/* OB-1 — first-login Get Started modal. Mounts at the top of the
+          tree but only renders when `onboardingOpen` is true. Dismissal
+          flips the persistence flag — never shown again. */}
+      <GetStartedModal
+        open={onboardingOpen}
+        steps={onboardingSteps}
+        userName={user?.displayName ?? user?.name ?? null}
+        onDismiss={handleOnboardingDismiss}
+      />
+
       {/* ─── GLOBAL CONTEXT SELECTOR ─── */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
