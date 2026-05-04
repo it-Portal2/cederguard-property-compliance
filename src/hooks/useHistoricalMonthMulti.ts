@@ -1,4 +1,4 @@
-8// HRC HR-9 — multi-collection historical-view helper.
+// HRC HR-9 — multi-collection historical-view helper.
 //
 // Some pages display data from MORE THAN ONE snapshot collection
 // (e.g. ProjectReport renders both `risks` and `complianceItems`).
