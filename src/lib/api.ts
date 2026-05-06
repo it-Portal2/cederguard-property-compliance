@@ -533,4 +533,34 @@ export const api = {
     docId?: string;
     clientId?: string;
   }) => callApi("hrcListCorrections", args),
+
+  // Technical Assurance Companion (TAC) — Phase 1: Enquiry capture
+  tacListEnquiries: (args?: { mine?: boolean }) =>
+    callApi("tacListEnquiries", args ?? {}),
+  tacGetEnquiry: (enquiryId: string) =>
+    callApi("tacGetEnquiry", { enquiryId }),
+  tacUpsertEnquiry: (
+    enquiryId: string | null,
+    patch: Record<string, any>,
+  ) => callApi("tacUpsertEnquiry", { enquiryId, patch }),
+  tacAttachFile: (args: {
+    enquiryId: string;
+    fileName: string;
+    mimeType: string;
+    fileBase64: string;
+  }) => callApi("tacAttachFile", args),
+  tacRemoveAttachment: (enquiryId: string, attachmentId: string) =>
+    callApi("tacRemoveAttachment", { enquiryId, attachmentId }),
+  tacSoftDeleteEnquiry: (enquiryId: string, reason: string) =>
+    callApi("tacSoftDeleteEnquiry", { enquiryId, reason }),
+  tacRestoreEnquiry: (enquiryId: string) =>
+    callApi("tacSoftDeleteEnquiry", { enquiryId, restore: true }),
+
+  // Technical Assurance Companion (TAC) — Phase 2: AI insight generation
+  tacGenerateInsight: (enquiryId: string) =>
+    callApi("tacGenerateInsight", { enquiryId }, 30000),
+  tacGetEnquiryDeliverable: (
+    enquiryId: string,
+    tabId: "summary" | "drawing" | "rfi" | "costProgramme" | "compliance" = "summary",
+  ) => callApi("tacGetEnquiryDeliverable", { enquiryId, tabId }),
 };

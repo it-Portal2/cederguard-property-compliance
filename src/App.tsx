@@ -87,6 +87,13 @@ import { GovernanceReportsListPage } from './pages/governance/ReportsListPage';
 // Programme Governance (Phase 6b — Report authoring with Tiptap editor)
 import { ReportAuthoringPage } from './pages/governance/ReportAuthoringPage';
 
+// Technical Assurance Companion (Phase 0 — placeholder pages)
+import { TacEnquiriesListPage } from './pages/technicalAssurance/EnquiriesListPage';
+import { TacEnquiryWorkspacePage } from './pages/technicalAssurance/EnquiryWorkspacePage';
+import { TacRfiRegisterPage } from './pages/technicalAssurance/RfiRegisterPage';
+import { TacAuditDashboardPage } from './pages/technicalAssurance/AuditDashboardPage';
+import { ComplianceLeadGuard } from './components/technicalAssurance/ComplianceLeadGuard';
+
 function ContextSwitchingOverlay() {
   const isContextSwitching = useStore(state => state.isContextSwitching);
   if (!isContextSwitching) return null;
@@ -264,6 +271,14 @@ function AppContent() {
                   activeProjectId (mirrors ComplianceTracker / RiskRegister). */}
               <Route path="/governance/project-docs" element={<RoleGuard requirePM><ProjectGovernanceDocsPage /></RoleGuard>} />
               <Route path="/governance/editor-sandbox" element={<RoleGuard requireClientAdmin><GovernanceEditorSandboxPage /></RoleGuard>} />
+
+              {/* Technical Assurance Companion (TAC) — Phase 0 placeholders.
+                  Routes shipped now so the sidebar links resolve; real
+                  surfaces land in Phases 1-9 per plan §TAC-8. */}
+              <Route path="/technical-assurance/enquiries" element={<RoleGuard requirePM><TacEnquiriesListPage /></RoleGuard>} />
+              <Route path="/technical-assurance/enquiries/:id" element={<RoleGuard requirePM><TacEnquiryWorkspacePage /></RoleGuard>} />
+              <Route path="/technical-assurance/rfis" element={<RoleGuard requirePM><TacRfiRegisterPage /></RoleGuard>} />
+              <Route path="/technical-assurance/audit" element={<ComplianceLeadGuard><TacAuditDashboardPage /></ComplianceLeadGuard>} />
 
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>

@@ -40,6 +40,27 @@ export function ProjectInitiation() {
   const [draftToDelete, setDraftToDelete] = useState<string | null>(null);
   const [deletingDraft, setDeletingDraft] = useState(false);
   const [showNoProgrammeWarning, setShowNoProgrammeWarning] = useState(false);
+  // Inline-error map for required fields. Cleared per-field when the user
+  // edits, so the rose border + helper line disappear as soon as they fix
+  // the issue. Toast only fires on submit; inline state mirrors that.
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  // Required-field registry (label + DOM anchor). Used by the click-to-validate
+  // flow on submit so users get a specific toast + scroll-to-first-missing.
+  //
+  // `projectManagerId` is conditionally required: only when the project is
+  // linked to a programme. Independent projects (no programme) can be created
+  // without an assigned PM — the dropdown's own gating prevents PM selection
+  // until a programme is picked, so forcing it would be a false trap.
+  const BASE_REQUIRED_FIELDS = [
+    { key: "name", label: "Project Name" },
+    { key: "type", label: "Project Type" },
+    { key: "loc", label: "Location / Ward" },
+  ] as const;
+  const PM_REQUIRED_FIELD = {
+    key: "projectManagerId",
+    label: "Assigned Project Manager",
+  } as const;
   // Tracks which project ID the form was last populated for — prevents
   // background store updates (from loadProjectData resolving) from resetting
   // isDirty and overwriting in-flight user edits (Fix 4).
@@ -340,11 +361,27 @@ export function ProjectInitiation() {
   const set = (key: string, val: any) => {
     setFormData((prev) => ({ ...prev, [key]: val }));
     setIsDirty(true);
+    // Clear the inline rose border for this field as soon as the user fixes it
+    setFormErrors((prev) =>
+      prev[key] ? Object.fromEntries(Object.entries(prev).filter(([k]) => k !== key)) : prev,
+    );
   };
 
-  const requiredDone = ["name", "type", "loc", "projectManagerId"].every(
-    (k) => String(formData[k as keyof typeof formData] ?? "").trim() !== "",
-  );
+  // Compute missing required fields from the current formData. Used at submit
+  // time to drive the specific toast + inline rose markers + scroll-to-first.
+  // PM is only required when a programme is linked — independent projects
+  // can save without an assigned PM.
+  const getMissingFields = () => {
+    const list: Array<{ key: string; label: string }> = [...BASE_REQUIRED_FIELDS];
+    if (formData.programmeId) list.push({ ...PM_REQUIRED_FIELD });
+    return list.filter(
+      ({ key }) => String(formData[key as keyof typeof formData] ?? "").trim() === "",
+    );
+  };
+
+  // Kept so the rest of the file (status banners + button label colour) keeps
+  // reading the same flag; click validation no longer gates on this.
+  const requiredDone = getMissingFields().length === 0;
 
   const loadDummy = () => {
     setFormData((prev) => ({
@@ -372,10 +409,40 @@ export function ProjectInitiation() {
 
   const handleSubmit = async (e?: React.FormEvent, skipProgrammeWarning = false) => {
     if (e) e.preventDefault();
-    if (!requiredDone) {
-      toast.error("Please fill all required fields.");
+
+    // Validate-on-click. Industry-standard pattern: button is always enabled,
+    // click runs validation. Missing → specific toast + inline rose borders +
+    // scroll to the first invalid field. No silent disabled state.
+    const missing = getMissingFields();
+    if (missing.length > 0) {
+      const errs: Record<string, string> = {};
+      for (const m of missing) errs[m.key] = "Required";
+      setFormErrors(errs);
+      const labels = missing.map((m) => m.label).join(", ");
+      const noun = missing.length === 1 ? "field is" : "fields are";
+      toast.error(
+        `${missing.length} required ${noun} missing: ${labels}`,
+      );
+      // Scroll the first missing field into view + focus it.
+      if (typeof document !== "undefined") {
+        const first = document.querySelector(
+          `[data-required-field="${missing[0].key}"]`,
+        ) as HTMLElement | null;
+        if (first) {
+          first.scrollIntoView({ behavior: "smooth", block: "center" });
+          // setTimeout so the smooth scroll lands before focus pulls visually
+          setTimeout(() => {
+            try {
+              first.focus({ preventScroll: true });
+            } catch {
+              // ignore — focus failures are cosmetic
+            }
+          }, 250);
+        }
+      }
       return;
     }
+    setFormErrors({});
     // UX 3: soft warning when creating a new project with no programme linked.
     // Not shown when updating (the user has already consciously set the field).
     if (!skipProgrammeWarning && !formData.programmeId && !activeProjectId) {
@@ -566,14 +633,17 @@ export function ProjectInitiation() {
               </button>
               <button
                 onClick={() => handleSubmit()}
-                disabled={
-                  loading || !requiredDone || (!!activeProjectId && !isDirty)
+                disabled={loading || (!!activeProjectId && !isDirty)}
+                title={
+                  !!activeProjectId && !isDirty
+                    ? "No changes to save yet — edit any field to enable Save."
+                    : undefined
                 }
                 className={clsx(
                   "flex items-center gap-2 px-6 py-2.5 font-black rounded-xl text-xs uppercase tracking-widest transition-all shadow-lg active:scale-95",
-                  requiredDone && (!activeProjectId || isDirty)
-                    ? "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100 hover:shadow-indigo-200"
-                    : "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200 shadow-none",
+                  loading || (!!activeProjectId && !isDirty)
+                    ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200 shadow-none"
+                    : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100 hover:shadow-indigo-200",
                 )}
               >
                 {loading ? (
@@ -764,12 +834,16 @@ export function ProjectInitiation() {
                     </label>
                     <input
                       type="text"
-                      className={inputCls}
+                      data-required-field="name"
+                      className={clsx(inputCls, formErrors.name && "border-rose-400 focus:border-rose-500 focus:ring-rose-500/20")}
                       placeholder="e.g. Bermondsey Estate Transformation"
                       value={formData.name}
                       onChange={(e) => set("name", e.target.value)}
                       required
                     />
+                    {formErrors.name && (
+                      <p className="mt-1 ml-1 text-[11px] text-rose-500 font-bold">{formErrors.name}</p>
+                    )}
                   </div>
 
                   {/* ── UX 1: Programme fields elevated to top — high-level classification ── */}
@@ -868,7 +942,8 @@ export function ProjectInitiation() {
                         <span className="text-rose-500 ml-0.5">*</span>
                       </label>
                       <select
-                        className={inputCls}
+                        data-required-field="type"
+                        className={clsx(inputCls, formErrors.type && "border-rose-400 focus:border-rose-500 focus:ring-rose-500/20")}
                         value={formData.type}
                         onChange={(e) => set("type", e.target.value)}
                         required
@@ -886,6 +961,9 @@ export function ProjectInitiation() {
                           <option>Damp &amp; Mould Remediation</option>
                         </optgroup>
                       </select>
+                      {formErrors.type && (
+                        <p className="mt-1 ml-1 text-[11px] text-rose-500 font-bold">{formErrors.type}</p>
+                      )}
                     </div>
 
                     <div>
@@ -895,18 +973,28 @@ export function ProjectInitiation() {
                       </label>
                       <input
                         type="text"
-                        className={inputCls}
+                        data-required-field="loc"
+                        className={clsx(inputCls, formErrors.loc && "border-rose-400 focus:border-rose-500 focus:ring-rose-500/20")}
                         placeholder="e.g. London"
                         value={formData.loc}
                         onChange={(e) => set("loc", e.target.value)}
                         required
                       />
+                      {formErrors.loc && (
+                        <p className="mt-1 ml-1 text-[11px] text-rose-500 font-bold">{formErrors.loc}</p>
+                      )}
                     </div>
 
                     <div>
                       <label className={clsx(labelCls, "flex items-center gap-1.5")}>
                         Assigned Project Manager{" "}
-                        <span className="text-rose-500 ml-0.5">*</span>
+                        {formData.programmeId ? (
+                          <span className="text-rose-500 ml-0.5">*</span>
+                        ) : (
+                          <span className="text-slate-400 ml-0.5 font-semibold normal-case tracking-normal text-[10px]">
+                            (optional for independent projects)
+                          </span>
+                        )}
                         {loadingAssignablePMs && (
                           <span className="flex items-center gap-1 text-indigo-500 font-semibold normal-case tracking-normal text-[10px]">
                             <div className="w-2.5 h-2.5 border-2 border-indigo-200 border-t-indigo-500 rounded-full animate-spin" />
@@ -915,7 +1003,8 @@ export function ProjectInitiation() {
                         )}
                       </label>
                       <select
-                        className={inputCls}
+                        data-required-field="projectManagerId"
+                        className={clsx(inputCls, formErrors.projectManagerId && "border-rose-400 focus:border-rose-500 focus:ring-rose-500/20")}
                         value={formData.projectManagerId}
                         onChange={(e) => set("projectManagerId", e.target.value)}
                         disabled={loadingPMs || loadingAssignablePMs || (!isAtLeastClientAdmin(userRole) && assignablePMs.length === 0 && !formData.programmeId)}
@@ -963,6 +1052,9 @@ export function ProjectInitiation() {
                               </>
                         }
                       </select>
+                      {formErrors.projectManagerId && (
+                        <p className="mt-1 ml-1 text-[11px] text-rose-500 font-bold">{formErrors.projectManagerId}</p>
+                      )}
                     </div>
 
                     <div>
@@ -1284,12 +1376,17 @@ export function ProjectInitiation() {
                   <button
                     type="button"
                     onClick={(e) => handleSubmit(e as any)}
-                    disabled={loading || !requiredDone || (!!activeProjectId && !isDirty)}
+                    disabled={loading || (!!activeProjectId && !isDirty)}
+                    title={
+                      !!activeProjectId && !isDirty
+                        ? "No changes to save yet — edit any field to enable Save."
+                        : undefined
+                    }
                     className={clsx(
                       "flex items-center gap-2 px-8 py-3.5 font-black rounded-xl text-sm uppercase tracking-widest transition-all shadow-lg active:scale-95",
-                      requiredDone && (!activeProjectId || isDirty)
-                        ? "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200 hover:shadow-indigo-300 transform hover:-translate-y-0.5"
-                        : "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200 shadow-none"
+                      loading || (!!activeProjectId && !isDirty)
+                        ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200 shadow-none"
+                        : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200 hover:shadow-indigo-300 transform hover:-translate-y-0.5"
                     )}
                   >
                     {loading ? (

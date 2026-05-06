@@ -453,14 +453,44 @@ export function ProgrammeInitiation() {
     };
 
     const handleSave = async (isDraft: boolean = false) => {
-        // Inline field validation (Bug 10)
+        // Inline field validation. Industry-standard pattern: button is always
+        // enabled; click runs validation. Missing fields → specific toast naming
+        // each + inline rose marker + scroll the first one into view.
+        const fieldOrder: Array<{ key: string; label: string }> = [
+            { key: 'name', label: 'Programme Name' },
+            { key: 'type', label: 'Programme Type' },
+            { key: 'strategicObjectives', label: 'Strategic Objectives' },
+        ];
         const errors: Record<string, string> = {};
-        if (!form.name) errors.name = 'Programme name is required.';
-        if (!form.type) errors.type = 'Programme type is required.';
-        if (!isDraft && !form.strategicObjectives) errors.strategicObjectives = 'Strategic objectives are required.';
+        if (!form.name) errors.name = 'Required';
+        if (!form.type) errors.type = 'Required';
+        if (!isDraft && !form.strategicObjectives) errors.strategicObjectives = 'Required';
         if (Object.keys(errors).length > 0) {
             setFormErrors(errors);
-            toast.error('Please fill in all required fields.');
+            const missingLabels = fieldOrder
+                .filter((f) => errors[f.key])
+                .map((f) => f.label);
+            const noun = missingLabels.length === 1 ? 'field is' : 'fields are';
+            toast.error(`${missingLabels.length} required ${noun} missing: ${missingLabels.join(', ')}`);
+            // Scroll the first missing input / textarea into view + focus it
+            if (typeof document !== 'undefined') {
+                const firstKey = fieldOrder.find((f) => errors[f.key])?.key;
+                if (firstKey) {
+                    const el = document.querySelector(
+                        `[data-required-field="${firstKey}"]`,
+                    ) as HTMLElement | null;
+                    if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        setTimeout(() => {
+                            try {
+                                el.focus({ preventScroll: true });
+                            } catch {
+                                // ignore
+                            }
+                        }, 250);
+                    }
+                }
+            }
             return;
         }
         setFormErrors({});
@@ -634,13 +664,13 @@ export function ProgrammeInitiation() {
                             Save Draft
                         </button>
 
-                        <button 
+                        <button
                             onClick={() => handleSave(false)}
-                            disabled={loading || !requiredDone || success}
+                            disabled={loading || success}
                             className={clsx(
                                 "flex items-center gap-2 px-6 py-2.5 rounded-xl transition-all text-sm font-black shadow-lg shadow-indigo-200",
-                                (loading || !requiredDone || success) 
-                                    ? "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none" 
+                                (loading || success)
+                                    ? "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none"
                                     : "bg-indigo-600 text-white hover:bg-indigo-700 hover:-translate-y-0.5"
                             )}
                         >
@@ -710,7 +740,7 @@ export function ProgrammeInitiation() {
                                     </div>
                                     <div className="md:col-span-3">
                                         <label className={labelCls}>Programme Full Name *</label>
-                                        <input className={clsx(inputCls, formErrors.name && 'border-rose-400 focus:border-rose-500')} value={form.name} onChange={e => { set('name', e.target.value); setFormErrors(p => ({ ...p, name: '' })); }} placeholder="e.g. Manchester Net Zero Housing Programme" />
+                                        <input data-required-field="name" className={clsx(inputCls, formErrors.name && 'border-rose-400 focus:border-rose-500')} value={form.name} onChange={e => { set('name', e.target.value); setFormErrors(p => ({ ...p, name: '' })); }} placeholder="e.g. Manchester Net Zero Housing Programme" />
                                         {formErrors.name && <p className="mt-1 ml-1 text-[11px] text-rose-500 font-bold">{formErrors.name}</p>}
                                     </div>
                                 </div>
@@ -718,7 +748,7 @@ export function ProgrammeInitiation() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label className={labelCls}>Programme Type *</label>
-                                        <select className={clsx(inputCls, formErrors.type && 'border-rose-400 focus:border-rose-500')} value={form.type} onChange={e => { set('type', e.target.value); setFormErrors(p => ({ ...p, type: '' })); }}>
+                                        <select data-required-field="type" className={clsx(inputCls, formErrors.type && 'border-rose-400 focus:border-rose-500')} value={form.type} onChange={e => { set('type', e.target.value); setFormErrors(p => ({ ...p, type: '' })); }}>
                                             <option value="">— Select —</option>
                                             {Array.isArray(PROGRAMME_TYPES) && PROGRAMME_TYPES.map(t => <option key={t}>{t}</option>)}
                                         </select>
@@ -732,7 +762,7 @@ export function ProgrammeInitiation() {
 
                                 <div>
                                     <label className={labelCls}>Strategic Objectives *</label>
-                                    <textarea className={clsx(textareaCls, formErrors.strategicObjectives && 'border-rose-400 focus:border-rose-500')} rows={3} value={form.strategicObjectives} onChange={e => { set('strategicObjectives', e.target.value); setFormErrors(p => ({ ...p, strategicObjectives: '' })); }} placeholder="Define the core mission of this programme..." />
+                                    <textarea data-required-field="strategicObjectives" className={clsx(textareaCls, formErrors.strategicObjectives && 'border-rose-400 focus:border-rose-500')} rows={3} value={form.strategicObjectives} onChange={e => { set('strategicObjectives', e.target.value); setFormErrors(p => ({ ...p, strategicObjectives: '' })); }} placeholder="Define the core mission of this programme..." />
                                     {formErrors.strategicObjectives && <p className="mt-1 ml-1 text-[11px] text-rose-500 font-bold">{formErrors.strategicObjectives}</p>}
                                 </div>
 

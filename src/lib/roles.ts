@@ -169,6 +169,32 @@ export const isStrategicDirector = (role?: string | null) => {
   return canonicalRole(role) === "strategic_director";
 };
 
+// Technical Assurance Companion — Compliance Lead extra role.
+// Stored alongside the user's primary role on `users/{uid}.extraRoles[]`
+// (or its TAC-specific alias `tacExtraRoles[]`). Additive helper — does NOT
+// widen the canonical role union, so the rest of the codebase is unaffected.
+//
+// A Compliance Lead is the in-house chartered reviewer who validates AI
+// insights, resolves flagged enquiries and signs off on the first 50
+// responses per project. Always held on top of an existing primary role
+// (typically client_admin or project_manager + senior).
+export function isComplianceLead(
+  user:
+    | {
+        role?: string | null;
+        extraRoles?: readonly string[] | null;
+        tacExtraRoles?: readonly string[] | null;
+      }
+    | null
+    | undefined,
+): boolean {
+  if (!user) return false;
+  const extras = (user.extraRoles ?? []) as readonly string[];
+  if (extras.includes("compliance_lead")) return true;
+  const tacExtras = (user.tacExtraRoles ?? []) as readonly string[];
+  return tacExtras.includes("compliance_lead");
+}
+
 // Multi-role authorisation: a user may hold additional canonical roles via `extraRoles`.
 // Check the primary `role` first, then fall back to any entries in `extraRoles`.
 // Leaves existing single-role helpers untouched — opt-in only.

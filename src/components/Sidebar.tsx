@@ -7,14 +7,14 @@ import {
   ClipboardList, PieChart, ScrollText, Gavel, Users, User, LogOut,
   ChevronDown, ChevronRight, FileBarChart, LayoutTemplate, Plus, Target, Wand2,
   Terminal, KeyRound, HelpCircle, Calculator, Rocket, CreditCard, FileText, Calendar as CalendarIcon, X, Map,
-  FolderClosed
+  FolderClosed, MessageSquare, ShieldCheck
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useStore } from '../store/useStore';
 import { logout } from '../lib/firebase';
 import { useNavigate, useSearchParams, useLocation } from 'react-router';
 import { useState, useEffect } from 'react';
-import { isSuperAdmin, isAtLeastClientAdmin, isAtLeastPM, canCreateProject, canCreateProgramme, isSystemAdmin } from '../lib/roles';
+import { isSuperAdmin, isAtLeastClientAdmin, isAtLeastPM, canCreateProject, canCreateProgramme, isSystemAdmin, isComplianceLead } from '../lib/roles';
 
 interface NavGroupProps {
   label: string;
@@ -105,6 +105,8 @@ export function Sidebar() {
       setOpenGroup('Compliance');
     } else if (path.startsWith('/regulations')) {
       setOpenGroup('Regulations Library');
+    } else if (path.startsWith('/technical-assurance')) {
+      setOpenGroup('Technical Assurance');
     } else if (path.startsWith('/risk') && !path.startsWith('/risk/ai')) {
       setOpenGroup('Risk Management');
     } else if (path.startsWith('/risk/ai') || path.startsWith('/ai/')) {
@@ -244,9 +246,28 @@ export function Sidebar() {
           <NavItem to="/regulations/cpd" icon={Activity} label="CPD Training - Beta" iconClass="text-indigo-500" />
         </NavGroup>
 
+        {/* TECHNICAL ASSURANCE — sibling of Compliance / Risk; PM-owned query surface */}
+        {hasCoreAccess && (
+          <NavGroup
+            label="Technical Assurance"
+            isAdmin={hasCoreAccess}
+            isOpen={openGroup === 'Technical Assurance'}
+            onToggle={() => toggleGroup('Technical Assurance')}
+          >
+            <NavItem to="/technical-assurance/enquiries" icon={MessageSquare} label="Enquiries" />
+            <NavItem to="/technical-assurance/rfis" icon={ClipboardList} label="RFI Register" />
+            {/* Audit dashboard — Compliance Leads + Super Admins only.
+                Sidebar visibility mirrors the route guard so non-eligible
+                users don't see a link they can't open. */}
+            {(isAdmin || isComplianceLead(user)) && (
+              <NavItem to="/technical-assurance/audit" icon={ShieldCheck} label="Audit" iconClass="text-indigo-600" />
+            )}
+          </NavGroup>
+        )}
+
         {/* RISK MANAGEMENT */}
-        <NavGroup 
-          label="Risk Management" 
+        <NavGroup
+          label="Risk Management"
           isAdmin={hasCoreAccess} 
           isOpen={openGroup === 'Risk Management'} 
           onToggle={() => toggleGroup('Risk Management')}

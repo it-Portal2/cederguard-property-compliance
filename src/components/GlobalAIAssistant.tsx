@@ -86,6 +86,11 @@ const CONTEXT_LABELS: Array<{ test: (p: string) => boolean; label: string }> = [
   { test: (p) => p === '/governance/archive', label: 'Audit Archive' },
   { test: (p) => p === '/governance/board-calendar', label: 'Public Board Calendar' },
   { test: (p) => p === '/governance/project-docs', label: 'Project Governance Folder' },
+  // Technical Assurance Companion (TAC)
+  { test: (p) => p === '/technical-assurance/enquiries', label: 'Technical Enquiries' },
+  { test: (p) => /^\/technical-assurance\/enquiries\//.test(p), label: 'Technical Enquiry Workspace' },
+  { test: (p) => p === '/technical-assurance/rfis', label: 'RFI Register' },
+  { test: (p) => p === '/technical-assurance/audit', label: 'Technical Assurance Audit' },
 ];
 
 function deriveContextLabel(pathname: string): string {

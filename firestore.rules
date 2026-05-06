@@ -316,6 +316,39 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // =====================================================
+    // Technical Assurance Companion (TAC) — v1 collections
+    // =====================================================
+    // Same defence-in-depth model as governance: production data flows
+    // through the backend (Firebase Admin SDK bypasses these rules), so
+    // client SDK writes are blocked. Reads are allowed for signed-in users;
+    // server-side code enforces per-clientId tenancy scoping. Audit-style
+    // reads on flagged enquiries restricted to admins / client admins.
+
+    match /enquiries/{enquiryId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+
+      // Per-tab deliverable docs (Summary / Drawing / RFI / Cost / Compliance)
+      match /tabs/{tabId} {
+        allow read: if isSignedIn();
+        allow write: if false;
+      }
+    }
+    match /rfis/{rfiId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+    match /costRates/{rateId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+    match /regulationsCorpus/{regId} {
+      // Platform-wide reference data — every signed-in user reads.
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
     // --- Deny all unmatched paths ---
     match /{document=**} {
       allow read, write: if false;
