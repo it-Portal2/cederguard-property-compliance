@@ -44,28 +44,28 @@ export const TAB_SPECS: TabSpec[] = [
     label: "Drawing",
     icon: ImageIcon,
     phase: 4,
-    available: false,
+    available: true,
   },
   {
     id: "rfi",
     label: "RFI draft",
     icon: ClipboardList,
     phase: 5,
-    available: false,
+    available: true,
   },
   {
     id: "costProgramme",
     label: "Cost & programme",
     icon: PoundSterling,
     phase: 6,
-    available: false,
+    available: true,
   },
   {
     id: "compliance",
     label: "Compliance & citations",
     icon: ShieldCheck,
     phase: 7,
-    available: false,
+    available: true,
   },
 ];
 

@@ -12,6 +12,7 @@ import {
 import { clsx } from "clsx";
 
 import { GovernancePDFViewer } from "../../governance/PDFViewer";
+import { PdfPageOverlayViewer } from "../PdfPageOverlayViewer";
 import { SendToArchitectModal } from "../SendToArchitectModal";
 import type {
   Enquiry,
@@ -133,6 +134,15 @@ export function DrawingTab({ enquiry, drawing }: DrawingTabProps) {
   );
   const [sendOpen, setSendOpen] = useState(false);
 
+  // Phase 4b — when at least one annotation has an x/y coordinate, the
+  // overlay viewer renders the markers ON the PDF. Otherwise we fall back
+  // to the bare GovernancePDFViewer (no overlay) and let the side panel
+  // carry the numbered list. The viewer itself handles per-annotation
+  // partial coordinate gracefully.
+  const hasAnyCoords = drawing.annotations.some(
+    (a) => typeof a.xPct === "number" && typeof a.yPct === "number",
+  );
+
   return (
     <div className="space-y-4">
       {/* Header strip */}
@@ -189,7 +199,16 @@ export function DrawingTab({ enquiry, drawing }: DrawingTabProps) {
               transition={{ duration: 0.2 }}
               className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
             >
-              <GovernancePDFViewer src={drawing.basePdfUrl} height="70vh" />
+              {hasAnyCoords ? (
+                <PdfPageOverlayViewer
+                  pdfUrl={drawing.basePdfUrl}
+                  annotations={drawing.annotations}
+                  activeAnnotationId={activeId}
+                  onAnnotationClick={setActiveId}
+                />
+              ) : (
+                <GovernancePDFViewer src={drawing.basePdfUrl} height="70vh" />
+              )}
             </motion.div>
           ) : (
             <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-10 text-center">
@@ -228,11 +247,10 @@ export function DrawingTab({ enquiry, drawing }: DrawingTabProps) {
             </ul>
           </div>
 
-          {/* Reserved-for-Phase-4b note */}
           <p className="mt-3 text-[11px] text-slate-400">
-            Inline red-line overlay on the PDF lands in Phase 4b. For now the
-            numbered callouts on the right map to the source drawing using the
-            page references.
+            {hasAnyCoords
+              ? "Click any callout to highlight its marker on the drawing. Coordinates are AI-generated — re-generate the insight to refine."
+              : "The AI couldn't place markers precisely on this drawing — page references remain the canonical reference. Re-generate to retry."}
           </p>
         </div>
       </div>

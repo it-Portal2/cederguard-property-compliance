@@ -32,6 +32,19 @@ import {
   prepareInsightGeneration,
   finaliseInsightGeneration,
 } from "../lib/tacInsightGenerator.js";
+import { readAssetAsDataUri } from "../lib/storage.js";
+import {
+  loadCostRates,
+  seedCostRatesIfMissing,
+} from "../lib/costRatesSeed.js";
+import {
+  renderCompliancePackPdf,
+  compliancePackFilename,
+} from "../lib/tacCompliancePackPdf.js";
+import {
+  renderDecisionLogPdf,
+  decisionLogFilename,
+} from "../lib/tacDecisionLogPdf.js";
 
 // --- Constants ------------------------------------------------------------
 
@@ -500,52 +513,88 @@ async function tacRemoveAttachment(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// --- Endpoint 6: tacSoftDeleteEnquiry ------------------------------------
+// --- Endpoint 6: tacDeleteEnquiry ----------------------------------------
+//
+// Permanent (hard) delete — removes the enquiry doc, every `tabs/*`
+// sub-collection deliverable, every Firebase Storage file referenced by the
+// enquiry's attachments, AND every issued RFI in the workspace `rfis/`
+// register that points back at this enquiry. Nothing is preserved
+// client-side; the row disappears from the list, the storage tier stops
+// billing for those blobs, and the RFI register no longer carries orphaned
+// rows pointing at a deleted enquiry.
 
-async function tacSoftDeleteEnquiry(req: any, res: any, ctx: ApiContext) {
+async function tacDeleteEnquiry(req: any, res: any, ctx: ApiContext) {
   try {
-    const { enquiryId, reason, restore } = req.body ?? {};
+    const { enquiryId } = req.body ?? {};
     const guard = await loadEnquiryForMutation(ctx, enquiryId, res);
     if (!guard) return;
 
-    if (restore === true) {
-      await guard.docRef.set(
-        {
-          softDeleted: false,
-          deletionReason: null,
-          deletedAt: null,
-          deletedBy: null,
-          updatedAt: nowIso(),
-        },
-        { merge: true },
-      );
-      return res.status(200).json({ success: true, restored: true });
-    }
+    const doc = guard.doc;
 
-    if (typeof reason !== "string" || reason.trim().length < 5) {
-      return res.status(400).json({
-        success: false,
-        error: "Soft-delete reason must be at least 5 characters.",
-        code: "INVALID_INPUT",
-      });
-    }
-
-    await guard.docRef.set(
-      {
-        softDeleted: true,
-        deletionReason: reason.trim().slice(0, 500),
-        deletedAt: nowIso(),
-        deletedBy: ctx.uid,
-        updatedAt: nowIso(),
-      },
-      { merge: true },
+    // 1. Delete every storage attachment best-effort (a single failed
+    //    delete doesn't abort the operation; the storage path is logged).
+    const attachments = Array.isArray(doc.attachments) ? doc.attachments : [];
+    await Promise.all(
+      attachments.map(async (a: any) => {
+        if (!a?.storagePath) return;
+        try {
+          await deleteTacAttachment(String(a.storagePath));
+        } catch (storageErr) {
+          console.warn(
+            "[tacDeleteEnquiry] storage delete failed (non-fatal):",
+            a.storagePath,
+            storageErr,
+          );
+        }
+      }),
     );
-    return res.status(200).json({ success: true, softDeleted: true });
+
+    // 2. Delete all `tabs/*` deliverable docs (Firestore doesn't auto-purge
+    //    sub-collections on parent delete).
+    try {
+      const tabsSnap = await guard.docRef.collection("tabs").get();
+      if (!tabsSnap.empty) {
+        const batch = ctx.db.batch();
+        tabsSnap.docs.forEach((d: any) => batch.delete(d.ref));
+        await batch.commit();
+      }
+    } catch (tabsErr) {
+      console.warn(
+        "[tacDeleteEnquiry] tabs subcollection delete failed (non-fatal):",
+        tabsErr,
+      );
+    }
+
+    // 3. Cascade-delete every RFI in the workspace register that references
+    //    this enquiry. Without this, deleting an enquiry leaves zombie rows
+    //    on RfiRegisterPage that link to a non-existent enquiry.
+    try {
+      const rfisSnap = await ctx.db
+        .collection("rfis")
+        .where("clientId", "==", ctx.primaryUid)
+        .where("enquiryId", "==", doc.id)
+        .get();
+      if (!rfisSnap.empty) {
+        const batch = ctx.db.batch();
+        rfisSnap.docs.forEach((d: any) => batch.delete(d.ref));
+        await batch.commit();
+      }
+    } catch (rfisErr) {
+      console.warn(
+        "[tacDeleteEnquiry] rfi register cascade delete failed (non-fatal):",
+        rfisErr,
+      );
+    }
+
+    // 4. Delete the parent enquiry doc.
+    await guard.docRef.delete();
+
+    return res.status(200).json({ success: true, deleted: true });
   } catch (e: any) {
-    console.error("[tacSoftDeleteEnquiry] failed:", e);
+    console.error("[tacDeleteEnquiry] failed:", e);
     return res.status(500).json({
       success: false,
-      error: e?.message ?? "Failed to soft-delete enquiry.",
+      error: e?.message ?? "Failed to delete enquiry.",
       code: "DELETE_FAILED",
     });
   }
@@ -562,6 +611,46 @@ async function tacSoftDeleteEnquiry(req: any, res: any, ctx: ApiContext) {
 //            client calls existing api.geminiPrompt(prompt, config)
 //                ↓
 //   step 2 → tacFinaliseInsight       (writes deliverable + flips status)
+
+// Hard cap on PDF base64 payload size — Vercel serverless has a body limit
+// and Gemini handles inline binary up to a few MB cleanly. Larger PDFs fall
+// back to the side-by-side rendering (no overlay coordinates).
+const PDF_INLINE_MAX_BYTES = 6 * 1024 * 1024; // 6 MB raw → ~8 MB base64
+
+/** Pulls the first PDF attachment from the enquiry doc + tries to load its
+ *  bytes from Storage as a base64 string suitable for `inlineData`. Returns
+ *  null on any failure (PDF too big / not present / read error) so the
+ *  insight generation degrades gracefully to no overlay. */
+async function loadPrimaryPdfInline(
+  ctx: ApiContext,
+  doc: any,
+): Promise<{ mimeType: string; data: string; fileName: string } | null> {
+  const attachments = Array.isArray(doc.attachments) ? doc.attachments : [];
+  const pdf = attachments.find(
+    (a: any) =>
+      a?.mimeType === "application/pdf" ||
+      String(a?.fileName ?? "").toLowerCase().endsWith(".pdf"),
+  );
+  if (!pdf?.storagePath) return null;
+  // Only attempt inline send when storage-side size is below the cap.
+  const sizeBytes = Number(pdf.fileSize) || 0;
+  if (sizeBytes > 0 && sizeBytes > PDF_INLINE_MAX_BYTES) return null;
+  try {
+    const dataUri = await readAssetAsDataUri(pdf.storagePath);
+    if (!dataUri) return null;
+    const match = /^data:([^;]+);base64,(.+)$/.exec(dataUri);
+    if (!match) return null;
+    const [, mimeType, data] = match;
+    return {
+      mimeType,
+      data,
+      fileName: String(pdf.fileName ?? "drawing.pdf"),
+    };
+  } catch (e) {
+    console.warn("[loadPrimaryPdfInline] failed (non-fatal):", e);
+    return null;
+  }
+}
 
 async function tacBuildInsightPrompt(req: any, res: any, ctx: ApiContext) {
   try {
@@ -583,10 +672,27 @@ async function tacBuildInsightPrompt(req: any, res: any, ctx: ApiContext) {
         code: result.code,
       });
     }
+
+    // Phase 4b — also try to load the source PDF inline so the client can
+    // pass it to Gemini for visual analysis (yields per-annotation x/y
+    // coordinates). Best-effort: null on any failure.
+    const pdfInlineData = await loadPrimaryPdfInline(ctx, guard.doc);
+
+    // Phase 7 hot-fix #2 — flag whether the enquiry has substantive context
+    // that warrants a one-shot retry if costProgramme comes back null. The
+    // client uses this to decide whether to re-prompt for cost+programme.
+    const queryLen = String(guard.doc.query ?? "").length;
+    const attachmentCount = Array.isArray(guard.doc.attachments)
+      ? guard.doc.attachments.length
+      : 0;
+    const isSubstantive = queryLen > 100 || attachmentCount > 0;
+
     return res.status(200).json({
       success: true,
       prompt: result.prompt,
       corpusRegIds: result.corpusRegIds,
+      pdfInlineData,
+      isSubstantive,
     });
   } catch (e: any) {
     console.error("[tacBuildInsightPrompt] failed:", e);
@@ -953,6 +1059,1359 @@ async function tacListRfis(req: any, res: any, ctx: ApiContext) {
   }
 }
 
+// --- Endpoint 12: tacListCostRates (Phase 6) -----------------------------
+//
+// Returns the merged cost-rates library (shared seed unioned with the
+// council's own custom rates). Used by `CostProgrammeTab` for tooltip
+// lookup against `costLine.rateId` so the user sees "rate sourced from
+// MVHR install per dwelling — £4,500" without an extra round-trip per
+// line.
+
+async function tacListCostRates(_req: any, res: any, ctx: ApiContext) {
+  try {
+    await seedCostRatesIfMissing(ctx);
+    const rates = await loadCostRates(ctx);
+    return res.status(200).json({ success: true, items: rates });
+  } catch (e: any) {
+    console.error("[tacListCostRates] failed:", e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? "Failed to load cost rates.",
+      code: "COST_RATES_LIST_FAILED",
+    });
+  }
+}
+
+// --- Endpoint 13: tacExportCostCsv (Phase 6) -----------------------------
+//
+// Renders the enquiry's cost+programme costLines as a CSV string for
+// download via a `<a download>` Blob URL on the client. Header row +
+// per-line rows. Programme bars not exported here (separate concept; PMs
+// who need a Gantt PDF use the per-page print).
+
+function csvField(v: any): string {
+  if (v === null || v === undefined) return "";
+  const s = String(v);
+  if (s.includes(",") || s.includes("\"") || s.includes("\n")) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
+}
+
+async function tacExportCostCsv(req: any, res: any, ctx: ApiContext) {
+  try {
+    const { enquiryId } = req.body ?? {};
+    // Reuse the canonical loader so we get composite-key resolution + tenant
+    // guard for free. Bare doc(enquiryId) lookups always 404 because the
+    // collection is keyed `{primaryUid}_{enquiryId}` (lesson #10).
+    const guard = await loadEnquiryForMutation(ctx, enquiryId, res);
+    if (!guard) return;
+    const summaryTab = await guard.docRef
+      .collection("tabs")
+      .doc("summary")
+      .get();
+    const cp = summaryTab.exists
+      ? (summaryTab.data() as any)?.content?.costProgramme
+      : null;
+    if (!cp || !Array.isArray(cp.costLines) || cp.costLines.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "No cost data on this enquiry.",
+        code: "NO_COST_DATA",
+      });
+    }
+    const header = [
+      "Description",
+      "Unit",
+      "Quantity",
+      "Rate (£)",
+      "Total (£)",
+      "Rate ID",
+    ];
+    const rows = (cp.costLines as any[]).map((l) => [
+      csvField(l.description),
+      csvField(l.unit),
+      csvField(l.quantity),
+      csvField(l.rate),
+      csvField(l.total),
+      csvField(l.rateId ?? ""),
+    ]);
+    rows.push(["", "", "", "Total", csvField(cp.totalDelta ?? 0), ""]);
+    const csv = [header, ...rows].map((r) => r.join(",")).join("\n") + "\n";
+    const filename = `enquiry-${String(enquiryId).slice(0, 24)}-cost.csv`;
+    return res.status(200).json({ success: true, csv, filename });
+  } catch (e: any) {
+    console.error("[tacExportCostCsv] failed:", e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? "Failed to export cost CSV.",
+      code: "COST_CSV_EXPORT_FAILED",
+    });
+  }
+}
+
+// --- Endpoint 14: tacDownloadCompliancePack (Phase 7) --------------------
+//
+// Renders the enquiry's compliance deliverable (dimensional + system checks
+// + citations + recommended option lede) as a structured PDF using the
+// Phase 7 jspdf renderer. Requires the enquiry to have a Summary
+// deliverable already generated (insight pipeline must have run); returns
+// 404 NO_INSIGHT otherwise.
+
+async function tacDownloadCompliancePack(
+  req: any,
+  res: any,
+  ctx: ApiContext,
+) {
+  try {
+    const { enquiryId } = req.body ?? {};
+    const guard = await loadEnquiryForMutation(ctx, enquiryId, res);
+    if (!guard) return;
+
+    const summaryTab = await guard.docRef
+      .collection("tabs")
+      .doc("summary")
+      .get();
+    if (!summaryTab.exists) {
+      return res.status(404).json({
+        success: false,
+        error:
+          "No insight on this enquiry yet. Generate the insight first.",
+        code: "NO_INSIGHT",
+      });
+    }
+    const summary = (summaryTab.data() as any)?.content;
+    if (!summary) {
+      return res.status(404).json({
+        success: false,
+        error: "Summary deliverable is empty.",
+        code: "NO_INSIGHT",
+      });
+    }
+
+    let projectName: string | undefined;
+    let isHRB = false;
+    try {
+      if (guard.doc.projectId) {
+        const proj = await ctx.db
+          .collection("projects")
+          .doc(String(guard.doc.projectId))
+          .get();
+        const data = proj.data() ?? {};
+        projectName = (data.name as string | undefined) ?? undefined;
+        isHRB = data.isHRB === true;
+      }
+    } catch {
+      // Best-effort — project metadata is decorative on the cover.
+    }
+
+    const pdfBuffer = renderCompliancePackPdf({
+      enquiry: {
+        id: guard.doc.id,
+        title: String(guard.doc.title ?? ""),
+        ribaStage: String(guard.doc.ribaStage ?? "S0"),
+        query: String(guard.doc.query ?? ""),
+        projectName,
+        isHRB,
+      },
+      summary,
+      generatedAt: new Date().toISOString(),
+    });
+    return res.status(200).json({
+      success: true,
+      pdfBase64: pdfBuffer.toString("base64"),
+      filename: compliancePackFilename(guard.doc.id),
+    });
+  } catch (e: any) {
+    console.error("[tacDownloadCompliancePack] failed:", e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? "Failed to render compliance pack.",
+      code: "COMPLIANCE_PACK_FAILED",
+    });
+  }
+}
+
+// --- Endpoint 15: tacSaveToGoldenThread (Phase 7) ------------------------
+//
+// HRB-only — server-guarded by checking `Project.isHRB === true`. Writes
+// an immutable WORM chain doc to `goldenThread` following the Phase 6d
+// pattern (sourceKind = 'enquiry' to distinguish from report-sealed
+// records). Idempotent across re-clicks: each click chains a new version
+// with `previousId` linking to the prior enquiry-sourced GT doc; the
+// payload captures the insight version so audit readers can see every
+// save event.
+
+async function tacSaveToGoldenThread(
+  req: any,
+  res: any,
+  ctx: ApiContext,
+) {
+  try {
+    const { enquiryId } = req.body ?? {};
+    const guard = await loadEnquiryForMutation(ctx, enquiryId, res);
+    if (!guard) return;
+
+    if (!guard.doc.projectId || typeof guard.doc.projectId !== "string") {
+      return res.status(400).json({
+        success: false,
+        error: "Enquiry has no linked project — cannot Save to Golden Thread.",
+        code: "INVALID_INPUT",
+      });
+    }
+
+    const projSnap = await ctx.db
+      .collection("projects")
+      .doc(guard.doc.projectId)
+      .get();
+    if (!projSnap.exists) {
+      return res.status(404).json({
+        success: false,
+        error: "Linked project not found.",
+        code: "NOT_FOUND",
+      });
+    }
+    const proj = projSnap.data() ?? {};
+    if (proj.isHRB !== true) {
+      return res.status(403).json({
+        success: false,
+        error:
+          "Save to Golden Thread is HRB-only. Mark the project as HRB to enable.",
+        code: "NOT_HRB",
+      });
+    }
+
+    const summaryTab = await guard.docRef
+      .collection("tabs")
+      .doc("summary")
+      .get();
+    if (!summaryTab.exists) {
+      return res.status(404).json({
+        success: false,
+        error: "No insight to save — generate the insight first.",
+        code: "NO_INSIGHT",
+      });
+    }
+    const summary = (summaryTab.data() as any)?.content;
+    const summaryVersion = (summaryTab.data() as any)?.versionNumber ?? 1;
+    if (!summary) {
+      return res.status(404).json({
+        success: false,
+        error: "Summary deliverable is empty.",
+        code: "NO_INSIGHT",
+      });
+    }
+
+    const ts = new Date().toISOString();
+    // Chain — find prior enquiry-sourced GT records for THIS enquiry to
+    // capture re-saves as a versioned chain (matches Phase 6d pattern).
+    const priorSnap = await ctx.db
+      .collection("goldenThread")
+      .where("clientId", "==", ctx.primaryUid)
+      .where("enquiryId", "==", guard.doc.id)
+      .get();
+    const previousId =
+      priorSnap.docs.length > 0
+        ? priorSnap.docs[priorSnap.docs.length - 1].id
+        : null;
+    const version = priorSnap.docs.length + 1;
+
+    const gtRef = ctx.db.collection("goldenThread").doc();
+    await gtRef.set({
+      clientId: ctx.primaryUid,
+      sourceKind: "enquiry",
+      enquiryId: guard.doc.id,
+      reportId: null,
+      projectId: guard.doc.projectId,
+      version,
+      previousId,
+      decidedAt: ts,
+      signerUid: ctx.uid,
+      sealedPdfPath: null,
+      payload: {
+        title: guard.doc.title ?? "",
+        ribaStage: guard.doc.ribaStage ?? null,
+        isHRB: true,
+        summaryVersion,
+        lede: summary.lede ?? "",
+        citationCount: Array.isArray(summary.citations)
+          ? summary.citations.length
+          : 0,
+        complianceCount: Array.isArray(summary.complianceSnapshot)
+          ? summary.complianceSnapshot.length
+          : 0,
+      },
+      createdAt: ts,
+    });
+
+    // Stamp the enquiry doc so the UI can render "Saved to Golden Thread"
+    // without an extra round-trip.
+    await guard.docRef.set(
+      {
+        goldenThreadId: gtRef.id,
+        goldenThreadVersion: version,
+        goldenThreadSavedAt: ts,
+      },
+      { merge: true },
+    );
+
+    return res
+      .status(200)
+      .json({ success: true, version, previousId, goldenThreadId: gtRef.id });
+  } catch (e: any) {
+    console.error("[tacSaveToGoldenThread] failed:", e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? "Failed to save to Golden Thread.",
+      code: "GOLDEN_THREAD_SAVE_FAILED",
+    });
+  }
+}
+
+// --- Phase 8 — Feedback + Audit + Archive endpoints ----------------------
+//
+// Phase 8 = E4 (prompt management) + US-2.4 (feedback) + Compliance Lead
+// audit dashboard. Endpoints mutate fields already declared on the
+// Enquiry shape (`feedback`, `flaggedForAudit`, status `Archived`).
+
+/** Compliance Lead extra-role check on the server. Mirrors the client
+ *  `isComplianceLead` helper — reads `userData.extraRoles[]` (or its
+ *  TAC-specific alias). Compliance Lead is held alongside a primary role
+ *  (typically client_admin); admins always pass. */
+function isComplianceLeadCtx(ctx: ApiContext): boolean {
+  if (ctx.isAdmin || ctx.isClientAdmin) return true;
+  const data = ctx.userData ?? {};
+  const extras: string[] = Array.isArray(data.extraRoles) ? data.extraRoles : [];
+  if (extras.includes("compliance_lead")) return true;
+  const tacExtras: string[] = Array.isArray(data.tacExtraRoles)
+    ? data.tacExtraRoles
+    : [];
+  return tacExtras.includes("compliance_lead");
+}
+
+// --- Endpoint 16: tacSubmitFeedback (Phase 8 / US-2.4) -------------------
+//
+// Thumbs-up / thumbs-down feedback on the Summary tab. Thumbs-down
+// optionally captures a categorised reason + free-text note. Re-submitting
+// overwrites the prior feedback (same enquiry, same author) — keeps the
+// model simple. Authors and admins can submit; cross-tenant guarded by
+// `loadEnquiryForMutation`.
+
+async function tacSubmitFeedback(req: any, res: any, ctx: ApiContext) {
+  try {
+    const { enquiryId, thumbs, reason, note } = req.body ?? {};
+    const guard = await loadEnquiryForMutation(ctx, enquiryId, res);
+    if (!guard) return;
+
+    if (thumbs !== "up" && thumbs !== "down") {
+      return res.status(400).json({
+        success: false,
+        error: "thumbs must be 'up' or 'down'.",
+        code: "INVALID_INPUT",
+      });
+    }
+    const validReasons = new Set([
+      "inaccurate",
+      "missed_regulation",
+      "wrong_stage",
+      "other",
+    ]);
+    const safeReason =
+      typeof reason === "string" && validReasons.has(reason)
+        ? reason
+        : undefined;
+    const safeNote =
+      typeof note === "string" && note.trim()
+        ? String(note).trim().slice(0, 800)
+        : undefined;
+
+    const feedback: any = {
+      thumbs,
+      submittedBy: ctx.uid,
+      submittedAt: new Date().toISOString(),
+    };
+    if (safeReason) feedback.reason = safeReason;
+    if (safeNote) feedback.note = safeNote;
+
+    await guard.docRef.set({ feedback }, { merge: true });
+    return res.status(200).json({ success: true, feedback });
+  } catch (e: any) {
+    console.error("[tacSubmitFeedback] failed:", e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? "Failed to submit feedback.",
+      code: "FEEDBACK_FAILED",
+    });
+  }
+}
+
+// --- Endpoint 17: tacFlagForAudit (Phase 8) ------------------------------
+//
+// Compliance Lead / ClientAdmin / SuperAdmin flags an enquiry for audit
+// review. Stamps `flaggedForAudit` with timestamp + flagger uid. Optional
+// reviewer note explains why. Resubmitting on an already-flagged enquiry
+// is rejected — must resolve first to re-flag.
+
+async function tacFlagForAudit(req: any, res: any, ctx: ApiContext) {
+  try {
+    const { enquiryId, reviewerNote } = req.body ?? {};
+    if (!isComplianceLeadCtx(ctx)) {
+      return res.status(403).json({
+        success: false,
+        error: "Only Compliance Lead or admin can flag enquiries for audit.",
+        code: "FORBIDDEN",
+      });
+    }
+    const guard = await loadEnquiryForMutation(ctx, enquiryId, res);
+    if (!guard) return;
+
+    const existing = guard.doc.flaggedForAudit;
+    if (existing && !existing.resolvedAt) {
+      return res.status(400).json({
+        success: false,
+        error:
+          "Enquiry is already flagged for audit. Resolve the existing flag first.",
+        code: "ALREADY_FLAGGED",
+      });
+    }
+
+    const flaggedForAudit: any = {
+      flaggedBy: ctx.uid,
+      flaggedAt: new Date().toISOString(),
+    };
+    if (typeof reviewerNote === "string" && reviewerNote.trim()) {
+      flaggedForAudit.reviewerNote = String(reviewerNote).trim().slice(0, 1000);
+    }
+    await guard.docRef.set({ flaggedForAudit }, { merge: true });
+    return res.status(200).json({ success: true, flaggedForAudit });
+  } catch (e: any) {
+    console.error("[tacFlagForAudit] failed:", e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? "Failed to flag enquiry.",
+      code: "FLAG_FAILED",
+    });
+  }
+}
+
+// --- Endpoint 18: tacResolveFlag (Phase 8) -------------------------------
+//
+// Resolve an existing audit flag. Compliance Lead / admin only. Required
+// resolution note (≥5 chars) explains the resolution. Stamps resolvedAt +
+// resolvedBy on the existing flaggedForAudit object.
+
+async function tacResolveFlag(req: any, res: any, ctx: ApiContext) {
+  try {
+    const { enquiryId, reviewerNote } = req.body ?? {};
+    if (!isComplianceLeadCtx(ctx)) {
+      return res.status(403).json({
+        success: false,
+        error: "Only Compliance Lead or admin can resolve audit flags.",
+        code: "FORBIDDEN",
+      });
+    }
+    const guard = await loadEnquiryForMutation(ctx, enquiryId, res);
+    if (!guard) return;
+    if (
+      typeof reviewerNote !== "string" ||
+      reviewerNote.trim().length < 5
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: "Resolution note (≥5 chars) is required.",
+        code: "INVALID_INPUT",
+      });
+    }
+    const existing = guard.doc.flaggedForAudit;
+    if (!existing) {
+      return res.status(400).json({
+        success: false,
+        error: "Enquiry is not flagged for audit.",
+        code: "NOT_FLAGGED",
+      });
+    }
+    if (existing.resolvedAt) {
+      return res.status(400).json({
+        success: false,
+        error: "Audit flag is already resolved.",
+        code: "ALREADY_RESOLVED",
+      });
+    }
+    const flaggedForAudit = {
+      ...existing,
+      resolvedAt: new Date().toISOString(),
+      resolvedBy: ctx.uid,
+      // Append resolution note alongside the flagger's note so both are
+      // preserved on the audit record.
+      reviewerNote: existing.reviewerNote
+        ? `${existing.reviewerNote}\n— Resolved: ${String(reviewerNote).trim().slice(0, 1000)}`
+        : String(reviewerNote).trim().slice(0, 1000),
+    };
+    await guard.docRef.set({ flaggedForAudit }, { merge: true });
+    return res.status(200).json({ success: true, flaggedForAudit });
+  } catch (e: any) {
+    console.error("[tacResolveFlag] failed:", e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? "Failed to resolve flag.",
+      code: "RESOLVE_FAILED",
+    });
+  }
+}
+
+// --- Endpoint 19: tacArchiveEnquiry (Phase 8) ----------------------------
+//
+// Move enquiry to `Archived` cold-state. Allowed from any state EXCEPT
+// `Generating` (don't yank an in-flight insight). Owner or admin only.
+// Reverse: tacUnarchiveEnquiry flips Archived → Open.
+
+async function tacArchiveEnquiry(req: any, res: any, ctx: ApiContext) {
+  try {
+    const { enquiryId, restore } = req.body ?? {};
+    const guard = await loadEnquiryForMutation(ctx, enquiryId, res);
+    if (!guard) return;
+
+    if (restore === true) {
+      if (guard.doc.status !== "Archived") {
+        return res.status(400).json({
+          success: false,
+          error: "Only Archived enquiries can be restored.",
+          code: "INVALID_STATE",
+        });
+      }
+      await guard.docRef.set(
+        { status: "Open", updatedAt: new Date().toISOString() },
+        { merge: true },
+      );
+      return res.status(200).json({ success: true, status: "Open" });
+    }
+
+    if (guard.doc.status === "Generating") {
+      return res.status(400).json({
+        success: false,
+        error: "Cannot archive while insight generation is in flight.",
+        code: "INVALID_STATE",
+      });
+    }
+    if (guard.doc.status === "Archived") {
+      return res.status(400).json({
+        success: false,
+        error: "Enquiry is already archived.",
+        code: "ALREADY_ARCHIVED",
+      });
+    }
+    await guard.docRef.set(
+      { status: "Archived", updatedAt: new Date().toISOString() },
+      { merge: true },
+    );
+    return res.status(200).json({ success: true, status: "Archived" });
+  } catch (e: any) {
+    console.error("[tacArchiveEnquiry] failed:", e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? "Failed to archive enquiry.",
+      code: "ARCHIVE_FAILED",
+    });
+  }
+}
+
+// --- Endpoint 20: tacListAuditFlagged (Phase 8) --------------------------
+//
+// Compliance Lead / admin-only list of every enquiry currently flagged for
+// audit OR carrying thumbs-down feedback. Powers AuditDashboardPage.
+// Returns enriched rows with the active flag/feedback summaries; sorting
+// puts oldest-flagged first so reviewers tackle the longest-waiting items.
+
+async function tacListAuditFlagged(_req: any, res: any, ctx: ApiContext) {
+  try {
+    if (!isComplianceLeadCtx(ctx)) {
+      return res.status(403).json({
+        success: false,
+        error: "Audit dashboard requires Compliance Lead or admin role.",
+        code: "FORBIDDEN",
+      });
+    }
+    const snap = await ctx.db
+      .collection("enquiries")
+      .where("clientId", "==", ctx.primaryUid)
+      .get();
+    const items: any[] = [];
+    for (const d of snap.docs) {
+      const data: any = d.data();
+      const isFlagged =
+        data.flaggedForAudit && !data.flaggedForAudit.resolvedAt;
+      const hasThumbsDown = data.feedback?.thumbs === "down";
+      if (isFlagged || hasThumbsDown) {
+        items.push({
+          id: data.id ?? d.id.replace(`${ctx.primaryUid}_`, ""),
+          title: data.title ?? "",
+          ribaStage: data.ribaStage ?? "S0",
+          status: data.status ?? "Draft",
+          ownerUid: data.ownerUid ?? "",
+          createdAt: data.createdAt ?? "",
+          updatedAt: data.updatedAt ?? "",
+          projectId: data.projectId ?? null,
+          flaggedForAudit: data.flaggedForAudit ?? null,
+          feedback: data.feedback ?? null,
+        });
+      }
+    }
+    // Sort: open flags first (oldest flaggedAt), then thumbs-down only.
+    items.sort((a: any, b: any) => {
+      const aFlagOpen = a.flaggedForAudit && !a.flaggedForAudit.resolvedAt;
+      const bFlagOpen = b.flaggedForAudit && !b.flaggedForAudit.resolvedAt;
+      if (aFlagOpen && !bFlagOpen) return -1;
+      if (!aFlagOpen && bFlagOpen) return 1;
+      const at = a.flaggedForAudit?.flaggedAt ?? a.feedback?.submittedAt ?? "";
+      const bt = b.flaggedForAudit?.flaggedAt ?? b.feedback?.submittedAt ?? "";
+      return at.localeCompare(bt);
+    });
+    return res.status(200).json({ success: true, items });
+  } catch (e: any) {
+    console.error("[tacListAuditFlagged] failed:", e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? "Failed to load audit dashboard.",
+      code: "AUDIT_LIST_FAILED",
+    });
+  }
+}
+
+// --- Phase 9 — Close + Unlock + Decision Log + Add to PM report ----------
+
+// --- Endpoint 21: tacCloseEnquiry (Phase 9) ------------------------------
+//
+// Owner-or-admin closes an Open or Approved enquiry. For HRB projects,
+// also writes a Golden Thread chain doc (sourceKind 'enquiry') so the
+// closure is preserved in the BSA Gateway 2/3 audit chain. Stamps
+// closedAt + closedBy.
+
+async function tacCloseEnquiry(req: any, res: any, ctx: ApiContext) {
+  try {
+    const { enquiryId } = req.body ?? {};
+    const guard = await loadEnquiryForMutation(ctx, enquiryId, res, {
+      requireOwnerOrAdmin: true,
+    });
+    if (!guard) return;
+    const allowed = ["Open", "AwaitingReview", "Approved"];
+    if (!allowed.includes(guard.doc.status)) {
+      return res.status(400).json({
+        success: false,
+        error: `Enquiry must be Open / AwaitingReview / Approved to close (current: ${guard.doc.status}).`,
+        code: "INVALID_STATE",
+      });
+    }
+    const ts = new Date().toISOString();
+    let projectIsHRB = false;
+    if (guard.doc.projectId) {
+      try {
+        const projSnap = await ctx.db
+          .collection("projects")
+          .doc(String(guard.doc.projectId))
+          .get();
+        projectIsHRB = projSnap.data()?.isHRB === true;
+      } catch {
+        // best-effort
+      }
+    }
+
+    let goldenThreadId: string | null = null;
+    let goldenThreadVersion: number | null = null;
+    if (projectIsHRB) {
+      try {
+        const summaryTab = await guard.docRef
+          .collection("tabs")
+          .doc("summary")
+          .get();
+        const summary = summaryTab.exists
+          ? (summaryTab.data() as any)?.content
+          : null;
+        if (summary) {
+          const priorSnap = await ctx.db
+            .collection("goldenThread")
+            .where("clientId", "==", ctx.primaryUid)
+            .where("enquiryId", "==", guard.doc.id)
+            .get();
+          const previousId =
+            priorSnap.docs.length > 0
+              ? priorSnap.docs[priorSnap.docs.length - 1].id
+              : null;
+          const version = priorSnap.docs.length + 1;
+          const gtRef = ctx.db.collection("goldenThread").doc();
+          await gtRef.set({
+            clientId: ctx.primaryUid,
+            sourceKind: "enquiry",
+            enquiryId: guard.doc.id,
+            reportId: null,
+            projectId: guard.doc.projectId,
+            version,
+            previousId,
+            decidedAt: ts,
+            signerUid: ctx.uid,
+            sealedPdfPath: null,
+            payload: {
+              event: "closed",
+              title: guard.doc.title ?? "",
+              ribaStage: guard.doc.ribaStage ?? null,
+              isHRB: true,
+              lede: summary.lede ?? "",
+              citationCount: Array.isArray(summary.citations)
+                ? summary.citations.length
+                : 0,
+            },
+            createdAt: ts,
+          });
+          goldenThreadId = gtRef.id;
+          goldenThreadVersion = version;
+        }
+      } catch (gtErr) {
+        // non-fatal — closure proceeds even if GT write fails. Log loudly.
+        console.error("[tacCloseEnquiry] golden thread write failed:", gtErr);
+      }
+    }
+
+    const patch: any = {
+      status: "Closed",
+      closedAt: ts,
+      closedBy: ctx.uid,
+      updatedAt: ts,
+    };
+    if (goldenThreadId) {
+      patch.goldenThreadId = goldenThreadId;
+      patch.goldenThreadVersion = goldenThreadVersion;
+      patch.goldenThreadSavedAt = ts;
+    }
+    await guard.docRef.set(patch, { merge: true });
+    return res.status(200).json({
+      success: true,
+      status: "Closed",
+      goldenThreadId,
+      goldenThreadVersion,
+      isHRB: projectIsHRB,
+    });
+  } catch (e: any) {
+    console.error("[tacCloseEnquiry] failed:", e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? "Failed to close enquiry.",
+      code: "CLOSE_FAILED",
+    });
+  }
+}
+
+// --- Endpoint 22: tacUnlockEnquiry (Phase 9) -----------------------------
+//
+// Compliance Lead / SuperAdmin re-opens a Closed enquiry. Required reason
+// (≥10 chars) — appended to a `unlockHistory[]` array on the enquiry so
+// the audit trail of every unlock is permanent. Returns to status `Open`.
+
+async function tacUnlockEnquiry(req: any, res: any, ctx: ApiContext) {
+  try {
+    const { enquiryId, reason } = req.body ?? {};
+    if (!isComplianceLeadCtx(ctx)) {
+      return res.status(403).json({
+        success: false,
+        error: "Only Compliance Lead or admin can unlock closed enquiries.",
+        code: "FORBIDDEN",
+      });
+    }
+    if (typeof reason !== "string" || reason.trim().length < 10) {
+      return res.status(400).json({
+        success: false,
+        error: "Unlock reason (≥10 chars) is required.",
+        code: "INVALID_INPUT",
+      });
+    }
+    const guard = await loadEnquiryForMutation(ctx, enquiryId, res);
+    if (!guard) return;
+    if (guard.doc.status !== "Closed") {
+      return res.status(400).json({
+        success: false,
+        error: `Only Closed enquiries can be unlocked (current: ${guard.doc.status}).`,
+        code: "INVALID_STATE",
+      });
+    }
+    const ts = new Date().toISOString();
+    const priorHistory: any[] = Array.isArray(guard.doc.unlockHistory)
+      ? guard.doc.unlockHistory
+      : [];
+    const unlockEntry = {
+      at: ts,
+      by: ctx.uid,
+      reason: String(reason).trim().slice(0, 1000),
+      priorClosedAt: guard.doc.closedAt ?? null,
+      priorClosedBy: guard.doc.closedBy ?? null,
+    };
+    await guard.docRef.set(
+      {
+        status: "Open",
+        closedAt: null,
+        closedBy: null,
+        unlockHistory: [...priorHistory, unlockEntry],
+        updatedAt: ts,
+      },
+      { merge: true },
+    );
+    console.warn(
+      `[tacUnlockEnquiry] ${enquiryId} unlocked by ${ctx.uid}: ${unlockEntry.reason}`,
+    );
+    return res.status(200).json({
+      success: true,
+      status: "Open",
+      unlockHistoryCount: priorHistory.length + 1,
+    });
+  } catch (e: any) {
+    console.error("[tacUnlockEnquiry] failed:", e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? "Failed to unlock enquiry.",
+      code: "UNLOCK_FAILED",
+    });
+  }
+}
+
+// --- Endpoint 23: tacExportDecisionLog (Phase 9) -------------------------
+//
+// Per-project chronological PDF export of every closed enquiry on the
+// project. Cover sheet (project meta + BSA Gateway references for HRB) +
+// one section per enquiry (title + lede + recommended option + citation
+// count). Suitable for Gateway 2 / 3 submission packs.
+
+async function tacExportDecisionLog(req: any, res: any, ctx: ApiContext) {
+  try {
+    const { projectId } = req.body ?? {};
+    if (!projectId || typeof projectId !== "string") {
+      return res.status(400).json({
+        success: false,
+        error: "projectId is required.",
+        code: "INVALID_INPUT",
+      });
+    }
+    if (!(await ctx.isAuthorizedForContext(projectId))) {
+      return res
+        .status(403)
+        .json({ success: false, error: "Forbidden.", code: "CROSS_TENANT" });
+    }
+    const projSnap = await ctx.db.collection("projects").doc(projectId).get();
+    if (!projSnap.exists) {
+      return res.status(404).json({
+        success: false,
+        error: "Project not found.",
+        code: "NOT_FOUND",
+      });
+    }
+    const proj = projSnap.data() ?? {};
+
+    // Pull every Closed enquiry for this project + tenant.
+    const enquiriesSnap = await ctx.db
+      .collection("enquiries")
+      .where("clientId", "==", ctx.primaryUid)
+      .where("projectId", "==", projectId)
+      .where("status", "==", "Closed")
+      .get();
+
+    const enquiryEntries: Array<{
+      id: string;
+      title: string;
+      ribaStage: string;
+      closedAt: string;
+      lede: string;
+      recommendedOption: string;
+      citationCount: number;
+    }> = [];
+
+    // Sequential reads of summary deliverables — small N (closed enquiries
+    // per project rarely exceeds dozens).
+    for (const d of enquiriesSnap.docs) {
+      const data: any = d.data();
+      let summary: any = null;
+      try {
+        const sTab = await d.ref.collection("tabs").doc("summary").get();
+        summary = sTab.exists ? (sTab.data() as any)?.content : null;
+      } catch {
+        // skip
+      }
+      const recommended =
+        Array.isArray(summary?.options)
+          ? summary.options.find((o: any) => o?.recommended) ??
+            summary.options[0]
+          : null;
+      enquiryEntries.push({
+        id: data.id ?? d.id.replace(`${ctx.primaryUid}_`, ""),
+        title: data.title ?? "",
+        ribaStage: data.ribaStage ?? "S0",
+        closedAt: data.closedAt ?? "",
+        lede: summary?.lede ?? "",
+        recommendedOption: recommended
+          ? `${recommended.label ?? ""}${recommended.summary ? ` — ${recommended.summary}` : ""}`
+          : "",
+        citationCount: Array.isArray(summary?.citations)
+          ? summary.citations.length
+          : 0,
+      });
+    }
+    enquiryEntries.sort((a, b) => a.closedAt.localeCompare(b.closedAt));
+
+    const pdfBuffer = renderDecisionLogPdf({
+      project: {
+        id: projectId,
+        name: String(proj.name ?? "Untitled project"),
+        isHRB: proj.isHRB === true,
+      },
+      enquiries: enquiryEntries,
+      generatedAt: new Date().toISOString(),
+    });
+    return res.status(200).json({
+      success: true,
+      pdfBase64: pdfBuffer.toString("base64"),
+      filename: decisionLogFilename(projectId),
+      enquiryCount: enquiryEntries.length,
+    });
+  } catch (e: any) {
+    console.error("[tacExportDecisionLog] failed:", e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? "Failed to render decision log.",
+      code: "DECISION_LOG_FAILED",
+    });
+  }
+}
+
+// --- Endpoint 24 + 25: tacAddToProjectReport / tacRemoveFromProjectReport
+//                                                                (Phase 9)
+//
+// Flags an enquiry for inclusion in the project's status report. The
+// ProjectReport page reads enquiries where `addedToProjectReport === true`
+// and renders a Technical Assurance section with cost+programme highlights.
+
+async function tacAddToProjectReport(req: any, res: any, ctx: ApiContext) {
+  try {
+    const { enquiryId } = req.body ?? {};
+    const guard = await loadEnquiryForMutation(ctx, enquiryId, res, {
+      requireOwnerOrAdmin: true,
+    });
+    if (!guard) return;
+    const ts = new Date().toISOString();
+    await guard.docRef.set(
+      {
+        addedToProjectReport: true,
+        addedToProjectReportAt: ts,
+        addedToProjectReportBy: ctx.uid,
+        updatedAt: ts,
+      },
+      { merge: true },
+    );
+    return res.status(200).json({ success: true, addedAt: ts });
+  } catch (e: any) {
+    console.error("[tacAddToProjectReport] failed:", e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? "Failed to add to project report.",
+      code: "ADD_TO_REPORT_FAILED",
+    });
+  }
+}
+
+async function tacRemoveFromProjectReport(
+  req: any,
+  res: any,
+  ctx: ApiContext,
+) {
+  try {
+    const { enquiryId } = req.body ?? {};
+    const guard = await loadEnquiryForMutation(ctx, enquiryId, res, {
+      requireOwnerOrAdmin: true,
+    });
+    if (!guard) return;
+    await guard.docRef.set(
+      {
+        addedToProjectReport: false,
+        addedToProjectReportAt: null,
+        addedToProjectReportBy: null,
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true },
+    );
+    return res.status(200).json({ success: true });
+  } catch (e: any) {
+    console.error("[tacRemoveFromProjectReport] failed:", e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? "Failed to remove from project report.",
+      code: "REMOVE_FROM_REPORT_FAILED",
+    });
+  }
+}
+
+// --- Endpoint 26: tacListProjectReportEnquiries (Phase 9) ----------------
+//
+// ProjectReport reads this to render the Technical Assurance section.
+// Returns enriched rows for each enquiry flagged `addedToProjectReport`
+// on the given project.
+
+async function tacListProjectReportEnquiries(
+  req: any,
+  res: any,
+  ctx: ApiContext,
+) {
+  try {
+    const { projectId } = req.body ?? {};
+    if (!projectId || typeof projectId !== "string") {
+      return res.status(400).json({
+        success: false,
+        error: "projectId is required.",
+        code: "INVALID_INPUT",
+      });
+    }
+    if (!(await ctx.isAuthorizedForContext(projectId))) {
+      return res
+        .status(403)
+        .json({ success: false, error: "Forbidden.", code: "CROSS_TENANT" });
+    }
+    const snap = await ctx.db
+      .collection("enquiries")
+      .where("clientId", "==", ctx.primaryUid)
+      .where("projectId", "==", projectId)
+      .where("addedToProjectReport", "==", true)
+      .get();
+    const items: any[] = [];
+    for (const d of snap.docs) {
+      const data: any = d.data();
+      let summary: any = null;
+      try {
+        const sTab = await d.ref.collection("tabs").doc("summary").get();
+        summary = sTab.exists ? (sTab.data() as any)?.content : null;
+      } catch {
+        // skip
+      }
+      items.push({
+        id: data.id ?? d.id.replace(`${ctx.primaryUid}_`, ""),
+        title: data.title ?? "",
+        ribaStage: data.ribaStage ?? "S0",
+        status: data.status ?? "Draft",
+        addedToProjectReportAt: data.addedToProjectReportAt ?? null,
+        lede: summary?.lede ?? "",
+        recommendedOption: Array.isArray(summary?.options)
+          ? (() => {
+              const r =
+                summary.options.find((o: any) => o?.recommended) ??
+                summary.options[0];
+              return r
+                ? {
+                    label: r.label ?? "",
+                    summary: r.summary ?? "",
+                    costDelta: Number(r.costDelta ?? 0),
+                    programmeDelta: Number(r.programmeDelta ?? 0),
+                  }
+                : null;
+            })()
+          : null,
+        costProgramme: summary?.costProgramme
+          ? {
+              totalDelta: Number(summary.costProgramme.totalDelta ?? 0),
+              floatRemaining: Number(summary.costProgramme.floatRemaining ?? 0),
+              contingencyDrawPct:
+                summary.costProgramme.contingencyDrawPct ?? null,
+              costLineCount: Array.isArray(summary.costProgramme.costLines)
+                ? summary.costProgramme.costLines.length
+                : 0,
+            }
+          : null,
+      });
+    }
+    items.sort((a, b) =>
+      String(b.addedToProjectReportAt ?? "").localeCompare(
+        String(a.addedToProjectReportAt ?? ""),
+      ),
+    );
+    return res.status(200).json({ success: true, items });
+  } catch (e: any) {
+    console.error("[tacListProjectReportEnquiries] failed:", e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? "Failed to load TAC report enquiries.",
+      code: "PROJECT_REPORT_LIST_FAILED",
+    });
+  }
+}
+
+// --- Phase 9b — Share-for-review endpoints -------------------------------
+//
+// Owner shares an enquiry with another workspace member for read-only
+// review. Recipient sees a "Shared with me" filter on EnquiriesListPage,
+// opens the workspace, and approves or rejects with an optional note.
+// Multiple recipients per enquiry supported (`shares[]` array).
+
+function makeShareId(): string {
+  return `shr-${Math.random().toString(36).slice(2, 10)}-${Date.now().toString(36)}`;
+}
+
+// --- Endpoint 27: tacShareEnquiry (Phase 9b) -----------------------------
+//
+// Owner-or-admin shares with a workspace member. Adds entry to `shares[]`.
+// Server validates the recipient is in the same `clientId` workspace.
+
+async function tacShareEnquiry(req: any, res: any, ctx: ApiContext) {
+  try {
+    const { enquiryId, sharedWithUid, note } = req.body ?? {};
+    const guard = await loadEnquiryForMutation(ctx, enquiryId, res, {
+      requireOwnerOrAdmin: true,
+    });
+    if (!guard) return;
+    if (
+      !sharedWithUid ||
+      typeof sharedWithUid !== "string" ||
+      sharedWithUid.length > 128
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: "sharedWithUid is required.",
+        code: "INVALID_INPUT",
+      });
+    }
+    if (sharedWithUid === ctx.uid) {
+      return res.status(400).json({
+        success: false,
+        error: "Cannot share an enquiry with yourself.",
+        code: "INVALID_INPUT",
+      });
+    }
+    // Verify the recipient belongs to the same workspace (clientId === ctx.primaryUid).
+    const recipientDoc = await ctx.db.collection("users").doc(sharedWithUid).get();
+    if (!recipientDoc.exists) {
+      return res.status(404).json({
+        success: false,
+        error: "Recipient not found.",
+        code: "NOT_FOUND",
+      });
+    }
+    const recipient = recipientDoc.data() ?? {};
+    const recipientClient = recipient.clientId ?? recipientDoc.id;
+    if (recipientClient !== ctx.primaryUid) {
+      return res.status(403).json({
+        success: false,
+        error: "Recipient is not in this workspace.",
+        code: "CROSS_TENANT",
+      });
+    }
+
+    const existingShares: any[] = Array.isArray(guard.doc.shares)
+      ? guard.doc.shares
+      : [];
+    // Avoid duplicate active shares to the same recipient. If a previous
+    // share to this user exists and is undecided, reject; if it has a
+    // decision already, allow re-share (treat as reopening review).
+    const activeForRecipient = existingShares.find(
+      (s: any) => s?.sharedWith === sharedWithUid && !s?.decision,
+    );
+    if (activeForRecipient) {
+      return res.status(400).json({
+        success: false,
+        error: "This enquiry is already pending review by that user.",
+        code: "ALREADY_SHARED",
+      });
+    }
+
+    const ts = new Date().toISOString();
+    const shareEntry: any = {
+      shareId: makeShareId(),
+      sharedWith: sharedWithUid,
+      sharedBy: ctx.uid,
+      sharedAt: ts,
+    };
+    if (typeof note === "string" && note.trim()) {
+      shareEntry.note = String(note).trim().slice(0, 500);
+    }
+    await guard.docRef.set(
+      {
+        shares: [...existingShares, shareEntry],
+        // Optional: flip status to AwaitingReview if currently Open. Keeps
+        // the workspace pill obvious for both owner + recipient.
+        ...(guard.doc.status === "Open"
+          ? { status: "AwaitingReview" }
+          : {}),
+        updatedAt: ts,
+      },
+      { merge: true },
+    );
+    return res.status(200).json({ success: true, share: shareEntry });
+  } catch (e: any) {
+    console.error("[tacShareEnquiry] failed:", e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? "Failed to share enquiry.",
+      code: "SHARE_FAILED",
+    });
+  }
+}
+
+// --- Endpoint 28: tacDecideOnShare (Phase 9b) ----------------------------
+//
+// Recipient approves or rejects their share. Only the user listed as
+// `shares[].sharedWith` can decide on that share — owner / admin can NOT
+// decide on someone else's behalf (would defeat the audit point).
+
+async function tacDecideOnShare(req: any, res: any, ctx: ApiContext) {
+  try {
+    const { enquiryId, shareId, decision, decisionNote } = req.body ?? {};
+    if (!shareId || typeof shareId !== "string") {
+      return res.status(400).json({
+        success: false,
+        error: "shareId is required.",
+        code: "INVALID_INPUT",
+      });
+    }
+    if (decision !== "approved" && decision !== "rejected") {
+      return res.status(400).json({
+        success: false,
+        error: "decision must be 'approved' or 'rejected'.",
+        code: "INVALID_INPUT",
+      });
+    }
+    if (decision === "rejected" && (typeof decisionNote !== "string" || decisionNote.trim().length < 5)) {
+      return res.status(400).json({
+        success: false,
+        error: "Rejection requires a decision note (≥5 chars).",
+        code: "INVALID_INPUT",
+      });
+    }
+    // We do NOT use loadEnquiryForMutation's owner check here — recipients
+    // need write access to update their own share entry. Fetch the doc
+    // directly + verify recipient match instead.
+    if (!enquiryId || typeof enquiryId !== "string") {
+      return res.status(400).json({
+        success: false,
+        error: "enquiryId is required.",
+        code: "INVALID_INPUT",
+      });
+    }
+    const docId = compositeId(ctx.primaryUid, enquiryId);
+    const docRef = ctx.db.collection("enquiries").doc(docId);
+    const snap = await docRef.get();
+    if (!snap.exists) {
+      return res
+        .status(404)
+        .json({ success: false, error: "Enquiry not found.", code: "NOT_FOUND" });
+    }
+    const doc = snap.data() ?? {};
+    if (doc.clientId !== ctx.primaryUid) {
+      return res
+        .status(403)
+        .json({ success: false, error: "Forbidden.", code: "CROSS_TENANT" });
+    }
+    const shares: any[] = Array.isArray(doc.shares) ? doc.shares : [];
+    const targetIdx = shares.findIndex((s) => s?.shareId === shareId);
+    if (targetIdx < 0) {
+      return res.status(404).json({
+        success: false,
+        error: "Share not found on this enquiry.",
+        code: "NOT_FOUND",
+      });
+    }
+    const target = shares[targetIdx];
+    if (target.sharedWith !== ctx.uid) {
+      return res.status(403).json({
+        success: false,
+        error: "Only the share recipient can decide on this share.",
+        code: "FORBIDDEN",
+      });
+    }
+    if (target.decision) {
+      return res.status(400).json({
+        success: false,
+        error: "This share has already been decided.",
+        code: "ALREADY_DECIDED",
+      });
+    }
+    const ts = new Date().toISOString();
+    const updatedShare = {
+      ...target,
+      decision,
+      decidedAt: ts,
+      ...(decisionNote && typeof decisionNote === "string"
+        ? { decisionNote: decisionNote.trim().slice(0, 1000) }
+        : {}),
+    };
+    const newShares = [...shares];
+    newShares[targetIdx] = updatedShare;
+
+    // If this was the only outstanding share + decision is approved, flip
+    // the enquiry status from AwaitingReview back to Approved (for HRB
+    // workflows) or Open (for non-HRB). Rejection: stays AwaitingReview
+    // with the reject note visible — owner can re-share or close.
+    const otherUndecided = newShares.some(
+      (s, i) => i !== targetIdx && !s?.decision,
+    );
+    let nextStatus = doc.status;
+    if (
+      doc.status === "AwaitingReview" &&
+      decision === "approved" &&
+      !otherUndecided
+    ) {
+      nextStatus = "Approved";
+    }
+    await docRef.set(
+      {
+        shares: newShares,
+        ...(nextStatus !== doc.status ? { status: nextStatus } : {}),
+        updatedAt: ts,
+      },
+      { merge: true },
+    );
+    return res
+      .status(200)
+      .json({ success: true, share: updatedShare, status: nextStatus });
+  } catch (e: any) {
+    console.error("[tacDecideOnShare] failed:", e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? "Failed to decide on share.",
+      code: "DECIDE_FAILED",
+    });
+  }
+}
+
+// --- Endpoint 29: tacListSharedWithMe (Phase 9b) -------------------------
+//
+// Returns enquiries shared with the current user. Used by the "Shared with
+// me" filter on EnquiriesListPage. Filtering by `array-contains` on a
+// nested object isn't directly supported in Firestore; instead we
+// list-then-filter on the server (workspace size is small).
+
+async function tacListSharedWithMe(_req: any, res: any, ctx: ApiContext) {
+  try {
+    const snap = await ctx.db
+      .collection("enquiries")
+      .where("clientId", "==", ctx.primaryUid)
+      .get();
+    const items: any[] = [];
+    for (const d of snap.docs) {
+      const data: any = d.data();
+      const shares: any[] = Array.isArray(data.shares) ? data.shares : [];
+      const myShare = shares.find((s) => s?.sharedWith === ctx.uid);
+      if (!myShare) continue;
+      items.push({
+        id: data.id ?? d.id.replace(`${ctx.primaryUid}_`, ""),
+        title: data.title ?? "",
+        ribaStage: data.ribaStage ?? "S0",
+        status: data.status ?? "Draft",
+        ownerUid: data.ownerUid ?? "",
+        updatedAt: data.updatedAt ?? "",
+        share: myShare,
+      });
+    }
+    items.sort((a, b) => (b.share.sharedAt ?? "").localeCompare(a.share.sharedAt ?? ""));
+    return res.status(200).json({ success: true, items });
+  } catch (e: any) {
+    console.error("[tacListSharedWithMe] failed:", e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? "Failed to load shared enquiries.",
+      code: "SHARED_LIST_FAILED",
+    });
+  }
+}
+
 // --- Route map -----------------------------------------------------------
 
 export const technicalAssuranceRoutes: Record<string, any> = {
@@ -961,7 +2420,7 @@ export const technicalAssuranceRoutes: Record<string, any> = {
   tacUpsertEnquiry,
   tacAttachFile,
   tacRemoveAttachment,
-  tacSoftDeleteEnquiry,
+  tacDeleteEnquiry,
   // Phase 2 — AI insight generation (two-step: build prompt, then finalise
   // after client-side call to existing `aiRoutes.geminiPrompt`).
   tacBuildInsightPrompt,
@@ -971,12 +2430,32 @@ export const technicalAssuranceRoutes: Record<string, any> = {
   tacUpsertRfiDraft,
   tacIssueRfi,
   tacListRfis,
+  // Phase 6 — Cost & programme tab.
+  tacListCostRates,
+  tacExportCostCsv,
+  // Phase 7 — Compliance & citations tab.
+  tacDownloadCompliancePack,
+  tacSaveToGoldenThread,
+  // Phase 8 — Feedback + Audit + Archive.
+  tacSubmitFeedback,
+  tacFlagForAudit,
+  tacResolveFlag,
+  tacArchiveEnquiry,
+  tacListAuditFlagged,
+  // Phase 9 — Close + Unlock + Decision Log + Add to PM report.
+  tacCloseEnquiry,
+  tacUnlockEnquiry,
+  tacExportDecisionLog,
+  tacAddToProjectReport,
+  tacRemoveFromProjectReport,
+  tacListProjectReportEnquiries,
+  // Phase 9b — Share-for-review.
+  tacShareEnquiry,
+  tacDecideOnShare,
+  tacListSharedWithMe,
   // Phase 4: tacRenderAnnotatedPdf, tacSendDrawingToArchitect.
   // Phase 5: tacIssueRfi, tacListRfis, tacGetRfi, tacUpsertRfiDraft.
-  // Phase 6: tacListCostRates, tacUpsertCostRate, tacExportCostCsv.
-  // Phase 7: tacDownloadCompliancePack, tacSaveToGoldenThread.
-  // Phase 8: tacFlagForAudit, tacResolveFlag, tacSubmitFeedback,
-  //          tacArchiveEnquiry, tacRestoreEnquiry, tacDeleteEnquiry.
+  // Phase 6b (deferred): tacUpsertCostRate (admin rates editor).
   // Phase 9: tacCloseEnquiry, tacUnlockEnquiry, tacShareEnquiry,
   //          tacDecideOnShare, tacExportDecisionLog.
   // Phase 10: refreshRegulationsCorpus.

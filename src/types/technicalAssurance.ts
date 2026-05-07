@@ -73,7 +73,11 @@ export interface EnquiryAuditFlag {
 export interface EnquiryShare {
   shareId: string;
   sharedWith: string;
+  /** Phase 9b — uid of the owner who created the share. */
+  sharedBy?: string;
   sharedAt: string;
+  /** Phase 9b — optional note from owner explaining what to review. */
+  note?: string;
   decision?: "approved" | "rejected";
   decisionNote?: string;
   decidedAt?: string;
@@ -102,6 +106,23 @@ export interface Enquiry {
   deletionReason?: string;
   deletedAt?: string;
   deletedBy?: string;
+  // Phase 9 — Close + Unlock audit trail. Each unlock event captures
+  // who reopened the enquiry + why + the prior closedAt/closedBy. Append-
+  // only — never mutated.
+  unlockHistory?: Array<{
+    at: string;
+    by: string;
+    reason: string;
+    priorClosedAt?: string | null;
+    priorClosedBy?: string | null;
+  }>;
+  goldenThreadVersion?: number;
+  goldenThreadSavedAt?: string;
+  // Phase 9 — Add to project report flag. ProjectReport reads enquiries
+  // where this is true to render a Technical Assurance section.
+  addedToProjectReport?: boolean;
+  addedToProjectReportAt?: string;
+  addedToProjectReportBy?: string;
 }
 
 // --- Enquiry deliverables (sub-collection) --------------------------------
@@ -140,6 +161,22 @@ export interface SummaryInsightCitation {
   appliedTo: string;
   /** Verbatim ≤300-char excerpt from the corpus entry. */
   quote: string;
+  /** Server-enriched from corpus (e.g. "Approved Document K"). */
+  documentLabel?: string;
+  /** Server-enriched from corpus (e.g. "1.5"). */
+  clause?: string;
+  /** Server-enriched from corpus — link to the actual gov.uk / HSE source. */
+  sourceUrl?: string;
+}
+
+export type ComplianceCheckCategory = "dimensional" | "system";
+
+export interface ComplianceCheck {
+  check: string;
+  status: "pass" | "warn" | "fail";
+  category?: ComplianceCheckCategory;
+  regId?: string;
+  evidence?: string;
 }
 
 export interface SummaryTabContent {
@@ -147,7 +184,7 @@ export interface SummaryTabContent {
   options: SummaryInsightOption[];
   /** Cited regulations — every regId must resolve in the corpus. */
   citations: SummaryInsightCitation[];
-  complianceSnapshot: Array<{ check: string; status: "pass" | "warn" | "fail" }>;
+  complianceSnapshot: ComplianceCheck[];
   nextActions: string[];
   /** Drawing-tab content produced by the same Gemini call. Present only when
    *  the enquiry has a PDF attachment; otherwise the Drawing tab renders an
@@ -155,6 +192,9 @@ export interface SummaryTabContent {
   drawing?: DrawingTabContent;
   /** RFI-tab content produced by the same Gemini call. Always present. */
   rfi?: RfiTabContent;
+  /** Cost & programme tab content. Optional — purely advisory enquiries
+   *  may skip cost+programme entirely. */
+  costProgramme?: CostProgrammeTabContent;
 }
 
 export type DrawingAnnotationSeverity = "info" | "warning" | "critical";
@@ -166,6 +206,12 @@ export interface DrawingAnnotation {
   label: string;
   /** Page in the source PDF the annotation belongs to (1-indexed). */
   page: number;
+  /** 0-100 percent across the page width (left-edge = 0). Set only when
+   *  Gemini reads the PDF visually (Phase 4b — multimodal call with the
+   *  source PDF as inlineData). */
+  xPct?: number;
+  /** 0-100 percent down the page height (top = 0). */
+  yPct?: number;
   /** Optional dimensional measurement called out (e.g. "60mm" or "1.2m"). */
   dimension?: string;
   note?: string;
@@ -225,23 +271,32 @@ export interface RfiTabContent {
   attachments?: Array<{ enquiryAttachmentId: string }>;
 }
 
+export type CostUnit = "m" | "m2" | "m3" | "no" | "hr" | "item";
+
+export interface CostLine {
+  rateId?: string;
+  description: string;
+  unit: CostUnit;
+  quantity: number;
+  rate: number;
+  total: number;
+}
+
+export interface ProgrammeBar {
+  label: string;
+  startDate: string;
+  endDate: string;
+  track: number;
+  emphasis?: "info" | "warning" | "critical";
+}
+
 export interface CostProgrammeTabContent {
-  costLines: Array<{
-    rateId?: string;
-    description: string;
-    unit: string;
-    quantity: number;
-    rate: number;
-    total: number;
-  }>;
+  costLines: CostLine[];
   totalDelta: number;
-  programmeBars: Array<{
-    label: string;
-    startDate: string;
-    endDate: string;
-    track: number;
-  }>;
+  programmeBars: ProgrammeBar[];
   floatRemaining: number;
+  contingencyDrawPct?: number;
+  summaryNote?: string;
 }
 
 export interface ComplianceTabContent {
@@ -291,7 +346,8 @@ export type CostRateCategory =
   | "external"
   | "fees";
 
-export type CostRateUnit = "m" | "m2" | "m3" | "no" | "hr" | "item";
+/** Legacy alias of `CostUnit` — kept so any earlier import keeps working. */
+export type CostRateUnit = CostUnit;
 
 export interface CostRate {
   rateId: string;

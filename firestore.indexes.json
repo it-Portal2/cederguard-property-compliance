@@ -234,6 +234,14 @@
         { "fieldPath": "projectId", "order": "ASCENDING" },
         { "fieldPath": "rfiNumber", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "rfis",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "clientId", "order": "ASCENDING" },
+        { "fieldPath": "enquiryId", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

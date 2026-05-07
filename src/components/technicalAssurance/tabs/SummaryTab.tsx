@@ -1,11 +1,15 @@
+import { useState } from "react";
 import { BookOpen, ListChecks, ArrowRight } from "lucide-react";
 import { clsx } from "clsx";
 import type {
+  Enquiry,
   EnquiryDeliverable,
+  EnquiryFeedback,
   SummaryTabContent,
 } from "../../../types/technicalAssurance";
 import { RankedOptionCard } from "../RankedOptionCard";
 import { ComplianceSnapshot } from "../ComplianceSnapshot";
+import { FeedbackControl } from "../FeedbackControl";
 import type { TacWorkspaceTabId } from "./TabStrip";
 
 // Phase 3 — Summary tab. Renders the AI-produced summary deliverable
@@ -20,6 +24,10 @@ interface SummaryTabProps {
   content: SummaryTabContent;
   deliverable: EnquiryDeliverable<SummaryTabContent>;
   onNavigateTab: (tab: TacWorkspaceTabId) => void;
+  /** Optional — when present, renders the FeedbackControl (Phase 8). The
+   *  enquiry is what carries the existing feedback object + the id we
+   *  POST against. Workspace owns the feedback state mirror. */
+  enquiry?: Enquiry;
 }
 
 interface TabAction {
@@ -55,18 +63,34 @@ export function SummaryTab({
   content,
   deliverable,
   onNavigateTab,
+  enquiry,
 }: SummaryTabProps) {
   const generatedAt = deliverable?.generatedAt
     ? new Date(deliverable.generatedAt).toLocaleString("en-GB")
     : "—";
 
+  // Local mirror so the FeedbackControl flips visual state immediately
+  // after submit without round-tripping through the workspace.
+  const [feedback, setFeedback] = useState<EnquiryFeedback | undefined>(
+    enquiry?.feedback,
+  );
+
   return (
     <div className="space-y-4">
       {/* Lede */}
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
-          Summary
-        </p>
+        <div className="flex items-start justify-between gap-3">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+            Summary
+          </p>
+          {enquiry ? (
+            <FeedbackControl
+              enquiryId={enquiry.id}
+              feedback={feedback}
+              onSubmitted={(fb) => setFeedback(fb)}
+            />
+          ) : null}
+        </div>
         <p className="mt-1 text-base font-semibold leading-relaxed text-slate-900">
           {content.lede}
         </p>

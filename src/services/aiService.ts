@@ -1263,29 +1263,58 @@ export async function chatWithAI(
 //
 // All Gemini traffic flows through the existing `aiRoutes.geminiPrompt`
 // handler — no duplicated key-rotation logic in TAC code.
+
+// TAC-only Gemini helper. Hardcoded determinism config so every TAC
+// insight generation is reproducible across runs. NEVER call
+// `api.geminiPrompt` directly from TAC code — always go through this
+// helper. Other AI features (AIWriter, AIInquiryPopup, analyzeRisks etc.)
+// keep using `api.geminiPrompt` directly with their own creative-task
+// configs (typically 0.7 temperature, topK 40). Strict isolation by
+// design: per-feature wrapper > shared route config tweaks.
+async function tacInsightGeminiCall(
+  prompt: string,
+  inlineParts?: Array<{ mimeType: string; data: string }>,
+): Promise<any> {
+  return api.geminiPrompt(
+    prompt,
+    {
+      // topK: 1 = greedy decoding (highest-probability token every step).
+      // temperature: 0.1 makes ties near-deterministic. topP: 0.1 narrows
+      // the nucleus. maxOutputTokens: 16384 budgets for 20+ citations +
+      // cost lines + programme bars + drawing annotations + RFI body in
+      // one response.
+      temperature: 0.1,
+      topP: 0.1,
+      topK: 1,
+      maxOutputTokens: 16384,
+      responseMimeType: "application/json",
+    },
+    "tacGenerateInsight",
+    inlineParts,
+  );
+}
+
 export async function generateTacInsight(
   enquiryId: string,
 ): Promise<{ summary: any; enquiry: any }> {
-  // Step 1 — server builds the prompt + flips to Generating.
+  // Step 1 — server builds the prompt + flips to Generating. Returns the
+  // source PDF inline as base64 (Phase 4b) when the attachment is small
+  // enough — Gemini reads it visually for per-annotation x/y coords.
   const built = await api.tacBuildInsightPrompt(enquiryId);
   if (!built?.success) {
     throw new Error(built?.error ?? "Failed to build insight prompt.");
   }
   const prompt: string = built.prompt;
+  const pdfInlineData: { mimeType: string; data: string } | null =
+    built.pdfInlineData ?? null;
 
-  // Step 2 — existing Gemini route. JSON output, low temperature for
-  // citation-faithful generation. Larger token budget so 10-15 options +
-  // citations fit comfortably.
-  const config = {
-    temperature: 0.3,
-    topP: 0.9,
-    topK: 40,
-    maxOutputTokens: 16384,
-    responseMimeType: "application/json",
-  };
+  // Step 2 — TAC-only deterministic Gemini call. Greedy decoding (topK=1)
+  // + low temperature gives same enquiry → same output across regenerations.
+  // Multimodal: source PDF as inlineData when available (Phase 4b coords).
+  const inlineParts = pdfInlineData ? [pdfInlineData] : undefined;
   let summary: any;
   try {
-    const aiRes = await api.geminiPrompt(prompt, config, "tacGenerateInsight");
+    const aiRes = await tacInsightGeminiCall(prompt, inlineParts);
     if (!aiRes?.success) {
       throw new Error(aiRes?.error ?? "AI insight generation failed.");
     }
@@ -1305,6 +1334,51 @@ export async function generateTacInsight(
       // ignore — the original error is what matters
     }
     throw e;
+  }
+
+  // Step 2.5 (Phase 7 hot-fix #2) — one-shot retry for missing
+  // costProgramme on substantive enquiries. With topK=1 this should be
+  // rare, but greedy decoding can still emit `costProgramme: null` if the
+  // AI judges the enquiry advisory. The retry is focused: short prompt
+  // asking for just that block, same determinism config. After 1 retry
+  // we accept whatever comes back (genuinely advisory enquiries return
+  // null both times — empty state renders correctly).
+  const isSubstantive: boolean = built.isSubstantive === true;
+  const cpMissing =
+    summary.costProgramme == null ||
+    (typeof summary.costProgramme === "object" &&
+      (!Array.isArray(summary.costProgramme.costLines) ||
+        summary.costProgramme.costLines.length === 0) &&
+      (!Array.isArray(summary.costProgramme.programmeBars) ||
+        summary.costProgramme.programmeBars.length === 0));
+  if (cpMissing && isSubstantive) {
+    try {
+      const retryPrompt = `You previously generated a CedarGuard Technical Assurance insight for this enquiry. The cost & programme block came back empty, but this is a substantive enquiry that should carry indicative cost + programme impact for the recommended option.
+
+ORIGINAL PROMPT:
+${prompt}
+
+YOUR PRIOR RESPONSE (relevant fields):
+- recommended option: ${(() => {
+        const opts = Array.isArray(summary.options) ? summary.options : [];
+        const rec = opts.find((o: any) => o?.recommended) ?? opts[0];
+        return rec ? `${rec.label ?? ""} — ${rec.summary ?? ""}` : "(no option resolved)";
+      })()}
+- lede: ${String(summary.lede ?? "").slice(0, 200)}
+
+Return ONLY the costProgramme block now, populated per the original rules (5-12 cost lines summing to a defensible totalDelta; ≥2 programme bars on tracks 0 and 1+; floatRemaining; contingencyDrawPct; honest summaryNote). Use rateIds from the COST RATES LIBRARY in the original prompt where applicable. Speculative-but-defensible figures are required — do not return null.
+
+Output strict JSON:
+{ "costProgramme": { ... } }`;
+      const retryRes = await tacInsightGeminiCall(retryPrompt);
+      if (retryRes?.success && retryRes.result?.costProgramme) {
+        summary = { ...summary, costProgramme: retryRes.result.costProgramme };
+      }
+    } catch (retryErr) {
+      // Best-effort — retry failure leaves the original empty block in
+      // place. The empty state will render. Log so we know it happened.
+      console.warn("[generateTacInsight] costProgramme retry failed:", retryErr);
+    }
   }
 
   // Step 3 — server validates citations + persists the Summary deliverable.

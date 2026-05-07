@@ -5,7 +5,6 @@ import {
   Plus,
   Pencil,
   Trash2,
-  RotateCcw,
   Eye,
   Paperclip,
   AlertCircle,
@@ -13,14 +12,21 @@ import {
   Activity,
   CheckCircle2,
   Inbox,
+  Archive,
+  ArchiveRestore,
+  Flag,
+  Download,
+  Loader2,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { motion } from "motion/react";
 
 import DynamicTable from "../../components/table/DynamicTable";
 import { StatsCard } from "../../components/common/StatsCard";
+import ConfirmDialog from "../../components/table/ConfirmDialog";
 import { ReasonDialog } from "../../components/governance/ReasonDialog";
 import { NewEnquiryModal } from "../../components/technicalAssurance/NewEnquiryModal";
+import { RecentEnquiriesPanel } from "../../components/technicalAssurance/RecentEnquiriesPanel";
 import { api } from "../../lib/api";
 import { useTechnicalAssuranceStore } from "../../store/technicalAssuranceStore";
 import type { ColumnDef, FilterDef, RowAction } from "../../components/table/types";
@@ -30,7 +36,11 @@ import type {
 } from "../../types/technicalAssurance";
 import { getRIBALabel } from "../../constants/ribaStages";
 import { useStore } from "../../store/useStore";
-import { isAtLeastClientAdmin, isSuperAdmin } from "../../lib/roles";
+import {
+  isAtLeastClientAdmin,
+  isComplianceLead,
+  isSuperAdmin,
+} from "../../lib/roles";
 
 // Phase 1 — Enquiries list. Replaces the Phase 0 placeholder.
 //
@@ -75,6 +85,8 @@ export function TacEnquiriesListPage() {
   const navigate = useNavigate();
   const user = useStore((s) => s.user);
   const projects = useStore((s) => s.projects);
+  const activeProjectId = useStore((s) => s.activeProjectId);
+  const [exportingDecisionLog, setExportingDecisionLog] = useState(false);
   const setEnquiries = useTechnicalAssuranceStore((s) => s.setEnquiries);
   const enquiriesCache = useTechnicalAssuranceStore(
     (s) => s.enquiriesCache,
@@ -87,13 +99,21 @@ export function TacEnquiriesListPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingEnquiry, setEditingEnquiry] = useState<Enquiry | null>(null);
 
-  const [softDeleteRow, setSoftDeleteRow] = useState<Enquiry | null>(null);
-  const [softDeleting, setSoftDeleting] = useState(false);
-  const [restoringId, setRestoringId] = useState<string | null>(null);
+  const [deleteRow, setDeleteRow] = useState<Enquiry | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // Phase 8 — archive + flag-for-audit row-action state.
+  const [archivingId, setArchivingId] = useState<string | null>(null);
+  const [flagRow, setFlagRow] = useState<Enquiry | null>(null);
+  const [flagging, setFlagging] = useState(false);
+  const [resolveRow, setResolveRow] = useState<Enquiry | null>(null);
+  const [resolving, setResolving] = useState(false);
 
   const userRole = user?.role || user?.profile?.role;
   const isAdmin = isSuperAdmin(user?.email, userRole);
   const isClientAdmin = isAtLeastClientAdmin(userRole) || isAdmin;
+  const isComplianceLeadUser =
+    isComplianceLead(user?.profile ?? user) || isAdmin;
 
   // Project name lookup for the table column.
   const projectNameById = useMemo(() => {
@@ -129,7 +149,6 @@ export function TacEnquiriesListPage() {
     let open = 0;
     let closed = 0;
     for (const it of items) {
-      if (it.softDeleted) continue;
       if (it.status === "Draft") drafting += 1;
       else if (it.status === "Generating") generating += 1;
       else if (
@@ -152,13 +171,7 @@ export function TacEnquiriesListPage() {
         sortable: true,
         render: (_v, row) => (
           <div className="min-w-0">
-            <p
-              className={
-                row.softDeleted
-                  ? "truncate text-sm font-semibold text-slate-400 line-through"
-                  : "truncate text-sm font-semibold text-slate-900"
-              }
-            >
+            <p className="truncate text-sm font-semibold text-slate-900">
               {row.title}
             </p>
             {row.query && (
@@ -236,6 +249,7 @@ export function TacEnquiriesListPage() {
     [projectNameById],
   );
 
+  const myUid = user?.uid;
   const filters: FilterDef<Enquiry>[] = useMemo(
     () => [
       {
@@ -244,26 +258,38 @@ export function TacEnquiriesListPage() {
         type: "select",
         options: STATUS_OPTIONS,
       },
+      // Phase 9b — "Shared with me" filter. Hides everything except
+      // enquiries where the current user has an outstanding share
+      // (decision === undefined). Filtered client-side using the existing
+      // `shares[]` field on each enquiry — no extra fetch.
       {
-        key: "softDeleted",
-        label: "",
+        key: "sharedWithMe",
+        label: "Sharing",
         type: "select",
         options: [
-          { value: "false", label: "Active" },
-          { value: "true", label: "Soft-deleted" },
+          { value: "shared", label: "Shared with me" },
+          { value: "iShared", label: "Shared by me · awaiting decision" },
         ],
-        match: (rowValue, filterValue) => {
-          const want = filterValue === "true";
-          return Boolean(rowValue) === want;
+        match: (row, value) => {
+          if (!value || !myUid) return true;
+          const shares = Array.isArray(row.shares) ? row.shares : [];
+          if (value === "shared") {
+            return shares.some(
+              (s) => s.sharedWith === myUid && !s.decision,
+            );
+          }
+          if (value === "iShared") {
+            return (
+              row.ownerUid === myUid &&
+              shares.some((s) => !s.decision)
+            );
+          }
+          return true;
         },
       },
     ],
-    [],
+    [myUid],
   );
-
-  // Default view hides soft-deleted (lesson #43 — let DynamicTable own
-  // filtering; we just use a default state).
-  // We surface the toggle via the filter chrome; user picks Soft-deleted.
 
   const canEditRow = useCallback(
     (row: Enquiry) => {
@@ -293,39 +319,158 @@ export function TacEnquiriesListPage() {
     [canEditRow],
   );
 
-  const handleSoftDeleteConfirm = useCallback(
-    async (reason: string) => {
-      if (!softDeleteRow) return;
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!deleteRow || deleting) return;
+    const target = deleteRow;
+    try {
+      setDeleting(true);
+      await api.tacDeleteEnquiry(target.id);
+      toast.success("Enquiry deleted");
+      // Clear loading + close the dialog the instant the API returns. Was
+      // previously waiting on the background refresh to finish — that left
+      // `deleting: true` leaking into a follow-up delete's dialog and the
+      // button started in a stuck loading state for ~500ms.
+      setDeleting(false);
+      setDeleteRow(null);
+      // Optimistic local removal so the UI snaps without waiting on the
+      // refetch latency.
+      setItems((prev) => {
+        const next = prev.filter((p) => p.id !== target.id);
+        setEnquiries(next);
+        return next;
+      });
+      // Background reconcile against the server; failures are silent —
+      // the optimistic remove already reflects the user's intent.
+      void refresh();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to delete.");
+      setDeleting(false);
+    }
+  }, [deleteRow, deleting, refresh, setEnquiries]);
+
+  // Archive / restore — owner or admin can flip status.
+  const handleArchiveToggle = useCallback(
+    async (row: Enquiry) => {
+      if (archivingId) return;
+      const isArchived = row.status === "Archived";
+      setArchivingId(row.id);
       try {
-        setSoftDeleting(true);
-        await api.tacSoftDeleteEnquiry(softDeleteRow.id, reason);
-        toast.success("Enquiry moved to soft-deleted");
-        setSoftDeleteRow(null);
-        await refresh();
+        const r = await api.tacArchiveEnquiry(row.id, isArchived);
+        if (!r?.success) throw new Error(r?.error ?? "Archive failed");
+        const newStatus: EnquiryStatus = isArchived ? "Open" : "Archived";
+        setItems((prev) => {
+          const next = prev.map((p) =>
+            p.id === row.id ? { ...p, status: newStatus } : p,
+          );
+          setEnquiries(next);
+          return next;
+        });
+        toast.success(
+          isArchived ? "Enquiry restored" : "Enquiry archived",
+        );
       } catch (e: any) {
-        toast.error(e?.message ?? "Failed to soft-delete.");
+        toast.error(e?.message ?? "Action failed");
       } finally {
-        setSoftDeleting(false);
+        setArchivingId(null);
       }
     },
-    [softDeleteRow, refresh],
+    [archivingId, setEnquiries],
   );
 
-  const handleRestore = useCallback(
-    async (row: Enquiry) => {
-      if (restoringId) return;
+  const handleFlagConfirm = useCallback(
+    async (note: string) => {
+      if (!flagRow || flagging) return;
+      const target = flagRow;
+      setFlagging(true);
       try {
-        setRestoringId(row.id);
-        await api.tacRestoreEnquiry(row.id);
-        toast.success("Enquiry restored");
-        await refresh();
+        const r = await api.tacFlagForAudit(target.id, note);
+        if (!r?.success) throw new Error(r?.error ?? "Flag failed");
+        setItems((prev) => {
+          const next = prev.map((p) =>
+            p.id === target.id
+              ? { ...p, flaggedForAudit: r.flaggedForAudit }
+              : p,
+          );
+          setEnquiries(next);
+          return next;
+        });
+        toast.success("Flagged for audit");
+        setFlagging(false);
+        setFlagRow(null);
       } catch (e: any) {
-        toast.error(e?.message ?? "Failed to restore.");
-      } finally {
-        setRestoringId(null);
+        toast.error(e?.message ?? "Flag failed");
+        setFlagging(false);
       }
     },
-    [restoringId, refresh],
+    [flagRow, flagging, setEnquiries],
+  );
+
+  // Phase 9 — Decision log PDF export. Uses the active project from the
+  // store (so the button is project-scoped). When no project is active,
+  // the button is disabled with a tooltip prompting the user to pick one.
+  const handleExportDecisionLog = useCallback(async () => {
+    const projectId = activeProjectId;
+    if (!projectId) {
+      toast.error(
+        "Pick an active project from the top bar to export its decision log.",
+      );
+      return;
+    }
+    if (exportingDecisionLog) return;
+    setExportingDecisionLog(true);
+    try {
+      const r = await api.tacExportDecisionLog(projectId);
+      if (!r?.success || !r?.pdfBase64 || !r?.filename) {
+        throw new Error(r?.error ?? "Export failed");
+      }
+      const byteChars = atob(r.pdfBase64);
+      const arr = new Uint8Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) arr[i] = byteChars.charCodeAt(i);
+      const blob = new Blob([arr], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = String(r.filename);
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success(
+        `Decision log downloaded · ${r.enquiryCount} closed enquiry${r.enquiryCount === 1 ? "" : " entries"}`,
+      );
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to export decision log");
+    } finally {
+      setExportingDecisionLog(false);
+    }
+  }, [activeProjectId, exportingDecisionLog]);
+
+  const handleResolveConfirm = useCallback(
+    async (note: string) => {
+      if (!resolveRow || resolving) return;
+      const target = resolveRow;
+      setResolving(true);
+      try {
+        const r = await api.tacResolveFlag(target.id, note);
+        if (!r?.success) throw new Error(r?.error ?? "Resolve failed");
+        setItems((prev) => {
+          const next = prev.map((p) =>
+            p.id === target.id
+              ? { ...p, flaggedForAudit: r.flaggedForAudit }
+              : p,
+          );
+          setEnquiries(next);
+          return next;
+        });
+        toast.success("Flag resolved");
+        setResolving(false);
+        setResolveRow(null);
+      } catch (e: any) {
+        toast.error(e?.message ?? "Resolve failed");
+        setResolving(false);
+      }
+    },
+    [resolveRow, resolving, setEnquiries],
   );
 
   const rowActions: RowAction<Enquiry>[] = useMemo(
@@ -335,7 +480,6 @@ export function TacEnquiriesListPage() {
         label: "Open workspace",
         icon: Eye,
         onClick: handleOpenWorkspace,
-        isVisible: (row) => !row.softDeleted,
       },
       {
         key: "edit",
@@ -343,26 +487,50 @@ export function TacEnquiriesListPage() {
           row.status === "Draft" ? "Edit details" : "View details",
         icon: Pencil,
         onClick: handleEdit,
-        isVisible: (row) => !row.softDeleted && canEditRow(row),
+        isVisible: (row) => canEditRow(row),
       },
       {
-        key: "softDelete",
-        label: "Soft-delete",
+        key: "archive",
+        label: (row) => (row.status === "Archived" ? "Restore" : "Archive"),
+        icon: (row) => (row.status === "Archived" ? ArchiveRestore : Archive),
+        onClick: (row) => handleArchiveToggle(row),
+        isVisible: (row) =>
+          canEditRow(row) && row.status !== "Generating",
+        isLoading: (row) => archivingId === row.id,
+      },
+      {
+        key: "flag-audit",
+        label: (row) =>
+          row.flaggedForAudit && !row.flaggedForAudit.resolvedAt
+            ? "Resolve flag"
+            : "Flag for audit",
+        icon: Flag,
+        onClick: (row) => {
+          if (row.flaggedForAudit && !row.flaggedForAudit.resolvedAt) {
+            setResolveRow(row);
+          } else {
+            setFlagRow(row);
+          }
+        },
+        isVisible: () => isComplianceLeadUser,
+      },
+      {
+        key: "delete",
+        label: "Delete",
         icon: Trash2,
         isDanger: true,
-        onClick: (row) => setSoftDeleteRow(row),
-        isVisible: (row) => !row.softDeleted && canEditRow(row),
-      },
-      {
-        key: "restore",
-        label: "Restore",
-        icon: RotateCcw,
-        onClick: handleRestore,
-        isVisible: (row) => Boolean(row.softDeleted) && canEditRow(row),
-        isLoading: (row) => restoringId === row.id,
+        onClick: (row) => setDeleteRow(row),
+        isVisible: (row) => canEditRow(row),
       },
     ],
-    [canEditRow, handleEdit, handleOpenWorkspace, handleRestore, restoringId],
+    [
+      canEditRow,
+      handleEdit,
+      handleOpenWorkspace,
+      handleArchiveToggle,
+      archivingId,
+      isComplianceLeadUser,
+    ],
   );
 
   const handleNewClicked = () => {
@@ -406,15 +574,39 @@ export function TacEnquiriesListPage() {
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={handleNewClicked}
-          className="inline-flex items-center justify-center gap-2 self-start rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"
-        >
-          <Plus className="h-4 w-4" />
-          New enquiry
-        </button>
+        <div className="flex flex-wrap items-center gap-2 self-start">
+          {/* Phase 9 — Decision log export. Project-scoped via active project. */}
+          <button
+            type="button"
+            onClick={handleExportDecisionLog}
+            disabled={exportingDecisionLog || !activeProjectId}
+            title={
+              !activeProjectId
+                ? "Pick an active project from the top bar to enable export"
+                : "Export every closed enquiry on the active project as a single PDF"
+            }
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:border-indigo-400 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {exportingDecisionLog ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            Decision log
+          </button>
+          <button
+            type="button"
+            onClick={handleNewClicked}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"
+          >
+            <Plus className="h-4 w-4" />
+            New enquiry
+          </button>
+        </div>
       </div>
+
+      {/* Phase 8 — Recent enquiries panel (HTML prototype "Recent prompts"). */}
+      <RecentEnquiriesPanel enquiries={items} />
 
       {/* StatsCards */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -509,20 +701,52 @@ export function TacEnquiriesListPage() {
         onSaved={handleSaved}
       />
 
-      {/* Soft-delete reason dialog */}
-      <ReasonDialog
-        open={softDeleteRow !== null}
-        onCancel={() => setSoftDeleteRow(null)}
-        onConfirm={handleSoftDeleteConfirm}
-        title="Soft-delete this enquiry?"
+      {/* Permanent-delete confirm dialog. Hard delete: enquiry doc +
+          tabs/* deliverables + every Storage attachment is removed. */}
+      <ConfirmDialog
+        open={deleteRow !== null}
+        onCancel={() => setDeleteRow(null)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete this enquiry permanently?"
         message={`"${
-          softDeleteRow?.title ?? ""
-        }" will be hidden from the active list. You can restore it later from the Soft-deleted filter.`}
-        reasonLabel="Reason for soft-deletion"
-        reasonPlaceholder="e.g. Duplicate of TAC-1234. Closing in favour of that one."
-        confirmLabel="Soft-delete"
+          deleteRow?.title ?? ""
+        }" will be deleted. The enquiry doc, every AI deliverable (Summary / Drawing / RFI), and every uploaded attachment will be removed from storage. This cannot be undone.`}
+        confirmLabel="Delete permanently"
         variant="danger"
-        loading={softDeleting}
+        loading={deleting}
+      />
+
+      {/* Phase 8 — Flag for audit (Compliance Lead) */}
+      <ReasonDialog
+        open={flagRow !== null}
+        title="Flag this enquiry for audit"
+        message={`Flag "${
+          flagRow?.title ?? ""
+        }" for Compliance Lead review. The reviewer note explains why — it'll appear on the Audit Dashboard alongside any thumbs-down feedback.`}
+        reasonLabel="Reviewer note"
+        reasonPlaceholder="What aspect of this insight needs auditing?"
+        confirmLabel="Flag for audit"
+        variant="warning"
+        reasonOptional
+        loading={flagging}
+        onConfirm={(note) => handleFlagConfirm(note)}
+        onCancel={() => setFlagRow(null)}
+      />
+
+      {/* Phase 8 — Resolve flag (Compliance Lead) */}
+      <ReasonDialog
+        open={resolveRow !== null}
+        title="Resolve audit flag"
+        message={`Resolve the audit flag on "${
+          resolveRow?.title ?? ""
+        }". Resolution note is required and will be appended to the audit trail.`}
+        reasonLabel="Resolution note"
+        reasonPlaceholder="What was reviewed? What's the conclusion?"
+        confirmLabel="Resolve flag"
+        variant="success"
+        loading={resolving}
+        onConfirm={(note) => handleResolveConfirm(note)}
+        onCancel={() => setResolveRow(null)}
       />
 
     </motion.div>

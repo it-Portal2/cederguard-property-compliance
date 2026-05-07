@@ -16,8 +16,25 @@ export const aiRoutes: Record<
       isClientAdmin,
       SYSTEM_ADMIN_EMAILS,
     } = ctx;
-    const { prompt, config, action } = req.body;
+    const { prompt, config, action, inlineParts } = req.body;
     if (!prompt) return res.status(400).json({ error: "Missing prompt text" });
+
+    // Optional multimodal payload — array of { mimeType, data (base64) } that
+    // get appended after the text prompt. Used by Phase 4b TAC drawing
+    // overlay (sends the source PDF inline so Gemini can read it visually
+    // and return per-annotation x/y coordinates).
+    const safeInlineParts: Array<{ mimeType: string; data: string }> =
+      Array.isArray(inlineParts)
+        ? inlineParts
+            .filter(
+              (p: any) =>
+                p &&
+                typeof p.mimeType === "string" &&
+                typeof p.data === "string" &&
+                p.data.length > 0,
+            )
+            .slice(0, 8) // cap to 8 parts so a runaway client can't OOM the function
+        : [];
 
     const PRIMARY_MODEL = "gemini-2.5-flash";
     const BACKUP_MODEL = "gemini-2.5-flash-lite";
@@ -64,9 +81,13 @@ export const aiRoutes: Record<
       let attempts = 0;
       while (attempts <= maxRetries) {
         try {
+          const parts: any[] = [{ text: prompt }];
+          for (const p of safeInlineParts) {
+            parts.push({ inlineData: { mimeType: p.mimeType, data: p.data } });
+          }
           const generatePromise = ai.models.generateContent({
             model: modelName,
-            contents: [{ parts: [{ text: prompt }] }],
+            contents: [{ parts }],
             config: generationConfig,
           });
           const timeoutPromise = new Promise<never>((_, reject) =>

@@ -144,8 +144,17 @@ export const api = {
    * JSON (or text) result. Used by TAC + any other surface that needs a
    * one-shot prompt without its own Firestore write side-effects.
    */
-  geminiPrompt: (prompt: string, config?: any, action?: string) =>
-    callApi("geminiPrompt", { prompt, config, action }, 90000),
+  geminiPrompt: (
+    prompt: string,
+    config?: any,
+    action?: string,
+    inlineParts?: Array<{ mimeType: string; data: string }>,
+  ) =>
+    callApi(
+      "geminiPrompt",
+      { prompt, config, action, inlineParts },
+      90000,
+    ),
   analyzeCompliance: (prompt: string, config: any) =>
     callApi("analyzeCompliance", { prompt, config }),
   analyzeRisks: (prompt: string, config: any) =>
@@ -560,10 +569,13 @@ export const api = {
   }) => callApi("tacAttachFile", args),
   tacRemoveAttachment: (enquiryId: string, attachmentId: string) =>
     callApi("tacRemoveAttachment", { enquiryId, attachmentId }),
-  tacSoftDeleteEnquiry: (enquiryId: string, reason: string) =>
-    callApi("tacSoftDeleteEnquiry", { enquiryId, reason }),
-  tacRestoreEnquiry: (enquiryId: string) =>
-    callApi("tacSoftDeleteEnquiry", { enquiryId, restore: true }),
+  /**
+   * Permanently deletes an enquiry — wipes the doc, every `tabs/*`
+   * deliverable, and every Firebase Storage attachment referenced by the
+   * enquiry. Issued RFIs in the workspace register are NOT cascaded.
+   */
+  tacDeleteEnquiry: (enquiryId: string) =>
+    callApi("tacDeleteEnquiry", { enquiryId }),
 
   // Technical Assurance Companion (TAC) — Phase 2: two-step insight pipeline
   // (the actual Gemini call goes through the existing `geminiPrompt` route).
@@ -583,4 +595,53 @@ export const api = {
     callApi("tacIssueRfi", { enquiryId }),
   tacListRfis: (projectId?: string) =>
     callApi("tacListRfis", projectId ? { projectId } : {}),
+  // Phase 6 — Cost & programme tab.
+  tacListCostRates: () => callApi("tacListCostRates", {}),
+  tacExportCostCsv: (enquiryId: string) =>
+    callApi("tacExportCostCsv", { enquiryId }),
+  // Phase 7 — Compliance & citations tab.
+  tacDownloadCompliancePack: (enquiryId: string) =>
+    callApi("tacDownloadCompliancePack", { enquiryId }),
+  tacSaveToGoldenThread: (enquiryId: string) =>
+    callApi("tacSaveToGoldenThread", { enquiryId }),
+  // Phase 8 — Feedback + Audit + Archive.
+  tacSubmitFeedback: (args: {
+    enquiryId: string;
+    thumbs: "up" | "down";
+    reason?: "inaccurate" | "missed_regulation" | "wrong_stage" | "other";
+    note?: string;
+  }) => callApi("tacSubmitFeedback", args),
+  tacFlagForAudit: (enquiryId: string, reviewerNote?: string) =>
+    callApi("tacFlagForAudit", { enquiryId, reviewerNote }),
+  tacResolveFlag: (enquiryId: string, reviewerNote: string) =>
+    callApi("tacResolveFlag", { enquiryId, reviewerNote }),
+  tacArchiveEnquiry: (enquiryId: string, restore?: boolean) =>
+    callApi("tacArchiveEnquiry", { enquiryId, restore: !!restore }),
+  tacListAuditFlagged: () => callApi("tacListAuditFlagged", {}),
+  // Phase 9 — Close + Unlock + Decision Log + Add to PM report.
+  tacCloseEnquiry: (enquiryId: string) =>
+    callApi("tacCloseEnquiry", { enquiryId }),
+  tacUnlockEnquiry: (enquiryId: string, reason: string) =>
+    callApi("tacUnlockEnquiry", { enquiryId, reason }),
+  tacExportDecisionLog: (projectId: string) =>
+    callApi("tacExportDecisionLog", { projectId }),
+  tacAddToProjectReport: (enquiryId: string) =>
+    callApi("tacAddToProjectReport", { enquiryId }),
+  tacRemoveFromProjectReport: (enquiryId: string) =>
+    callApi("tacRemoveFromProjectReport", { enquiryId }),
+  tacListProjectReportEnquiries: (projectId: string) =>
+    callApi("tacListProjectReportEnquiries", { projectId }),
+  // Phase 9b — Share-for-review.
+  tacShareEnquiry: (args: {
+    enquiryId: string;
+    sharedWithUid: string;
+    note?: string;
+  }) => callApi("tacShareEnquiry", args),
+  tacDecideOnShare: (args: {
+    enquiryId: string;
+    shareId: string;
+    decision: "approved" | "rejected";
+    decisionNote?: string;
+  }) => callApi("tacDecideOnShare", args),
+  tacListSharedWithMe: () => callApi("tacListSharedWithMe", {}),
 };

@@ -20,6 +20,7 @@ import { analyzeComplianceLifecycle, analyzeComplianceSentiment, analyzeSensitiv
 import { AIErrorAlert } from '../components/AIErrorAlert';
 import { EmptyState } from '../components/common/EmptyState';
 import { isSuperAdmin, isAtLeastClientAdmin, canCreateProject, canCreateProgramme, UserRole } from '../lib/roles';
+import { ProjectReportTacSection } from '../components/technicalAssurance/ProjectReportTacSection';
 
 function fGBP(v: number) {
   if (v === null || v === undefined || isNaN(v)) return "—";
@@ -820,6 +821,16 @@ export function ProjectReport() {
                         </button>
                     </div>
                 </div>
+
+                {/* ─── TECHNICAL ASSURANCE ─── (Phase 9) — TAC enquiries
+                    flagged for inclusion via the Cost & programme tab's
+                    "Add to PM report" button. Renders nothing when zero
+                    enquiries are added on this project. */}
+                {activeProjectId ? (
+                  <div className="pt-12 print:break-inside-avoid">
+                    <ProjectReportTacSection projectId={activeProjectId} />
+                  </div>
+                ) : null}
 
                 {/* ─── REPORT SIGN-OFF ─── */}
                 <div className="pt-20 border-t-2 border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-8 text-[11px] text-slate-400 uppercase font-black tracking-widest">
