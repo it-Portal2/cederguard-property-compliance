@@ -1,23 +1,23 @@
-// Technical Assurance Companion — insight orchestrator (Phase 2).
+// Technical Assurance Companion — insight orchestration helpers (Phase 2).
 //
-// One Gemini round-trip per enquiry. Pipeline:
-//   1. Load enquiry doc + cross-tenant guard.
-//   2. Pull regulations corpus (Phase 0 + corpus seed).
-//   3. Build a stage-aware prompt (S2 / S4 / S5 branching per PRD US-2.1).
-//   4. Call Gemini with a strict JSON-shaped responseSchema.
-//   5. Validate response: 2-4 ranked options (PRD US-2.3); ≥1 citation per
-//      insight + every cited regId resolves in the corpus (PRD US-2.2 — the
-//      hard "no citation, no insight" gate).
-//   6. Write the Summary deliverable to
-//      `enquiries/{docId}/tabs/summary` so Phase 3 can render it.
-//   7. Flip enquiry status `Draft` → `Open`. Failures revert to `Draft`.
+// The actual Gemini call is delegated to the existing repo-wide route
+// `aiRoutes.geminiPrompt` in `api/routes/ai.ts` so all AI traffic benefits
+// from the same dual-key + dual-model + retry rotation. This module only
+// owns:
+//   1. Prompt building (stage-aware per PRD US-2.1).
+//   2. Server-side validation of the AI response (≥1 corpus-resolvable
+//      citation per PRD US-2.2).
+//   3. Persistence of the Summary deliverable to
+//      `enquiries/{docId}/tabs/summary` + status flips.
 //
-// Stays separate from `api/routes/ai.ts` so we don't disturb existing
-// compliance / risk / control / chatWithAI flows (lesson §25 ADD-never-MODIFY).
+// Pipeline split across two server endpoints:
+//   - tacBuildInsightPrompt(enquiryId) → flips Draft → Generating, returns
+//     the prompt for the client to send through `aiRoutes.geminiPrompt`.
+//   - tacFinaliseInsight(enquiryId, summary) → validates the AI response
+//     and either writes the deliverable + flips Generating → Open, or
+//     rolls status back to Draft on validation failure.
 
-import { GoogleGenAI } from "@google/genai";
 import type { ApiContext } from "./context.js";
-import { parseAIResponse } from "./context.js";
 import {
   loadRegulationsCorpus,
   seedRegulationsCorpusIfMissing,
@@ -46,6 +46,50 @@ export interface InsightOption {
   recommended?: boolean;
 }
 
+export interface InsightDrawingAnnotation {
+  id: string;
+  /** Display number ("1", "2", …) the AI assigns; clients render in this order. */
+  number: string;
+  label: string;
+  page: number;
+  dimension?: string;
+  note?: string;
+  severity: "info" | "warning" | "critical";
+  regId?: string;
+}
+
+export interface InsightDrawing {
+  basePdfPath?: string;
+  basePdfUrl?: string;
+  basePdfFileName?: string;
+  annotations: InsightDrawingAnnotation[];
+  summaryNote?: string;
+}
+
+export interface InsightRfiWalkthroughChapter {
+  id: string;
+  number: string;
+  caption: string;
+  description: string;
+}
+
+export interface InsightRfi {
+  rfiNumber: string;
+  status: "Draft" | "Issued" | "Responded" | "Closed";
+  subject: string;
+  body: string;
+  priority: "high" | "medium" | "low";
+  recipients: Array<{
+    uid?: string;
+    email: string;
+    name?: string;
+    role?: string;
+  }>;
+  walkthroughChapters?: InsightRfiWalkthroughChapter[];
+  issuedAt?: string;
+  issuedBy?: string;
+}
+
 export interface InsightSummary {
   /** Stage-prefixed lede shown at the top of the Summary tab. */
   lede: string;
@@ -56,6 +100,12 @@ export interface InsightSummary {
     status: "pass" | "warn" | "fail";
   }>;
   nextActions: string[];
+  /** Drawing tab content. Populated only when the enquiry has a PDF
+   *  attachment; otherwise the AI is told to omit the field. */
+  drawing?: InsightDrawing;
+  /** RFI tab content. Auto-populated from the same generation; the user
+   *  edits it on the RFI tab and presses Issue to commit a numbered RFI. */
+  rfi?: InsightRfi;
 }
 
 // --- Stage-aware prompt branching -----------------------------------------
@@ -102,6 +152,25 @@ function summariseAttachments(attachments: any[]): string {
     .join("\n");
 }
 
+/** Picks the first PDF attachment as the source drawing for the Drawing tab.
+ *  Phase 4 MVP — single drawing per enquiry. Multi-drawing support deferred. */
+function pickPrimaryDrawing(attachments: any[]):
+  | { fileName: string; storagePath: string; url?: string }
+  | null {
+  if (!Array.isArray(attachments)) return null;
+  const pdf = attachments.find(
+    (a) =>
+      a?.mimeType === "application/pdf" ||
+      String(a?.fileName ?? "").toLowerCase().endsWith(".pdf"),
+  );
+  if (!pdf) return null;
+  return {
+    fileName: String(pdf.fileName ?? "drawing.pdf"),
+    storagePath: String(pdf.storagePath ?? ""),
+    url: pdf.url ? String(pdf.url) : undefined,
+  };
+}
+
 function buildInsightPrompt(args: {
   query: string;
   title: string;
@@ -111,6 +180,10 @@ function buildInsightPrompt(args: {
   projectName: string;
 }): string {
   const { query, title, ribaStage, attachments, corpus, projectName } = args;
+  const primaryDrawing = pickPrimaryDrawing(attachments);
+  const drawingBlock = primaryDrawing
+    ? `\n\nDrawing in scope: ${primaryDrawing.fileName} (annotate this PDF in the \`drawing\` block — at least 3 numbered callouts).`
+    : `\n\nNo PDF drawing is attached — set \`drawing\` to null in the response.`;
   return `You are CedarGuard's Technical Assurance Companion — a chartered-grade construction technical advisor for UK social-housing programmes. Augment the project manager's professional judgement; you do not replace it.
 
 ============================================================
@@ -127,7 +200,7 @@ ${query || "(no query text provided)"}
 """
 
 Attachments:
-${summariseAttachments(attachments)}
+${summariseAttachments(attachments)}${drawingBlock}
 
 ============================================================
 REGULATIONS CORPUS — ONLY CITE FROM THIS LIST
@@ -167,7 +240,39 @@ Return a single JSON object with this shape (no markdown, no code fences):
   "complianceSnapshot": [
     { "check": "Short check name", "status": "pass" | "warn" | "fail" }
   ],
-  "nextActions": [ "Imperative bullet 1", "Imperative bullet 2" ]
+  "nextActions": [ "Imperative bullet 1", "Imperative bullet 2" ],
+  "drawing": ${
+    primaryDrawing
+      ? `{
+    "summaryNote": "1-2 sentence framing of what the markup is calling out across the whole drawing.",
+    "annotations": [
+      {
+        "id": "ann-1",
+        "number": "1",
+        "label": "Short callout title (≤60 chars)",
+        "page": 1,
+        "dimension": "Optional measurement, e.g. '60mm' or '1.2m'",
+        "note": "1-2 sentence explanation",
+        "severity": "info" | "warning" | "critical",
+        "regId": "Optional — link to a corpus regId if the callout cites one"
+      }
+    ]
+  }`
+      : "null"
+  },
+  "rfi": {
+    "subject": "Short RFI subject (≤90 chars), prefixed with the project context",
+    "body": "Multi-paragraph RFI body addressed to the architect / contractor. Plain text, no markdown. Reference cited regulations by regId in prose.",
+    "priority": "high" | "medium" | "low",
+    "walkthroughChapters": [
+      {
+        "id": "ch-1",
+        "number": "1",
+        "caption": "Setting out the drop (≤80 chars)",
+        "description": "1-2 sentences for site teams describing this install / inspection step."
+      }
+    ]
+  }
 }
 
 Rules:
@@ -176,34 +281,60 @@ Rules:
 3. Keep lede ≤ 200 characters. Keep each option summary ≤ 280 characters.
 4. NEVER invent regulations or clause numbers. NEVER cite a regId not in the corpus above.
 5. NEVER recommend bypassing statutory compliance. If the answer requires a chartered review, say so in nextActions.
-6. Use British English. UK construction terminology.
+6. Use British English. UK construction terminology.${
+    primaryDrawing
+      ? `
+7. drawing.annotations MUST contain ≥ 3 numbered callouts referring to the attached drawing. Use stable "number" values starting at "1". If a callout cites a regulation, set its regId to a corpus regId (must match exactly).`
+      : `
+7. No PDF drawing is attached — set the "drawing" field to null. Do NOT fabricate annotations.`
+  }
+8. rfi MUST be populated. subject ≤ 90 chars, body ≥ 60 chars (multi-paragraph). priority must be one of "high" | "medium" | "low" — pick "high" if any compliance check failed or any drawing annotation severity is "critical", otherwise "medium" by default. walkthroughChapters: produce 4-6 numbered install / inspection steps the site team can follow. Captions should be imperative (e.g. "Set out the drop", "Frame the bulkhead"). DO NOT include video URLs — text only (Q11=B locked).
 
 Now return the JSON object.`;
 }
 
 // --- Validation ------------------------------------------------------------
-
-const MIN_OPTIONS = 2;
-const MAX_OPTIONS = 4;
+//
+// MIN / MAX must accept whatever the prompt asks for. The prompt currently
+// requests "between 10 and 15 options"; the validator accepts the wider band
+// 1-20 so casual prompt edits don't immediately break generation. Citations
+// are still hard-gated: ≥1 + every regId must resolve in the corpus.
+const MIN_OPTIONS = 1;
+const MAX_OPTIONS = 20;
 
 type ValidateOk = { ok: true; insight: InsightSummary };
 type ValidateFail = { ok: false; error: string; code: string };
 type ValidateResult = ValidateOk | ValidateFail;
 
-function validateInsight(
+export function validateInsight(
   parsed: any,
   corpus: RegulationCorpusEntry[],
 ): ValidateResult {
   if (!parsed || typeof parsed !== "object") {
-    return { ok: false as const, error: "AI returned a non-object response.", code: "BAD_AI_RESPONSE" };
+    return {
+      ok: false as const,
+      error: "AI returned a non-object response.",
+      code: "BAD_AI_RESPONSE",
+    };
   }
   if (typeof parsed.lede !== "string" || parsed.lede.trim() === "") {
-    return { ok: false as const, error: "AI response missing lede.", code: "BAD_AI_RESPONSE" };
+    return {
+      ok: false as const,
+      error: "AI response missing lede.",
+      code: "BAD_AI_RESPONSE",
+    };
   }
   if (!Array.isArray(parsed.options)) {
-    return { ok: false as const, error: "AI response missing options array.", code: "BAD_AI_RESPONSE" };
+    return {
+      ok: false as const,
+      error: "AI response missing options array.",
+      code: "BAD_AI_RESPONSE",
+    };
   }
-  if (parsed.options.length < MIN_OPTIONS || parsed.options.length > MAX_OPTIONS) {
+  if (
+    parsed.options.length < MIN_OPTIONS ||
+    parsed.options.length > MAX_OPTIONS
+  ) {
     return {
       ok: false as const,
       error: `Insight must contain ${MIN_OPTIONS}-${MAX_OPTIONS} options (got ${parsed.options.length}).`,
@@ -237,7 +368,8 @@ function validateInsight(
   const pool = compliant.length > 0 ? compliant : parsed.options;
   const sorted = [...pool].sort(
     (a: any, b: any) =>
-      (Number(a.costDelta || 0) + Number(a.programmeDelta || 0)) -
+      Number(a.costDelta || 0) +
+      Number(a.programmeDelta || 0) -
       (Number(b.costDelta || 0) + Number(b.programmeDelta || 0)),
   );
   const recommendedId = sorted[0]?.id;
@@ -277,184 +409,144 @@ function validateInsight(
     ? parsed.nextActions.map((s: any) => String(s)).filter(Boolean)
     : [];
 
+  // Drawing block — optional. If the AI returned `null` (no PDF attached),
+  // skip. If returned with annotations, sanitise + enforce the ≥3-callout
+  // rule (PRD US-3.2). Per-annotation severity defaults to "info".
+  let drawing: InsightDrawing | undefined;
+  const rawDrawing = parsed.drawing;
+  if (rawDrawing && typeof rawDrawing === "object") {
+    const rawAnns = Array.isArray(rawDrawing.annotations)
+      ? rawDrawing.annotations
+      : [];
+    const annotations: InsightDrawingAnnotation[] = rawAnns
+      .map((a: any, idx: number) => ({
+        id: String(a?.id ?? `ann-${idx + 1}`),
+        number: String(a?.number ?? String(idx + 1)),
+        label: String(a?.label ?? "Callout").slice(0, 80),
+        page: Math.max(1, Math.floor(Number(a?.page) || 1)),
+        dimension:
+          typeof a?.dimension === "string" && a.dimension.trim()
+            ? a.dimension.trim().slice(0, 40)
+            : undefined,
+        note: typeof a?.note === "string" ? String(a.note).slice(0, 600) : undefined,
+        severity:
+          a?.severity === "critical" ||
+          a?.severity === "warning" ||
+          a?.severity === "info"
+            ? a.severity
+            : "info",
+        regId:
+          typeof a?.regId === "string" && corpusIds.has(a.regId)
+            ? a.regId
+            : undefined,
+      }))
+      .filter((a: InsightDrawingAnnotation) => a.label && a.label.length > 0);
+    if (annotations.length < 3) {
+      return {
+        ok: false as const,
+        error: `Drawing markup requires at least 3 callouts (got ${annotations.length}).`,
+        code: "INSUFFICIENT_DRAWING_ANNOTATIONS",
+      };
+    }
+    drawing = {
+      annotations,
+      summaryNote:
+        typeof rawDrawing.summaryNote === "string"
+          ? rawDrawing.summaryNote.slice(0, 320)
+          : undefined,
+    };
+  }
+
+  // RFI block — required (PRD US-3.3). Sanitise everything; fall back to
+  // permissive defaults rather than rejecting the whole insight if a single
+  // sub-field is malformed.
+  let rfi: InsightRfi | undefined;
+  const rawRfi = parsed.rfi;
+  if (rawRfi && typeof rawRfi === "object") {
+    const subject =
+      typeof rawRfi.subject === "string" && rawRfi.subject.trim()
+        ? rawRfi.subject.trim().slice(0, 200)
+        : "";
+    const body =
+      typeof rawRfi.body === "string" && rawRfi.body.trim()
+        ? rawRfi.body.trim().slice(0, 8000)
+        : "";
+    if (!subject || body.length < 60) {
+      return {
+        ok: false as const,
+        error:
+          "RFI subject + body are required (body must be ≥60 chars). Generation blocked.",
+        code: "BAD_AI_RESPONSE",
+      };
+    }
+    const priority: InsightRfi["priority"] =
+      rawRfi.priority === "high" ||
+      rawRfi.priority === "low" ||
+      rawRfi.priority === "medium"
+        ? rawRfi.priority
+        : "medium";
+    const rawChapters = Array.isArray(rawRfi.walkthroughChapters)
+      ? rawRfi.walkthroughChapters
+      : [];
+    const walkthroughChapters: InsightRfiWalkthroughChapter[] = rawChapters
+      .map((c: any, idx: number) => ({
+        id: String(c?.id ?? `ch-${idx + 1}`),
+        number: String(c?.number ?? String(idx + 1)),
+        caption: String(c?.caption ?? "").slice(0, 100),
+        description: String(c?.description ?? "").slice(0, 600),
+      }))
+      .filter((c: InsightRfiWalkthroughChapter) => c.caption.length > 0);
+    rfi = {
+      rfiNumber: "",
+      status: "Draft",
+      subject,
+      body,
+      priority,
+      recipients: [],
+      walkthroughChapters:
+        walkthroughChapters.length > 0 ? walkthroughChapters : undefined,
+    };
+  } else {
+    return {
+      ok: false as const,
+      error: "RFI block missing from AI response. Generation blocked.",
+      code: "BAD_AI_RESPONSE",
+    };
+  }
+
   const insight: InsightSummary = {
     lede: String(parsed.lede),
     options,
     citations,
     complianceSnapshot,
     nextActions,
+    drawing,
+    rfi,
   };
   return { ok: true as const, insight };
 }
 
-// --- Gemini call -----------------------------------------------------------
-//
-// Mirrors the dual-key + dual-model + retry pattern in `api/routes/ai.ts`
-// `geminiPrompt`. System env key is tried first; user's personal
-// `geminiBackupKey` (set via Profile Settings) is the fallback. If the primary
-// model fails on a retryable error (overloaded / 503 / parse-critical) we
-// retry once on the same key+model; on non-retryable failure we swap to the
-// backup key + the smaller `gemini-2.5-flash-lite` backup model.
+// --- Pipeline step 1: build the prompt + flip status -----------------------
 
-const PRIMARY_MODEL = "gemini-2.5-flash";
-const BACKUP_MODEL = "gemini-2.5-flash-lite";
-const TIMEOUT_MS = 25_000; // Q5=A target P95 < 20s; hard cap at 25s.
-
-const GENERATION_CONFIG = {
-  temperature: 0.3,
-  topP: 0.9,
-  topK: 40,
-  maxOutputTokens: 8192,
-  responseMimeType: "application/json",
+export type BuildPromptOk = {
+  ok: true;
+  prompt: string;
+  corpusRegIds: string[];
 };
-
-async function tryGenerate(
-  ai: GoogleGenAI,
-  modelName: string,
-  prompt: string,
-  maxRetries: number = 1,
-): Promise<any> {
-  let attempts = 0;
-  while (attempts <= maxRetries) {
-    try {
-      const generatePromise = ai.models.generateContent({
-        model: modelName,
-        contents: [{ parts: [{ text: prompt }] }],
-        config: GENERATION_CONFIG,
-      });
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(
-          () => reject(new Error("AI request timed out (>25s).")),
-          TIMEOUT_MS,
-        ),
-      );
-      const result: any = await Promise.race([generatePromise, timeoutPromise]);
-      const raw = result.candidates?.[0]?.content?.parts?.[0]?.text;
-      return parseAIResponse(raw || "", {});
-    } catch (err: any) {
-      attempts++;
-      const isRetryable =
-        err?.message?.includes("AI_PARSE_CRITICAL_FAILURE") ||
-        err?.status === 503 ||
-        err?.message?.includes("overloaded") ||
-        err?.message?.includes("503");
-      if (isRetryable && attempts <= maxRetries) {
-        console.warn(
-          `[tacInsight retry] ${modelName} failed retryable error, attempt ${attempts}/${maxRetries}`,
-        );
-        if (err?.status === 503 || err?.message?.includes("overloaded")) {
-          await new Promise((r) => setTimeout(r, 5000));
-        }
-        continue;
-      }
-      throw err;
-    }
-  }
-}
-
-async function callGemini(prompt: string, ctx: ApiContext): Promise<any> {
-  const systemKey = process.env.GEMINI_API_KEY;
-  const userPersonalKey = (ctx.userData?.geminiBackupKey || "").trim();
-
-  // System key first, fall back to user's personal key if available.
-  const primaryKey = systemKey || userPersonalKey;
-  // Backup key is only used if primary was the system key — gives us a
-  // genuine fallback (not the same key twice).
-  const backupKey = primaryKey === systemKey ? userPersonalKey : null;
-
-  if (!primaryKey) {
-    throw new Error(
-      "No Gemini API key configured. Add a personal key in Profile Settings or contact support.",
-    );
-  }
-
-  // Attempt 1 — system (or only available) key + primary model.
-  try {
-    const primaryAI = new GoogleGenAI({ apiKey: primaryKey });
-    return await tryGenerate(primaryAI, PRIMARY_MODEL, prompt);
-  } catch (initialError: any) {
-    console.error("[tacInsight primary] failed", {
-      status: initialError?.status,
-      message: initialError?.message,
-      source: userPersonalKey ? "user" : "system",
-    });
-
-    // Attempt 2 — user's personal key + the smaller backup model. Only fires
-    // when the user has actually configured a personal key.
-    if (backupKey && backupKey !== primaryKey) {
-      try {
-        console.log("[tacInsight] attempting fallback to user backup key + backup model");
-        const backupAI = new GoogleGenAI({ apiKey: backupKey });
-        return await tryGenerate(backupAI, BACKUP_MODEL, prompt);
-      } catch (backupError: any) {
-        console.error("[tacInsight backup] failed", {
-          status: backupError?.status,
-          message: backupError?.message,
-        });
-        throw friendlyAiError(backupError, "system");
-      }
-    }
-    // No backup configured — surface the friendly variant of the primary error.
-    throw friendlyAiError(initialError, userPersonalKey ? "user" : "system");
-  }
-}
-
-function friendlyAiError(err: any, source: "user" | "system"): Error {
-  const isQuotaError =
-    err?.status === 429 ||
-    err?.message?.includes("429") ||
-    err?.message?.includes("quota");
-  const isTimeout =
-    err?.status === 408 ||
-    err?.message?.includes("deadline") ||
-    err?.message?.includes("timeout");
-
-  let msg = "AI engine encountered an error.";
-  if (isQuotaError) {
-    msg =
-      source === "user"
-        ? "Your personal Gemini API quota is exceeded. Wait ~60s or check AI Studio billing."
-        : "System AI quota exceeded. Add your own Gemini API key in Profile Settings for higher limits.";
-  } else if (isTimeout) {
-    msg = "AI engine timed out. The query is complex — try again in a moment.";
-  } else if (err?.message?.includes("overloaded")) {
-    msg = "Gemini is currently overloaded. Try again in a moment.";
-  } else if (err?.message) {
-    // Pass through the Gemini-side message verbatim (sliced) for diagnostics.
-    msg = String(err.message).slice(0, 280);
-  }
-  const wrapped = new Error(msg);
-  // Keep the original status / code accessible for the route handler.
-  (wrapped as any).status = err?.status;
-  return wrapped;
-}
-
-// --- Orchestrator ----------------------------------------------------------
-
-export interface GenerateInsightResult {
-  enquiry: any;
-  summary: InsightSummary;
-}
-
-export type GenerateInsightOk = { ok: true; result: GenerateInsightResult };
-export type GenerateInsightFail = { ok: false; error: string; code: string };
-export type GenerateInsightOutcome =
-  | GenerateInsightOk
-  | GenerateInsightFail;
+export type BuildPromptFail = { ok: false; error: string; code: string };
+export type BuildPromptOutcome = BuildPromptOk | BuildPromptFail;
 
 /**
- * Run the full insight pipeline for a single enquiry. Caller (the route
- * handler) is responsible for cross-tenant + state guards via
- * `loadEnquiryForMutation` before invoking this.
+ * Step 1 of the insight pipeline. Server-side: ensures corpus exists, builds
+ * the prompt + flips the enquiry status to `Generating`. Client takes the
+ * returned prompt and sends it through `api.geminiPrompt` (existing route).
  */
-export async function generateInsightForEnquiry(args: {
+export async function prepareInsightGeneration(args: {
   ctx: ApiContext;
   docRef: any;
   doc: any;
-}): Promise<GenerateInsightOutcome> {
+}): Promise<BuildPromptOutcome> {
   const { ctx, docRef, doc } = args;
-
-  // Ensure corpus exists. Idempotent — short-circuits if any entry is present.
   await seedRegulationsCorpusIfMissing(ctx);
   const corpus = await loadRegulationsCorpus(ctx);
   if (corpus.length === 0) {
@@ -465,60 +557,93 @@ export async function generateInsightForEnquiry(args: {
     };
   }
 
-  // Project name for prompt context (best-effort, never blocks generation).
   let projectName = "";
   try {
     if (doc.projectId) {
-      const proj = await ctx.db.collection("projects").doc(doc.projectId).get();
+      const proj = await ctx.db
+        .collection("projects")
+        .doc(doc.projectId)
+        .get();
       projectName = (proj.data()?.name as string | undefined) ?? "";
     }
   } catch {
-    // ignore
+    // ignore — project name is best-effort context
   }
 
-  // Optimistic status flip → 'Generating' so the UI shows the pulse pill.
+  const prompt = buildInsightPrompt({
+    query: doc.query ?? "",
+    title: doc.title ?? "",
+    ribaStage: doc.ribaStage ?? "S0",
+    attachments: Array.isArray(doc.attachments) ? doc.attachments : [],
+    corpus,
+    projectName,
+  });
+
   await docRef.set(
     { status: "Generating", updatedAt: new Date().toISOString() },
     { merge: true },
   );
 
-  let parsed: any;
-  try {
-    const prompt = buildInsightPrompt({
-      query: doc.query ?? "",
-      title: doc.title ?? "",
-      ribaStage: doc.ribaStage ?? "S0",
-      attachments: Array.isArray(doc.attachments) ? doc.attachments : [],
-      corpus,
-      projectName,
-    });
-    parsed = await callGemini(prompt, ctx);
-  } catch (e: any) {
-    // Roll status back to Draft on any AI failure.
+  return {
+    ok: true as const,
+    prompt,
+    corpusRegIds: corpus.map((c) => c.regId),
+  };
+}
+
+// --- Pipeline step 2: validate + persist + flip status --------------------
+
+export type FinaliseOk = { ok: true; enquiry: any; summary: InsightSummary };
+export type FinaliseFail = { ok: false; error: string; code: string };
+export type FinaliseOutcome = FinaliseOk | FinaliseFail;
+
+/**
+ * Step 2 of the insight pipeline. Validates the AI response (citations
+ * resolve in the corpus, options count in range), writes the Summary
+ * deliverable to `tabs/summary`, and flips status to `Open`. On any
+ * validation failure, status rolls back to `Draft`.
+ */
+export async function finaliseInsightGeneration(args: {
+  ctx: ApiContext;
+  docRef: any;
+  doc: any;
+  summary: any;
+}): Promise<FinaliseOutcome> {
+  const { ctx, docRef, doc, summary } = args;
+  const corpus = await loadRegulationsCorpus(ctx);
+
+  const validated = validateInsight(summary, corpus);
+  if (validated.ok === false) {
     await docRef.set(
       { status: "Draft", updatedAt: new Date().toISOString() },
       { merge: true },
     );
     return {
       ok: false as const,
-      error: e?.message ?? "AI insight generation failed.",
-      code: "AI_FAILED",
+      error: validated.error,
+      code: validated.code,
     };
   }
 
-  const validated = validateInsight(parsed, corpus);
-  if (validated.ok === false) {
-    await docRef.set(
-      { status: "Draft", updatedAt: new Date().toISOString() },
-      { merge: true },
-    );
-    return { ok: false as const, error: validated.error, code: validated.code };
+  const now = new Date().toISOString();
+
+  // Attach the source-PDF reference to the drawing block so the client can
+  // render it in the EmbedPDF viewer without re-walking the attachments.
+  const primaryDrawing = pickPrimaryDrawing(
+    Array.isArray(doc.attachments) ? doc.attachments : [],
+  );
+  if (validated.insight.drawing && primaryDrawing) {
+    validated.insight.drawing = {
+      ...validated.insight.drawing,
+      basePdfPath: primaryDrawing.storagePath,
+      basePdfUrl: primaryDrawing.url,
+      basePdfFileName: primaryDrawing.fileName,
+    };
   }
 
-  // Persist the Summary deliverable doc.
-  const now = new Date().toISOString();
-  const tabRef = docRef.collection("tabs").doc("summary");
-  await tabRef.set(
+  // Write the Summary deliverable (always).
+  const summaryTabRef = docRef.collection("tabs").doc("summary");
+  await summaryTabRef.set(
     {
       tabId: "summary",
       content: validated.insight,
@@ -529,20 +654,16 @@ export async function generateInsightForEnquiry(args: {
     { merge: false },
   );
 
-  // Flip status to 'Open' so the UI shows the green pill + Workspace becomes
-  // openable. Phase 3-7 hydrate the other 4 tabs (drawing / RFI / cost /
-  // compliance) from the same insight payload.
-  await docRef.set(
-    { status: "Open", updatedAt: now },
-    { merge: true },
-  );
+  // Drawing + RFI deliverables live INSIDE `tabs/summary.content` — the UI
+  // reads from there on every reload, so writing separate `tabs/drawing` /
+  // `tabs/rfi` docs would just create stale duplicates. Single source of
+  // truth = `tabs/summary.content` (lesson locked Phase 5).
 
+  await docRef.set({ status: "Open", updatedAt: now }, { merge: true });
   const updated = await docRef.get();
   return {
     ok: true as const,
-    result: {
-      enquiry: { ...updated.data(), id: doc.id },
-      summary: validated.insight,
-    },
+    enquiry: { ...updated.data(), id: doc.id },
+    summary: validated.insight,
   };
 }

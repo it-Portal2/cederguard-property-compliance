@@ -5,19 +5,30 @@ import {
   Layers,
   ArrowLeft,
   AlertCircle,
-  CheckCircle2,
-  CircleAlert,
-  XCircle,
-  BookOpen,
-  ListChecks,
-  Wand2,
+  Loader2,
+  Compass,
+  Check,
+  CircleDot,
+  Image as ImageIcon,
+  ClipboardList,
+  PoundSterling,
+  ShieldCheck,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { clsx } from "clsx";
 
 import { api } from "../../lib/api";
+import { generateTacInsight } from "../../services/aiService";
 import { TacPlaceholder } from "../../components/technicalAssurance/TacPlaceholder";
 import { getRIBALabel } from "../../constants/ribaStages";
+import { SummaryTab } from "../../components/technicalAssurance/tabs/SummaryTab";
+import { DrawingTab } from "../../components/technicalAssurance/tabs/DrawingTab";
+import { RfiTab } from "../../components/technicalAssurance/tabs/RfiTab";
+import { TabPlaceholder } from "../../components/technicalAssurance/tabs/TabPlaceholder";
+import {
+  TabStrip,
+  type TacWorkspaceTabId,
+} from "../../components/technicalAssurance/tabs/TabStrip";
 import type {
   Enquiry,
   EnquiryDeliverable,
@@ -25,14 +36,10 @@ import type {
   SummaryTabContent,
 } from "../../types/technicalAssurance";
 
-// Phase 2 — Enquiry workspace renders the Summary deliverable produced by
-// `tacGenerateInsight` so users can verify the AI output end-to-end. The
-// proper 5-tab workspace (Drawing / RFI / Cost / Compliance) lands in
-// Phases 3-7 — the panel below is replaced by a real tab strip then.
-//
-// Visual chrome stays intentionally simple: one centred card with the lede,
-// ranked options with compliance pills, citations + next actions. No
-// Sparkles / Brain / Rocket icons (locked rule).
+// Phase 3 — Enquiry workspace becomes the canonical 5-tab surface
+// (Summary · Drawing · RFI · Cost & programme · Compliance). Summary is
+// fully implemented; the other 4 tabs render TabPlaceholder until Phases
+// 4-7 ship. Generation animation is the same stepped panel as Phase 2.
 
 const STATUS_PILL: Record<EnquiryStatus, string> = {
   Draft: "bg-slate-100 text-slate-700 border border-slate-200",
@@ -44,26 +51,99 @@ const STATUS_PILL: Record<EnquiryStatus, string> = {
   Archived: "bg-slate-50 text-slate-500 border border-slate-200",
 };
 
-const COMPLIANCE_PILL: Record<
-  "compliant" | "borderline" | "non-compliant",
-  string
-> = {
-  compliant: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-  borderline: "bg-amber-50 text-amber-800 border border-amber-200",
-  "non-compliant": "bg-rose-50 text-rose-700 border border-rose-200",
-};
+// Stepped progress states for the in-flight generation panel. These are
+// purely UX cosmetics — Gemini doesn't expose real progress callbacks, so we
+// stage advancement on a timer that roughly tracks the actual pipeline order.
+const GENERATION_STEPS = [
+  { key: "context", label: "Loading enquiry context" },
+  { key: "corpus", label: "Reading regulations corpus" },
+  { key: "options", label: "Drafting ranked options" },
+  { key: "citations", label: "Citing applicable clauses" },
+] as const;
 
-const SNAPSHOT_ICON: Record<"pass" | "warn" | "fail", any> = {
-  pass: CheckCircle2,
-  warn: CircleAlert,
-  fail: XCircle,
-};
+function InsightGeneratingPanel() {
+  const [activeIdx, setActiveIdx] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => {
+      setActiveIdx((i) => Math.min(i + 1, GENERATION_STEPS.length - 1));
+    }, 4000);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25 }}
+      className="relative overflow-hidden rounded-xl border border-indigo-200 bg-white p-6 shadow-sm"
+      role="status"
+      aria-live="polite"
+    >
+      <motion.div
+        className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-indigo-200 via-indigo-500 to-indigo-200"
+        animate={{ x: ["-100%", "100%"] }}
+        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+      />
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+          <Loader2 className="h-5 w-5 animate-spin" strokeWidth={2.25} />
+        </div>
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+            Insight in progress
+          </p>
+          <h2 className="text-base font-bold text-slate-900">
+            Analysing your enquiry against the regulations corpus…
+          </h2>
+        </div>
+      </div>
 
-const SNAPSHOT_COLOR: Record<"pass" | "warn" | "fail", string> = {
-  pass: "text-emerald-600",
-  warn: "text-amber-600",
-  fail: "text-rose-600",
-};
+      <ul className="mt-5 space-y-3">
+        {GENERATION_STEPS.map((step, idx) => {
+          const isDone = idx < activeIdx;
+          const isActive = idx === activeIdx;
+          return (
+            <li key={step.key} className="flex items-center gap-3 text-sm">
+              <span
+                className={clsx(
+                  "flex h-5 w-5 items-center justify-center rounded-full",
+                  isDone
+                    ? "bg-emerald-100 text-emerald-700"
+                    : isActive
+                      ? "bg-indigo-100 text-indigo-700"
+                      : "bg-slate-100 text-slate-400",
+                )}
+              >
+                {isDone ? (
+                  <Check className="h-3 w-3" />
+                ) : isActive ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <CircleDot className="h-2 w-2" />
+                )}
+              </span>
+              <span
+                className={clsx(
+                  isDone
+                    ? "text-slate-500"
+                    : isActive
+                      ? "font-semibold text-slate-900"
+                      : "text-slate-400",
+                )}
+              >
+                {step.label}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+
+      <p className="mt-5 text-[11px] text-slate-400">
+        This typically completes in under 20 seconds. Augments professional
+        judgement — does not replace it.
+      </p>
+    </motion.div>
+  );
+}
 
 export function TacEnquiryWorkspacePage() {
   const { id: enquiryId } = useParams<{ id: string }>();
@@ -74,6 +154,7 @@ export function TacEnquiryWorkspacePage() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TacWorkspaceTabId>("summary");
 
   const load = useCallback(async () => {
     if (!enquiryId) return;
@@ -103,23 +184,15 @@ export function TacEnquiryWorkspacePage() {
       toast.error("Insight generation is only available from Draft state.");
       return;
     }
-    const t = toast.loading("Generating insight — this can take up to 25s…");
     try {
       setGenerating(true);
-      await api.tacGenerateInsight(enquiry.id);
-      toast.success("Insight ready", { id: t });
+      setEnquiry((prev) =>
+        prev ? { ...prev, status: "Generating" as const } : prev,
+      );
+      await generateTacInsight(enquiry.id);
       await load();
     } catch (e: any) {
-      const code = e?.code;
-      const msg = e?.message ?? "Failed to generate insight.";
-      toast.error(
-        code === "INSUFFICIENT_CITATIONS"
-          ? "Insight blocked: at least one regulation citation is required."
-          : code === "EMPTY_CORPUS"
-            ? "Regulations corpus is empty. Ask a super-admin to seed it."
-            : msg,
-        { id: t },
-      );
+      toast.error(e?.message ?? "Failed to generate insight.");
       await load();
     } finally {
       setGenerating(false);
@@ -137,18 +210,17 @@ export function TacEnquiryWorkspacePage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-3xl">
-        <div className="flex items-center justify-center py-20 text-slate-400">
-          <span className="inline-flex h-2 w-2 animate-pulse rounded-full bg-indigo-400" />
-          <span className="ml-3 text-sm">Loading enquiry…</span>
-        </div>
+      <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-slate-500">
+        <Loader2
+          className="h-7 w-7 animate-spin text-indigo-500"
+          strokeWidth={2.25}
+        />
+        <p className="text-sm font-semibold tracking-wide">Loading enquiry…</p>
       </div>
     );
   }
 
   if (isHistoricalStub) {
-    // Direct visit to the example route — show the original placeholder so
-    // we don't break the Phase 0 sidebar deep-link pattern.
     return (
       <TacPlaceholder
         icon={Layers}
@@ -161,7 +233,7 @@ export function TacEnquiryWorkspacePage() {
 
   if (error || !enquiry) {
     return (
-      <div className="mx-auto max-w-3xl">
+      <div className="space-y-3">
         <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <div>
@@ -180,12 +252,132 @@ export function TacEnquiryWorkspacePage() {
     );
   }
 
+  const isInFlight = generating || enquiry.status === "Generating";
+
+  // --- Per-tab body ------------------------------------------------------
+  let tabBody: React.ReactNode = null;
+  if (activeTab === "summary") {
+    if (isInFlight) {
+      tabBody = <InsightGeneratingPanel />;
+    } else if (!summaryContent && enquiry.status === "Draft") {
+      tabBody = (
+        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/60 px-6 py-10 text-center">
+          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+            <Compass className="h-5 w-5" />
+          </div>
+          <h2 className="mt-3 text-sm font-semibold text-slate-900">
+            No insight yet
+          </h2>
+          <p className="mt-1 text-[12px] text-slate-500">
+            Click <span className="font-semibold">Generate insight</span> in
+            the header to run the regulation-cited analysis. Insights with zero
+            corpus-resolvable citations are blocked.
+          </p>
+        </div>
+      );
+    } else if (summaryContent) {
+      tabBody = (
+        <SummaryTab
+          content={summaryContent}
+          deliverable={deliverable!}
+          onNavigateTab={setActiveTab}
+        />
+      );
+    }
+  } else if (activeTab === "drawing") {
+    if (isInFlight) {
+      tabBody = <InsightGeneratingPanel />;
+    } else if (summaryContent?.drawing) {
+      tabBody = (
+        <DrawingTab enquiry={enquiry} drawing={summaryContent.drawing} />
+      );
+    } else if (enquiry.status === "Draft") {
+      tabBody = (
+        <TabPlaceholder
+          icon={ImageIcon}
+          title="Generate insight first"
+          description="The Drawing tab is populated by the same AI run that produces the Summary. Switch back to Summary and click Generate insight."
+          phaseLabel="Drawing markup"
+        />
+      );
+    } else {
+      tabBody = (
+        <TabPlaceholder
+          icon={ImageIcon}
+          title="No drawing in scope"
+          description="This enquiry has no PDF attachment, so no drawing markup was produced. Add a PDF and re-generate to populate this tab."
+          phaseLabel="Drawing markup"
+        />
+      );
+    }
+  } else if (activeTab === "rfi") {
+    if (isInFlight) {
+      tabBody = <InsightGeneratingPanel />;
+    } else if (summaryContent?.rfi) {
+      tabBody = (
+        <RfiTab
+          enquiry={enquiry}
+          rfi={summaryContent.rfi}
+          onIssued={(updatedRfi) => {
+            // Stamp the new RFI status onto the cached deliverable so the
+            // tab UI flips to read-only without a full refetch. The next
+            // load() call will pull the canonical doc.
+            setDeliverable((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    content: { ...prev.content, rfi: updatedRfi },
+                  }
+                : prev,
+            );
+          }}
+        />
+      );
+    } else if (enquiry.status === "Draft") {
+      tabBody = (
+        <TabPlaceholder
+          icon={ClipboardList}
+          title="Generate insight first"
+          description="The RFI tab is auto-populated by the same AI run that produces the Summary. Switch back to Summary and click Generate insight."
+          phaseLabel="RFI draft"
+        />
+      );
+    } else {
+      tabBody = (
+        <TabPlaceholder
+          icon={ClipboardList}
+          title="RFI draft unavailable"
+          description="No RFI draft was produced for this enquiry. Add more context and re-generate."
+          phaseLabel="RFI draft"
+        />
+      );
+    }
+  } else if (activeTab === "costProgramme") {
+    tabBody = (
+      <TabPlaceholder
+        icon={PoundSterling}
+        title="Cost & programme impact"
+        description="4-tile metric row + line-item cost table benchmarked against the council's hand-seeded rates + Gantt overlay against the master schedule."
+        phaseLabel="Phase 6"
+      />
+    );
+  } else if (activeTab === "compliance") {
+    tabBody = (
+      <TabPlaceholder
+        icon={ShieldCheck}
+        title="Compliance & citations"
+        description="Full compliance pack — dimensional + system checks, citation cards, soft-flag banner, downloadable PDF, and one-click Save to Golden Thread for HRB projects."
+        phaseLabel="Phase 7"
+      />
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
-      className="mx-auto max-w-4xl space-y-6"
+      className="space-y-6"
     >
       {/* Header */}
       <div>
@@ -230,239 +422,25 @@ export function TacEnquiryWorkspacePage() {
               </div>
             </div>
           </div>
-          {enquiry.status === "Draft" && (
+          {enquiry.status === "Draft" && !isInFlight && (
             <button
               type="button"
               onClick={handleGenerate}
               disabled={generating}
-              className={clsx(
-                "inline-flex items-center justify-center gap-2 self-start rounded-lg px-4 py-2 text-sm font-semibold shadow-sm",
-                generating
-                  ? "cursor-wait bg-slate-100 text-slate-400"
-                  : "bg-indigo-600 text-white hover:bg-indigo-700",
-              )}
+              className="inline-flex items-center justify-center gap-2 self-start rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 disabled:cursor-wait disabled:bg-slate-300"
             >
-              <Wand2 className="h-4 w-4" />
-              {generating ? "Generating…" : "Generate insight"}
+              <Compass className="h-4 w-4" />
+              Generate insight
             </button>
           )}
         </div>
       </div>
 
-      {/* Pulse banner when Generating */}
-      {enquiry.status === "Generating" && (
-        <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          <span className="relative inline-flex h-2.5 w-2.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
-            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-amber-500" />
-          </span>
-          <p>
-            Insight generation in flight — this typically completes in under
-            20 seconds.
-          </p>
-        </div>
-      )}
+      {/* 5-tab strip */}
+      <TabStrip activeTab={activeTab} onChange={setActiveTab} />
 
-      {/* Empty state for Draft + no deliverable yet */}
-      {enquiry.status === "Draft" && !summaryContent && (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/60 px-6 py-10 text-center">
-          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-            <Wand2 className="h-5 w-5" />
-          </div>
-          <h2 className="mt-3 text-sm font-semibold text-slate-900">
-            No insight yet
-          </h2>
-          <p className="mt-1 text-[12px] text-slate-500">
-            Click <span className="font-semibold">Generate insight</span> to
-            run the regulation-cited AI analysis. Insights with zero
-            corpus-resolvable citations are blocked.
-          </p>
-        </div>
-      )}
-
-      {/* Summary deliverable */}
-      {summaryContent && (
-        <div className="space-y-4">
-          {/* Lede */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
-              Summary
-            </p>
-            <p className="mt-1 text-base font-semibold leading-relaxed text-slate-900">
-              {summaryContent.lede}
-            </p>
-            <p className="mt-3 text-[11px] text-slate-400">
-              Generated {deliverable?.generatedAt
-                ? new Date(deliverable.generatedAt).toLocaleString("en-GB")
-                : "—"}{" "}
-              · Augments professional judgement, does not replace it.
-            </p>
-          </div>
-
-          {/* Compliance snapshot */}
-          {summaryContent.complianceSnapshot.length > 0 && (
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
-                Compliance snapshot
-              </p>
-              <ul className="mt-2 space-y-1.5">
-                {summaryContent.complianceSnapshot.map((s, idx) => {
-                  const Icon = SNAPSHOT_ICON[s.status];
-                  return (
-                    <li
-                      key={idx}
-                      className="flex items-start gap-2 text-sm text-slate-700"
-                    >
-                      <Icon
-                        className={clsx(
-                          "mt-0.5 h-4 w-4 shrink-0",
-                          SNAPSHOT_COLOR[s.status],
-                        )}
-                      />
-                      <span>{s.check}</span>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
-
-          {/* Ranked options */}
-          {summaryContent.options.length > 0 && (
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
-                  Ranked options
-                </p>
-                <p className="text-[11px] text-slate-400">
-                  {summaryContent.options.length} option
-                  {summaryContent.options.length === 1 ? "" : "s"}
-                </p>
-              </div>
-              <ol className="mt-3 space-y-3">
-                {summaryContent.options.map((opt, idx) => (
-                  <li
-                    key={opt.id}
-                    className={clsx(
-                      "rounded-lg border p-4 transition-colors",
-                      opt.recommended
-                        ? "border-indigo-200 bg-indigo-50/40"
-                        : "border-slate-200 bg-white",
-                    )}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[11px] font-semibold text-slate-400">
-                            #{idx + 1}
-                          </span>
-                          <h3 className="text-sm font-semibold text-slate-900">
-                            {opt.label}
-                          </h3>
-                          {opt.recommended && (
-                            <span className="inline-flex items-center rounded-full bg-indigo-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
-                              Recommended
-                            </span>
-                          )}
-                        </div>
-                        <p className="mt-1 text-sm text-slate-700">
-                          {opt.summary}
-                        </p>
-                      </div>
-                      <span
-                        className={clsx(
-                          "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold",
-                          COMPLIANCE_PILL[opt.compliance],
-                        )}
-                      >
-                        {opt.compliance.replace("-", " ")}
-                      </span>
-                    </div>
-                    {opt.rationale && (
-                      <p className="mt-2 text-[12px] leading-relaxed text-slate-500">
-                        {opt.rationale}
-                      </p>
-                    )}
-                    {(opt.costDelta !== 0 || opt.programmeDelta !== 0) && (
-                      <div className="mt-2 flex items-center gap-3 text-[11px] text-slate-500">
-                        <span>
-                          Cost Δ: <strong className="text-slate-700">£{opt.costDelta.toLocaleString()}</strong>
-                        </span>
-                        <span>
-                          Programme Δ:{" "}
-                          <strong className="text-slate-700">
-                            {opt.programmeDelta} day{opt.programmeDelta === 1 ? "" : "s"}
-                          </strong>
-                        </span>
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ol>
-            </div>
-          )}
-
-          {/* Citations */}
-          {summaryContent.citations.length > 0 && (
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-2">
-                <BookOpen className="h-4 w-4 text-indigo-600" />
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
-                  Cited regulations
-                </p>
-              </div>
-              <ul className="mt-3 space-y-3">
-                {summaryContent.citations.map((c, idx) => (
-                  <li
-                    key={`${c.regId}-${idx}`}
-                    className="rounded-lg border border-slate-200 bg-slate-50/60 p-3"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono text-[11px] font-bold text-indigo-700">
-                        {c.regId}
-                      </span>
-                      <span className="text-[11px] text-slate-400">
-                        Applied to: {c.appliedTo || "—"}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-[12px] italic leading-relaxed text-slate-600">
-                      "{c.quote}"
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Next actions */}
-          {summaryContent.nextActions.length > 0 && (
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-2">
-                <ListChecks className="h-4 w-4 text-indigo-600" />
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
-                  Next actions
-                </p>
-              </div>
-              <ul className="mt-2 space-y-1.5">
-                {summaryContent.nextActions.map((a, idx) => (
-                  <li
-                    key={idx}
-                    className="flex items-start gap-2 text-sm text-slate-700"
-                  >
-                    <span className="mt-1.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500" />
-                    <span>{a}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Footnote about future tabs */}
-      <p className="text-center text-[11px] text-slate-400">
-        Drawing · RFI · Cost &amp; programme · Compliance tabs land in Phases 3 to 7.
-      </p>
+      {/* Active tab body */}
+      {tabBody}
     </motion.div>
   );
 }

@@ -8,7 +8,10 @@
 //   5. tacRemoveAttachment    — delete from storage + remove from doc
 //   6. tacSoftDeleteEnquiry   — soft-delete + restore via the same endpoint
 //
-// Phase 2 lands `tacGenerateInsight`. Phases 4-9 layer state-transition,
+// Phase 2 lands `tacBuildInsightPrompt` + `tacFinaliseInsight`. The actual
+// Gemini call goes through the existing `aiRoutes.geminiPrompt` route so
+// all AI traffic shares the dual-key + dual-model + retry rotation.
+// Phases 4-9 layer state-transition,
 // share, close, unlock and audit endpoints on top.
 //
 // Standard return shape:
@@ -25,7 +28,10 @@ import {
   TAC_INITIAL_AV_STATUS,
 } from "../lib/tacFileUpload.js";
 import { seedTacEnquiriesIfMissing } from "../lib/tacEnquiriesSeed.js";
-import { generateInsightForEnquiry } from "../lib/tacInsightGenerator.js";
+import {
+  prepareInsightGeneration,
+  finaliseInsightGeneration,
+} from "../lib/tacInsightGenerator.js";
 
 // --- Constants ------------------------------------------------------------
 
@@ -545,9 +551,19 @@ async function tacSoftDeleteEnquiry(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// --- Endpoint 7: tacGenerateInsight (Phase 2) ----------------------------
+// --- Endpoint 7: tacBuildInsightPrompt (Phase 2 step 1) -------------------
+//
+// Two-step pipeline (the actual Gemini call happens via the existing
+// `aiRoutes.geminiPrompt` route — single source of truth for AI traffic +
+// the dual-key + dual-model + retry rotation).
+//
+//   step 1 → tacBuildInsightPrompt   (this endpoint)
+//                ↓
+//            client calls existing api.geminiPrompt(prompt, config)
+//                ↓
+//   step 2 → tacFinaliseInsight       (writes deliverable + flips status)
 
-async function tacGenerateInsight(req: any, res: any, ctx: ApiContext) {
+async function tacBuildInsightPrompt(req: any, res: any, ctx: ApiContext) {
   try {
     const { enquiryId } = req.body ?? {};
     const guard = await loadEnquiryForMutation(ctx, enquiryId, res, {
@@ -555,7 +571,7 @@ async function tacGenerateInsight(req: any, res: any, ctx: ApiContext) {
     });
     if (!guard) return;
 
-    const result = await generateInsightForEnquiry({
+    const result = await prepareInsightGeneration({
       ctx,
       docRef: guard.docRef,
       doc: guard.doc,
@@ -569,15 +585,63 @@ async function tacGenerateInsight(req: any, res: any, ctx: ApiContext) {
     }
     return res.status(200).json({
       success: true,
-      enquiry: result.result.enquiry,
-      summary: result.result.summary,
+      prompt: result.prompt,
+      corpusRegIds: result.corpusRegIds,
     });
   } catch (e: any) {
-    console.error("[tacGenerateInsight] failed:", e);
+    console.error("[tacBuildInsightPrompt] failed:", e);
     return res.status(500).json({
       success: false,
-      error: e?.message ?? "Failed to generate insight.",
-      code: "GENERATE_FAILED",
+      error: e?.message ?? "Failed to build insight prompt.",
+      code: "BUILD_PROMPT_FAILED",
+    });
+  }
+}
+
+// --- Endpoint 7b: tacFinaliseInsight (Phase 2 step 2) --------------------
+
+async function tacFinaliseInsight(req: any, res: any, ctx: ApiContext) {
+  try {
+    const { enquiryId, summary } = req.body ?? {};
+    if (!summary || typeof summary !== "object") {
+      return res.status(400).json({
+        success: false,
+        error: "summary (AI response) is required.",
+        code: "INVALID_INPUT",
+      });
+    }
+    // Allow Generating or Draft (in case the user retries after a transient
+    // network failure that left the client in Generating but the server
+    // already rolled back).
+    const guard = await loadEnquiryForMutation(ctx, enquiryId, res, {
+      allowedStatuses: ["Generating", "Draft"],
+    });
+    if (!guard) return;
+
+    const result = await finaliseInsightGeneration({
+      ctx,
+      docRef: guard.docRef,
+      doc: guard.doc,
+      summary,
+    });
+    if (result.ok === false) {
+      return res.status(400).json({
+        success: false,
+        error: result.error,
+        code: result.code,
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      enquiry: result.enquiry,
+      summary: result.summary,
+    });
+  } catch (e: any) {
+    console.error("[tacFinaliseInsight] failed:", e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? "Failed to save insight.",
+      code: "FINALISE_FAILED",
     });
   }
 }
@@ -648,6 +712,247 @@ async function tacGetEnquiryDeliverable(req: any, res: any, ctx: ApiContext) {
   }
 }
 
+// --- Endpoint 9: tacUpsertRfiDraft (Phase 5) -----------------------------
+//
+// User-edited tweaks to the auto-populated RFI on the RFI tab. Patches
+// the `tabs/rfi.content` deliverable in place. Status must remain `Draft`
+// — once Issued, the RFI is locked + lives in `rfis/{rfiNumber}`.
+
+const RFI_WRITABLE_FIELDS = [
+  "subject",
+  "body",
+  "priority",
+  "recipients",
+] as const;
+
+async function tacUpsertRfiDraft(req: any, res: any, ctx: ApiContext) {
+  try {
+    const { enquiryId, rfi } = req.body ?? {};
+    if (!rfi || typeof rfi !== "object") {
+      return res.status(400).json({
+        success: false,
+        error: "rfi patch is required.",
+        code: "INVALID_INPUT",
+      });
+    }
+    const guard = await loadEnquiryForMutation(ctx, enquiryId, res, {
+      // Allow saving edits even after the enquiry was Closed/Archived in
+      // case the user reopens for correction in a later phase.
+      allowedStatuses: ["Open", "AwaitingReview", "Approved", "Closed"],
+    });
+    if (!guard) return;
+    // Edits are persisted into `tabs/summary.content.rfi` — single source of
+    // truth read by the workspace UI on every reload.
+    const summaryTabRef = guard.docRef.collection("tabs").doc("summary");
+    const tabSnap = await summaryTabRef.get();
+    if (!tabSnap.exists) {
+      return res.status(404).json({
+        success: false,
+        error: "Summary deliverable not found. Run Generate insight first.",
+        code: "NOT_FOUND",
+      });
+    }
+    const summaryContent = (tabSnap.data()?.content ?? {}) as any;
+    const existing = (summaryContent.rfi ?? {}) as any;
+    if ((existing.status ?? "Draft") !== "Draft") {
+      return res.status(400).json({
+        success: false,
+        error: "Issued RFIs cannot be edited.",
+        code: "INVALID_STATE",
+      });
+    }
+    const safe: Record<string, any> = {};
+    for (const k of RFI_WRITABLE_FIELDS) if (k in rfi) safe[k] = rfi[k];
+    if (typeof safe.subject === "string") {
+      safe.subject = safe.subject.trim().slice(0, 200);
+    }
+    if (typeof safe.body === "string") {
+      safe.body = safe.body.trim().slice(0, 8000);
+    }
+    if (
+      safe.priority &&
+      !["high", "medium", "low"].includes(safe.priority)
+    ) {
+      delete safe.priority;
+    }
+    if (Array.isArray(safe.recipients)) {
+      safe.recipients = safe.recipients
+        .map((r: any) => ({
+          uid: r?.uid ? String(r.uid) : undefined,
+          email: String(r?.email ?? "").trim().toLowerCase().slice(0, 200),
+          name: r?.name ? String(r.name).slice(0, 80) : undefined,
+          role: r?.role ? String(r.role).slice(0, 80) : undefined,
+        }))
+        .filter((r: any) => /^.+@.+\..+$/.test(r.email));
+    }
+    const nextRfi = { ...existing, ...safe };
+    await summaryTabRef.set(
+      {
+        content: { ...summaryContent, rfi: nextRfi },
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true },
+    );
+    return res.status(200).json({ success: true, content: nextRfi });
+  } catch (e: any) {
+    console.error("[tacUpsertRfiDraft] failed:", e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? "Failed to save RFI draft.",
+      code: "RFI_SAVE_FAILED",
+    });
+  }
+}
+
+// --- Endpoint 10: tacIssueRfi (Phase 5) ----------------------------------
+//
+// Generates an `RFI-{XXXX}-{NNN}` number, persists the RFI to the top-level
+// `rfis/{clientId_rfiNumber}` collection (rules + indexes already provisioned
+// in Phase 0), flips `tabs/rfi.content.status` to `Issued`, and stamps
+// issuedAt + issuedBy.
+
+function makeRfiNumber(projectId: string, sequence: number): string {
+  // Project short-id: last 4 base36 chars of the projectId, uppercased.
+  // Sequence: zero-padded to 3 digits.
+  const shortId = (projectId || "TAC").slice(-4).toUpperCase();
+  const seq = String(sequence).padStart(3, "0");
+  return `RFI-${shortId}-${seq}`;
+}
+
+async function tacIssueRfi(req: any, res: any, ctx: ApiContext) {
+  try {
+    const { enquiryId } = req.body ?? {};
+    const guard = await loadEnquiryForMutation(ctx, enquiryId, res, {
+      allowedStatuses: ["Open", "AwaitingReview", "Approved"],
+    });
+    if (!guard) return;
+    // Source of truth: tabs/summary.content.rfi (kept in sync with edits via
+    // tacUpsertRfiDraft). The separate top-level `rfis/{rfiNumber}` write is
+    // for the workspace-wide register page only.
+    const summaryTabRef = guard.docRef.collection("tabs").doc("summary");
+    const tabSnap = await summaryTabRef.get();
+    if (!tabSnap.exists) {
+      return res.status(404).json({
+        success: false,
+        error: "Summary deliverable not found. Run Generate insight first.",
+        code: "NOT_FOUND",
+      });
+    }
+    const summaryContent = (tabSnap.data()?.content ?? {}) as any;
+    const existing = (summaryContent.rfi ?? {}) as any;
+    if ((existing.status ?? "Draft") !== "Draft") {
+      return res.status(400).json({
+        success: false,
+        error: "RFI has already been issued.",
+        code: "INVALID_STATE",
+      });
+    }
+    if (
+      !existing.subject ||
+      !existing.body ||
+      !Array.isArray(existing.recipients) ||
+      existing.recipients.length === 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        error:
+          "RFI is incomplete: subject, body, and at least one recipient are required.",
+        code: "INVALID_INPUT",
+      });
+    }
+
+    // Per-project RFI counter — looks at existing rfis for this clientId +
+    // projectId and picks max(sequence) + 1. For a v1 with low write volume
+    // this is fine; can be replaced with a Firestore counter doc in Phase 5b
+    // if concurrent issues are a concern.
+    const projectId = String(guard.doc.projectId ?? "TAC");
+    const existingRfisSnap = await ctx.db
+      .collection("rfis")
+      .where("clientId", "==", ctx.primaryUid)
+      .where("projectId", "==", projectId)
+      .get();
+    const sequence = existingRfisSnap.size + 1;
+    const rfiNumber = makeRfiNumber(projectId, sequence);
+
+    const now = new Date().toISOString();
+    const issuedRfi = {
+      ...existing,
+      rfiNumber,
+      status: "Issued",
+      issuedAt: now,
+      issuedBy: ctx.uid,
+    };
+
+    const rfiRegisterRef = ctx.db
+      .collection("rfis")
+      .doc(`${ctx.primaryUid}_${rfiNumber}`);
+    await rfiRegisterRef.set({
+      rfiNumber,
+      clientId: ctx.primaryUid,
+      projectId,
+      enquiryId: guard.doc.id,
+      enquiryTitle: guard.doc.title ?? null,
+      ribaStage: guard.doc.ribaStage ?? null,
+      subject: issuedRfi.subject,
+      body: issuedRfi.body,
+      priority: issuedRfi.priority,
+      recipients: issuedRfi.recipients,
+      status: "Issued",
+      issuedAt: now,
+      issuedBy: ctx.uid,
+    });
+
+    await summaryTabRef.set(
+      {
+        content: { ...summaryContent, rfi: issuedRfi },
+        updatedAt: now,
+      },
+      { merge: true },
+    );
+
+    return res.status(200).json({
+      success: true,
+      rfiNumber,
+      content: issuedRfi,
+    });
+  } catch (e: any) {
+    console.error("[tacIssueRfi] failed:", e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? "Failed to issue RFI.",
+      code: "RFI_ISSUE_FAILED",
+    });
+  }
+}
+
+// --- Endpoint 11: tacListRfis (Phase 5) ----------------------------------
+//
+// Workspace-scoped list of issued RFIs. Used by RfiRegisterPage.
+
+async function tacListRfis(req: any, res: any, ctx: ApiContext) {
+  try {
+    const { projectId } = req.body ?? {};
+    let q: any = ctx.db
+      .collection("rfis")
+      .where("clientId", "==", ctx.primaryUid);
+    if (projectId && typeof projectId === "string") {
+      q = q.where("projectId", "==", projectId);
+    }
+    const snap = await q.get();
+    const items = snap.docs
+      .map((d: any) => d.data())
+      .sort((a: any, b: any) => (b.issuedAt ?? "").localeCompare(a.issuedAt ?? ""));
+    return res.status(200).json({ success: true, items });
+  } catch (e: any) {
+    console.error("[tacListRfis] failed:", e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? "Failed to load RFI register.",
+      code: "RFI_LIST_FAILED",
+    });
+  }
+}
+
 // --- Route map -----------------------------------------------------------
 
 export const technicalAssuranceRoutes: Record<string, any> = {
@@ -657,9 +962,15 @@ export const technicalAssuranceRoutes: Record<string, any> = {
   tacAttachFile,
   tacRemoveAttachment,
   tacSoftDeleteEnquiry,
-  // Phase 2 — AI insight generation
-  tacGenerateInsight,
+  // Phase 2 — AI insight generation (two-step: build prompt, then finalise
+  // after client-side call to existing `aiRoutes.geminiPrompt`).
+  tacBuildInsightPrompt,
+  tacFinaliseInsight,
   tacGetEnquiryDeliverable,
+  // Phase 5 — RFI tab + register.
+  tacUpsertRfiDraft,
+  tacIssueRfi,
+  tacListRfis,
   // Phase 4: tacRenderAnnotatedPdf, tacSendDrawingToArchitect.
   // Phase 5: tacIssueRfi, tacListRfis, tacGetRfi, tacUpsertRfiDraft.
   // Phase 6: tacListCostRates, tacUpsertCostRate, tacExportCostCsv.

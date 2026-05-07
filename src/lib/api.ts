@@ -137,6 +137,15 @@ export const api = {
   clientGetPortfolioInfo: () => callApi("clientGetPortfolioInfo"),
 
   testGemini: (prompt: string) => callApi("geminiPrompt", { prompt }),
+  /**
+   * Generic Gemini wrapper — sends a prompt + config + optional `action`
+   * tag to the existing `aiRoutes.geminiPrompt` server route. The route does
+   * the dual-key + dual-model + retry rotation; the response is the parsed
+   * JSON (or text) result. Used by TAC + any other surface that needs a
+   * one-shot prompt without its own Firestore write side-effects.
+   */
+  geminiPrompt: (prompt: string, config?: any, action?: string) =>
+    callApi("geminiPrompt", { prompt, config, action }, 90000),
   analyzeCompliance: (prompt: string, config: any) =>
     callApi("analyzeCompliance", { prompt, config }),
   analyzeRisks: (prompt: string, config: any) =>
@@ -556,11 +565,22 @@ export const api = {
   tacRestoreEnquiry: (enquiryId: string) =>
     callApi("tacSoftDeleteEnquiry", { enquiryId, restore: true }),
 
-  // Technical Assurance Companion (TAC) — Phase 2: AI insight generation
-  tacGenerateInsight: (enquiryId: string) =>
-    callApi("tacGenerateInsight", { enquiryId }, 30000),
+  // Technical Assurance Companion (TAC) — Phase 2: two-step insight pipeline
+  // (the actual Gemini call goes through the existing `geminiPrompt` route).
+  tacBuildInsightPrompt: (enquiryId: string) =>
+    callApi("tacBuildInsightPrompt", { enquiryId }),
+  tacFinaliseInsight: (enquiryId: string, summary: any) =>
+    callApi("tacFinaliseInsight", { enquiryId, summary }),
   tacGetEnquiryDeliverable: (
     enquiryId: string,
     tabId: "summary" | "drawing" | "rfi" | "costProgramme" | "compliance" = "summary",
   ) => callApi("tacGetEnquiryDeliverable", { enquiryId, tabId }),
+
+  // Technical Assurance Companion (TAC) — Phase 5: RFI tab + register
+  tacUpsertRfiDraft: (enquiryId: string, rfi: any) =>
+    callApi("tacUpsertRfiDraft", { enquiryId, rfi }),
+  tacIssueRfi: (enquiryId: string) =>
+    callApi("tacIssueRfi", { enquiryId }),
+  tacListRfis: (projectId?: string) =>
+    callApi("tacListRfis", projectId ? { projectId } : {}),
 };

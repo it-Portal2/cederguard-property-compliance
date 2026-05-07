@@ -1248,3 +1248,81 @@ export async function chatWithAI(
     throw err;
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────
+// Technical Assurance Companion — Phase 2 insight orchestrator.
+//
+// Three-step flow that reuses the repo-wide AI infrastructure:
+//   1. server: tacBuildInsightPrompt(enquiryId)
+//        → flips status Draft → Generating, returns prompt + corpus regIds
+//   2. client: api.geminiPrompt(prompt, config)
+//        → existing route runs the dual-key + dual-model + retry rotation
+//   3. server: tacFinaliseInsight(enquiryId, summary)
+//        → validates citations + writes deliverable + flips Generating → Open
+//        → on validation failure, flips status back to Draft
+//
+// All Gemini traffic flows through the existing `aiRoutes.geminiPrompt`
+// handler — no duplicated key-rotation logic in TAC code.
+export async function generateTacInsight(
+  enquiryId: string,
+): Promise<{ summary: any; enquiry: any }> {
+  // Step 1 — server builds the prompt + flips to Generating.
+  const built = await api.tacBuildInsightPrompt(enquiryId);
+  if (!built?.success) {
+    throw new Error(built?.error ?? "Failed to build insight prompt.");
+  }
+  const prompt: string = built.prompt;
+
+  // Step 2 — existing Gemini route. JSON output, low temperature for
+  // citation-faithful generation. Larger token budget so 10-15 options +
+  // citations fit comfortably.
+  const config = {
+    temperature: 0.3,
+    topP: 0.9,
+    topK: 40,
+    maxOutputTokens: 16384,
+    responseMimeType: "application/json",
+  };
+  let summary: any;
+  try {
+    const aiRes = await api.geminiPrompt(prompt, config, "tacGenerateInsight");
+    if (!aiRes?.success) {
+      throw new Error(aiRes?.error ?? "AI insight generation failed.");
+    }
+    summary = aiRes.result;
+    if (!summary || typeof summary !== "object" || Array.isArray(summary)) {
+      throw new Error(
+        "AI returned a non-object response. Try again in a moment.",
+      );
+    }
+  } catch (e: any) {
+    // Roll status back to Draft so the user can retry. Posting an empty
+    // object to tacFinaliseInsight triggers BAD_AI_RESPONSE which flips
+    // status back server-side.
+    try {
+      await api.tacFinaliseInsight(enquiryId, {});
+    } catch {
+      // ignore — the original error is what matters
+    }
+    throw e;
+  }
+
+  // Step 3 — server validates citations + persists the Summary deliverable.
+  const finalised = await api.tacFinaliseInsight(enquiryId, summary);
+  if (!finalised?.success) {
+    const code = finalised?.code as string | undefined;
+    const msg = finalised?.error as string | undefined;
+    const friendly =
+      code === "INSUFFICIENT_CITATIONS"
+        ? "Insight blocked: at least one regulation citation is required."
+        : code === "INVALID_OPTIONS_COUNT"
+          ? "AI returned an unexpected number of options. Try again."
+          : code === "EMPTY_CORPUS"
+            ? "Regulations corpus is empty. Ask a super-admin to seed it."
+            : (msg ?? "Failed to save insight.");
+    const err = new Error(friendly);
+    (err as any).code = code;
+    throw err;
+  }
+  return { summary: finalised.summary, enquiry: finalised.enquiry };
+}

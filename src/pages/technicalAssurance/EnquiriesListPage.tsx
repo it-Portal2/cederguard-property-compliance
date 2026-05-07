@@ -13,7 +13,6 @@ import {
   Activity,
   CheckCircle2,
   Inbox,
-  Wand2,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { motion } from "motion/react";
@@ -91,7 +90,6 @@ export function TacEnquiriesListPage() {
   const [softDeleteRow, setSoftDeleteRow] = useState<Enquiry | null>(null);
   const [softDeleting, setSoftDeleting] = useState(false);
   const [restoringId, setRestoringId] = useState<string | null>(null);
-  const [generatingId, setGeneratingId] = useState<string | null>(null);
 
   const userRole = user?.role || user?.profile?.role;
   const isAdmin = isSuperAdmin(user?.email, userRole);
@@ -330,46 +328,6 @@ export function TacEnquiriesListPage() {
     [restoringId, refresh],
   );
 
-  const handleGenerateInsight = useCallback(
-    async (row: Enquiry) => {
-      if (generatingId) return;
-      const t = toast.loading(
-        "Generating insight — this can take up to 25s…",
-      );
-      try {
-        setGeneratingId(row.id);
-        // Optimistic flip so the user sees the pulse pill immediately.
-        setItems((prev) =>
-          prev.map((p) =>
-            p.id === row.id ? { ...p, status: "Generating" as const } : p,
-          ),
-        );
-        await api.tacGenerateInsight(row.id);
-        toast.success("Insight ready", { id: t });
-        await refresh();
-      } catch (e: any) {
-        const msg = e?.message ?? "Failed to generate insight.";
-        const code = e?.code;
-        toast.error(
-          code === "INSUFFICIENT_CITATIONS"
-            ? "Insight generation blocked: at least one regulation citation is required."
-            : code === "EMPTY_CORPUS"
-              ? "Regulations corpus is empty. Ask a super-admin to seed it."
-              : code === "INVALID_OPTIONS_COUNT"
-                ? "AI returned an unexpected number of options. Try again."
-                : msg,
-          { id: t },
-        );
-        // Revert optimistic flip + refresh from the server (which already
-        // rolled status back to Draft on failure).
-        await refresh();
-      } finally {
-        setGeneratingId(null);
-      }
-    },
-    [generatingId, refresh],
-  );
-
   const rowActions: RowAction<Enquiry>[] = useMemo(
     () => [
       {
@@ -388,19 +346,6 @@ export function TacEnquiriesListPage() {
         isVisible: (row) => !row.softDeleted && canEditRow(row),
       },
       {
-        key: "generate",
-        label: "Generate insight",
-        icon: Wand2,
-        onClick: handleGenerateInsight,
-        isVisible: (row) =>
-          !row.softDeleted &&
-          row.status === "Draft" &&
-          canEditRow(row),
-        isLoading: (row) => generatingId === row.id,
-        isDisabled: (row) =>
-          generatingId !== null && generatingId !== row.id,
-      },
-      {
         key: "softDelete",
         label: "Soft-delete",
         icon: Trash2,
@@ -417,15 +362,7 @@ export function TacEnquiriesListPage() {
         isLoading: (row) => restoringId === row.id,
       },
     ],
-    [
-      canEditRow,
-      handleEdit,
-      handleOpenWorkspace,
-      handleRestore,
-      handleGenerateInsight,
-      restoringId,
-      generatingId,
-    ],
+    [canEditRow, handleEdit, handleOpenWorkspace, handleRestore, restoringId],
   );
 
   const handleNewClicked = () => {
@@ -522,7 +459,9 @@ export function TacEnquiriesListPage() {
         </div>
       )}
 
-      {/* Table */}
+      {/* DynamicTable owns the skeleton loading state — `loading={loading}`
+          renders TableSkeleton in-place, matching every other governance /
+          risk / compliance list. No separate wrapper spinner needed. */}
       <DynamicTable<Enquiry>
         data={items}
         columns={columns}
