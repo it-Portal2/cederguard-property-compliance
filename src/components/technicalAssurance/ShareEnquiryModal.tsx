@@ -9,6 +9,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { useFocusTrap } from "../../hooks/useFocusTrap";
 import {
   Search,
   Send,
@@ -85,7 +86,8 @@ export function ShareEnquiryModal({
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
+  // Focus-trap (WCAG 2.2 AA) — replaces the prior plain ref.
+  const cardRef = useFocusTrap<HTMLDivElement>(open);
 
   useEffect(() => {
     if (!open) return;

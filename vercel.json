@@ -58,6 +58,10 @@
         {
             "path": "/api?action=hrcRunRetentionPurge",
             "schedule": "0 1 1 1 *"
+        },
+        {
+            "path": "/api?action=tacRefreshCorpus",
+            "schedule": "0 0 1 */3 *"
         }
     ]
 }

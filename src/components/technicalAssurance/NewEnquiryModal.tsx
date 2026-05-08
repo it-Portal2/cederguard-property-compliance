@@ -8,6 +8,7 @@ import { api } from "../../lib/api";
 import { useStore } from "../../store/useStore";
 import { RIBA_STAGES } from "../../constants/ribaStages";
 import { saveDraft, loadDraft, clearDraft } from "./utils/draftStorage";
+import { useFocusTrap } from "../../hooks/useFocusTrap";
 import type { Enquiry, EnquiryAttachment } from "../../types/technicalAssurance";
 
 // TAC New / Edit Enquiry modal — single-modal CRUD (lesson #28).
@@ -79,6 +80,10 @@ export function NewEnquiryModal({
     if (activeProject?.id) return activeProject.id;
     return "";
   }, [enquiry, activeProject]);
+
+  // Focus-trap (WCAG 2.2 AA Success Criterion 2.4.3) — wraps Tab inside
+  // the modal when open.
+  const trapRef = useFocusTrap<HTMLDivElement>(isOpen);
 
   const [form, setForm] = useState<FormState>(
     enquiry ? enquiryToForm(enquiry) : emptyState(initialProjectId),
@@ -316,6 +321,7 @@ export function NewEnquiryModal({
       >
         <motion.div
           key="card"
+          ref={trapRef}
           initial={{ opacity: 0, scale: 0.96, y: 8 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 8 }}
@@ -439,6 +445,33 @@ export function NewEnquiryModal({
                 virus-scan in the background — status pill updates when the
                 scan completes.
               </p>
+              {/* Phase 10 — BIM connector placeholders. Q3=A locked: no
+                  OAuth connectors in MVP, surface the button as a clear
+                  "coming soon" stub so PMs see the affordance is on the
+                  roadmap. Stays disabled until Phase 2c. */}
+              <div
+                className="mt-3 flex flex-wrap gap-2"
+                aria-label="External system connectors (coming soon)"
+              >
+                {[
+                  "Pull from BIM 360",
+                  "Pull from Procore",
+                  "Pull from SharePoint",
+                ].map((label) => (
+                  <button
+                    key={label}
+                    type="button"
+                    disabled
+                    title="Connector coming in a future release. For now, download from the source tool and drop the file into the dropzone above."
+                    className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-2.5 py-1.5 text-[11px] font-semibold text-slate-500"
+                  >
+                    {label}
+                    <span className="rounded bg-slate-200 px-1 py-0.5 text-[9px] text-slate-600">
+                      SOON
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 

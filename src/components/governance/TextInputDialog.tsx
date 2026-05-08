@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { motion, AnimatePresence } from 'motion/react';
 import { HelpCircle, Loader2 } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -78,6 +79,8 @@ export function TextInputDialog({
   const [value, setValue] = useState(defaultValue);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Focus-trap (WCAG 2.2 AA) — wraps Tab inside the dialog.
+  const trapRef = useFocusTrap<HTMLDivElement>(open);
   const style = VARIANT_STYLES[variant];
 
   // Reset on open + autofocus.
@@ -123,6 +126,9 @@ export function TextInputDialog({
           onClick={(e) => e.target === e.currentTarget && !loading && onCancel()}
         >
           <motion.div
+            ref={trapRef}
+            role="dialog"
+            aria-modal="true"
             initial={{ opacity: 0, y: 12, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.98 }}

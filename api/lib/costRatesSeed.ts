@@ -38,6 +38,12 @@ export interface CostRate {
   source: "seed" | "spons-2026" | "custom";
   lastUpdated: string;
   lastUpdatedBy: string;
+  /** Per-tenant hidden marker. When a workspace admin "deletes" a shared
+   *  seed rate, we write a per-tenant row with `hidden: true` instead of
+   *  touching the shared seed (which would affect every other tenant).
+   *  `loadCostRates` filters these markers + suppresses the matching seed
+   *  for that workspace. */
+  hidden?: boolean;
 }
 
 const SEED_RATES: Array<Omit<CostRate, "clientId" | "lastUpdated" | "lastUpdatedBy">> = [
@@ -162,14 +168,27 @@ export async function loadCostRates(ctx: ApiContext): Promise<CostRate[]> {
       .where("clientId", "==", ctx.primaryUid)
       .get(),
   ]);
+  // Two-pass merge:
+  //  1. Index the workspace's own custom rows by rateId. Hidden markers
+  //     (`hidden: true`) suppress the seed for that rateId AND don't
+  //     appear in the merged list themselves.
+  //  2. Walk shared seeds, skipping any rateId that's hidden by an own
+  //     marker. Walk own custom rows, only including non-hidden ones.
+  const ownByRateId = new Map<string, CostRate>();
+  for (const d of ownSnap.docs) {
+    const data = d.data() as CostRate;
+    ownByRateId.set(data.rateId, data);
+  }
   const merged = new Map<string, CostRate>();
   for (const d of sharedSnap.docs) {
     const data = d.data() as CostRate;
+    const own = ownByRateId.get(data.rateId);
+    if (own?.hidden === true) continue; // hidden marker filters out this seed
     merged.set(data.rateId, data);
   }
-  for (const d of ownSnap.docs) {
-    const data = d.data() as CostRate;
-    merged.set(data.rateId, data);
+  for (const own of ownByRateId.values()) {
+    if (own.hidden === true) continue; // markers don't render
+    merged.set(own.rateId, own);
   }
   return Array.from(merged.values()).sort((a, b) => {
     if (a.category !== b.category) return a.category.localeCompare(b.category);

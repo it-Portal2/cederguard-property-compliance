@@ -29,8 +29,7 @@ import {
   type CostRate,
 } from "./costRatesSeed.js";
 
-// --- Types -----------------------------------------------------------------
-
+// Types 
 export interface InsightCitation {
   regId: string;
   /** Human-readable rationale for why this citation applies. */

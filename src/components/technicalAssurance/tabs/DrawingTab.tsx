@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "motion/react";
 import {
   FileText,
@@ -8,6 +8,7 @@ import {
   AlertCircle,
   AlertTriangle,
   Info,
+  FileStack,
 } from "lucide-react";
 import { clsx } from "clsx";
 
@@ -134,6 +135,36 @@ export function DrawingTab({ enquiry, drawing }: DrawingTabProps) {
   );
   const [sendOpen, setSendOpen] = useState(false);
 
+  // Phase 4b' — multi-PDF picker. When the enquiry has multiple PDF
+  // attachments, the PM can switch which one the viewer shows. The
+  // AI-annotated PDF (the one with `drawing.basePdfPath`) keeps its
+  // overlay markers; other PDFs render in the bare GovernancePDFViewer
+  // with no annotations (AI annotates only the primary drawing per
+  // PRD US-3.2 — multi-PDF AI annotation is a Phase 2c+ track because it
+  // doubles inline-data + token cost per Gemini call).
+  const allPdfs = useMemo(() => {
+    const atts = enquiry.attachments ?? [];
+    return atts.filter(
+      (a) =>
+        a?.url &&
+        (a.mimeType === "application/pdf" ||
+          String(a.fileName ?? "").toLowerCase().endsWith(".pdf")),
+    );
+  }, [enquiry.attachments]);
+
+  // Default to the AI-annotated PDF; fall back to the first PDF.
+  const aiAnnotatedPath = drawing.basePdfPath;
+  const [activePdfPath, setActivePdfPath] = useState<string | null>(
+    aiAnnotatedPath ?? allPdfs[0]?.storagePath ?? null,
+  );
+  const activePdf = useMemo(
+    () => allPdfs.find((p) => p.storagePath === activePdfPath) ?? allPdfs[0],
+    [allPdfs, activePdfPath],
+  );
+  const isViewingAnnotatedPdf =
+    !!aiAnnotatedPath && activePdf?.storagePath === aiAnnotatedPath;
+  const showMultiPicker = allPdfs.length > 1;
+
   // Phase 4b — when at least one annotation has an x/y coordinate, the
   // overlay viewer renders the markers ON the PDF. Otherwise we fall back
   // to the bare GovernancePDFViewer (no overlay) and let the side panel
@@ -189,25 +220,85 @@ export function DrawingTab({ enquiry, drawing }: DrawingTabProps) {
         </div>
       </div>
 
+      {/* Phase 4b' — Multi-PDF picker. Visible when the enquiry has more
+          than one PDF attached. Each chip shows the file name; the
+          AI-annotated PDF gets an indigo "AI" pill. Switching to a
+          non-annotated PDF renders it in the bare viewer (no overlay). */}
+      {showMultiPicker ? (
+        <div
+          className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
+          aria-label="PDF attachment picker"
+        >
+          <div className="flex items-center gap-2">
+            <FileStack className="h-3.5 w-3.5 text-slate-400" />
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+              Attached PDFs · {allPdfs.length}
+            </span>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {allPdfs.map((p) => {
+              const isActive = p.storagePath === activePdfPath;
+              const isAnnotated = p.storagePath === aiAnnotatedPath;
+              return (
+                <button
+                  key={p.storagePath}
+                  type="button"
+                  onClick={() => {
+                    setActivePdfPath(p.storagePath);
+                    setActiveId(drawing.annotations[0]?.id ?? null);
+                  }}
+                  aria-pressed={isActive}
+                  className={clsx(
+                    "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[12px] font-medium transition-colors",
+                    isActive
+                      ? "border-indigo-400 bg-indigo-50 text-indigo-700"
+                      : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50",
+                  )}
+                  title={p.fileName}
+                >
+                  <FileText className="h-3.5 w-3.5 shrink-0" />
+                  <span className="max-w-45 truncate">{p.fileName}</span>
+                  {isAnnotated ? (
+                    <span className="ml-0.5 rounded bg-indigo-600 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white">
+                      AI
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+          {!isViewingAnnotatedPdf ? (
+            <p className="mt-2 text-[11px] text-slate-500">
+              Viewing a PDF the AI did not annotate. Switch to the
+              <span className="mx-1 inline-flex items-center rounded bg-indigo-600 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white">
+                AI
+              </span>
+              PDF to see the markup overlay.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
       {/* Side-by-side: PDF + annotations */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <div className="lg:col-span-7">
-          {drawing.basePdfUrl ? (
+          {activePdf?.url ? (
             <motion.div
+              key={activePdf.storagePath}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.2 }}
               className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
             >
-              {hasAnyCoords ? (
+              {hasAnyCoords && isViewingAnnotatedPdf ? (
                 <PdfPageOverlayViewer
-                  pdfUrl={drawing.basePdfUrl}
+                  pdfUrl={activePdf.url}
                   annotations={drawing.annotations}
                   activeAnnotationId={activeId}
                   onAnnotationClick={setActiveId}
                 />
               ) : (
-                <GovernancePDFViewer src={drawing.basePdfUrl} height="70vh" />
+                <GovernancePDFViewer src={activePdf.url} height="70vh" />
               )}
             </motion.div>
           ) : (

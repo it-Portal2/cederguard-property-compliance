@@ -360,6 +360,10 @@ export interface CostRate {
   source: "seed" | "spons-2026" | "custom";
   lastUpdated: string;
   lastUpdatedBy: string;
+  /** Phase 6b — per-tenant hidden marker (filters a seed from a workspace
+   *  without touching the shared row). Server-set; the merged loader
+   *  excludes these from the rendered list. */
+  hidden?: boolean;
 }
 
 // --- Regulations corpus (platform-wide) ----------------------------------

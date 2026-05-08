@@ -644,4 +644,16 @@ export const api = {
     decisionNote?: string;
   }) => callApi("tacDecideOnShare", args),
   tacListSharedWithMe: () => callApi("tacListSharedWithMe", {}),
+  // Phase 10 — Polish.
+  tacScanCitationIntegrity: () => callApi("tacScanCitationIntegrity", {}),
+  // Phase 6b — Admin rates editor.
+  tacUpsertCostRate: (rate: {
+    rateId: string;
+    category: string;
+    description: string;
+    unit: string;
+    rate: number;
+  }) => callApi("tacUpsertCostRate", { rate }),
+  tacDeleteCostRate: (rateId: string) =>
+    callApi("tacDeleteCostRate", { rateId }),
 };

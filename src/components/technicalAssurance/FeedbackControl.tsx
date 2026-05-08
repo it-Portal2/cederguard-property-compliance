@@ -9,6 +9,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { useFocusTrap } from "../../hooks/useFocusTrap";
 import {
   ThumbsUp,
   ThumbsDown,
@@ -142,7 +143,8 @@ function FeedbackDownDialog({
   );
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
+  // Focus-trap (WCAG 2.2 AA) — replaces the prior plain ref.
+  const cardRef = useFocusTrap<HTMLDivElement>(open);
 
   useEffect(() => {
     if (open) {

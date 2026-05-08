@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { AlertTriangle, HelpCircle, Loader2 } from 'lucide-react';
 import { clsx } from 'clsx';
 import type { ConfirmVariant } from '../table/types';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 interface ReasonDialogProps {
   open: boolean;
@@ -74,8 +75,9 @@ export function ReasonDialog({
   onConfirm,
   onCancel,
 }: ReasonDialogProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const previousFocus = useRef<Element | null>(null);
+  // Focus-trap (WCAG 2.2 AA Success Criterion 2.4.3) — wraps Tab inside
+  // the dialog, restores focus on close.
+  const containerRef = useFocusTrap<HTMLDivElement>(open);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [reason, setReason] = useState('');
 
@@ -84,7 +86,9 @@ export function ReasonDialog({
       setReason('');
       return;
     }
-    previousFocus.current = document.activeElement;
+    // Override useFocusTrap's default first-focusable target to land on
+    // the textarea instead of the cancel button — the textarea is the
+    // primary input the user will interact with.
     setTimeout(() => textareaRef.current?.focus(), 50);
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -95,7 +99,6 @@ export function ReasonDialog({
     document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
-      (previousFocus.current as HTMLElement | null)?.focus();
     };
   }, [open, loading, onCancel]);
 

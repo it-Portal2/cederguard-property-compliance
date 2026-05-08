@@ -18,6 +18,7 @@ import {
     UserCog,
     UserMinus,
     Pencil,
+    PoundSterling,
     Image as ImageIcon,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -34,6 +35,7 @@ import type { CanonicalRole } from '../lib/roles';
 import { StatsCard } from '../components/common/StatsCard';
 import ConfirmDialog from '../components/table/ConfirmDialog';
 import { BrandingTab } from '../components/governance/branding/BrandingTab';
+import { TacCostRatesTab } from '../components/technicalAssurance/TacCostRatesTab';
 
 const inputCls = "w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white/80 backdrop-blur-sm placeholder:text-slate-400 shadow-sm hover:border-slate-300";
 const labelCls = "block text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] mb-2 ml-1";
@@ -74,7 +76,7 @@ const CANONICAL_ROLE_PROMOTE_OPTIONS: { value: CanonicalRole; label: string }[] 
 
 export function WorkspaceSettings() {
     const { user, resetAllData, addNotification, programmes, fetchProgrammes } = useStore();
-    const [activeTab, setActiveTab] = useState<'org' | 'branding' | 'team' | 'data'>('org');
+    const [activeTab, setActiveTab] = useState<'org' | 'branding' | 'team' | 'tacRates' | 'data'>('org');
     const [resetting, setResetting] = useState(false);
     const [resetStep, setResetStep] = useState<'idle' | 'confirm1' | 'confirm2'>('idle');
 
@@ -171,6 +173,7 @@ export function WorkspaceSettings() {
         { key: 'org', label: 'Organisation', icon: Building2 },
         { key: 'branding', label: 'Branding', icon: ImageIcon },
         { key: 'team', label: 'Team', icon: Users },
+        { key: 'tacRates', label: 'Cost rates', icon: PoundSterling },
         { key: 'data', label: 'Infrastructure', icon: Database },
     ];
 
@@ -652,6 +655,8 @@ export function WorkspaceSettings() {
                         />
                     </div>
                 )}
+
+                {activeTab === 'tacRates' && <TacCostRatesTab />}
 
                 {activeTab === 'data' && (
                     <div className="space-y-6">

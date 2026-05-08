@@ -38,6 +38,10 @@ import {
   seedCostRatesIfMissing,
 } from "../lib/costRatesSeed.js";
 import {
+  loadRegulationsCorpus,
+  seedRegulationsCorpusIfMissing,
+} from "../lib/regulationsCorpusSeed.js";
+import {
   renderCompliancePackPdf,
   compliancePackFilename,
 } from "../lib/tacCompliancePackPdf.js";
@@ -2412,6 +2416,364 @@ async function tacListSharedWithMe(_req: any, res: any, ctx: ApiContext) {
   }
 }
 
+// --- Phase 10 — Polish: corpus refresh cron + citation integrity scan ----
+//
+// Hardening jobs that run platform-wide (not workspace-scoped). Cron auth
+// follows the same `CRON_SECRET` Bearer pattern as the HRC + chase-engine
+// crons in this codebase.
+
+function isAuthorisedTacCronCall(req: any, ctx: ApiContext): boolean {
+  if (ctx.isAdmin) return true;
+  const secret = process.env.CRON_SECRET;
+  if (!secret) return true; // dev mode — local cron tests work without secret
+  const auth = req?.headers?.authorization ?? req?.headers?.Authorization;
+  if (typeof auth !== "string") return false;
+  return auth === `Bearer ${secret}`;
+}
+
+// --- Endpoint 30: tacRefreshCorpus (Phase 10, cron) ----------------------
+//
+// Quarterly cron that re-runs `seedRegulationsCorpusIfMissing` so any
+// hand-curated entries added to the seed file land in production without
+// a code deploy. Safe to call as often as needed — the seed helper probes
+// before writing. Returns the count it touched.
+
+async function tacRefreshCorpus(req: any, res: any, ctx: ApiContext) {
+  try {
+    if (!isAuthorisedTacCronCall(req, ctx)) {
+      return res.status(401).json({
+        success: false,
+        error: "Unauthorised — CRON_SECRET required.",
+        code: "UNAUTHORISED",
+      });
+    }
+    // Re-import dynamically so a future TAC corpus implementation that
+    // pulls from a vendor (Q1=B Phase 2 track) can swap this out without
+    // touching the cron entry itself.
+    const corpusMod = await import("../lib/regulationsCorpusSeed.js");
+    await corpusMod.seedRegulationsCorpusIfMissing(ctx);
+    const corpus = await corpusMod.loadRegulationsCorpus(ctx);
+    return res.status(200).json({
+      success: true,
+      corpusSize: corpus.length,
+      refreshedAt: new Date().toISOString(),
+    });
+  } catch (e: any) {
+    console.error("[tacRefreshCorpus] failed:", e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? "Corpus refresh failed.",
+      code: "CORPUS_REFRESH_FAILED",
+    });
+  }
+}
+
+// --- Endpoint 31: tacScanCitationIntegrity (Phase 10, admin) -------------
+//
+// Walks every enquiry's `tabs/summary` deliverable in the workspace and
+// checks each citation's `regId` resolves in the current corpus. Reports
+// any non-resolving citations grouped by enquiry. Used as a one-off
+// post-deploy gate after corpus changes (Q1=B vendor swap, etc.) and
+// satisfies PRD §5 DoD ("≥95% of insights carry full citation trail").
+
+async function tacScanCitationIntegrity(
+  _req: any,
+  res: any,
+  ctx: ApiContext,
+) {
+  try {
+    if (!ctx.isAdmin && !ctx.isClientAdmin) {
+      return res.status(403).json({
+        success: false,
+        error: "Citation integrity scan requires admin role.",
+        code: "FORBIDDEN",
+      });
+    }
+    await seedRegulationsCorpusIfMissing(ctx);
+    const corpus = await loadRegulationsCorpus(ctx);
+    const corpusIds = new Set(corpus.map((c) => c.regId));
+
+    const snap = await ctx.db
+      .collection("enquiries")
+      .where("clientId", "==", ctx.primaryUid)
+      .get();
+
+    let totalEnquiries = 0;
+    let totalCitations = 0;
+    let resolvedCitations = 0;
+    const broken: Array<{
+      enquiryId: string;
+      title: string;
+      brokenRegIds: string[];
+    }> = [];
+
+    for (const d of snap.docs) {
+      totalEnquiries++;
+      const data: any = d.data();
+      try {
+        const sTab = await d.ref.collection("tabs").doc("summary").get();
+        if (!sTab.exists) continue;
+        const summary: any = sTab.data()?.content ?? null;
+        const cites: any[] = Array.isArray(summary?.citations)
+          ? summary.citations
+          : [];
+        const brokenForEnquiry: string[] = [];
+        for (const c of cites) {
+          totalCitations++;
+          if (typeof c?.regId === "string" && corpusIds.has(c.regId)) {
+            resolvedCitations++;
+          } else if (typeof c?.regId === "string") {
+            brokenForEnquiry.push(c.regId);
+          }
+        }
+        if (brokenForEnquiry.length > 0) {
+          broken.push({
+            enquiryId: data.id ?? d.id.replace(`${ctx.primaryUid}_`, ""),
+            title: data.title ?? "",
+            brokenRegIds: brokenForEnquiry,
+          });
+        }
+      } catch (innerErr) {
+        console.warn(
+          "[tacScanCitationIntegrity] failed to scan enquiry",
+          d.id,
+          innerErr,
+        );
+      }
+    }
+
+    const integrityPct =
+      totalCitations === 0
+        ? 100
+        : Math.round((resolvedCitations / totalCitations) * 100);
+    return res.status(200).json({
+      success: true,
+      totalEnquiries,
+      totalCitations,
+      resolvedCitations,
+      integrityPct,
+      broken,
+      corpusSize: corpus.length,
+      scannedAt: new Date().toISOString(),
+    });
+  } catch (e: any) {
+    console.error("[tacScanCitationIntegrity] failed:", e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? "Citation integrity scan failed.",
+      code: "INTEGRITY_SCAN_FAILED",
+    });
+  }
+}
+
+// --- Phase 6b — Admin rates editor ---------------------------------------
+//
+// ClientAdmin / SuperAdmin add custom rates that shadow the seed library.
+// Stored under `costRates/{primaryUid}_{rateId}` with `clientId` = the
+// workspace's primary uid. `loadCostRates` already merges shared seed +
+// own custom rates with custom shadowing seeds via the same rateId — so
+// nothing else has to change to make the merge work.
+
+const COST_RATE_WRITABLE_FIELDS = [
+  "rateId",
+  "category",
+  "description",
+  "unit",
+  "rate",
+  "currency",
+] as const;
+const COST_RATE_VALID_CATEGORIES = new Set([
+  "preliminaries",
+  "substructure",
+  "frame",
+  "me",
+  "finishes",
+  "external",
+  "fees",
+]);
+const COST_RATE_VALID_UNITS = new Set(["m", "m2", "m3", "no", "hr", "item"]);
+
+// --- Endpoint 32: tacUpsertCostRate (Phase 6b, admin) --------------------
+//
+// Create / update a custom cost rate for the caller's workspace. Custom
+// rates shadow seed entries by `rateId` (the merge in `loadCostRates`
+// keeps the own-tenant copy when both exist).
+
+async function tacUpsertCostRate(req: any, res: any, ctx: ApiContext) {
+  try {
+    if (!ctx.isAdmin && !ctx.isClientAdmin) {
+      return res.status(403).json({
+        success: false,
+        error: "Only ClientAdmin or SuperAdmin can manage cost rates.",
+        code: "FORBIDDEN",
+      });
+    }
+    const { rate: rateInput } = req.body ?? {};
+    if (!rateInput || typeof rateInput !== "object") {
+      return res.status(400).json({
+        success: false,
+        error: "rate object is required.",
+        code: "INVALID_INPUT",
+      });
+    }
+    // Whitelist write — drop any fields the caller may have added (e.g.
+    // `clientId`, `lastUpdated`). Lesson #12 (whitelist on every upsert).
+    const patch: any = {};
+    for (const key of COST_RATE_WRITABLE_FIELDS) {
+      if (rateInput[key] !== undefined) patch[key] = rateInput[key];
+    }
+    if (typeof patch.rateId !== "string" || patch.rateId.trim().length < 2) {
+      return res.status(400).json({
+        success: false,
+        error: "rateId is required.",
+        code: "INVALID_INPUT",
+      });
+    }
+    if (!COST_RATE_VALID_CATEGORIES.has(patch.category)) {
+      return res.status(400).json({
+        success: false,
+        error: `category must be one of: ${[...COST_RATE_VALID_CATEGORIES].join(", ")}.`,
+        code: "INVALID_INPUT",
+      });
+    }
+    if (!COST_RATE_VALID_UNITS.has(patch.unit)) {
+      return res.status(400).json({
+        success: false,
+        error: `unit must be one of: ${[...COST_RATE_VALID_UNITS].join(", ")}.`,
+        code: "INVALID_INPUT",
+      });
+    }
+    if (
+      typeof patch.description !== "string" ||
+      patch.description.trim().length < 3
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: "description (≥3 chars) is required.",
+        code: "INVALID_INPUT",
+      });
+    }
+    const rateNum = Number(patch.rate);
+    if (!Number.isFinite(rateNum) || rateNum < 0) {
+      return res.status(400).json({
+        success: false,
+        error: "rate must be a non-negative number.",
+        code: "INVALID_INPUT",
+      });
+    }
+    patch.rate = rateNum;
+    patch.currency = "GBP"; // single-currency v1
+    patch.rateId = String(patch.rateId).trim();
+    patch.description = String(patch.description).trim().slice(0, 200);
+
+    const ts = new Date().toISOString();
+    const docId = `${ctx.primaryUid}_${patch.rateId}`;
+    const ref = ctx.db.collection("costRates").doc(docId);
+    await ref.set(
+      {
+        ...patch,
+        clientId: ctx.primaryUid,
+        source: "custom",
+        lastUpdated: ts,
+        lastUpdatedBy: ctx.uid,
+      },
+      { merge: true },
+    );
+    const saved = await ref.get();
+    return res.status(200).json({ success: true, rate: saved.data() });
+  } catch (e: any) {
+    console.error("[tacUpsertCostRate] failed:", e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? "Failed to save cost rate.",
+      code: "COST_RATE_SAVE_FAILED",
+    });
+  }
+}
+
+// --- Endpoint 33: tacDeleteCostRate (Phase 6b, admin) --------------------
+//
+// Delete a custom cost rate. Refuses to delete shared-seed rates (those
+// are platform-wide and should not be deleted by individual tenants —
+// admin can override by adding a custom rate with the same rateId, which
+// shadows the seed).
+
+async function tacDeleteCostRate(req: any, res: any, ctx: ApiContext) {
+  try {
+    if (!ctx.isAdmin && !ctx.isClientAdmin) {
+      return res.status(403).json({
+        success: false,
+        error: "Only ClientAdmin or SuperAdmin can manage cost rates.",
+        code: "FORBIDDEN",
+      });
+    }
+    const { rateId } = req.body ?? {};
+    if (!rateId || typeof rateId !== "string") {
+      return res.status(400).json({
+        success: false,
+        error: "rateId is required.",
+        code: "INVALID_INPUT",
+      });
+    }
+    // Two delete paths:
+    //  • Workspace's own custom row for this rateId → hard-delete.
+    //  • No own row but a shared seed exists → write a per-tenant
+    //    `hidden: true` marker so the seed is filtered out of THIS
+    //    workspace's merged list (other tenants still see it).
+    const ownRef = ctx.db
+      .collection("costRates")
+      .doc(`${ctx.primaryUid}_${rateId}`);
+    const ownSnap = await ownRef.get();
+    if (ownSnap.exists && ownSnap.data()?.clientId === ctx.primaryUid) {
+      await ownRef.delete();
+      return res.status(200).json({ success: true, mode: "deleted-custom" });
+    }
+
+    // Verify a shared seed exists before writing the hidden marker —
+    // otherwise we'd be creating an orphan marker for nothing.
+    const sharedSnap = await ctx.db
+      .collection("costRates")
+      .doc(`__shared___${rateId}`)
+      .get();
+    if (!sharedSnap.exists) {
+      return res.status(404).json({
+        success: false,
+        error: "Rate not found in seed library or this workspace.",
+        code: "NOT_FOUND",
+      });
+    }
+    const sharedData = sharedSnap.data() as any;
+    const ts = new Date().toISOString();
+    await ownRef.set(
+      {
+        rateId,
+        clientId: ctx.primaryUid,
+        // Mirror the seed metadata so the doc is self-contained for audit
+        // (loadCostRates filters it out via the hidden flag, but a server
+        // reader peeking at the row sees what was suppressed).
+        category: sharedData.category,
+        description: sharedData.description,
+        unit: sharedData.unit,
+        rate: sharedData.rate,
+        currency: sharedData.currency ?? "GBP",
+        source: "custom",
+        hidden: true,
+        lastUpdated: ts,
+        lastUpdatedBy: ctx.uid,
+      },
+      { merge: false },
+    );
+    return res.status(200).json({ success: true, mode: "hidden-seed" });
+  } catch (e: any) {
+    console.error("[tacDeleteCostRate] failed:", e);
+    return res.status(500).json({
+      success: false,
+      error: e?.message ?? "Failed to delete cost rate.",
+      code: "COST_RATE_DELETE_FAILED",
+    });
+  }
+}
+
 // --- Route map -----------------------------------------------------------
 
 export const technicalAssuranceRoutes: Record<string, any> = {
@@ -2453,6 +2815,12 @@ export const technicalAssuranceRoutes: Record<string, any> = {
   tacShareEnquiry,
   tacDecideOnShare,
   tacListSharedWithMe,
+  // Phase 6b — Admin rates editor.
+  tacUpsertCostRate,
+  tacDeleteCostRate,
+  // Phase 10 — Polish: corpus refresh cron + integrity scan.
+  tacRefreshCorpus,
+  tacScanCitationIntegrity,
   // Phase 4: tacRenderAnnotatedPdf, tacSendDrawingToArchitect.
   // Phase 5: tacIssueRfi, tacListRfis, tacGetRfi, tacUpsertRfiDraft.
   // Phase 6b (deferred): tacUpsertCostRate (admin rates editor).
