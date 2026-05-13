@@ -1,7 +1,6 @@
-// London Borough starter framework seed.
-// Creates a sensible default 4-tier structure when a clientId first visits
-// /governance/framework. Edits + publishing are tracked per-version.
-// Based on the Southwark Construction Forward Plan (Tab B) + PRD examples.
+// Local-authority starter framework seed. Creates a default 4-tier
+// structure on a clientId's first visit to /governance/framework. Edits
+// and publishing are tracked per-version.
 
 export type BodyTier = 'political' | 'corporate' | 'programme' | 'project';
 
@@ -34,8 +33,8 @@ export interface SeedThreshold {
   notes?: string;
 }
 
-// Tier palette — aligned with CedarGuard (indigo / slate / emerald / amber / rose).
-// No violet per §21.
+// Tier palette aligned with the indigo / slate / emerald / amber / rose
+// design system. Violet is intentionally excluded.
 export const TIER_COLOURS: Record<BodyTier, string> = {
   political: '#f59e0b', // amber-500
   corporate: '#4f46e5', // indigo-600
@@ -52,8 +51,8 @@ export const TIER_LABEL: Record<BodyTier, string> = {
 
 export const TIER_ORDER: BodyTier[] = ['political', 'corporate', 'programme', 'project'];
 
-// Canonical 10-step per-board workflow offsets, from the Southwark calendar.
-// Used as defaults for Programme + Political tier bodies.
+// Default 10-step per-board workflow offsets relative to the meeting date.
+// Used as the seed sequence for Programme and Political tier bodies.
 const DEFAULT_STEP_SEQUENCE: SeedBody['stepSequence'] = [
   { key: 'fpSubmission', label: 'Forward Plan Submission Date', offsetWorkingDays: -28, responsibility: 'Programme Manager' },
   { key: 'submissionToSL', label: 'Submission to Strategic Lead', offsetWorkingDays: -20, responsibility: 'Project Manager' },

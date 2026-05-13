@@ -1,6 +1,6 @@
-// HRC HR-6 — small "Corrected" pill.
+//  small "Corrected" pill.
 //
-// Standalone re-usable component so future row-level surfaces (HR-7 or
+// Standalone re-usable component so future row-level surfaces ( or
 // later) can flag individual snapshot rows that have been patched. The
 // HistoricalBanner already renders its own corrected pill when
 // `meta.anyCorrected === true`; this component is for narrower contexts
@@ -11,7 +11,7 @@ import { clsx } from "clsx";
 
 interface CorrectionBadgeProps {
   className?: string;
-  /** Title text shown on hover. */
+  /** Title text shown on hover.*/
   title?: string;
   size?: "sm" | "md";
 }

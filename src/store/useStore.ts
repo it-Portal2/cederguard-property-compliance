@@ -1,6 +1,32 @@
 import { create } from "zustand";
 import { COMPLIANCE_ITEMS } from "../data/complianceData";
 import { SEED_RISKS, SEED_ISSUES, SEED_KRIS, type KRI } from "../data/riskData";
+import { calculateMatrixScore } from "../data/riskScoringMatrix";
+import toast from "react-hot-toast";
+
+// surface Severe-escalation notification toast when the server reports
+// it fired Strategic Director alerts. Called from every risks-save path
+// (addRisk, updateRisk, approveRisk, dismissRisk, etc.) — the server only
+// returns `severeNotified` when an Impact-5 transition was actually detected.
+function notifySevereEscalation(
+  response: { severeNotified?: { count: number; recipientCount: number } } | undefined,
+) {
+  const s = response?.severeNotified;
+  if (!s || s.count <= 0) return;
+  const recipientLabel = s.recipientCount === 1 ? "Strategic Director" : "Strategic Directors";
+  const riskLabel = s.count === 1 ? "risk" : "risks";
+  if (s.recipientCount > 0) {
+    toast.success(
+      `Severe ${riskLabel} flagged — ${recipientLabel} notified (${s.recipientCount}).`,
+      { duration: 5000 },
+    );
+  } else {
+    toast.success(
+      `Severe ${riskLabel} flagged — no Strategic Director assigned; logged for review.`,
+      { duration: 5000 },
+    );
+  }
+}
 export type { KRI };
 import {
   getCategoryName,
@@ -35,6 +61,23 @@ const isValidWorkstreamIdFormat = (id: string): boolean => {
  */
 export const normalizeRisk = (risk: Partial<RiskItem>): Partial<RiskItem> => {
   const normalized = { ...risk };
+
+  //  backfill (one-shot, idempotent): every risk's grossRating /
+  // residualRating is recomputed from the calibrated 5×5 matrix
+  // PDF + answer. Existing risks persisted under the
+  // old `L × I` rule (e.g. L=1,I=2 → 2) recompute to matrix value (→ 3) on
+  // first read. Second read is a no-op — the stored value already equals
+  // the matrix value, so the override is identity.
+  const gL = Number(normalized.grossL) || 0;
+  const gI = Number(normalized.grossI) || 0;
+  const rL = Number(normalized.residualL) || 0;
+  const rI = Number(normalized.residualI) || 0;
+  if (gL > 0 && gI > 0) {
+    normalized.grossRating = calculateMatrixScore(gL, gI);
+  }
+  if (rL > 0 && rI > 0) {
+    normalized.residualRating = calculateMatrixScore(rL, rI);
+  }
 
   // CASE 1: Check if categoryId exists but is actually a name (not a valid ID format)
   if (
@@ -311,7 +354,7 @@ export interface Programme {
   isPublished?: boolean;
   setupProgress?: number;
 
-  // Governance Profile (Phase 6.5 — Anthony's standardised taxonomy that
+  // Governance Profile (.5 — standardised taxonomy that
   // mirrors the Programme Governance Framework's tiers + thresholds).
   // Linked: picking a value resolves to a matching body / authority band
   // in the live framework. Free-text legacy fields above (sro, sponsor,
@@ -505,7 +548,7 @@ export interface Project {
   totalValue?: string;
   totalGrant?: string;
   contingencyPct?: string;
-  // Governance Profile (Phase 6.5 — same standardised taxonomy as
+  // Governance Profile (.5 — same standardised taxonomy as
   // Programme so Project-level reports / FP entries can resolve to the
   // same Framework bodies + thresholds).
   decisionDeliveryLevel?: 'Strategic' | 'Corporate' | 'Programme' | 'Project' | '';
@@ -763,8 +806,8 @@ export const useStore = create<AppState>((set, get) => {
   deferredPrompt: null,
   isInitialized: false,
   // Reset isInitialized on every setUser so the next login always re-runs
-  // initStore() from scratch. Without this, logging out and back in skips
-  // initStore() (it returns early because isInitialized is still true from the
+  // initStore from scratch. Without this, logging out and back in skips
+  // initStore (it returns early because isInitialized is still true from the
   // previous session), leaving the store user as the bare Firebase auth object
   // (no .role), which makes all role-gated sidebar items invisible.
   setUser: (user) => set({ user, isInitialized: false }),
@@ -1096,8 +1139,9 @@ export const useStore = create<AppState>((set, get) => {
 
     setPending(entityKey, true);
     try {
-      await api.saveData("risks", updated, contextId);
+      const result = await api.saveData("risks", updated, contextId);
       set({ risks: updated });
+      notifySevereEscalation(result);
     } finally {
       setPending(entityKey, false);
     }
@@ -1193,8 +1237,9 @@ export const useStore = create<AppState>((set, get) => {
 
     setPending(entityKey, true);
     try {
-      await api.saveData("risks", updated, contextId);
+      const result = await api.saveData("risks", updated, contextId);
       set({ risks: updated });
+      notifySevereEscalation(result);
     } finally {
       setPending(entityKey, false);
     }
@@ -1419,7 +1464,7 @@ export const useStore = create<AppState>((set, get) => {
         message: notification.message || notification.body || "",
         ...notification,
       };
-      // Ensure time was not overridden by ...notification with invalid value
+      // Ensure time was not overridden by .notification with invalid value
       if (!isValidDateString(newNotif.time)) {
         newNotif.time = new Date().toISOString();
       }
@@ -2009,7 +2054,7 @@ export const useStore = create<AppState>((set, get) => {
         // `r.ownerUid === user?.uid` (MyReports, MeetingsPage,
         // ForwardPlanPage owner checks, etc.). PMs saw empty MyReports
         // even after creating a report. PgMs didn't notice because the
-        // `isAdmin || ...` short-circuit hid it.
+        // `isAdmin || .` short-circuit hid it.
         set({
           user: {
             ...firestoreProfile,
@@ -2044,7 +2089,7 @@ export const useStore = create<AppState>((set, get) => {
       );
 
       // 3. Restore user's last active context from preferences, then load its data
-      // FIX: Backend returns { success, preferences: {...} }, NOT { success, data: {...} }
+      // FIX: Backend returns { success, preferences: {.} }, NOT { success, data: {.} }
       const prefs = preferencesRes?.preferences || preferencesRes?.data || {};
       const restoredProjectId = prefs.activeProjectId;
       const restoredProgrammeId = prefs.activeProgrammeId;
@@ -2171,7 +2216,7 @@ export const useStore = create<AppState>((set, get) => {
     if (isStale()) return;
 
     // FIX: Fetch programme-level compliance, risk, and issue data
-    // Programme data is stored under projects/{programmeId}/data/... path (same as project data)
+    // Programme data is stored under projects/{programmeId}/data/. path (same as project data)
     // Stamp each item with programmeId so the Calendar filter can match them by context.
     await Promise.all([
       // Risks: merge programme-level + per-project risks for this programme

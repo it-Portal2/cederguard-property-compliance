@@ -11,12 +11,12 @@ import { saveDraft, loadDraft, clearDraft } from "./utils/draftStorage";
 import { useFocusTrap } from "../../hooks/useFocusTrap";
 import type { Enquiry, EnquiryAttachment } from "../../types/technicalAssurance";
 
-// TAC New / Edit Enquiry modal — single-modal CRUD (lesson #28).
+// TAC New / Edit Enquiry modal — single-modal CRUD.
 //
-// Phase 1 only handles Draft enquiries. Once an enquiry transitions out of
+//  only handles Draft enquiries. Once an enquiry transitions out of
 // Draft (Generating / Open / etc.), this modal closes and routing redirects
 // to the workspace page (Phases 3-7). All hooks are declared above the
-// `if (!isOpen) return null` early return (lesson #40 — rules of hooks).
+// `if (!isOpen) return null` early return.
 
 interface NewEnquiryModalProps {
   isOpen: boolean;
@@ -328,7 +328,7 @@ export function NewEnquiryModal({
           transition={{ type: "spring", stiffness: 220, damping: 25 }}
           className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white shadow-2xl"
         >
-          {/* Header */}
+          {/* Header*/}
           <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-6 py-4 backdrop-blur">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
@@ -356,7 +356,7 @@ export function NewEnquiryModal({
             </button>
           </div>
 
-          {/* Body */}
+          {/* Body*/}
           <div className="space-y-5 px-6 py-5">
             <div>
               <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500">
@@ -445,10 +445,10 @@ export function NewEnquiryModal({
                 virus-scan in the background — status pill updates when the
                 scan completes.
               </p>
-              {/* Phase 10 — BIM connector placeholders. Q3=A locked: no
-                  OAuth connectors in MVP, surface the button as a clear
-                  "coming soon" stub so PMs see the affordance is on the
-                  roadmap. Stays disabled until Phase 2c. */}
+              {/* BIM connector placeholders.: no
+ OAuth connectors in MVP, surface the button as a clear
+ "coming soon" stub so PMs see the affordance is on the
+ roadmap. Stays disabled until.*/}
               <div
                 className="mt-3 flex flex-wrap gap-2"
                 aria-label="External system connectors (coming soon)"
@@ -475,7 +475,7 @@ export function NewEnquiryModal({
             </div>
           </div>
 
-          {/* Footer */}
+          {/* Footer*/}
           <div className="sticky bottom-0 z-10 flex items-center justify-between gap-3 border-t border-slate-200 bg-white/95 px-6 py-4 backdrop-blur">
             <p className="text-[11px] text-slate-400">
               Drafts persist for 24 hours on this device.

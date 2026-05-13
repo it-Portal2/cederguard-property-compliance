@@ -1,4 +1,4 @@
-// Phase 7 — Citation card. Click expands inline to show the full verbatim
+// Citation card. Click expands inline to show the full verbatim
 // quote + a real "Open source" external link to the gov.uk / HSE source
 // (server-enriched from the regulations corpus at insight-generation time
 // so the AI never supplies it).

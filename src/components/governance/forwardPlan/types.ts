@@ -2,7 +2,7 @@
 
 export type ForwardPlanStatus =
   | 'Draft'
-  | 'Proposed'   // Phase 5.5b — PM raised via Report meeting picker, awaits PgM Confirm
+  | 'Proposed'   // PM raised via Report meeting picker, awaits PgM Confirm
   | 'Published'
   | 'Decided'
   | 'Deferred'
@@ -12,7 +12,7 @@ export type EntryType = 'New' | 'Change' | 'Delete';
 export type Classification = 'Open' | 'Closed' | 'Part 1 and 2';
 export type RoutingMode = 'sequential' | 'parallel';
 export type BoardGateStatus = 'scheduled' | 'held' | 'deferred' | 'na';
-// Phase 5.5e — Excel Column F. Independent of `ForwardPlanStatus`.
+// Excel Column F. Independent of `ForwardPlanStatus`.
 export type ApprovalStatus = 'Pending' | 'Approved';
 
 export interface BoardGate {
@@ -60,7 +60,7 @@ export interface ForwardPlanItem {
   fileLink?: string;
   decisionLink?: string;
 
-  // Phase 5.5b — additive fields
+  // additive fields
   meetingId?: string | null;
   requestedBy?: string | null;
   requestedAt?: string | null;
@@ -70,7 +70,7 @@ export interface ForwardPlanItem {
   needsRerouting?: boolean;
   reportId?: string | null;
 
-  // Phase 5.5e — Excel Column F. Pending / Approved / null. Independent
+  // Excel Column F. Pending / Approved / null. Independent
   // of `status` (the FP item's lifecycle).
   approvalStatus?: ApprovalStatus | null;
 
@@ -150,7 +150,7 @@ export const BOARD_GATE_STATUS_OPTIONS: Array<{
   { value: 'na', label: 'N/A' },
 ];
 
-// Phase 5.5e — Excel Column F pill chrome. Same palette discipline as
+// Excel Column F pill chrome. Same palette discipline as
 // STATUS_STYLES — amber for in-flight, emerald for ratified.
 export const APPROVAL_STATUS_STYLES: Record<
   ApprovalStatus,

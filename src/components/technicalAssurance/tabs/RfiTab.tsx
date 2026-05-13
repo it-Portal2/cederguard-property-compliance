@@ -22,12 +22,12 @@ import type {
   RfiRecipient,
 } from "../../../types/technicalAssurance";
 
-// Phase 5 — RFI / instruction tab. AI auto-populates subject + body +
+// RFI / instruction tab. AI auto-populates subject + body +
 // priority + walkthrough chapters; user adds recipients and tweaks copy
 // before clicking Issue. Issued RFIs are immutable here and live in the
 // workspace-wide RFI register (see RfiRegisterPage).
 //
-// Q11=B locked: walkthroughChapters is a TEXT-ONLY install/inspection
+// walkthroughChapters is a TEXT-ONLY install/inspection
 // stepper. No video player. Site teams read the captions on a phone.
 
 const PRIORITY_OPTIONS: Array<{ value: RfiPriority; label: string; pill: string }> = [
@@ -186,7 +186,7 @@ export function RfiTab({ enquiry, rfi, onIssued }: RfiTabProps) {
       transition={{ duration: 0.2 }}
       className="space-y-4"
     >
-      {/* Header */}
+      {/* Header*/}
       <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
         <div className="flex items-start gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
@@ -216,10 +216,10 @@ export function RfiTab({ enquiry, rfi, onIssued }: RfiTabProps) {
         )}
       </div>
 
-      {/* Form / read-only display */}
+      {/* Form / read-only display*/}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <div className="space-y-4 lg:col-span-8">
-          {/* Subject */}
+          {/* Subject*/}
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500">
               Subject
@@ -234,7 +234,7 @@ export function RfiTab({ enquiry, rfi, onIssued }: RfiTabProps) {
             />
           </div>
 
-          {/* Body */}
+          {/* Body*/}
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between">
               <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500">
@@ -254,7 +254,7 @@ export function RfiTab({ enquiry, rfi, onIssued }: RfiTabProps) {
             />
           </div>
 
-          {/* Walkthrough chapters (text-only — Q11=B) */}
+          {/* Walkthrough chapters (text-only — )*/}
           {rfi.walkthroughChapters && rfi.walkthroughChapters.length > 0 && (
             <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center gap-2">
@@ -293,9 +293,9 @@ export function RfiTab({ enquiry, rfi, onIssued }: RfiTabProps) {
           )}
         </div>
 
-        {/* Right column — priority + recipients */}
+        {/* Right column — priority + recipients*/}
         <div className="space-y-4 lg:col-span-4">
-          {/* Priority */}
+          {/* Priority*/}
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
               Priority
@@ -320,7 +320,7 @@ export function RfiTab({ enquiry, rfi, onIssued }: RfiTabProps) {
             </div>
           </div>
 
-          {/* Recipients */}
+          {/* Recipients*/}
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between">
               <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">

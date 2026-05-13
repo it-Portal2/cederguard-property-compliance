@@ -1,10 +1,10 @@
-// Phase 11 — Governance Dashboard shared types.
+// Governance Dashboard shared types.
 
 export type DashboardRole = 'pgm' | 'pm';
 
 export interface DashboardBriefing {
   lines: string[];
-  source: 'rule-based-stub' | 'gemini'; // Phase 12 wires gemini
+  source: 'rule-based-stub' | 'gemini'; //  wires gemini
 }
 
 export interface PgmInboxItem {

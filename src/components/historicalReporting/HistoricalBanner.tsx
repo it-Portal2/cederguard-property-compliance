@@ -1,4 +1,4 @@
-// HRC primitive — read-only banner shown above any page when the user
+//  primitive — read-only banner shown above any page when the user
 // has selected a past-month snapshot.
 //
 // Pages mount it conditionally:
@@ -6,7 +6,7 @@
 //     <HistoricalBanner
 //       monthEnd={view.monthEnd!}
 //       meta={view.meta}
-//       onExit={() => view.setMonthEnd(null)}
+//       onExit={ => view.setMonthEnd(null)}
 //     />
 //   )}
 //
@@ -56,21 +56,21 @@ interface HistoricalBannerProps {
   } | null;
   onExit: () => void;
   /** Pre-fill the collection in the correction modal when launched
-   *  from a single-collection page. */
+   *  from a single-collection page.*/
   defaultCorrectionCollection?: HrcCollection;
-  /** Bumped when the parent wants to refresh after a correction. */
+  /** Bumped when the parent wants to refresh after a correction.*/
   onCorrected?: () => void;
-  /** HR-7 — when set, renders the friendly empty-state panel below the
-   *  banner. Pages pass `historicalView.emptyReason` directly. */
+  /** when set, renders the friendly empty-state panel below the
+   *  banner. Pages pass `historicalView.emptyReason` directly.*/
   emptyReason?:
     | "BEFORE_ACTIVATION"
     | "SNAPSHOT_MISSING"
     | "EMPTY_DATA"
     | null;
-  /** HR-7 — month at which HRC started snapshotting this workspace. */
+  /** month at which started snapshotting this workspace.*/
   activatedYearMonth?: YearMonth | null;
-  /** HR-7 — surface label used inside the empty-state copy
-   *  ("risk register", "reports", etc.). */
+  /** surface label used inside the empty-state copy
+   *  ("risk register", "reports", etc.).*/
   surfaceLabel?: string;
 }
 
@@ -163,9 +163,9 @@ export function HistoricalBanner({
         </div>
       </div>
 
-      {/* HR-7 — friendly empty-state panel below the banner when the
-          page has nothing to render. Renders only when the parent page
-          opts in by passing `emptyReason`. */}
+      {/* friendly empty-state panel below the banner when the
+ page has nothing to render. Renders only when the parent page
+ opts in by passing `emptyReason`.*/}
       {emptyReason && (
         <HistoricalEmptyState
           reason={emptyReason}

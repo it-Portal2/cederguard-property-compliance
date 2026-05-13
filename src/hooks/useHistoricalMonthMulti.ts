@@ -1,4 +1,4 @@
-// HRC HR-9 — multi-collection historical-view helper.
+//  multi-collection historical-view helper.
 //
 // Some pages display data from MORE THAN ONE snapshot collection
 // (e.g. ProjectReport renders both `risks` and `complianceItems`).
@@ -29,32 +29,32 @@ export interface UseHistoricalMonthMultiArgs {
 }
 
 export interface UseHistoricalMonthMultiResult {
-  /** Shared month state across all collections. */
+  /** Shared month state across all collections.*/
   monthEnd: YearMonth | null;
   setMonthEnd: (m: YearMonth | null) => void;
   /** Union of available months across all collections (in practice
-   *  identical — same workspace, same parent docs). */
+   *  identical — same workspace, same parent docs).*/
   availableMonths: YearMonth[];
-  /** True when historical mode is engaged (monthEnd !== null). */
+  /** True when historical mode is engaged (monthEnd !== null).*/
   isHistorical: boolean;
   /** True if ANY underlying snapshot fetch is in flight. Drives
-   *  page-level skeleton swap. */
+   *  page-level skeleton swap.*/
   loading: boolean;
-  /** Per-collection entries map: { risks: [...], complianceItems: [...] } */
+  /** Per-collection entries map: { risks: [.], complianceItems: [.] }*/
   entriesByCollection: Record<string, any[]>;
   /** Snapshot meta from the first underlying view (parent doc; same
-   *  for every collection in the same month). */
+   *  for every collection in the same month).*/
   meta: any | null;
   /** Empty-reason from the first underlying view (BEFORE_ACTIVATION /
    *  SNAPSHOT_MISSING / EMPTY_DATA / null). They all share a parent
-   *  doc, so the answer is the same. */
+   *  doc, so the answer is the same.*/
   emptyReason:
     | "BEFORE_ACTIVATION"
     | "SNAPSHOT_MISSING"
     | "EMPTY_DATA"
     | null;
   activatedYearMonth: YearMonth | null;
-  /** Refresh all underlying views (e.g. after a super_admin correction). */
+  /** Refresh all underlying views (e.g. after a super_admin correction).*/
   refresh: () => void;
 }
 

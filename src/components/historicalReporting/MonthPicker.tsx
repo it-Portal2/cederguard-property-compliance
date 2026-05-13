@@ -1,4 +1,4 @@
-// HRC primitive — month picker chip.
+//  primitive — month picker chip.
 //
 // Production-only surface. Always renders the chip; dropdown shows
 // "Live data" + every month with a snapshot. When no snapshots exist
@@ -19,7 +19,7 @@ interface MonthPickerProps {
   availableMonths: YearMonth[];
   onChange: (m: YearMonth | null) => void;
   loading?: boolean;
-  /** Optional className applied to the wrapper. */
+  /** Optional className applied to the wrapper.*/
   className?: string;
 }
 

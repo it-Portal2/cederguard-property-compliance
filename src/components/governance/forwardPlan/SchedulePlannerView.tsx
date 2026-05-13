@@ -1,15 +1,15 @@
-// Phase 5.5a — Schedule planner view (5th tab on Forward Plan).
+// Schedule planner view (5th tab on Forward Plan).
 //
 // PgM-only header actions (Import / Create yearly / Add single / Export);
 // PMs see read-only list. Calendar toggle reuses MeetingsCalendarView
-// (Phase 8c). List view shows meetings sorted by date with quick edit.
+// . List view shows meetings sorted by date with quick edit.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import {
   Plus,
   UploadCloud,
-  Sparkles as _Sparkles, // banned per lesson #24, removed below
+  Sparkles as _Sparkles, // banned per, removed below
   CalendarDays,
   List as ListIcon,
   CalendarRange,
@@ -31,16 +31,16 @@ import { MeetingModal } from '../meetings/MeetingModal';
 import { MeetingsImportModal } from '../meetings/MeetingsImportModal';
 import { RecurringMeetingsWizard } from '../meetings/RecurringMeetingsWizard';
 
-// Suppress the unused _Sparkles re-export — banned icon (lesson #24).
+// Suppress the unused _Sparkles re-export — banned icon.
 void _Sparkles;
 
 type LocalView = 'list' | 'calendar';
 
 interface Props {
-  /** Whether the current user can edit (PgM / Admin). PMs see read-only. */
+  /** Whether the current user can edit (PgM / Admin). PMs see read-only.*/
   canEdit: boolean;
   /** Called whenever meetings change so the parent FP page can refresh
-   *  default-view logic ("Schedule default when empty"). */
+   *  default-view logic ("Schedule default when empty").*/
   onMeetingsChanged?: (count: number) => void;
 }
 
@@ -153,7 +153,7 @@ export function SchedulePlannerView({ canEdit, onMeetingsChanged }: Props) {
       transition={{ duration: 0.18, ease: 'easeOut' }}
       className="space-y-4"
     >
-      {/* Action bar */}
+      {/* Action bar*/}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-2">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
@@ -187,7 +187,7 @@ export function SchedulePlannerView({ canEdit, onMeetingsChanged }: Props) {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* View toggle */}
+          {/* View toggle*/}
           <div className="inline-flex items-center gap-0.5 rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
             <button
               type="button"
@@ -260,7 +260,7 @@ export function SchedulePlannerView({ canEdit, onMeetingsChanged }: Props) {
         </div>
       </div>
 
-      {/* Body */}
+      {/* Body*/}
       {loading ? (
         <div className="space-y-2">
           <div className="h-12 animate-pulse rounded-lg bg-slate-100" />

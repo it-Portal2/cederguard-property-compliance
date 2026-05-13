@@ -41,11 +41,11 @@ export interface FpBodyOption {
 
 interface ForwardPlanItemModalProps {
   isOpen: boolean;
-  /** null = create mode; an item = edit mode. */
+  /** null = create mode; an item = edit mode.*/
   item: ForwardPlanItem | null;
-  /** All framework bodies for the council (used to render boardGates rows). */
+  /** All framework bodies for the council (used to render boardGates rows).*/
   frameworkBodies: FpBodyOption[];
-  /** Existing item IDs — used for client-side uniqueness check on create. */
+  /** Existing item IDs — used for client-side uniqueness check on create.*/
   existingIds: string[];
   canEdit: boolean;
   onClose: () => void;
@@ -74,7 +74,7 @@ interface FormState {
   fileLink: string;
   decisionLink: string;
   status: 'Draft' | 'Published';
-  // Phase 5.5e — Excel Column F. Empty string in form = not set; serialised
+  // Excel Column F. Empty string in form = not set; serialised
   // to `null` on save.
   approvalStatus: '' | ApprovalStatus;
 }
@@ -136,7 +136,7 @@ function itemToForm(item: ForwardPlanItem): FormState {
   };
 }
 
-// ID auto-gen pattern (lesson #30) — never expose a code field for FP items.
+// ID auto-gen pattern — never expose a code field for FP items.
 function makeFpId(title: string): string {
   const slug = title
     .toLowerCase()
@@ -255,7 +255,7 @@ export function ForwardPlanItemModal({
       fileLink: form.fileLink.trim(),
       decisionLink: form.decisionLink.trim(),
       status: form.status,
-      // Phase 5.5e — Excel Column F. Empty form value clears the field on
+      // Excel Column F. Empty form value clears the field on
       // the server (server validator accepts null + undefined as "clear").
       approvalStatus: form.approvalStatus === '' ? null : form.approvalStatus,
     };
@@ -393,7 +393,7 @@ export function ForwardPlanItemModal({
                   ))}
                 </select>
               </Field>
-              {/* Phase 5.5e — Excel Column F. Independent of FP status. */}
+              {/*Excel Column F. Independent of FP status.*/}
               <Field label="Report approval status">
                 <select
                   value={form.approvalStatus}

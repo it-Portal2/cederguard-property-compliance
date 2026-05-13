@@ -1,7 +1,7 @@
-// Phase 9 — Project Governance Folder.
+// Project Governance Folder.
 //
 // Top-level governance route scoped to the existing global
-// `activeProjectId` (mirrors ComplianceTracker / RiskRegister).  When
+// `activeProjectId` (mirrors ComplianceTracker / RiskRegister). When
 // no project is active, an inline empty state asks the user to pick
 // one from the Header — no new picker is invented.
 
@@ -56,7 +56,7 @@ export function ProjectGovernanceDocsPage() {
   const userIsAdmin =
     isAtLeastClientAdmin(user?.role) || isSuperAdmin(user?.email, user?.role);
 
-  // HRC HR-5 — historical view hook. When the user picks a past month,
+  //  historical view hook. When the user picks a past month,
   // the page swaps live docs for the snapshot's frozen state and
   // disables every edit affordance.
   const historicalView = useHistoricalView<{
@@ -99,7 +99,7 @@ export function ProjectGovernanceDocsPage() {
     refresh();
   }, [refresh]);
 
-  // HRC HR-5 — effective items source. Snapshot data is project-scoped
+  //  effective items source. Snapshot data is project-scoped
   // post-filter so we only show docs that belonged to the active project
   // at the snapshot point.
   const historicalItems = useMemo<ProjectDoc[]>(() => {
@@ -381,7 +381,7 @@ export function ProjectGovernanceDocsPage() {
             </p>
           </div>
         </div>
-        {/* HRC HR-5 — month picker for historical view. */}
+        {/* month picker for historical view.*/}
         <div className="self-start md:mt-1">
           <MonthPicker
             monthEnd={historicalView.monthEnd}

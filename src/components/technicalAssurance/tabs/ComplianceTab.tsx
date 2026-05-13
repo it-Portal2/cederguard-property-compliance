@@ -1,4 +1,4 @@
-// Phase 7 — Compliance & citations tab.
+// Compliance & citations tab.
 //
 // Layout: two checklists (dimensional + system) rendered side-by-side on
 // desktop, stacked on mobile. Each tile is a check + status pill +
@@ -38,7 +38,7 @@ interface ComplianceTabProps {
   enquiry: Enquiry;
   summary: SummaryTabContent;
   /** Whether the active project is HRB-flagged. Drives the Save-to-Golden-
-   *  Thread button visibility (server still gates independently). */
+   *  Thread button visibility (server still gates independently).*/
   isHRB?: boolean;
 }
 
@@ -218,7 +218,7 @@ export function ComplianceTab({
 
   return (
     <div className="space-y-6">
-      {/* Soft-flag banner */}
+      {/* Soft-flag banner*/}
       {hasSoftFlag ? (
         <div
           className={clsx(
@@ -254,7 +254,7 @@ export function ComplianceTab({
         </div>
       ) : null}
 
-      {/* Two-column checklist (dimensional + system) */}
+      {/* Two-column checklist (dimensional + system)*/}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <section
           aria-labelledby="dim-checks-title"
@@ -323,7 +323,7 @@ export function ComplianceTab({
         </section>
       </div>
 
-      {/* Citation cards */}
+      {/* Citation cards*/}
       <section aria-labelledby="citations-title">
         <header className="mb-3 flex items-center justify-between">
           <div>
@@ -354,7 +354,7 @@ export function ComplianceTab({
         )}
       </section>
 
-      {/* Action footer */}
+      {/* Action footer*/}
       <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-2">
           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-indigo-600" />
@@ -406,7 +406,7 @@ export function ComplianceTab({
         </div>
       </div>
 
-      {/* Honest framing footer */}
+      {/* Honest framing footer*/}
       <div className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50/40 p-3 text-[11px] leading-5 text-slate-500">
         <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
         <p>

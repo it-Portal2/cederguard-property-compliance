@@ -62,7 +62,7 @@ export function GovernanceMeetingsPage() {
   const userIsAdmin =
     isAtLeastClientAdmin(user?.role) || isSuperAdmin(user?.email, user?.role);
 
-  // HRC HR-5 — historical view hook. When the user picks a past month,
+  //  historical view hook. When the user picks a past month,
   // the page swaps live meetings for the snapshot's frozen state and
   // disables every edit affordance.
   const historicalView = useHistoricalView<{
@@ -104,7 +104,7 @@ export function GovernanceMeetingsPage() {
     void refresh();
   }, [refresh]);
 
-  // HRC HR-5 — effective items source. Switches between live `items`
+  //  effective items source. Switches between live `items`
   // and the historical snapshot's frozen rows based on the MonthPicker.
   const historicalItems = useMemo<Meeting[]>(() => {
     if (!isHistorical) return [];
@@ -150,7 +150,7 @@ export function GovernanceMeetingsPage() {
     setOpened(saved);
   };
 
-  // Phase 5.5c — Reschedule. Server keeps linked FP items + reports
+  // Reschedule. Server keeps linked FP items + reports
   // attached and mirrors the new date onto their `targetDecisionDate`.
   const handleReschedule = async (params: {
     newDate: string;
@@ -409,7 +409,6 @@ export function GovernanceMeetingsPage() {
       isDanger: true,
       onClick: (r) => setPendingReason({ kind: 'softDelete', item: r }),
       // Server also blocks soft-delete on Held meetings — UI mirrors it
-      // (lesson #75 — UI gate AND server gate must agree).
       isVisible: (r) =>
         !r.softDeleted && r.status !== 'Held' && canDeleteRow(r),
     },
@@ -441,15 +440,15 @@ export function GovernanceMeetingsPage() {
           </div>
         </div>
         <div className="flex flex-col items-start gap-3 md:flex-row md:items-center">
-          {/* HRC HR-5 — month picker for historical view. */}
+          {/* month picker for historical view.*/}
           <MonthPicker
             monthEnd={historicalView.monthEnd}
             availableMonths={historicalView.availableMonths}
             onChange={historicalView.setMonthEnd}
             loading={historicalView.loading}
           />
-          {/* View mode toggle — same chrome as Forward Plan (lesson #47:
-              calendar = read-only surface; CRUD stays in modal). */}
+          {/* View mode toggle — same chrome as Forward Plan (:
+ calendar = read-only surface; CRUD stays in modal).*/}
         <div className="inline-flex shrink-0 items-center gap-0.5 self-start rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
           <button
             type="button"

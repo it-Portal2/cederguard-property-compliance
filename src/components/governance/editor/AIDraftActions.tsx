@@ -1,6 +1,6 @@
-// Phase 12 — opens the `AIDraftModal` so the author can give the model
+// opens the `AIDraftModal` so the author can give the model
 // a free-text instruction (e.g. "write 10 bullet points covering …")
-// alongside the auto-extracted document context.  Per business rule §31
+// alongside the auto-extracted document context. Per business rule §31
 // + §54 — AI never persists without explicit user accept; the modal's
 // "Insert at cursor" button is the explicit accept.
 
@@ -13,7 +13,7 @@ interface AIDraftActionsProps {
   editor: Editor;
   /** Optional document-level context forwarded to the modal so the
    * Gemini prompt can be tailored (e.g. "Cabinet KM4 — Recommendations
-   * section" or "DPB · May 2026 minutes · agenda: …"). */
+   * section" or "DPB · May 2026 minutes · agenda: …").*/
   aiContext?: string;
 }
 

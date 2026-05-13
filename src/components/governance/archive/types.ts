@@ -1,4 +1,4 @@
-// Phase 10 — Archive shared types + style maps.
+// Archive shared types + style maps.
 
 export type ArchiveKind = 'report' | 'meeting' | 'projectDoc';
 

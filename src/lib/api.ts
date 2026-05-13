@@ -138,11 +138,11 @@ export const api = {
 
   testGemini: (prompt: string) => callApi("geminiPrompt", { prompt }),
   /**
-   * Generic Gemini wrapper — sends a prompt + config + optional `action`
-   * tag to the existing `aiRoutes.geminiPrompt` server route. The route does
-   * the dual-key + dual-model + retry rotation; the response is the parsed
-   * JSON (or text) result. Used by TAC + any other surface that needs a
-   * one-shot prompt without its own Firestore write side-effects.
+ * Generic Gemini wrapper — sends a prompt + config + optional `action`
+ * tag to the existing `aiRoutes.geminiPrompt` server route. The route does
+ * the dual-key + dual-model + retry rotation; the response is the parsed
+ * JSON (or text) result. Used by TAC + any other surface that needs a
+ * one-shot prompt without its own Firestore write side-effects.
    */
   geminiPrompt: (
     prompt: string,
@@ -255,7 +255,7 @@ export const api = {
     callApi("savePreference", { key, value }),
   getPreferences: () => callApi("getPreferences"),
 
-  // Programme Governance — Phase 1 editor sandbox
+  // Programme Governance — editor sandbox
   governanceSandboxSaveSection: (sectionId: string, content: any, wordCount: number) =>
     callApi("governanceSandboxSaveSection", { sectionId, content, wordCount }),
   governanceSandboxLoadSection: (sectionId: string) =>
@@ -269,7 +269,7 @@ export const api = {
     },
   ) => callApi("governanceRenderSandboxPdf", { content, ...(extras ?? {}) }),
 
-  // Programme Governance — Phase 2 branding assets
+  // Programme Governance — branding assets
   governanceGetCouncilAssets: () => callApi("governanceGetCouncilAssets"),
   governanceUploadCouncilLogo: (fileBase64: string) =>
     callApi("governanceUploadCouncilLogo", { fileBase64 }),
@@ -283,7 +283,7 @@ export const api = {
     callApi("governanceUploadUserSignature", { fileBase64 }),
   governanceDeleteUserSignature: () => callApi("governanceDeleteUserSignature"),
 
-  // Programme Governance — Phase 3 framework / bodies / thresholds / ToR
+  // Programme Governance — framework / bodies / thresholds / ToR
   governanceGetFramework: () => callApi("governanceGetFramework"),
   governancePublishFramework: () => callApi("governancePublishFramework"),
   governanceUpsertBody: (bodyId: string, patch: any) =>
@@ -303,7 +303,7 @@ export const api = {
   governanceExportFrameworkConstitution: () =>
     callApi("governanceExportFrameworkConstitution"),
 
-  // Programme Governance — Phase 4 report templates
+  // Programme Governance — report templates
   governanceListTemplates: () => callApi("governanceListTemplates"),
   governanceGetTemplate: (templateId: string) =>
     callApi("governanceGetTemplate", { templateId }),
@@ -316,7 +316,7 @@ export const api = {
   governanceAiRecommendTemplate: (intake: string) =>
     callApi("governanceAiRecommendTemplate", { intake }),
 
-  // Programme Governance — Phase 5 Forward Plan
+  // Programme Governance — Forward Plan
   governanceListForwardPlanItems: () => callApi("governanceListForwardPlanItems"),
   governanceGetForwardPlanItem: (itemId: string) =>
     callApi("governanceGetForwardPlanItem", { itemId }),
@@ -332,7 +332,7 @@ export const api = {
     callApi("governanceImportForwardPlanDryRun", { fileBase64 }),
   governanceImportForwardPlanCommit: (fileBase64: string) =>
     callApi("governanceImportForwardPlanCommit", { fileBase64 }),
-  // Phase 6a — Reports CRUD shell
+  // Reports CRUD shell
   governanceListReports: () => callApi("governanceListReports"),
   governanceGetReport: (reportId: string) =>
     callApi("governanceGetReport", { reportId }),
@@ -342,7 +342,7 @@ export const api = {
     callApi("governanceSoftDeleteReport", { reportId, reason }),
   governanceRestoreReport: (reportId: string) =>
     callApi("governanceSoftDeleteReport", { reportId, restore: true }),
-  // Phase 6b — Report sections (Tiptap editor)
+  // Report sections (Tiptap editor)
   governanceListReportSections: (reportId: string) =>
     callApi("governanceListReportSections", { reportId }),
   governanceSaveReportSection: (
@@ -350,7 +350,7 @@ export const api = {
     sectionId: string,
     patch: { content?: any; wordCount?: number },
   ) => callApi("governanceSaveReportSection", { reportId, sectionId, patch }),
-  // Phase 6c — Report state machine + amendments
+  // Report state machine + amendments
   governanceSubmitReport: (reportId: string) =>
     callApi("governanceSubmitReport", { reportId }),
   governanceWithdrawReport: (reportId: string) =>
@@ -367,7 +367,7 @@ export const api = {
     callApi("governanceListAmendments", { reportId }),
   governanceResolveAmendment: (amendmentId: string) =>
     callApi("governanceResolveAmendment", { amendmentId }),
-  // Phase 6d — Report PDF + sign Part A
+  // Report PDF + sign Part A
   governanceRenderReportPdf: (
     reportId: string,
     opts?: { noWatermark?: boolean; redactPart2?: boolean },
@@ -380,7 +380,7 @@ export const api = {
   governanceSignPartA: (reportId: string) =>
     callApi("governanceSignPartA", { reportId }),
   governanceListReviewers: () => callApi("governanceListReviewers"),
-  // Phase 6e — Senior PM intermediate review + Unlock-for-correction
+  // Senior PM intermediate review + Unlock-for-correction
   governanceSeniorPmApprove: (reportId: string) =>
     callApi("governanceSeniorPmApprove", { reportId }),
   governanceSeniorPmRequestAmendments: (
@@ -389,10 +389,10 @@ export const api = {
   ) => callApi("governanceSeniorPmRequestAmendments", { reportId, amendments }),
   governanceUnlockReport: (reportId: string, reason: string) =>
     callApi("governanceUnlockReport", { reportId, reason }),
-  // Phase 7 — My Reports (PM personal workspace)
+  // My Reports (PM personal workspace)
   governanceListMyOpenAmendments: () =>
     callApi("governanceListMyOpenAmendments"),
-  // Phase 8a — Meetings CRUD shell
+  // Meetings CRUD shell
   governanceListMeetings: () => callApi("governanceListMeetings"),
   governanceGetMeeting: (meetingId: string) =>
     callApi("governanceGetMeeting", { meetingId }),
@@ -420,7 +420,7 @@ export const api = {
       newTimeEnd,
       reason,
     }),
-  // Phase 8b — Meetings tabs
+  // Meetings tabs
   governanceSaveMeetingMinutes: (
     meetingId: string,
     content: any,
@@ -457,10 +457,10 @@ export const api = {
       linkedReportIds,
       linkedProjectIds,
     }),
-  // Phase 8c — workspace member picker (reusable primitive)
+  // workspace member picker (reusable primitive)
   governanceListWorkspaceMembers: () =>
     callApi("governanceListWorkspaceMembers"),
-  // Phase 5.5a — Schedule view + bulk creation
+  // Schedule view + bulk creation
   governanceBulkCreateRecurringMeetings: (params: {
     governanceBodyId: string;
     pattern: "weekly" | "monthly" | "quarterly";
@@ -480,14 +480,14 @@ export const api = {
     callApi("governanceImportMeetingsCommit", { fileBase64 }),
   governanceExportMeetingsXlsx: () =>
     callApi("governanceExportMeetingsXlsx"),
-  // Phase 5.5b — Proposed/Confirm/Decline/Withdraw flow
+  // Proposed/Confirm/Decline/Withdraw flow
   governanceConfirmFpItem: (itemId: string) =>
     callApi("governanceConfirmFpItem", { itemId }),
   governanceDeclineFpItem: (itemId: string, reason: string) =>
     callApi("governanceDeclineFpItem", { itemId, reason }),
   governanceWithdrawFpItem: (itemId: string) =>
     callApi("governanceWithdrawFpItem", { itemId }),
-  // Phase 9 — Project Governance Folder
+  // Project Governance Folder
   governanceListProjectDocs: (projectId?: string) =>
     callApi("governanceListProjectDocs", { projectId }),
   governanceGetProjectDoc: (docId: string) =>
@@ -502,31 +502,31 @@ export const api = {
     callApi("governanceSoftDeleteProjectDoc", { docId, reason }),
   governanceRestoreProjectDoc: (docId: string) =>
     callApi("governanceSoftDeleteProjectDoc", { docId, restore: true }),
-  // Phase 10 — Archive & Audit. HR-7 — optional `asOfMonth` switches
+  // Archive & Audit. optional `asOfMonth` switches
   // the aggregator to the monthly snapshot.
   governanceListArchive: (args: { asOfMonth?: string } = {}) =>
     callApi("governanceListArchive", args),
   governanceGetArchiveAuditTrail: (entityId: string) =>
     callApi("governanceGetArchiveAuditTrail", { entityId }),
   governanceExportArchiveFoi: () => callApi("governanceExportArchiveFoi"),
-  // Phase 11 — Governance Dashboard (role-aware aggregator). HR-7 —
+  // Governance Dashboard (role-aware aggregator).
   // optional `asOfMonth` switches the dashboard to the monthly snapshot.
   governanceGetDashboard: (args: { asOfMonth?: string } = {}) =>
     callApi("governanceGetDashboard", args),
-  // Phase 12 — Standalone briefing rewrite (Gemini with stub fallback)
+  // Standalone briefing rewrite (Gemini with stub fallback)
   governanceGenerateBriefing: (params: {
     role: "pgm" | "pm";
     stubLines: string[];
     greetingName?: string;
   }) => callApi("governanceGenerateBriefing", params),
-  // Phase 12 — Chase engine + manual nudge + chase log
+  // Chase engine + manual nudge + chase log
   governanceNudgeItem: (itemId: string) =>
     callApi("governanceNudgeItem", { itemId }),
   governanceListChaseEvents: () => callApi("governanceListChaseEvents"),
 
-  // Historical Reporting Capability (HRC) — month-end snapshot reads.
+  // Historical Reporting Capability — month-end snapshot reads.
   // Cron-driven write paths are not exposed to the client. Super-admin
-  // correction endpoint lands in HR-6.
+  // correction endpoint lands in.
   hrcListAvailableMonths: () => callApi("hrcListAvailableMonths"),
   hrcReadSnapshot: (yearMonth: string, collection: string) =>
     callApi("hrcReadSnapshot", { yearMonth, collection }),
@@ -536,7 +536,7 @@ export const api = {
   hrcInspectSnapshot: (yearMonth: string, clientId?: string) =>
     callApi("hrcInspectSnapshot", clientId ? { yearMonth, clientId } : { yearMonth }),
   hrcGetDeploymentMeta: () => callApi("hrcGetDeploymentMeta"),
-  // HR-6 — super_admin correction.
+  // super_admin correction.
   hrcCorrectSnapshotRow: (args: {
     yearMonth: string;
     collection: string;
@@ -552,7 +552,7 @@ export const api = {
     clientId?: string;
   }) => callApi("hrcListCorrections", args),
 
-  // Technical Assurance Companion (TAC) — Phase 1: Enquiry capture
+  // Technical Assurance Companion (TAC) — Enquiry capture
   tacListEnquiries: (args?: { mine?: boolean }) =>
     callApi("tacListEnquiries", args ?? {}),
   tacGetEnquiry: (enquiryId: string) =>
@@ -570,14 +570,14 @@ export const api = {
   tacRemoveAttachment: (enquiryId: string, attachmentId: string) =>
     callApi("tacRemoveAttachment", { enquiryId, attachmentId }),
   /**
-   * Permanently deletes an enquiry — wipes the doc, every `tabs/*`
-   * deliverable, and every Firebase Storage attachment referenced by the
-   * enquiry. Issued RFIs in the workspace register are NOT cascaded.
+ * Permanently deletes an enquiry — wipes the doc, every `tabs/*`
+ * deliverable, and every Firebase Storage attachment referenced by the
+ * enquiry. Issued RFIs in the workspace register are NOT cascaded.
    */
   tacDeleteEnquiry: (enquiryId: string) =>
     callApi("tacDeleteEnquiry", { enquiryId }),
 
-  // Technical Assurance Companion (TAC) — Phase 2: two-step insight pipeline
+  // Technical Assurance Companion (TAC) — two-step insight pipeline
   // (the actual Gemini call goes through the existing `geminiPrompt` route).
   tacBuildInsightPrompt: (enquiryId: string) =>
     callApi("tacBuildInsightPrompt", { enquiryId }),
@@ -588,23 +588,23 @@ export const api = {
     tabId: "summary" | "drawing" | "rfi" | "costProgramme" | "compliance" = "summary",
   ) => callApi("tacGetEnquiryDeliverable", { enquiryId, tabId }),
 
-  // Technical Assurance Companion (TAC) — Phase 5: RFI tab + register
+  // Technical Assurance Companion (TAC) — RFI tab + register
   tacUpsertRfiDraft: (enquiryId: string, rfi: any) =>
     callApi("tacUpsertRfiDraft", { enquiryId, rfi }),
   tacIssueRfi: (enquiryId: string) =>
     callApi("tacIssueRfi", { enquiryId }),
   tacListRfis: (projectId?: string) =>
     callApi("tacListRfis", projectId ? { projectId } : {}),
-  // Phase 6 — Cost & programme tab.
+  // Cost & programme tab.
   tacListCostRates: () => callApi("tacListCostRates", {}),
   tacExportCostCsv: (enquiryId: string) =>
     callApi("tacExportCostCsv", { enquiryId }),
-  // Phase 7 — Compliance & citations tab.
+  // Compliance & citations tab.
   tacDownloadCompliancePack: (enquiryId: string) =>
     callApi("tacDownloadCompliancePack", { enquiryId }),
   tacSaveToGoldenThread: (enquiryId: string) =>
     callApi("tacSaveToGoldenThread", { enquiryId }),
-  // Phase 8 — Feedback + Audit + Archive.
+  // Feedback + Audit + Archive.
   tacSubmitFeedback: (args: {
     enquiryId: string;
     thumbs: "up" | "down";
@@ -618,7 +618,7 @@ export const api = {
   tacArchiveEnquiry: (enquiryId: string, restore?: boolean) =>
     callApi("tacArchiveEnquiry", { enquiryId, restore: !!restore }),
   tacListAuditFlagged: () => callApi("tacListAuditFlagged", {}),
-  // Phase 9 — Close + Unlock + Decision Log + Add to PM report.
+  // Close + Unlock + Decision Log + Add to PM report.
   tacCloseEnquiry: (enquiryId: string) =>
     callApi("tacCloseEnquiry", { enquiryId }),
   tacUnlockEnquiry: (enquiryId: string, reason: string) =>
@@ -631,7 +631,7 @@ export const api = {
     callApi("tacRemoveFromProjectReport", { enquiryId }),
   tacListProjectReportEnquiries: (projectId: string) =>
     callApi("tacListProjectReportEnquiries", { projectId }),
-  // Phase 9b — Share-for-review.
+  // Share-for-review.
   tacShareEnquiry: (args: {
     enquiryId: string;
     sharedWithUid: string;
@@ -644,9 +644,9 @@ export const api = {
     decisionNote?: string;
   }) => callApi("tacDecideOnShare", args),
   tacListSharedWithMe: () => callApi("tacListSharedWithMe", {}),
-  // Phase 10 — Polish.
+  // Polish.
   tacScanCitationIntegrity: () => callApi("tacScanCitationIntegrity", {}),
-  // Phase 6b — Admin rates editor.
+  // Admin rates editor.
   tacUpsertCostRate: (rate: {
     rateId: string;
     category: string;

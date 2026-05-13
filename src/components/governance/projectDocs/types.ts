@@ -1,4 +1,4 @@
-// Phase 9 — Project Governance Folder shared types + style maps.
+// Project Governance Folder shared types + style maps.
 
 export type ProjectDocStatus = 'Draft' | 'Published' | 'Archived';
 

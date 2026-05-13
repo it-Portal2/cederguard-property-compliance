@@ -19,7 +19,7 @@ export const profileRoutes: Record<string, (req: any, res: any, ctx: ApiContext)
         allowedFields.forEach(field => {
           if (profile[field] !== undefined) sanitizedProfile[field] = profile[field];
         });
-        // Phase 13 — sanitise nested `notificationPreferences.chase`.
+        // sanitise nested `notificationPreferences.chase`.
         if (profile.notificationPreferences && typeof profile.notificationPreferences === 'object') {
           const np: Record<string, any> = {};
           if (typeof profile.notificationPreferences.chase === 'boolean') {

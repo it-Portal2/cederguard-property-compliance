@@ -1,8 +1,8 @@
-// Phase 11 — Governance Dashboard.
+// Governance Dashboard.
 //
 // Single page, role-aware render — server returns PgM payload for
-// Client Admin / Super Admin and PM payload for pure PMs.  Briefing
-// is data-driven for v1 (lesson #61); Phase 12 swaps the body for
+// Client Admin / Super Admin and PM payload for pure PMs. Briefing
+// is data-driven for v1; swaps the body for
 // Gemini without changing the UI.
 //
 // All metric tiles use the shared `StatsCard` (lesson §23 quality bar).
@@ -77,7 +77,7 @@ const INBOX_KIND_META: Record<
 };
 
 export function GovernanceDashboardPage() {
-  // HRC HR-7 — picker + asOfMonth wiring. The dashboard endpoint
+  //  picker + asOfMonth wiring. The dashboard endpoint
   // accepts `asOfMonth`; we feed it from the picker. `reports` is the
   // source for available months.
   const historicalView = useHistoricalView<any>({ collection: 'reports' });
@@ -139,8 +139,8 @@ export function GovernanceDashboardPage() {
           </div>
         </div>
         <div className="inline-flex shrink-0 items-center gap-2 self-start">
-          {/* HRC HR-7 — month picker drives `asOfMonth` on the
-              dashboard aggregator. */}
+          {/* month picker drives `asOfMonth` on the
+ dashboard aggregator.*/}
           <MonthPicker
             monthEnd={historicalView.monthEnd}
             availableMonths={historicalView.availableMonths}
@@ -290,7 +290,7 @@ function PgmDashboard({ payload }: { payload: PgmDashboardPayload }) {
       </section>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Inbox (2/3 width) */}
+        {/* Inbox (2/3 width)*/}
         <section className="space-y-3 lg:col-span-2">
           <header className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-900">Inbox</h2>
@@ -369,7 +369,7 @@ function PgmDashboard({ payload }: { payload: PgmDashboardPayload }) {
           )}
         </section>
 
-        {/* Upcoming boards (1/3 width) */}
+        {/* Upcoming boards (1/3 width)*/}
         <section className="space-y-3">
           <header className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-900">Upcoming boards</h2>
@@ -455,7 +455,7 @@ function PmDashboard({ payload }: { payload: PmDashboardPayload }) {
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Upcoming deadlines */}
+        {/* Upcoming deadlines*/}
         <section className="space-y-3">
           <header className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-900">Upcoming deadlines</h2>
@@ -508,7 +508,7 @@ function PmDashboard({ payload }: { payload: PmDashboardPayload }) {
           )}
         </section>
 
-        {/* Feedback from PgM */}
+        {/* Feedback from PgM*/}
         <section className="space-y-3">
           <header className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-900">Feedback from PgM</h2>

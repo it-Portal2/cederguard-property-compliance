@@ -1,11 +1,8 @@
-// Forward Plan Excel import — parses a Southwark-style .xlsx sheet into
-// structured ForwardPlanItem rows with per-row validation flags.
-//
-// The importer is deliberately forgiving: it tries to auto-detect the
-// header row, maps columns by short fuzzy match, and surfaces flags so
-// the user can review the dry-run preview before committing. Never
-// commits on its own — the route `governanceImportForwardPlanCommit`
-// does the actual writes after the user confirms.
+// Deliberately forgiving: auto-detects the header row, maps columns by
+// fuzzy match, and surfaces flags so the user can review a dry-run
+// preview before committing. Never commits on its own — the route
+// `governanceImportForwardPlanCommit` performs the writes once the user
+// confirms.
 
 import * as XLSX from 'xlsx';
 
@@ -54,7 +51,7 @@ export interface ParsedItem {
   fileLink: string;
   decisionLink: string;
   status: 'Draft' | 'Published';
-  // Phase 5.5e — Excel Column F. null when missing / unrecognised.
+  // Excel Column F. null when missing / unrecognised.
   approvalStatus: 'Pending' | 'Approved' | null;
 }
 
@@ -112,9 +109,7 @@ const FIELD_ALIASES: Record<string, keyof ParsedItem> = {
   'high-rise': 'isHRB',
   'decision route': 'decisionRoute',
   'routing mode': 'routingMode',
-  // Phase 5.5e — Excel Column F. Matches the real Southwark sheet header
-  // text ("Report Approval Status (Pending/Approved)") plus shorter forms
-  // for any alternative templates.
+  // Report-approval-status column (full and shortened variants).
   'report approval status': 'approvalStatus',
   'approval status': 'approvalStatus',
 };
@@ -150,8 +145,9 @@ function slugifyId(text: string, fallback: string): string {
   return base.length > 0 ? `${base}-${suffix}` : `${fallback}-${suffix}`;
 }
 
-// Excel serial dates: integer days since 1899-12-30 (Excel's buggy
-// 1900-leap-year epoch). Anything ≥ 60 is offset by 1 to compensate.
+// Excel stores dates as integer days since 1899-12-30 with a known
+// 1900-leap-year artefact: serial 60 is the phantom 29 Feb 1900, so any
+// value ≥ 60 must be shifted by one day to land on the right calendar date.
 function excelSerialToIso(serial: number): string | null {
   if (!Number.isFinite(serial) || serial <= 0) return null;
   const ms = Math.round((serial - 25569) * 86400 * 1000);
@@ -247,9 +243,9 @@ function parseBool(cell: unknown): boolean {
 
 // ───── Header-row auto-detect ───────────────────────────────────────────
 
-// Real Southwark sheets put metadata in rows 1-3 and the column header
-// row at row 4. We scan the first 10 rows looking for a row that contains
-// BOTH "scheme" AND a title-like header. Return the 0-based index.
+// Workbooks commonly carry metadata in the first few rows before the
+// header. Scan the first 10 rows for one that contains BOTH "scheme" and
+// a title-like header. Returns the 0-based row index.
 function detectHeaderRow(grid: unknown[][]): number {
   for (let i = 0; i < Math.min(grid.length, 10); i += 1) {
     const row = grid[i] ?? [];
@@ -431,9 +427,9 @@ function parseRow(
         }
         break;
       }
-      // Phase 5.5e — Excel Column F. Real Southwark cells include trailing
-      // whitespace ("Pending "); trim before matching. Anything outside the
-      // two known states becomes null + a warning so PgM can fix in place.
+      // Cells sometimes carry trailing whitespace (e.g. "Pending "); trim
+      // before matching. Anything outside the two known states becomes null
+      // plus a warning so the PgM can correct it in place.
       case 'approvalStatus': {
         const raw = parseCellString(cell).trim();
         if (!raw) {
@@ -513,7 +509,7 @@ export function parseForwardPlanXlsx(
   bodies: FrameworkBodyLite[],
 ): ParseResult {
   const wb = XLSX.read(buffer as any, { type: 'buffer', cellDates: false });
-  // Prefer the first visible sheet (Southwark template has hidden workings).
+  // Prefer the first visible sheet — workbooks often carry hidden helper sheets.
   const firstVisibleName =
     wb.SheetNames.find((n) => {
       const info = (wb.Workbook?.Sheets ?? []).find((s: any) => s.name === n);

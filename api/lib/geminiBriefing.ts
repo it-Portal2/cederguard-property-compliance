@@ -1,14 +1,14 @@
-// Phase 12 — Gemini briefing helper.
+// Gemini briefing helper.
 //
 // Wraps the rule-based-stub lines with a Gemini-rewritten briefing
-// paragraph.  Response shape stays `{ lines, source }` (lesson #107)
+// paragraph. Response shape stays `{ lines, source }`
 // so the UI doesn't change between modes.
 //
 // Critically: this DOES NOT reinvent the Gemini call — it routes
 // through the existing `aiRoutes.geminiPrompt` handler so we inherit
 // the canonical fallback chain (system key → user backup key, primary
 // model → backup model, retry on 503/overload, structured quota /
-// timeout errors).  Only the prompt changes.
+// timeout errors). Only the prompt changes.
 //
 // Falls back silently to the stub when the route returns a non-2xx
 // status, when the result is empty, or on any thrown error.

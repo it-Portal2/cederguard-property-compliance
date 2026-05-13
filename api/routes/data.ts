@@ -6,9 +6,13 @@ import {
   HRC_LEGACY_COLLECTIONS,
   type LegacyCollection,
 } from '../../src/types/historicalReporting.js';
+import {
+  detectSevereTransitions,
+  writeSevereEscalations,
+} from '../lib/riskSevereEscalation.js';
 
-// HRC HR-2 — collections persisted via the generic saveData chokepoint
-// that need field-level history captured pre-mutation.
+// Legacy single-array collections persisted via the generic saveData
+// chokepoint that need field-level history captured pre-mutation.
 const HRC_TRACKED_LEGACY_COLLECTIONS: ReadonlyArray<string> = HRC_LEGACY_COLLECTIONS;
 
 export const dataRoutes: Record<string, (req: any, res: any, ctx: ApiContext) => Promise<any>> = {
@@ -24,12 +28,12 @@ export const dataRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
       }
       pathRef = db.collection('projects').doc(projectId).collection('data').doc(collection);
 
-      // HRC HR-2 — capture pre-mutation array state for tracked legacy
-      // collections (risks, complianceItems, issues, kris) so any future
-      // point-in-time query can replay state at any timestamp. We read
-      // BEFORE writing so prevState reflects the actual pre-mutation
-      // doc. Best-effort — appendHistoryRow swallows errors so a history
-      // failure never blocks the user's save.
+      // Capture pre-mutation array state for tracked legacy collections
+      // (risks, complianceItems, issues, kris) so a future point-in-time
+      // query can replay state at any timestamp. Reads BEFORE writing so
+      // prevState reflects the actual pre-mutation doc. Best-effort:
+      // appendHistoryRow swallows errors so a history failure never
+      // blocks the user's save.
       const isHrcTracked =
         HRC_TRACKED_LEGACY_COLLECTIONS.includes(collection) && data !== undefined;
       let hrcPrevArray: unknown[] | null = null;
@@ -81,7 +85,50 @@ export const dataRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
         }).catch(console.error);
       }
 
-      return res.status(200).json({ success: true });
+      // Severe-risk escalation: when a saved risks array contains a risk
+      // that transitioned INTO Severe state (Impact = 5 on gross or residual),
+      // write a severeRiskAlerts row plus an activity log entry and resolve
+      // Strategic Director recipients. Idempotent — re-saves of an
+      // already-Severe risk do not re-trigger.
+      let severeNotified: { count: number; recipientCount: number } | undefined;
+      if (
+        collection === 'risks' &&
+        Array.isArray(data) &&
+        data.length > 0
+      ) {
+        try {
+          const transitions = detectSevereTransitions(hrcPrevArray, data);
+          if (transitions.length > 0) {
+            // Programme vs project context: detect by reading the project doc.
+            // If the contextId resolves to a project, it's project-kind; if it
+            // resolves to a programme, it's programme-kind. Fall back to
+            // project-kind when unclear (most common case).
+            let contextKind: 'project' | 'programme' = 'project';
+            try {
+              const progDoc = await db.collection('programmes').doc(projectId).get();
+              if (progDoc.exists) contextKind = 'programme';
+            } catch (err) {
+              console.error('[rsc-d] context-kind probe failed:', err);
+            }
+            const summary = await writeSevereEscalations(ctx, {
+              transitions,
+              contextId: projectId,
+              contextKind,
+            });
+            if (summary.alertCount > 0) {
+              severeNotified = {
+                count: summary.alertCount,
+                recipientCount: summary.recipientCount,
+              };
+            }
+          }
+        } catch (err) {
+          // Never block save on Severe-detection failure.
+          console.error('[rsc-d] severe-escalation pipeline failed:', err);
+        }
+      }
+
+      return res.status(200).json({ success: true, ...(severeNotified ? { severeNotified } : {}) });
     } else if (collection === 'programmes') {
       // Standardize: programmes stored as documents in top-level collection indexed by clientId
       if (Array.isArray(data)) {

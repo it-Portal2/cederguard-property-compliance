@@ -58,7 +58,7 @@ export function ReportAuthoringPage() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [amendments, setAmendments] = useState<Amendment[]>([]);
-  // Phase 6c — transition state
+  // transition state
   const [transitionBusy, setTransitionBusy] = useState<string | null>(null);
   const [requestAmendOpen, setRequestAmendOpen] = useState(false);
   const [abandonOpen, setAbandonOpen] = useState(false);
@@ -66,7 +66,7 @@ export function ReportAuthoringPage() {
   const [confirmWithdraw, setConfirmWithdraw] = useState(false);
   const [pdfOpen, setPdfOpen] = useState(false);
   const [confirmSign, setConfirmSign] = useState(false);
-  // Phase 6e — Senior PM amendment modal + Unlock dialog
+  // Senior PM amendment modal + Unlock dialog
   const [spmAmendOpen, setSpmAmendOpen] = useState(false);
   const [confirmSpmApprove, setConfirmSpmApprove] = useState(false);
   const [unlockOpen, setUnlockOpen] = useState(false);
@@ -99,7 +99,7 @@ export function ReportAuthoringPage() {
   // Withdraw window: 1h after submittedAt, AND the reviewer for the
   // current stage hasn't viewed yet. Mirror the server's gate so the
   // button disables before the user clicks. Withdraw applies to both
-  // InReview AND PendingSeniorPmReview stages (lesson #37 — same action
+  // InReview AND PendingSeniorPmReview stages ( — same action
   // covers multiple states with stage-aware checks).
   const canWithdraw = useMemo(() => {
     if (status !== 'InReview' && status !== 'PendingSeniorPmReview') return false;
@@ -167,7 +167,7 @@ export function ReportAuthoringPage() {
     [sections, activeId],
   );
 
-  // ── Phase 6c: state-machine transitions ────────────────────────────────
+  // ── state-machine transitions ────────────────────────────────
   const runTransition = useCallback(
     async (
       key: string,
@@ -402,9 +402,9 @@ export function ReportAuthoringPage() {
           </span>
         </div>
       )}
-      {/* Phase 6e — unlock-from-sealed loud banner. Stays visible forever
-          on every report that's been unlocked, so FOI / Scrutiny readers
-          are never misled about which sealed version they're looking at. */}
+      {/* Permanent unlock-from-sealed banner. Visible on every report that
+          has been unlocked at least once so FOI / scrutiny readers are
+          never misled about which sealed version they are looking at. */}
       {Array.isArray(report.unlockHistory) && report.unlockHistory.length > 0 && (
         <div className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-xs text-rose-900">
           <div className="flex items-start gap-2">
@@ -700,7 +700,7 @@ export function ReportAuthoringPage() {
           )}
         </aside>
 
-        {/* Center: editor */}
+        {/* Center: editor*/}
         <main className="rounded-xl border border-slate-200 bg-white p-4">
           {!activeSection ? (
             <div className="flex h-full min-h-[40vh] flex-col items-center justify-center gap-2 text-center text-xs text-slate-500">
@@ -771,7 +771,7 @@ export function ReportAuthoringPage() {
           )}
         </main>
 
-        {/* Right: side panel (minimal in 6b — full review surface in 6c) */}
+        {/* Right: side panel (minimal in 6b — full review surface in 6c)*/}
         <aside className="hidden rounded-xl border border-slate-200 bg-white p-3 lg:block">
           <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
             Side panel
@@ -799,13 +799,13 @@ export function ReportAuthoringPage() {
                     )}
               </p>
             </div>
-            {/* Phase 6c — state-aware actions */}
+            {/* state-aware actions*/}
             <div className="border-t border-slate-100 pt-3">
               <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
                 Actions
               </p>
               <div className="space-y-1.5">
-                {/* Phase 6d — Preview PDF (always available) */}
+                {/* Preview PDF (always available)*/}
                 <button
                   type="button"
                   onClick={() => setPdfOpen(true)}
@@ -815,7 +815,7 @@ export function ReportAuthoringPage() {
                   Preview PDF
                 </button>
 
-                {/* Phase 6d — Sign Part A (Strategic Director / admin, Approved only) */}
+                {/* Sign Part A (Strategic Director / admin, Approved only)*/}
                 {canSignPartA && (
                   <button
                     type="button"
@@ -832,7 +832,7 @@ export function ReportAuthoringPage() {
                   </button>
                 )}
 
-                {/* Phase 6d — Download sealed PDF */}
+                {/* Download sealed PDF*/}
                 {status === 'Sealed' && (
                   <button
                     type="button"
@@ -844,7 +844,7 @@ export function ReportAuthoringPage() {
                   </button>
                 )}
 
-                {/* Phase 6e — Unlock for correction (PgM / super-admin on Sealed) */}
+                {/* Unlock for correction (PgM / super-admin on Sealed)*/}
                 {canUnlock && (
                   <button
                     type="button"
@@ -861,7 +861,7 @@ export function ReportAuthoringPage() {
                   </button>
                 )}
 
-                {/* Phase 6e — Senior PM review actions */}
+                {/* Senior PM review actions*/}
                 {canSeniorPmAct && (
                   <>
                     <button
@@ -888,7 +888,7 @@ export function ReportAuthoringPage() {
                   </>
                 )}
 
-                {/* Draft → Submit (owner only) */}
+                {/* Draft → Submit (owner only)*/}
                 {status === 'Draft' && (isOwner || isAdmin) && (
                   <button
                     type="button"
@@ -905,7 +905,7 @@ export function ReportAuthoringPage() {
                   </button>
                 )}
 
-                {/* AmendmentsRequested → Resubmit */}
+                {/* AmendmentsRequested → Resubmit*/}
                 {status === 'AmendmentsRequested' && (isOwner || isAdmin) && (
                   <button
                     type="button"
@@ -929,7 +929,7 @@ export function ReportAuthoringPage() {
                   </button>
                 )}
 
-                {/* InReview → Withdraw (owner, within 1h, PgM not viewed) */}
+                {/* InReview → Withdraw (owner, within 1h, PgM not viewed)*/}
                 {status === 'InReview' && (isOwner || isAdmin) && (
                   <button
                     type="button"
@@ -953,7 +953,7 @@ export function ReportAuthoringPage() {
                   </button>
                 )}
 
-                {/* InReview → Approve / Request amendments (PgM/admin) */}
+                {/* InReview → Approve / Request amendments (PgM/admin)*/}
                 {status === 'InReview' && isAdmin && (
                   <>
                     <button
@@ -980,7 +980,7 @@ export function ReportAuthoringPage() {
                   </>
                 )}
 
-                {/* Abandon — owner or admin, any non-final state */}
+                {/* Abandon — owner or admin, any non-final state*/}
                 {(isOwner || isAdmin) &&
                   status !== 'Approved' &&
                   status !== 'Sealed' &&
@@ -997,7 +997,7 @@ export function ReportAuthoringPage() {
                     </button>
                   )}
 
-                {/* Final-state notice — no actions */}
+                {/* Final-state notice — no actions*/}
                 {(status === 'Approved' ||
                   status === 'Sealed' ||
                   status === 'Abandoned' ||
@@ -1012,7 +1012,7 @@ export function ReportAuthoringPage() {
         </aside>
       </div>
 
-      {/* Modals + dialogs */}
+      {/* Modals + dialogs*/}
       <RequestAmendmentsModal
         isOpen={requestAmendOpen}
         reportId={report.id}
@@ -1096,8 +1096,8 @@ export function ReportAuthoringPage() {
         onCancel={() => setConfirmSign(false)}
       />
 
-      {/* Phase 6e — Senior PM amendment modal (reuses RequestAmendmentsModal
-          with the seniorPm stage flag so the server tags the audit trail). */}
+      {/* Senior PM amendment modal (reuses RequestAmendmentsModal
+ with the seniorPm stage flag so the server tags the audit trail).*/}
       <RequestAmendmentsModal
         isOpen={spmAmendOpen}
         reportId={report.id}

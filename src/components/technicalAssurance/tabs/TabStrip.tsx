@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 
 // 5-tab strip for the enquiry workspace. Summary is the default + the only
-// fully-implemented tab in Phase 3. Drawing / RFI / Cost / Compliance render
+// fully-implemented tab in. Drawing / RFI / Cost / Compliance render
 // placeholder content until their phases ship (4 / 5 / 6 / 7 respectively).
 //
 // No Sparkle / Brain / Rocket / Wand2 icons.
@@ -26,7 +26,7 @@ interface TabSpec {
   label: string;
   icon: LucideIcon;
   /** Phase that ships the real implementation. Used for the "Coming in Phase X"
-   *  hint inside placeholder tabs (not on the strip itself). */
+   *  hint inside placeholder tabs (not on the strip itself).*/
   phase: number;
   available: boolean;
 }

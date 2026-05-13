@@ -1,26 +1,25 @@
-// Phase 9 — Project Governance Folder endpoints.
+// Project Governance Folder endpoints.
 //
-//   • governanceListProjectDocs        — by projectId, scoped to clientId.
+//   • governanceListProjectDocs — by projectId, scoped to clientId.
 //                                         Seed runs on first list-call
-//                                         (lesson #22 / #43).
-//   • governanceGetProjectDoc          — single doc + cross-tenant guard.
-//   • governanceUpsertProjectDoc       — create + edit Draft.  Field
-//                                         whitelist (lesson #12), owner
-//                                         or admin gate.  Once Published
+//   • governanceGetProjectDoc — single doc + cross-tenant guard.
+//   • governanceUpsertProjectDoc — create + edit Draft. Field
+//                                         whitelist, owner
+//                                         or admin gate. Once Published
 //                                         the doc is read-only on this
 //                                         endpoint — edit means a new
 //                                         draft (handled by upsert with
 //                                         `forkFromPublished: true`).
-//   • governancePublishProjectDoc      — Draft → Published, version++,
+//   • governancePublishProjectDoc — Draft → Published, version++,
 //                                         transactional snapshot into
-//                                         `versions/{n}` (lesson #67).
+//                                         `versions/{n}`.
 //   • governanceListProjectDocVersions — read-only list of prior
 //                                         snapshots for the audit panel.
-//   • governanceSoftDeleteProjectDoc   — soft-delete + restore via the
-//                                         same endpoint (lesson #38).
+//   • governanceSoftDeleteProjectDoc — soft-delete + restore via the
+//                                         same endpoint.
 //                                         Reason ≥ 5 chars on delete.
 //
-// Storage: `projectGovernanceDocs/{clientId_docId}` (lesson #10).
+// Storage: `projectGovernanceDocs/{clientId_docId}`.
 // Versions: sub-collection `projectGovernanceDocs/{docId}/versions/{n}`.
 
 import type { ApiContext } from '../lib/context.js';
@@ -36,7 +35,7 @@ import type { ChangeKind } from '../../src/types/historicalReporting.js';
 
 const DOC_ID_RE = /^[a-z0-9_-]{1,80}$/i;
 
-// HRC HR-4 — fire-and-forget history capture for project-doc mutations.
+//  fire-and-forget history capture for project-doc mutations.
 function captureProjectDocHistory(
   ctx: ApiContext,
   args: {
@@ -356,7 +355,7 @@ async function governancePublishProjectDoc(
     }
     const ref = ctx.db.collection('projectGovernanceDocs').doc(docKey(ctx, docId));
     // Transactional version bump + snapshot — same pattern as
-    // Phase 3 framework publish (lesson #67).
+    //  framework publish.
     const result = await ctx.db.runTransaction(async (tx) => {
       const snap = await tx.get(ref);
       if (!snap.exists) {

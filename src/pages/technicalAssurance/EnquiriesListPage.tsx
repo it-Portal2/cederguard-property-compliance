@@ -42,7 +42,7 @@ import {
   isSuperAdmin,
 } from "../../lib/roles";
 
-// Phase 1 — Enquiries list. Replaces the Phase 0 placeholder.
+// Enquiries list. Replaces the placeholder.
 //
 // Adds DynamicTable + 4 StatsCards + Status / soft-delete filters +
 // "+ New enquiry" toolbar action. Open-editor row action navigates to the
@@ -102,7 +102,7 @@ export function TacEnquiriesListPage() {
   const [deleteRow, setDeleteRow] = useState<Enquiry | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  // Phase 8 — archive + flag-for-audit row-action state.
+  // archive + flag-for-audit row-action state.
   const [archivingId, setArchivingId] = useState<string | null>(null);
   const [flagRow, setFlagRow] = useState<Enquiry | null>(null);
   const [flagging, setFlagging] = useState(false);
@@ -142,7 +142,7 @@ export function TacEnquiriesListPage() {
     void refresh();
   }, [refresh]);
 
-  // --- StatsCards counts -------------------------------------------------
+  // StatsCards counts -------------------------------------------------
   const counts = useMemo(() => {
     let drafting = 0;
     let generating = 0;
@@ -162,7 +162,7 @@ export function TacEnquiriesListPage() {
     return { drafting, generating, open, closed };
   }, [items]);
 
-  // --- Table config ------------------------------------------------------
+  // Table config ------------------------------------------------------
   const columns: ColumnDef<Enquiry>[] = useMemo(
     () => [
       {
@@ -258,10 +258,10 @@ export function TacEnquiriesListPage() {
         type: "select",
         options: STATUS_OPTIONS,
       },
-      // Phase 9b — "Shared with me" filter. Hides everything except
+      // "Shared with me" filter. Hides everything except
       // enquiries where the current user has an outstanding share
       // (decision === undefined). Filtered client-side using the existing
-      // `shares[]` field on each enquiry — no extra fetch.
+      // `shares` field on each enquiry — no extra fetch.
       {
         key: "sharedWithMe",
         label: "Sharing",
@@ -303,7 +303,7 @@ export function TacEnquiriesListPage() {
   const handleOpenWorkspace = useCallback(
     (row: Enquiry) => {
       // Client-side navigation — preserves Zustand store + skips a full
-      // network reload. Was previously `window.location.href = ...` which
+      // network reload. Was previously `window.location.href = .` which
       // forced the browser to refetch the bundle (visible flicker).
       navigate(`/technical-assurance/enquiries/${encodeURIComponent(row.id)}`);
     },
@@ -405,7 +405,7 @@ export function TacEnquiriesListPage() {
     [flagRow, flagging, setEnquiries],
   );
 
-  // Phase 9 — Decision log PDF export. Uses the active project from the
+  // Decision log PDF export. Uses the active project from the
   // store (so the button is project-scoped). When no project is active,
   // the button is disabled with a tooltip prompting the user to pick one.
   const handleExportDecisionLog = useCallback(async () => {
@@ -555,7 +555,7 @@ export function TacEnquiriesListPage() {
       transition={{ duration: 0.2 }}
       className="space-y-6"
     >
-      {/* Header */}
+      {/* Header*/}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="flex items-start gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
@@ -575,7 +575,7 @@ export function TacEnquiriesListPage() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 self-start">
-          {/* Phase 9 — Decision log export. Project-scoped via active project. */}
+          {/* Decision log export. Project-scoped via active project.*/}
           <button
             type="button"
             onClick={handleExportDecisionLog}
@@ -605,10 +605,10 @@ export function TacEnquiriesListPage() {
         </div>
       </div>
 
-      {/* Phase 8 — Recent enquiries panel (HTML prototype "Recent prompts"). */}
+      {/* Recent enquiries panel (HTML prototype "Recent prompts").*/}
       <RecentEnquiriesPanel enquiries={items} />
 
-      {/* StatsCards */}
+      {/* StatsCards*/}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatsCard
           title="Drafting"
@@ -652,8 +652,8 @@ export function TacEnquiriesListPage() {
       )}
 
       {/* DynamicTable owns the skeleton loading state — `loading={loading}`
-          renders TableSkeleton in-place, matching every other governance /
-          risk / compliance list. No separate wrapper spinner needed. */}
+ renders TableSkeleton in-place, matching every other governance /
+ risk / compliance list. No separate wrapper spinner needed.*/}
       <DynamicTable<Enquiry>
         data={items}
         columns={columns}
@@ -681,7 +681,7 @@ export function TacEnquiriesListPage() {
         }}
       />
 
-      {/* Cross-link to RFI register for discoverability */}
+      {/* Cross-link to RFI register for discoverability*/}
       <p className="text-[11px] text-slate-400">
         Looking for issued RFIs?{" "}
         <Link
@@ -693,7 +693,7 @@ export function TacEnquiriesListPage() {
         .
       </p>
 
-      {/* Modal */}
+      {/* Modal*/}
       <NewEnquiryModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
@@ -702,7 +702,7 @@ export function TacEnquiriesListPage() {
       />
 
       {/* Permanent-delete confirm dialog. Hard delete: enquiry doc +
-          tabs/* deliverables + every Storage attachment is removed. */}
+ tabs/* deliverables + every Storage attachment is removed.*/}
       <ConfirmDialog
         open={deleteRow !== null}
         onCancel={() => setDeleteRow(null)}
@@ -716,7 +716,7 @@ export function TacEnquiriesListPage() {
         loading={deleting}
       />
 
-      {/* Phase 8 — Flag for audit (Compliance Lead) */}
+      {/* Flag for audit (Compliance Lead)*/}
       <ReasonDialog
         open={flagRow !== null}
         title="Flag this enquiry for audit"
@@ -733,7 +733,7 @@ export function TacEnquiriesListPage() {
         onCancel={() => setFlagRow(null)}
       />
 
-      {/* Phase 8 — Resolve flag (Compliance Lead) */}
+      {/* Resolve flag (Compliance Lead)*/}
       <ReasonDialog
         open={resolveRow !== null}
         title="Resolve audit flag"

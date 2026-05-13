@@ -1,20 +1,20 @@
-// Phase 8a — Meetings CRUD shell.
+// Meetings CRUD shell.
 //
 // Endpoints:
-//   • governanceListMeetings        — seed-on-first-read, tenant-scoped.
-//   • governanceGetMeeting          — cross-tenant guard.
-//   • governanceUpsertMeeting       — field whitelist; owner-or-admin gate.
-//   • governanceSoftDeleteMeeting   — soft-delete + restore via the same
-//                                     endpoint (lesson #38), reason ≥ 5
+//   • governanceListMeetings — seed-on-first-read, tenant-scoped.
+//   • governanceGetMeeting — cross-tenant guard.
+//   • governanceUpsertMeeting — field whitelist; owner-or-admin gate.
+//   • governanceSoftDeleteMeeting — soft-delete + restore via the same
+//                                     endpoint, reason ≥ 5
 //                                     chars, server-side status guard
 //                                     (cannot soft-delete a Held meeting
-//                                     — closes the gap flagged in
-//                                     Phase 7's audit).
-//   • governanceMarkMeetingHeld     — Scheduled → Held (lesson #37).
-//   • governanceCancelMeeting       — Scheduled → Cancelled with reason.
+//                                     closes the gap flagged in
+//                                      audit).
+//   • governanceMarkMeetingHeld — Scheduled → Held.
+//   • governanceCancelMeeting — Scheduled → Cancelled with reason.
 //
 // Storage: `meetings/{clientId_meetingId}` — composite ID + `clientId`
-// field (lesson #10). 8b adds the `minutes` / `decisions` /
+// field. 8b adds the `minutes` / `decisions` /
 // `actionItems` / `linkedReportIds` / `linkedProjectIds` fields.
 
 import * as XLSX from 'xlsx';
@@ -35,7 +35,7 @@ import type { ChangeKind } from '../../src/types/historicalReporting.js';
 
 const MEETING_ID_RE = /^[a-z0-9_-]{1,80}$/i;
 
-// HRC HR-4 — fire-and-forget history capture for meeting mutations.
+//  fire-and-forget history capture for meeting mutations.
 // Called after the primary write succeeds. Errors are swallowed inside
 // appendHistoryRow so a history failure never blocks the user's save.
 function captureMeetingHistory(
@@ -73,7 +73,7 @@ const MEETING_WRITABLE_FIELDS = [
 
 const VALID_STATUSES: MeetingStatus[] = ['Scheduled', 'Held', 'Cancelled'];
 // Upsert can only flip between safe transitions (Scheduled). Held +
-// Cancelled go through dedicated endpoints (lesson #37).
+// Cancelled go through dedicated endpoints.
 const PATCH_ALLOWED_STATUSES: MeetingStatus[] = ['Scheduled'];
 
 function pickFields<T extends readonly string[]>(
@@ -590,7 +590,7 @@ async function governanceCancelMeeting(
       { merge: true },
     );
 
-    // Phase 5.5c — flag linked FP items + reports for re-routing.
+    // flag linked FP items + reports for re-routing.
     // Q5 = a (manual re-route via banner), Q16 = a (auto-decline
     // Proposed items so PgM doesn't have to clean them up by hand).
     let flaggedFpItems = 0;
@@ -761,7 +761,7 @@ async function governanceRescheduleMeeting(
       date: newDate,
       updatedAt: ts,
       updatedBy: ctx.uid,
-      // Append to a `rescheduleHistory[]` so the trail survives multiple
+      // Append to a `rescheduleHistory` so the trail survives multiple
       // moves. Audit-clean — every move is recorded with reason.
       rescheduleHistory: [
         ...(Array.isArray(data.rescheduleHistory) ? data.rescheduleHistory : []),
@@ -851,7 +851,7 @@ async function governanceRescheduleMeeting(
   }
 }
 
-// ── Phase 8b · minutes / decisions / action items / links ───────────────
+// ── minutes / decisions / action items / links ───────────────
 
 function makeChildId(prefix: string): string {
   // Same id-generator pattern used elsewhere — short slug + base36
@@ -914,7 +914,7 @@ async function loadEditableMeeting(
 
 // Tiptap minutes JSON. Editable on both Scheduled (pre-meeting draft)
 // and Held (capturing what happened). Cancelled meetings are read-only
-// — change of mind becomes a fresh meeting on a new date.
+// change of mind becomes a fresh meeting on a new date.
 async function governanceSaveMeetingMinutes(
   req: any,
   res: any,
@@ -1129,7 +1129,7 @@ async function governanceAddMeetingActionItem(
 }
 
 // Toggle action item open ↔ resolved. Reuses the same endpoint per
-// lesson #38 (one endpoint, status transitions inside).
+//  (one endpoint, status transitions inside).
 async function governanceToggleMeetingActionItem(
   req: any,
   res: any,
@@ -1298,7 +1298,7 @@ async function governanceUpdateMeetingLinks(
   }
 }
 
-// Phase 8c — Workspace member picker.
+// Workspace member picker.
 // Returns every user in the caller's workspace (clientId scope) +
 // optionally pending invitees, with a stable shape for any picker UI
 // (attendees, action item owners, etc.). Cross-tenant safety: only
@@ -1371,7 +1371,7 @@ async function governanceListWorkspaceMembers(
   }
 }
 
-// ── Phase 5.5a · Schedule view + bulk creation ──────────────────────────
+// ── Schedule view + bulk creation ──────────────────────────
 
 // PgM-only gate — bulk-create + import + export are workspace-level
 // operations. Server enforces, UI mirrors.
@@ -1406,7 +1406,7 @@ interface BulkCreateInput {
   governanceBodyId: string;
   pattern: 'weekly' | 'monthly' | 'quarterly';
   dayOfMonth?: number;     // 1-31, used for monthly + quarterly
-  weekDay?: number;        // 0-6, Mon=1...Sun=0, used for weekly
+  weekDay?: number;        // 0-6, Mon=1.Sun=0, used for weekly
   startDate: string;       // ISO yyyy-mm-dd
   numOccurrences: number;  // 1-60
   timeStart: string;       // HH:mm
@@ -1572,7 +1572,7 @@ async function governanceBulkCreateRecurringMeetings(
       created.push({ ...payload, _id: ref.id, _historyMeetingId: meetingId });
     }
     await batch.commit();
-    // HRC HR-4 — fire one history row per created meeting after the batch
+    //  fire one history row per created meeting after the batch
     // commits. Best-effort, doesn't await each call to keep response time
     // tight; appendHistoryRow swallows errors internally.
     for (const m of created) {
@@ -1683,7 +1683,7 @@ async function governanceImportMeetingsCommit(
         code: 'FRAMEWORK_EMPTY',
       });
     }
-    // Re-parse on commit (lesson #55) — never trust client-held rows.
+    // Re-parse on commit — never trust client-held rows.
     const { rows, summary } = parseMeetingsXlsx(buf, bodies);
     const valid = rows.filter(
       (r) => !r.flags.some((f) => f.severity === 'error'),
@@ -1763,7 +1763,7 @@ async function governanceImportMeetingsCommit(
     }
     if (opsInBatch > 0) await batch.commit();
 
-    // HRC HR-4 — fire one history row per imported meeting after the
+    //  fire one history row per imported meeting after the
     // batch commits. Best-effort, doesn't block on errors.
     for (const m of allWritten) {
       captureMeetingHistory(ctx, {
@@ -1868,7 +1868,6 @@ export const governanceMeetingsRoutes: Record<string, any> = {
   governanceMarkMeetingHeld,
   governanceCancelMeeting,
   governanceRescheduleMeeting,
-  // Phase 8b
   governanceSaveMeetingMinutes,
   governanceAddMeetingDecision,
   governanceDeleteMeetingDecision,
@@ -1877,7 +1876,7 @@ export const governanceMeetingsRoutes: Record<string, any> = {
   governanceDeleteMeetingActionItem,
   governanceUpdateMeetingLinks,
   governanceListWorkspaceMembers,
-  // Phase 5.5a — Schedule view + bulk creation
+  // Schedule view + bulk creation
   governanceBulkCreateRecurringMeetings,
   governanceImportMeetingsDryRun,
   governanceImportMeetingsCommit,

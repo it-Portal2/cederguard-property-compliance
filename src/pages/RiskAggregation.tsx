@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { Shield, AlertTriangle, Search } from 'lucide-react';
 import { clsx } from 'clsx';
 import { stripMarkdown } from '../lib/utils';
+import { calculateMatrixScore } from '../data/riskScoringMatrix';
 import {
   OPERATIONAL_CATEGORY_NAMES,
   STRATEGIC_CATEGORY_NAMES,
@@ -149,13 +150,13 @@ export function RiskAggregation() {
   return (
     <div className="max-w-full px-6 space-y-10 pb-20 bg-[#fafbfc]">
 
-      {/* ─── HEADER ─── */}
+      {/* ─── HEADER ───*/}
       <div className="pt-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-[#111827] tracking-tight flex items-center gap-3">
             Aggregation — {contextLabel}
           </h1>
-          {/* Bug 8 fix: context-aware subtitle */}
+          {/* Bug 8 fix: context-aware subtitle*/}
           <p className="text-xs text-slate-400 font-bold mt-1">
             {inProgrammeContext
               ? 'Consolidated view of all risks across the programme'
@@ -172,10 +173,10 @@ export function RiskAggregation() {
         </div>
       </div>
 
-      {/* ─── SUMMARY CARDS ─── */}
+      {/* ─── SUMMARY CARDS ───*/}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
 
-        {/* Summary by Project */}
+        {/* Summary by Project*/}
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
           <div className="px-6 py-4 border-b border-slate-100 bg-white flex items-center justify-between">
             <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Summary by Project</h3>
@@ -209,7 +210,7 @@ export function RiskAggregation() {
                     </td>
                   </tr>
                 ) : projectSummaries.map(p => (
-                  /* Bug 2 fix: clicking a row filters the main table */
+                  /* Bug 2 fix: clicking a row filters the main table*/
                   <tr
                     key={p.id}
                     onClick={() => handleSummaryRowClick(p.id)}
@@ -261,7 +262,7 @@ export function RiskAggregation() {
           </div>
         </div>
 
-        {/* Summary by Category */}
+        {/* Summary by Category*/}
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
           <div className="px-6 py-4 border-b border-slate-100 bg-white">
             <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Summary by Category</h3>
@@ -297,7 +298,7 @@ export function RiskAggregation() {
         </div>
       </div>
 
-      {/* ─── FILTERS & SEARCH ─── */}
+      {/* ─── FILTERS & SEARCH ───*/}
       <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
         <h2 className="text-xs font-black text-[#111827] uppercase tracking-[0.2em]">All Aggregated Risks</h2>
         <div className="flex flex-wrap items-center gap-3">
@@ -346,7 +347,7 @@ export function RiskAggregation() {
         </div>
       </div>
 
-      {/* ─── MAIN TABLE ─── */}
+      {/* ─── MAIN TABLE ───*/}
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden overflow-x-auto">
         <table className="w-full text-left">
           <thead>
@@ -357,10 +358,10 @@ export function RiskAggregation() {
               <th className="px-4 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap">Workstream</th>
               <th className="px-4 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap">Risk Description &amp; Impact</th>
               <th className="px-4 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap">KRI &amp; Owner</th>
-              {/* Bug 5 fix: Inherent (PxI) shows L×I=score */}
+              {/* Bug 5 fix: Inherent (PxI) shows L×I=score*/}
               <th className="px-4 py-4 text-[10px] font-black uppercase tracking-widest text-center whitespace-nowrap">Inherent (PxI)</th>
               <th className="px-4 py-4 text-[10px] font-black uppercase tracking-widest text-center whitespace-nowrap">Residual (PxI)</th>
-              {/* Bug 6 fix: separate Risk Value (score) from Residual ALE (£) */}
+              {/* Bug 6 fix: separate Risk Value (score) from Residual ALE (£)*/}
               <th className="px-4 py-4 text-[10px] font-black uppercase tracking-widest text-center whitespace-nowrap">Risk Value</th>
               <th className="px-4 py-4 text-[10px] font-black uppercase tracking-widest text-right whitespace-nowrap">Residual ALE</th>
               <th className="px-4 py-4 text-[10px] font-black uppercase tracking-widest text-center whitespace-nowrap">Status</th>
@@ -373,13 +374,14 @@ export function RiskAggregation() {
               const proj = safeProjects.find(p => p.id === r.projectId);
               const projectName = proj?.name || r.project || r.projectId || '—';
 
-              // Bug 5: PxI display — show L×I=score
+              // Rating uses calibrated 5×5 matrix.
+              // Fallback to matrix score (not L × I) when persisted rating absent.
               const grossL = r.grossL ?? 0;
               const grossI = r.grossI ?? 0;
-              const grossRating = r.grossRating ?? (grossL * grossI || 0);
+              const grossRating = r.grossRating ?? calculateMatrixScore(grossL, grossI);
               const residualL = r.residualL ?? 0;
               const residualI = r.residualI ?? 0;
-              const residualRating = r.residualRating ?? (residualL * residualI || 0);
+              const residualRating = r.residualRating ?? calculateMatrixScore(residualL, residualI);
 
               // Bug 6: Risk Value = residualRating (PxI score); Residual ALE = £ value
               const riskValue = residualRating;
@@ -412,7 +414,7 @@ export function RiskAggregation() {
                       <span className="text-[10px] text-slate-600">{r.owner || 'Unassigned'}</span>
                     </div>
                   </td>
-                  {/* Bug 5: Inherent PxI — L×I=score */}
+                  {/* Bug 5: Inherent PxI — L×I=score*/}
                   <td className="px-4 py-4 text-center">
                     <div className="inline-flex flex-col items-center gap-0.5">
                       <div className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-[#3d1111] text-white text-[10px] font-black">
@@ -423,7 +425,7 @@ export function RiskAggregation() {
                       )}
                     </div>
                   </td>
-                  {/* Bug 5: Residual PxI — L×I=score */}
+                  {/* Bug 5: Residual PxI — L×I=score*/}
                   <td className="px-4 py-4 text-center">
                     <div className="inline-flex flex-col items-center gap-0.5">
                       <div className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-[#bf3b3b] text-white text-[10px] font-black">
@@ -434,7 +436,7 @@ export function RiskAggregation() {
                       )}
                     </div>
                   </td>
-                  {/* Bug 6: Risk Value = residualRating score */}
+                  {/* Bug 6: Risk Value = residualRating score*/}
                   <td className="px-4 py-4 text-center">
                     <span className={clsx(
                       "px-2 py-0.5 rounded text-[10px] font-black border tabular-nums",

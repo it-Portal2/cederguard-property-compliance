@@ -1,20 +1,20 @@
-// Programme Governance — Reports CRUD shell (Phase 6a).
+// Programme Governance — Reports CRUD shell.
 //
 // Storage: `reports/{clientId_reportId}` — top-level collection with
-// `clientId` field for cheap multi-tenant queries (lesson #10 pattern).
+// `clientId` field for cheap multi-tenant queries.
 //
 // CRUD scope for 6a:
-//   • governanceListReports         — list (seeds 5 sample reports on first read)
-//   • governanceGetReport           — single report
-//   • governanceUpsertReport        — create + update; status restricted to
+//   • governanceListReports — list (seeds 5 sample reports on first read)
+//   • governanceGetReport — single report
+//   • governanceUpsertReport — create + update; status restricted to
 //                                     'Draft' here. State-machine transitions
 //                                     (Submit, Approve, etc.) come in 6c via
-//                                     dedicated endpoints (lesson #37).
-//   • governanceSoftDeleteReport    — soft-delete with reason (rule §23 / §47)
+//                                     dedicated endpoints.
+//   • governanceSoftDeleteReport — soft-delete with reason (rule §23 / §47)
 //
 // Authorisation: writes require `ctx.isAtLeastClientAdmin || isOwner`. For
 // 6a, ownership is the report's `ownerUid`. Reads only require `isSignedIn`
-// — server enforces tenant scoping by `clientId === ctx.primaryUid`.
+// server enforces tenant scoping by `clientId === ctx.primaryUid`.
 //
 // ADD-never-MODIFY: this is a brand-new collection + endpoints. Nothing in
 // existing collections, roles, fields, or routes is renamed or repurposed.
@@ -36,8 +36,8 @@ import type { ChangeKind } from '../../src/types/historicalReporting.js';
 
 const REPORT_ID_RE = /^[a-z0-9_-]{1,80}$/i;
 
-// HRC HR-4 — fire-and-forget history capture for report-doc mutations.
-// Reports already version on submit/seal (Phase 6d), so this complements
+//  fire-and-forget history capture for report-doc mutations.
+// Reports already version on submit/seal, so this complements
 // existing version snapshots by capturing every smaller mutation
 // (Draft → InReview transitions, soft-delete, etc.) with prev/new state.
 function captureReportHistory(
@@ -69,7 +69,7 @@ const REPORT_WRITABLE_FIELDS = [
   'partClassification',
   'isHRB',
   'targetBoardDate',
-  'targetMeetingId', // Phase 5.5b — optional meeting reference
+  'targetMeetingId', // optional meeting reference
   'reviewerUid',
   'reviewerLabel',
   // Status restricted: 6a allows only 'Draft'. State transitions land in 6c.
@@ -381,10 +381,10 @@ async function governanceUpsertReport(req: any, res: any, ctx: ApiContext) {
       });
     }
 
-    // Phase 5.5b — 72h lock (Q9 = a + 3-day rule). PM can change
+    // 72h lock (Q9 = a + 3-day rule). PM can change
     // `targetMeetingId` freely EXCEPT within 72 hours of the chosen
     // meeting date. After the lock, only the workspace admin can change
-    // it. Server-enforced (lesson #75 — UI gate must agree, but server
+    // it. Server-enforced ( — UI gate must agree, but server
     // is truth).
     if (
       safePatch.targetMeetingId !== undefined &&
@@ -417,7 +417,7 @@ async function governanceUpsertReport(req: any, res: any, ctx: ApiContext) {
         // (last Sun of Mar → last Sun of Oct), real meeting time is 1h
         // earlier than calculated, so the lock kicks in ~1h LATER than
         // ideal. Acceptable for a soft rule on a UK-only product;
-        // proper TZ-aware fix lands in the Phase 12 polish pass when
+        // proper TZ-aware fix lands in the polish pass when
         // we have a full date library budget.
         if (!ctx.isClientAdmin && typeof m.date === 'string') {
           const meetingTs = new Date(`${m.date}T${m.timeStart ?? '00:00'}:00Z`).getTime();
@@ -456,7 +456,7 @@ async function governanceUpsertReport(req: any, res: any, ctx: ApiContext) {
         });
       }
       // Editing is locked to Draft state in 6a — mirrors the FP rule that
-      // status transitions live in dedicated endpoints (lesson #37).
+      // status transitions live in dedicated endpoints.
       if (data.status && data.status !== 'Draft') {
         return res.status(400).json({
           success: false,
@@ -499,9 +499,9 @@ async function governanceUpsertReport(req: any, res: any, ctx: ApiContext) {
       changeKind: exists ? 'update' : 'create',
     });
 
-    // Phase 5.5b — when `targetMeetingId` is set, auto-create or update
+    // when `targetMeetingId` is set, auto-create or update
     // the linked Forward Plan item as `Proposed`. This is the "tell"
-    // signal Anthony described — PM picks meeting on report → PgM sees
+    // signal described — PM picks meeting on report → PgM sees
     // it in the FP page → confirms or declines.
     if (
       typeof latest.targetMeetingId === 'string' &&
@@ -619,7 +619,7 @@ async function governanceSoftDeleteReport(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// ── Section sub-collection (Phase 6b) ─────────────────────────────────────
+// ── Section sub-collection ─────────────────────────────────────
 //
 // Storage: `reports/{reportDocId}/sections/{sectionId}` — content + meta
 // per section. `sectionId` mirrors the template-section id so renders are
@@ -628,7 +628,7 @@ async function governanceSoftDeleteReport(req: any, res: any, ctx: ApiContext) {
 // Lazy instantiation: first call to `governanceListReportSections` for a
 // report that has a `templateId` set but no sections yet will copy the
 // template's sections into the report. Idempotent — subsequent calls skip.
-// Same pattern as Phase 0's seed-on-first-read.
+// Same pattern as seed-on-first-read.
 //
 // Auto-save: `governanceSaveReportSection` upserts content + wordCount +
 // last-edited metadata. Called every 30s from the editor.
@@ -883,23 +883,23 @@ async function governanceSaveReportSection(req: any, res: any, ctx: ApiContext) 
   }
 }
 
-// ── State machine transitions (Phase 6c) ──────────────────────────────────
+// ── State machine transitions ──────────────────────────────────
 //
 // Status flow:
 //   Draft
-//     → Submit               → InReview      (owner)
-//     → Abandon              → Abandoned     (owner | admin)
+//     → Submit → InReview (owner)
+//     → Abandon → Abandoned (owner | admin)
 //   InReview
-//     → Withdraw             → Draft         (owner, within 1h, PgM not yet viewed)
-//     → Request amendments   → AmendmentsRequested  (PgM | admin)
-//     → Approve              → Approved      (PgM | admin)
-//     → Abandon              → Abandoned     (PgM | admin)
+//     → Withdraw → Draft (owner, within 1h, PgM not yet viewed)
+//     → Request amendments → AmendmentsRequested (PgM | admin)
+//     → Approve → Approved (PgM | admin)
+//     → Abandon → Abandoned (PgM | admin)
 //   AmendmentsRequested
-//     → Submit (resubmit)    → InReview      (owner)
-//     → Withdraw             → Draft         (owner)
-//     → Abandon              → Abandoned     (owner | admin)
+//     → Submit (resubmit) → InReview (owner)
+//     → Withdraw → Draft (owner)
+//     → Abandon → Abandoned (owner | admin)
 //   Approved
-//     → Abandon              → Abandoned     (admin only — sealed report needs unlock first, lands in 6e)
+//     → Abandon → Abandoned (admin only — sealed report needs unlock first, lands in 6e)
 //
 // Every transition writes an `auditEvents` doc. Endpoints reject any
 // state mismatch with `INVALID_STATE`.
@@ -1339,7 +1339,7 @@ async function governanceAbandonReport(req: any, res: any, ctx: ApiContext) {
       return res.status(400).json({
         success: false,
         error:
-          'Approved / Sealed reports cannot be abandoned. Use the unlock-for-correction flow (Phase 6e).',
+          'Approved or Sealed reports cannot be abandoned. Use the unlock-for-correction flow instead.',
         code: 'INVALID_STATE',
       });
     }
@@ -1386,7 +1386,7 @@ async function governanceAbandonReport(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// ── Amendments (Phase 6c) ─────────────────────────────────────────────────
+// ── Amendments ─────────────────────────────────────────────────
 
 async function governanceListAmendments(req: any, res: any, ctx: ApiContext) {
   try {
@@ -1501,12 +1501,12 @@ async function governanceResolveAmendment(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// ── PDF rendering + signing (Phase 6d) ────────────────────────────────────
+// ── PDF rendering + signing ────────────────────────────────────
 //
 // Two endpoints:
-//   • governanceRenderReportPdf  — preview (no state change). Anyone with
+//   • governanceRenderReportPdf — preview (no state change). Anyone with
 //     access can render at any state; watermark reflects current status.
-//   • governanceSignPartA        — Strategic Director / admin only. Must
+//   • governanceSignPartA — Strategic Director / admin only. Must
 //     be in Approved state. Resolves signer's signature, generates the
 //     sealed PDF, uploads to Storage, flips status → Sealed, and writes a
 //     Golden Thread record for HRB projects.
@@ -1662,7 +1662,7 @@ async function governanceSignPartA(req: any, res: any, ctx: ApiContext) {
         const gtRef = ctx.db.collection('goldenThread').doc();
         // Find the previous Golden Thread record for this report (if any)
         // so the chain has previousHash semantics. Simple linkage via
-        // previousId for now; full hash-chain validation lands in Phase 10.
+        // previousId for now; full hash-chain validation lands in.
         const priorSnap = await ctx.db
           .collection('goldenThread')
           .where('clientId', '==', ctx.primaryUid)
@@ -1723,7 +1723,7 @@ async function governanceSignPartA(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// ── Reviewer picker (Phase 6c polish) ─────────────────────────────────────
+// ── Reviewer picker (polish) ─────────────────────────────────────
 //
 // Lists users in the caller's workspace who can act as a report reviewer:
 // the workspace owner (Programme Manager), any other client_admins, any
@@ -1772,7 +1772,7 @@ function shapeReviewer(uid: string, data: any) {
   };
 }
 
-// ── Senior PM intermediate review (Phase 6e) ─────────────────────────────
+// ── Senior PM intermediate review ─────────────────────────────
 
 // In this codebase there's only one PM role (`project_manager`); seniority
 // is tracked via `pmLevel === 'senior'`. See [src/lib/roleConstants.ts]
@@ -1945,7 +1945,7 @@ async function governanceSeniorPmRequestAmendments(
   }
 }
 
-// ── Unlock for correction (Phase 6e, Round 5 Q17) ────────────────────────
+// ── Unlock for correction (, Round 5 Q17) ────────────────────────
 //
 // Sealed reports are immutable by default. PgM (own workspace) or super-
 // admin can re-open one for correction. Loud audit event + permanent
@@ -2061,7 +2061,7 @@ async function governanceUnlockReport(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// Phase 7 — My Reports.
+// My Reports.
 // Returns every OPEN amendment whose linked report is owned by the
 // signed-in user. Single round trip — UI uses this to render the
 // "Feedback from PgM" side panel without N+1 amendment fetches.
@@ -2207,7 +2207,7 @@ export const governanceReportsRoutes: Record<string, any> = {
   governanceSeniorPmApprove,
   governanceSeniorPmRequestAmendments,
   governanceUnlockReport,
-  // Phase 7 · My Reports
+  // My Reports
   governanceListMyOpenAmendments,
 };
 

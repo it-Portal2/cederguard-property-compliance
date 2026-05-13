@@ -27,7 +27,7 @@ export function GovernanceTemplatesPage() {
   const isSuperAdminUser = isSuperAdmin(user?.email, user?.role);
   const canEditLive = isAtLeastClientAdmin(user?.role) || isSuperAdminUser;
 
-  // HRC HR-5 — historical view hook. When the user picks a past month,
+  //  historical view hook. When the user picks a past month,
   // the page swaps live templates for the snapshot's frozen state and
   // disables every edit affordance.
   const historicalView = useHistoricalView<{
@@ -68,7 +68,7 @@ export function GovernanceTemplatesPage() {
     void refresh();
   }, [refresh]);
 
-  // HRC HR-5 — effective list source. Snapshot-derived list when historical.
+  //  effective list source. Snapshot-derived list when historical.
   const historicalTemplates = useMemo<ReportTemplate[]>(() => {
     if (!isHistorical) return [];
     return historicalView.entries
@@ -176,7 +176,7 @@ export function GovernanceTemplatesPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {/* HRC HR-5 — month picker for historical view. */}
+          {/* month picker for historical view.*/}
           <MonthPicker
             monthEnd={historicalView.monthEnd}
             availableMonths={historicalView.availableMonths}
@@ -211,7 +211,7 @@ export function GovernanceTemplatesPage() {
         <AiRecommendationCard onSelect={handleOpen} openingId={openingId} />
       )}
 
-      {/* Filters + search */}
+      {/* Filters + search*/}
       <section className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="flex flex-wrap gap-1.5">
           {CATEGORY_FILTERS.map((f) => (
@@ -254,7 +254,7 @@ export function GovernanceTemplatesPage() {
         </div>
       </section>
 
-      {/* Grid */}
+      {/* Grid*/}
       {loading || historicalView.loading ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (

@@ -43,7 +43,7 @@ export function GovernanceReportsListPage() {
   const userIsAdmin =
     isAtLeastClientAdmin(user?.role) || isSuperAdmin(user?.email, user?.role);
 
-  // HRC HR-3 — historical view hook. When the user picks a past month
+  //  historical view hook. When the user picks a past month
   // via the MonthPicker, the page swaps `items` for the snapshot's
   // frozen state and disables every edit affordance.
   const historicalView = useHistoricalView<{
@@ -81,7 +81,7 @@ export function GovernanceReportsListPage() {
     void refresh();
   }, [refresh]);
 
-  // HRC HR-3 — effective items source. Switches between live `items` and
+  //  effective items source. Switches between live `items` and
   // the historical snapshot's frozen rows based on the MonthPicker.
   const historicalItems = useMemo<Report[]>(() => {
     if (!isHistorical) return [];
@@ -368,7 +368,7 @@ export function GovernanceReportsListPage() {
   );
 
   // Pass all items (including soft-deleted) so the filter chrome can toggle
-  // visibility — same pattern as Forward Plan (lesson #43).
+  // visibility — same pattern as Forward Plan.
   const tableData = effectiveItems;
 
   // ── Row actions ─────────────────────────────────────────────────────────
@@ -413,7 +413,7 @@ export function GovernanceReportsListPage() {
       transition={{ duration: 0.25, ease: 'easeOut' }}
       className="mx-auto space-y-6"
     >
-      {/* Header (same pattern as Forward Plan: heading left, controls right) */}
+      {/* Header (same pattern as Forward Plan: heading left, controls right)*/}
       <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-6">
         <div className="flex items-start gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
@@ -433,7 +433,7 @@ export function GovernanceReportsListPage() {
             </p>
           </div>
         </div>
-        {/* HRC HR-3 — month picker for historical view. */}
+        {/* month picker for historical view.*/}
         <div className="self-start md:mt-1">
           <MonthPicker
             monthEnd={historicalView.monthEnd}
@@ -444,8 +444,8 @@ export function GovernanceReportsListPage() {
         </div>
       </header>
 
-      {/* HRC HR-3 — read-only banner appears when MonthPicker is set to a
-          past month. */}
+      {/* read-only banner appears when MonthPicker is set to a
+ past month.*/}
       {isHistorical && historicalView.monthEnd && (
         <HistoricalBanner
           monthEnd={historicalView.monthEnd}
@@ -458,7 +458,7 @@ export function GovernanceReportsListPage() {
         />
       )}
 
-      {/* Stats row */}
+      {/* Stats row*/}
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <StatsCard
           title="Draft"
@@ -502,9 +502,9 @@ export function GovernanceReportsListPage() {
         />
       </section>
 
-      {/* List — HRC HR-3 includes historicalView.loading in the skeleton
-          condition so swapping to a past month visibly transitions through
-          a loading state instead of the data popping in suddenly. */}
+      {/* List — includes historicalView.loading in the skeleton
+ condition so swapping to a past month visibly transitions through
+ a loading state instead of the data popping in suddenly.*/}
       {loading || historicalView.loading ? (
         <div className="space-y-2">
           <div className="h-12 animate-pulse rounded-lg bg-slate-100" />

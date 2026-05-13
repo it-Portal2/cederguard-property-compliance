@@ -4,7 +4,7 @@
 //   • `reportTemplates/{clientId_templateId}` — working doc (draft | published)
 //   • `reportTemplates/{clientId_templateId}/versions/{n}` — snapshot on publish
 //
-// Every pattern from Phase 3 is reused:
+// Every pattern from is reused:
 //   • Field whitelists on every upsert
 //   • Atomic transactions for seed + publish + duplicate
 //   • Draft-preferred reads (returns the in-progress draft if one exists)
@@ -23,7 +23,7 @@ import type { ChangeKind } from '../../src/types/historicalReporting.js';
 const TEMPLATE_ID_RE = /^[a-z0-9_-]{1,80}$/i;
 const SECTION_ID_RE = /^[a-z0-9_-]{1,80}$/i;
 
-// HRC HR-4 — fire-and-forget history capture for template mutations.
+//  fire-and-forget history capture for template mutations.
 function captureTemplateHistory(
   ctx: ApiContext,
   args: {
@@ -395,7 +395,7 @@ async function governancePublishTemplate(req: any, res: any, ctx: ApiContext) {
       return next;
     });
 
-    // HRC HR-4 — capture publish as a template history row.
+    //  capture publish as a template history row.
     const latest = (await ref.get()).data() ?? null;
     captureTemplateHistory(ctx, {
       templateId,
@@ -483,7 +483,7 @@ async function governanceDuplicateTemplate(req: any, res: any, ctx: ApiContext) 
       return next;
     });
 
-    // HRC HR-4 — capture the duplicate as a create on the new template id.
+    //  capture the duplicate as a create on the new template id.
     captureTemplateHistory(ctx, {
       templateId: newId,
       prevState: null,
@@ -505,7 +505,7 @@ async function governanceDuplicateTemplate(req: any, res: any, ctx: ApiContext) 
   }
 }
 
-// ── AI recommendation (rule-based stub; Gemini wires in Phase 12) ─────────
+// ── AI recommendation (rule-based stub; Gemini wires in ) ─────────
 
 async function governanceAiRecommendTemplate(req: any, res: any, ctx: ApiContext) {
   try {
@@ -516,7 +516,7 @@ async function governanceAiRecommendTemplate(req: any, res: any, ctx: ApiContext
     await seedTemplatesIfMissing(ctx);
 
     // Simple heuristic: scan the intake for keywords, map to a template code.
-    // Deliberately rule-based — Phase 12 swaps this body for a Gemini call.
+    // Deliberately rule-based — swaps this body for a Gemini call.
     const rules: Array<{ match: RegExp; templateId: string; reason: string }> = [
       { match: /\b(gw1|outline case|soc)\b/i, templateId: 'gw1', reason: 'Mentions strategic outline case / GW1.' },
       { match: /\b(gw2|procurement strategy|otr|tender strategy)\b/i, templateId: 'gw2', reason: 'Mentions procurement strategy / GW2 / OJEU.' },
@@ -564,7 +564,7 @@ async function governanceAiRecommendTemplate(req: any, res: any, ctx: ApiContext
       recommended,
       supplementary: supplementary.filter(Boolean),
       reason: pick.reason,
-      source: 'rule-based (Phase 4 stub; Gemini in Phase 12)',
+      source: 'rule-based',
     });
   } catch (e: any) {
     console.error('[governanceAiRecommendTemplate] failed:', e);

@@ -1,18 +1,16 @@
-// Phase 5.5a — Meetings Excel import.
+// Meetings .xlsx importer.
 //
-// Mirrors the Phase 5c FP import shape but with a simpler clean
-// canonical column set (Q6 = a). PgM downloads a template, fills it,
-// uploads. Server re-parses on commit (lesson #55) — never trusts
-// client-held parsed rows.
+// Two-step flow: PgM downloads the template, fills it in, uploads. The
+// server re-parses on commit so client-held parsed rows are never trusted.
 //
-// Canonical columns:
-//   • Body            — matches `governanceBody.name` (fuzzy, case-insensitive)
-//   • Date            — Excel serial / ISO / DD/MM/YYYY
-//   • Time Start      — HH:mm 24-hour
-//   • Time End        — HH:mm 24-hour
-//   • Location        — free text
-//   • Chair           — free text
-//   • Attendees       — optional, semicolon-separated list of "Name · Role"
+// Expected columns:
+//   • Body         — matches `governanceBody.name` (fuzzy, case-insensitive)
+//   • Date         — Excel serial / ISO / DD/MM/YYYY
+//   • Time Start   — HH:mm 24-hour
+//   • Time End     — HH:mm 24-hour
+//   • Location     — free text
+//   • Chair        — free text
+//   • Attendees    — optional, semicolon-separated list of "Name · Role"
 
 import * as XLSX from 'xlsx';
 

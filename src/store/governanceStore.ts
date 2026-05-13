@@ -6,7 +6,7 @@ import { create } from 'zustand';
 // state. Populated phase by phase as each surface lands.
 
 export interface GovernanceState {
-  // Populated in later phases. Intentionally empty in Phase 0 (Foundation).
+  // Populated in later phases. Intentionally empty in (Foundation).
   _initialised: boolean;
   setInitialised: (v: boolean) => void;
 }

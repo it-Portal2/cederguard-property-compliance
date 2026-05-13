@@ -1,14 +1,14 @@
-// Phase 11 — Governance Dashboard.
+// Governance Dashboard.
 //
-// One server endpoint, role-aware payload.  Caller's role determines
+// One server endpoint, role-aware payload. Caller's role determines
 // the shape returned:
 //   • PgM (clientAdmin / superAdmin): workspace-wide pipeline view —
 //     reports awaiting PgM action, FP backlog, upcoming boards,
 //     SLA-breach watch.
-//   • PM (project_manager only):      personal workspace — drafting,
+//   • PM (project_manager only): personal workspace — drafting,
 //     with-PgM, amendments, upcoming personal deadlines.
 //
-// Briefing copy is **assembled from real counts** (lesson #61).  Phase
+// Briefing copy is **assembled from real counts**. Phase
 // 12 swaps the body for a Gemini call; the response shape stays
 // identical so the UI doesn't need to change.
 
@@ -16,7 +16,7 @@ import type { ApiContext } from '../lib/context.js';
 import type { ReportStatus } from '../lib/reportsSeed.js';
 import { generateBriefing } from '../lib/geminiBriefing.js';
 
-// Pure-PM detection — same as the sidebar role split (Phase 7).
+// Pure-PM detection — same as the sidebar role split.
 function isPureProjectManager(ctx: ApiContext): boolean {
   if (ctx.isAdmin) return false;
   if (ctx.isClientAdmin) return false;
@@ -99,7 +99,7 @@ async function governanceGetDashboard(req: any, res: any, ctx: ApiContext) {
   try {
     const isPm = isPureProjectManager(ctx);
 
-    // HRC HR-7 — when `asOfMonth` (YYYY-MM) is passed, dashboard data
+    //  when `asOfMonth` (YYYY-MM) is passed, dashboard data
     // sources swap to the monthly snapshot. Inbox + workload counts
     // reflect "what was true at month-end" rather than now. The
     // dynamic comparators (today / horizon / quarterStart) still run
@@ -259,7 +259,7 @@ async function governanceGetDashboard(req: any, res: any, ctx: ApiContext) {
         })),
       ].slice(0, 8);
 
-      // Briefing copy — assembled from counts. Phase 12 swaps for Gemini.
+      // Briefing copy — assembled from counts. swaps for Gemini.
       const greetingName = (ctx.userData?.name ?? ctx.userData?.displayName ?? 'there').toString();
       const briefingLines: string[] = [`Good morning, ${greetingName.split(' ')[0]}.`];
       if (reportsInReview.length) {
@@ -429,7 +429,7 @@ async function governanceGetDashboard(req: any, res: any, ctx: ApiContext) {
 //
 // Lets pages that already have their own data (e.g. MyReports) hand
 // pre-computed stub lines to the same `generateBriefing` helper so they
-// inherit the canonical Gemini fallback chain (lesson #113).  Inputs
+// inherit the canonical Gemini fallback chain. Inputs
 // are caller-provided strings; we never persist them — the Gemini call
 // just rewrites them.
 

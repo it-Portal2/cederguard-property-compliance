@@ -1,6 +1,6 @@
-// Phase 10 — Audit trail drawer.
+// Audit trail drawer.
 // Right-side slide-in panel listing every audit event matching the
-// selected archive item (report / meeting / project doc).  Read-only;
+// selected archive item (report / meeting / project doc). Read-only;
 // audit events are immutable WORM records.
 
 import { useEffect, useState } from 'react';

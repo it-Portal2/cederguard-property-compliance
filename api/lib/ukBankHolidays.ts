@@ -1,4 +1,4 @@
-// Phase 5.5a — UK England + Wales bank holiday calendar.
+// UK England + Wales bank holiday calendar.
 //
 // Hardcoded list 2026-2030 (Q35 locked). Manual annual refresh.
 // Source: https://www.gov.uk/bank-holidays — England + Wales schedule.
@@ -64,19 +64,19 @@ const BANK_HOLIDAYS_ISO: string[] = [
 
 const BANK_HOLIDAY_SET = new Set(BANK_HOLIDAYS_ISO);
 
-/** Returns true if the given ISO date string is a bank holiday. */
+/** Returns true if the given ISO date string is a bank holiday.*/
 export function isBankHoliday(iso: string): boolean {
   return BANK_HOLIDAY_SET.has(iso.slice(0, 10));
 }
 
-/** Returns true if the given ISO date string is a Saturday or Sunday. */
+/** Returns true if the given ISO date string is a Saturday or Sunday.*/
 export function isWeekend(iso: string): boolean {
   const day = new Date(iso).getUTCDay();
   return day === 0 || day === 6;
 }
 
 /** Returns true if the given ISO date string is a working day in
- *  England + Wales (not weekend, not bank holiday). */
+ *  England + Wales (not weekend, not bank holiday).*/
 export function isWorkingDay(iso: string): boolean {
   return !isWeekend(iso) && !isBankHoliday(iso);
 }

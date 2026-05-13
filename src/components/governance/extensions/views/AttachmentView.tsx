@@ -3,7 +3,7 @@ import { FileText, Trash2 } from 'lucide-react';
 import { inlineInputCls } from './nodeViewUi';
 
 // Attachment chip. Editable: filename + url. Remove via the trash button.
-// The file itself is chosen at insert time (Phase 6 adds a proper picker).
+// The file itself is chosen at insert time (adds a proper picker).
 
 function formatSize(bytes?: number) {
   if (!bytes || bytes <= 0) return '';

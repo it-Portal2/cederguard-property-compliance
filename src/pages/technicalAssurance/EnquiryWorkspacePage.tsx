@@ -51,10 +51,10 @@ import type {
   SummaryTabContent,
 } from "../../types/technicalAssurance";
 
-// Phase 3 — Enquiry workspace becomes the canonical 5-tab surface
+// Enquiry workspace becomes the canonical 5-tab surface
 // (Summary · Drawing · RFI · Cost & programme · Compliance). Summary is
 // fully implemented; the other 4 tabs render TabPlaceholder until Phases
-// 4-7 ship. Generation animation is the same stepped panel as Phase 2.
+// 4-7 ship. Generation animation is the same stepped panel as.
 
 const STATUS_PILL: Record<EnquiryStatus, string> = {
   Draft: "bg-slate-100 text-slate-700 border border-slate-200",
@@ -186,13 +186,13 @@ export function TacEnquiryWorkspacePage() {
     [user],
   );
 
-  // Phase 9 — Close + Unlock state.
+  // Close + Unlock state.
   const [closeOpen, setCloseOpen] = useState(false);
   const [closing, setClosing] = useState(false);
   const [unlockOpen, setUnlockOpen] = useState(false);
   const [unlocking, setUnlocking] = useState(false);
 
-  // Phase 9b — Share-for-review state.
+  // Share-for-review state.
   const [shareOpen, setShareOpen] = useState(false);
   const [decidingShareId, setDecidingShareId] = useState<string | null>(null);
   const [rejectShareId, setRejectShareId] = useState<string | null>(null);
@@ -254,7 +254,7 @@ export function TacEnquiryWorkspacePage() {
     }
   }, [enquiry, generating, load]);
 
-  // Phase 9 — Close enquiry. For HRB projects, server writes a Golden
+  // Close enquiry. For HRB projects, server writes a Golden
   // Thread chain doc as part of the same transaction. Closure flips
   // status to Closed; the workspace renders read-only afterwards.
   const handleCloseConfirm = useCallback(async () => {
@@ -277,7 +277,7 @@ export function TacEnquiryWorkspacePage() {
     }
   }, [enquiry, closing, load]);
 
-  // Phase 9b — Share-for-review decisions.
+  // Share-for-review decisions.
   const handleApproveShare = useCallback(async () => {
     if (!enquiry || !myShare || decidingShareId) return;
     setDecidingShareId(myShare.shareId);
@@ -340,7 +340,7 @@ export function TacEnquiryWorkspacePage() {
     [enquiry, unlocking, load],
   );
 
-  // --- Render helpers ----------------------------------------------------
+  // Render helpers ----------------------------------------------------
 
   const isHistoricalStub = !enquiryId || enquiryId === "abc-123";
 
@@ -617,9 +617,9 @@ export function TacEnquiryWorkspacePage() {
                 Generate insight
               </button>
             )}
-            {/* Phase 9 — Close enquiry. Allowed from Open / AwaitingReview /
-                Approved. For HRB projects the server writes a Golden Thread
-                chain doc as part of closure. */}
+            {/* Close enquiry — allowed from Open / AwaitingReview / Approved.
+                For HRB projects the server writes a Golden Thread chain doc
+                as part of closure. */}
             {(enquiry.status === "Open" ||
               enquiry.status === "AwaitingReview" ||
               enquiry.status === "Approved") && (
@@ -632,8 +632,8 @@ export function TacEnquiryWorkspacePage() {
                 Close enquiry
               </button>
             )}
-            {/* Phase 9 — Unlock closed enquiry. Compliance Lead / admin
-                only; required reason logged into unlockHistory[]. */}
+            {/* Unlock a closed enquiry — Compliance Lead / admin only.
+                Required reason is logged into unlockHistory[]. */}
             {enquiry.status === "Closed" && isComplianceLeadUser && (
               <button
                 type="button"
@@ -644,10 +644,10 @@ export function TacEnquiryWorkspacePage() {
                 Unlock for correction
               </button>
             )}
-            {/* Phase 9b — Share for review. Owner / admin can share an
-                Open / AwaitingReview / Approved enquiry with a workspace
-                member. Hidden when enquiry is Draft (no insight yet) or
-                Closed (already finalised). */}
+            {/* Share for review — owner / admin can share an Open,
+                AwaitingReview, or Approved enquiry with a workspace member.
+                Hidden when the enquiry is Draft (no insight yet) or Closed
+                (already finalised). */}
             {isOwner &&
               (enquiry.status === "Open" ||
                 enquiry.status === "AwaitingReview" ||
@@ -665,9 +665,9 @@ export function TacEnquiryWorkspacePage() {
         </div>
       </div>
 
-      {/* Phase 9b — Recipient share banner. Visible to the user the
-          enquiry was shared with, while their decision is pending. Owner
-          sees a different banner below for outstanding shares they sent. */}
+      {/* Recipient banner — visible to the user the enquiry was shared with,
+          while their decision is pending. The owner sees a different banner
+          below for outstanding shares they sent. */}
       {myShare ? (
         <div className="rounded-xl border border-indigo-300 bg-indigo-50/60 p-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -716,7 +716,7 @@ export function TacEnquiryWorkspacePage() {
         </div>
       ) : null}
 
-      {/* Phase 9b — Owner-side outstanding-shares chip. */}
+      {/* Owner-side outstanding-shares chip.*/}
       {isOwner && outstandingShares.length > 0 ? (
         <div className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50/60 p-3 text-[12px] leading-5 text-slate-700">
           <Send className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
@@ -730,7 +730,7 @@ export function TacEnquiryWorkspacePage() {
         </div>
       ) : null}
 
-      {/* Phase 9 — Closed-state read-only banner */}
+      {/* Closed-state read-only banner */}
       {enquiry.status === "Closed" && (
         <div className="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50/60 p-3 text-[12px] leading-5 text-emerald-800">
           <Lock className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
@@ -747,9 +747,9 @@ export function TacEnquiryWorkspacePage() {
         </div>
       )}
 
-      {/* Phase 9 — Unlock-history audit banner. Permanent rose strip on
-          any enquiry that's been unlocked at least once, surfacing every
-          unlock event with date + actor + reason for FOI / Scrutiny readers. */}
+      {/* Permanent unlock-history audit banner. Rose strip rendered on every
+          enquiry that has been unlocked at least once, surfacing each unlock
+          event with date, actor, and reason for FOI / scrutiny readers. */}
       {Array.isArray(enquiry.unlockHistory) && enquiry.unlockHistory.length > 0 && (
         <div className="rounded-lg border border-rose-200 bg-rose-50/40 p-3">
           <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-rose-700">
@@ -769,13 +769,13 @@ export function TacEnquiryWorkspacePage() {
         </div>
       )}
 
-      {/* 5-tab strip */}
+      {/* 5-tab strip*/}
       <TabStrip activeTab={activeTab} onChange={setActiveTab} />
 
-      {/* Active tab body */}
+      {/* Active tab body*/}
       {tabBody}
 
-      {/* Close enquiry confirm dialog */}
+      {/* Close enquiry confirm dialog*/}
       <ConfirmDialog
         open={closeOpen}
         onCancel={() => setCloseOpen(false)}
@@ -791,7 +791,7 @@ export function TacEnquiryWorkspacePage() {
         loading={closing}
       />
 
-      {/* Unlock for correction reason dialog */}
+      {/* Unlock for correction reason dialog*/}
       <ReasonDialog
         open={unlockOpen}
         title="Unlock closed enquiry"
@@ -805,7 +805,7 @@ export function TacEnquiryWorkspacePage() {
         onCancel={() => setUnlockOpen(false)}
       />
 
-      {/* Phase 9b — Share-for-review modal */}
+      {/* Share-for-review modal*/}
       <ShareEnquiryModal
         open={shareOpen}
         enquiryId={enquiry.id}
@@ -819,7 +819,7 @@ export function TacEnquiryWorkspacePage() {
         }}
       />
 
-      {/* Phase 9b — Reject share reason dialog */}
+      {/* Reject share reason dialog*/}
       <ReasonDialog
         open={rejectShareId !== null}
         title="Reject this shared review"

@@ -101,7 +101,7 @@ interface TabDef {
   key: TabKey;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
-  /** When false the tab is hidden in the strip. */
+  /** When false the tab is hidden in the strip.*/
   show: (status: MeetingStatus, isNew: boolean) => boolean;
 }
 
@@ -156,7 +156,7 @@ export function MeetingModal({
   onClose,
   onSaved,
 }: Props) {
-  // ── Hooks first (lesson #40) ──────────────────────────────────────────
+  // ── Hooks first ──────────────────────────────────────────
   const [form, setForm] = useState<DetailsForm>(EMPTY_DETAILS);
   const [bodies, setBodies] = useState<FrameworkBody[]>([]);
   const [loadingBodies, setLoadingBodies] = useState(false);
@@ -355,7 +355,7 @@ export function MeetingModal({
           transition={{ duration: 0.18, ease: 'easeOut' }}
           className="relative flex max-h-[92vh] w-[min(840px,96vw)] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl"
         >
-          {/* Header */}
+          {/* Header*/}
           <header className="flex items-start gap-3 border-b border-slate-100 px-6 py-4">
             <div className="flex-1">
               <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
@@ -391,7 +391,7 @@ export function MeetingModal({
             </button>
           </header>
 
-          {/* Tab strip */}
+          {/* Tab strip*/}
           <nav className="flex flex-wrap items-center gap-1 border-b border-slate-100 px-4 pt-3">
             {visibleTabs.map((t) => {
               const Icon = t.icon;
@@ -416,7 +416,7 @@ export function MeetingModal({
             })}
           </nav>
 
-          {/* Body */}
+          {/* Body*/}
           <div className="flex-1 overflow-y-auto px-6 py-5">
             {activeTab === 'details' && (
               <DetailsTab
@@ -493,7 +493,7 @@ export function MeetingModal({
             )}
           </div>
 
-          {/* Footer */}
+          {/* Footer*/}
           <footer className="flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-3">
             <button
               type="button"
@@ -503,7 +503,7 @@ export function MeetingModal({
               {detailsLocked && activeTab === 'details' ? 'Close' : 'Cancel'}
             </button>
             {/* Details-tab Save button. Other tabs persist per action
-                via their own server endpoints. */}
+ via their own server endpoints.*/}
             {activeTab === 'details' && !detailsLocked && (
               <button
                 type="button"
@@ -741,7 +741,7 @@ function AttendeesTab({
   const [loadingMembers, setLoadingMembers] = useState(true);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [search, setSearch] = useState('');
-  // Structured external-attendee form (3 fields per Anthony's
+  // Structured external-attendee form (3 fields per
   // industry-standard request). Stored as { uid: null, label, email, role }
   // so future cross-meeting reporting / FOI exports can group by role.
   const [externalName, setExternalName] = useState('');
@@ -849,7 +849,7 @@ function AttendeesTab({
         )}
       </div>
 
-      {/* Selected attendees */}
+      {/* Selected attendees*/}
       {attendees.length === 0 ? (
         <p className="rounded-lg border border-dashed border-slate-200 px-3 py-6 text-center text-[11px] italic text-slate-400">
           No attendees yet.{!readOnly && ' Click Add attendee to start.'}
@@ -910,7 +910,7 @@ function AttendeesTab({
         </ul>
       )}
 
-      {/* Picker */}
+      {/* Picker*/}
       {!readOnly && pickerOpen && (
         <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
           <header className="border-b border-slate-100 px-3 py-2">

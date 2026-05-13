@@ -1,4 +1,4 @@
-// Phase 5.5c — Reschedule meeting dialog.
+// Reschedule meeting dialog.
 //
 // Q20 = a — distinct from Cancel. Moves the meeting's date (+ optional
 // times). Linked FP items + reports stay attached; their

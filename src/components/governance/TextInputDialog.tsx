@@ -9,15 +9,15 @@ interface TextInputDialogProps {
   open: boolean;
   title: string;
   message?: string;
-  /** Label above the input. */
+  /** Label above the input.*/
   inputLabel?: string;
-  /** Placeholder shown in the input. */
+  /** Placeholder shown in the input.*/
   placeholder?: string;
-  /** Initial value for the input. */
+  /** Initial value for the input.*/
   defaultValue?: string;
-  /** Validator returns null if valid, error string otherwise. */
+  /** Validator returns null if valid, error string otherwise.*/
   validate?: (value: string) => string | null;
-  /** Confirm button label. Defaults to "Confirm". */
+  /** Confirm button label. Defaults to "Confirm".*/
   confirmLabel?: string;
   variant?: ConfirmVariant;
   loading?: boolean;
@@ -58,7 +58,7 @@ const VARIANT_STYLES: Record<
 
 /**
  * Single-line text input dialog — replaces `window.prompt` calls
- * (lesson #41). Use for "what should I name this duplicate?" / "what
+ * . Use for "what should I name this duplicate?" / "what
  * is the new ID?" style flows. For multi-line free text + reason
  * capture, use ReasonDialog instead.
  */

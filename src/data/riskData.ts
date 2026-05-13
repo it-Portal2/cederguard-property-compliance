@@ -1,4 +1,4 @@
-export const PROJECTS: string[] = [];
+import { calculateMatrixScore } from "./riskScoringMatrix";
 
 export const WORKSTREAMS = [
   "Resourcing",
@@ -167,7 +167,6 @@ export const SEED_KRIS: KRI[] = KRI_LIST.map((name, i) => ({
   name,
   owner: KRI_OWNERS[name] || "Lead Auditor",
   ...KRI_METADATA[name],
-  thresholdType: KRI_METADATA[name].thresholdType as any,
 }));
 
 export const RISK_STATUSES = [
@@ -209,8 +208,10 @@ export const FINANCIAL_RATINGS = [
 export const RAD_OPTIONS = ["R - Review", "A - Action", "D - Decision"];
 export const REVIEW_PLANS = ["Accept", "Review", "Escalate"];
 
+// Risk score helper — uses the calibrated 5×5 matrix
+// . Example: L=1, I=2 returns 3 (NOT 1 × 2 = 2).
 function rr(l: number, i: number) {
-  return (l || 0) * (i || 0);
+  return calculateMatrixScore(l, i);
 }
 
 // Full demo seed data — only loaded when user clicks "Load Demo Data"

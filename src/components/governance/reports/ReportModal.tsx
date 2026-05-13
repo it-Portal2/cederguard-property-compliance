@@ -38,7 +38,7 @@ interface FormState {
   partClassification: Classification;
   isHRB: boolean;
   targetBoardDate: string;
-  targetMeetingId: string | null; // Phase 5.5b
+  targetMeetingId: string | null; // .5b
   reviewerUid: string;
   reviewerLabel: string;
 }
@@ -70,11 +70,11 @@ function makeReportId(title: string): string {
 
 interface Props {
   isOpen: boolean;
-  /** null = create mode; existing report = edit mode. */
+  /** null = create mode; existing report = edit mode.*/
   report: Report | null;
-  /** Existing IDs for client-side uniqueness check on create. */
+  /** Existing IDs for client-side uniqueness check on create.*/
   existingIds: string[];
-  /** Caller's role check — disables Save when false. */
+  /** Caller's role check — disables Save when false.*/
   canEdit: boolean;
   onClose: () => void;
   onSaved: (report: Report) => void;
@@ -95,7 +95,7 @@ export function ReportModal({
   const [reviewerPickerOpen, setReviewerPickerOpen] = useState(false);
   const initialFormRef = useRef<FormState>(emptyState());
 
-  // ALL hooks declared BEFORE any early return (rules of hooks — lesson #40).
+  // ALL hooks declared BEFORE any early return (rules of hooks — ).
   const isEdit = report != null;
   const status = report?.status ?? 'Draft';
   const statusStyle = STATUS_STYLES[status];
@@ -156,7 +156,7 @@ export function ReportModal({
     try {
       let reportId = report?.id;
       if (!reportId) {
-        // Auto-generate; collision-protect using existingIds (lesson #30).
+        // Auto-generate; collision-protect using existingIds.
         let attempt = makeReportId(form.title);
         let guard = 0;
         while (existingIds.includes(attempt) && guard < 12) {
@@ -208,7 +208,7 @@ export function ReportModal({
             transition={{ duration: 0.15 }}
             className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
           >
-            {/* Header */}
+            {/* Header*/}
             <header className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-3">
               <div className="flex items-start gap-2.5">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
@@ -247,7 +247,7 @@ export function ReportModal({
               </button>
             </header>
 
-            {/* Body */}
+            {/* Body*/}
             <div className="flex-1 overflow-y-auto px-5 py-4">
               {isLocked && (
                 <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
@@ -350,8 +350,8 @@ export function ReportModal({
                   />
                 </Field>
                 {/* Legacy `targetBoardDate` kept for back-compat; only
-                    surfaces when there's a value AND no meeting picked
-                    (e.g. pre-5.5b reports). New reports use the picker. */}
+ surfaces when there's a value AND no meeting picked
+ (e.g. pre-5.5b reports). New reports use the picker.*/}
                 {form.targetBoardDate && !form.targetMeetingId && (
                   <Field label="Legacy target board date">
                     <div className="relative">
@@ -387,7 +387,7 @@ export function ReportModal({
               </Section>
             </div>
 
-            {/* Footer */}
+            {/* Footer*/}
             <footer className="flex items-center justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3">
               <button
                 type="button"

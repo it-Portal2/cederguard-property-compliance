@@ -7,8 +7,8 @@
 //   • Auto-populates the audit-trail footer from report metadata
 //
 // Used by:
-//   • governanceRenderReportPdf  — preview only, no state change
-//   • governanceSignPartA        — sealed PDF written to Storage on sign
+//   • governanceRenderReportPdf — preview only, no state change
+//   • governanceSignPartA — sealed PDF written to Storage on sign
 
 import type { ApiContext } from './context.js';
 import { renderReportPdf } from './pdfRenderer.js';
@@ -16,17 +16,17 @@ import { readAssetAsDataUri } from './storage.js';
 
 interface ReportPdfInputs {
   reportId: string;
-  /** Used to choose the watermark + which signature URLs to resolve. */
+  /** Used to choose the watermark + which signature URLs to resolve.*/
   status: string;
-  /** Override watermark — defaults derived from `status`. */
+  /** Override watermark — defaults derived from `status`.*/
   watermarkOverride?: string | null;
   /** Optional: include a specific signer's signature for Part A. The
-   *  caller resolves this from `users/{uid}.signatureUrl` via Storage. */
+   *  caller resolves this from `users/{uid}.signatureUrl` via Storage.*/
   partASignatureDataUri?: string | null;
-  /** Phase 13 — when true, sections marked Part 2 / Closed are
+  /** when true, sections marked Part 2 / Closed are
    *  replaced by a placeholder line ("[Section N — Part 2, exempt
    *  from publication]"). FOI-safe by construction. Defaults false
-   *  (full publication) so internal previews still show everything. */
+   *  (full publication) so internal previews still show everything.*/
   redactPart2?: boolean;
 }
 
@@ -117,7 +117,7 @@ export async function buildReportPdfBuffer(
   // Build the merged Tiptap doc — for each section, render an H2 heading
   // (so it acts as a section divider in the PDF) followed by its content.
   //
-  // Phase 13 redaction (FOI-safe by construction): when `redactPart2` is
+  //  redaction (FOI-safe by construction): when `redactPart2` is
   // set, sections whose `partClassification` is "Closed" / "Part 2" emit
   // ONLY a heading + a single placeholder paragraph in the output. The
   // closed body is never written to the PDF buffer at all (so it can't

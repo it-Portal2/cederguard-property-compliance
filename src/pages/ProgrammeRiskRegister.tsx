@@ -23,23 +23,26 @@ import { StatsCard } from '../components/common/StatsCard';
 import { useHistoricalView } from '../hooks/useHistoricalView';
 import { MonthPicker } from '../components/historicalReporting/MonthPicker';
 import { HistoricalBanner } from '../components/historicalReporting/HistoricalBanner';
+import ConfirmDialog from '../components/table/ConfirmDialog';
+import {
+    BAND_STYLES,
+    bandForScore,
+    formatRatingDisplay,
+    SEVERE_SCORE_THRESHOLD,
+} from '../data/riskScoringMatrix';
 
-// ── Helper functions (byte-for-byte match with RiskRegister) ──────────────────
+// 5-band rating scheme:
+//   Insignificant 1-3 · Minor 4-6 · Moderate 7-11 · Major 12-18 · Severe 19-25.
 
 function rsScore(score: number) {
-    if (!score || score <= 6)
-        return 'bg-emerald-50 text-emerald-600 border-emerald-200 shadow-sm';
-    if (score <= 14)
-        return 'bg-amber-50 text-amber-600 border-amber-200 shadow-sm';
-    return 'bg-rose-50 text-rose-600 border-rose-200 shadow-sm font-black animate-pulse';
+    const band = bandForScore(score);
+    const base = BAND_STYLES[band].pill;
+    return band === 'severe' ? `${base} shadow-sm animate-pulse` : `${base} shadow-sm`;
 }
 
 function rLabel(s: number) {
-    if (!s || s <= 6)
-        return { l: 'Low', c: 'bg-emerald-50 text-emerald-600 border-emerald-200' };
-    if (s <= 14)
-        return { l: 'Medium', c: 'bg-amber-50 text-amber-600 border-amber-200' };
-    return { l: 'High', c: 'bg-rose-50 text-rose-600 border-rose-200 font-bold' };
+    const band = bandForScore(s);
+    return { l: BAND_STYLES[band].label, c: BAND_STYLES[band].pill };
 }
 
 function fGBP(v?: number) {
@@ -119,9 +122,9 @@ export function ProgrammeRiskRegister() {
     const userRole = (user?.role || user?.profile?.role) as UserRole | undefined;
     const userIsSuperAdmin = isSuperAdmin(user?.email, userRole);
 
-    // HRC HR-3 — historical view hook. When the user picks a past month
+    //  historical view hook. When the user picks a past month
     // via the MonthPicker, the page swaps live `risks` for the snapshot
-    // (LegacyArraySnapshot[] — one entry per project containing a frozen
+    // (LegacyArraySnapshot — one entry per project containing a frozen
     // risk array) and disables every edit affordance.
     const historicalView = useHistoricalView<{
         kind: 'legacyArray';
@@ -140,6 +143,10 @@ export function ProgrammeRiskRegister() {
     const [isAIInquiryOpen, setIsAIInquiryOpen] = useState(false);
     const [aiQuestion, setAiQuestion] = useState<string | undefined>(undefined);
     const [showFullQueue, setShowFullQueue] = useState(false);
+    // no native dialogs. Tracks which escalation row is awaiting
+    // dismiss confirmation so the ConfirmDialog can render once at the page root.
+    const [dismissingRiskId, setDismissingRiskId] = useState<string | null>(null);
+    const [dismissPending, setDismissPending] = useState(false);
 
     const pendingRisks = getPendingRisks();
 
@@ -156,7 +163,7 @@ export function ProgrammeRiskRegister() {
     }, [searchParams, navigate]);
 
     // ── Scoping — byte-for-byte preservation of original derivation ──────────
-    // HRC HR-3 — when historical, replace `safeRisks` with the flattened
+    //  when historical, replace `safeRisks` with the flattened
     // snapshot data so the existing escalated/programme-level scoping
     // logic below runs unchanged on frozen data.
     const liveRisks = Array.isArray(risks) ? risks : [];
@@ -344,29 +351,44 @@ export function ProgrammeRiskRegister() {
             truncate: true,
             tooltip: (_v: any, r: RiskItem) =>
                 `${stripMarkdown(r.title)}\n\n${stripMarkdown(r.desc) || 'No description provided.'}`,
-            render: (_v, r) => (
-                <div className="min-w-0">
-                    <div className="flex items-center flex-wrap gap-2">
-                        <span className="font-bold text-slate-900 leading-tight text-[11px] line-clamp-1">
-                            {stripMarkdown(r.title)}
-                        </span>
-                        {r.isNew !== false &&
-                            differenceInDays(new Date(), new Date(r.dateAdded || '')) < 1 && (
-                                <span className="px-1.5 py-0.5 bg-indigo-600 text-white text-[7px] font-black uppercase rounded shadow-sm">
-                                    New
+            render: (_v, r) => {
+                // Severe trigger: rose ESCALATE pill when EITHER gross
+                // OR residual Impact = 5. :
+                // "Escalate Band 5 risks to senior management immediately".
+                const isSevere =
+                    (Number(r.grossI) || 0) >= 5 || (Number(r.residualI) || 0) >= 5;
+                return (
+                    <div className="min-w-0">
+                        <div className="flex items-center flex-wrap gap-2">
+                            <span className="font-bold text-slate-900 leading-tight text-[11px] line-clamp-1">
+                                {stripMarkdown(r.title)}
+                            </span>
+                            {isSevere && (
+                                <span
+                                    title="Severe Impact (Band 5) — escalate to senior management immediately"
+                                    className="px-1.5 py-0.5 bg-rose-100 text-rose-700 text-[8px] font-black uppercase tracking-wider rounded border border-rose-200"
+                                >
+                                    Escalate
                                 </span>
                             )}
-                        {!r.owner && (
-                            <span title="Missing Owner">
-                                <AlertCircle className="w-3 h-3 text-rose-500" />
-                            </span>
-                        )}
+                            {r.isNew !== false &&
+                                differenceInDays(new Date(), new Date(r.dateAdded || '')) < 1 && (
+                                    <span className="px-1.5 py-0.5 bg-indigo-600 text-white text-[7px] font-black uppercase rounded shadow-sm">
+                                        New
+                                    </span>
+                                )}
+                            {!r.owner && (
+                                <span title="Missing Owner">
+                                    <AlertCircle className="w-3 h-3 text-rose-500" />
+                                </span>
+                            )}
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-normal leading-relaxed line-clamp-2">
+                            {stripMarkdown(r.desc)}
+                        </span>
                     </div>
-                    <span className="text-[10px] text-slate-400 font-normal leading-relaxed line-clamp-2">
-                        {stripMarkdown(r.desc)}
-                    </span>
-                </div>
-            ),
+                );
+            },
         },
         // Gross Risk Rating group
         {
@@ -511,7 +533,8 @@ export function ProgrammeRiskRegister() {
         },
         {
             key: '_label' as any,
-            label: 'Label',
+            label: 'Rating Label',
+            // show "Severe · 24" format (text label + numeric score)
             render: (_v, r) => {
                 const c = rLabel(r.residualRating || 0);
                 return (
@@ -521,7 +544,7 @@ export function ProgrammeRiskRegister() {
                             c.c,
                         )}
                     >
-                        {c.l}
+                        {formatRatingDisplay(r.residualRating || 0)}
                     </span>
                 );
             },
@@ -822,10 +845,10 @@ export function ProgrammeRiskRegister() {
                 className="max-w-[98%] mx-auto p-2 sm:p-4 lg:p-6 space-y-6 sm:space-y-8"
             >
 
-                {/* HRC HR-3 — month picker + read-only banner. The chip
-                    sits at the top of the page so it's the first thing
-                    the user sees; the amber banner below appears once
-                    a past month is selected. */}
+                {/* month picker + read-only banner. The chip
+ sits at the top of the page so it's the first thing
+ the user sees; the amber banner below appears once
+ a past month is selected.*/}
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
                         Risk Register · Programme Level
@@ -849,7 +872,7 @@ export function ProgrammeRiskRegister() {
                     />
                 )}
 
-                {/* AI Risk Advisor Banner — unchanged */}
+                {/* AI Risk Advisor Banner — unchanged*/}
                 <div className="bg-linear-to-br from-indigo-700 via-indigo-800 to-slate-900 rounded-xl p-8 text-white shadow-2xl shadow-indigo-200/50 relative overflow-hidden group border border-white/10">
                     <div className="absolute right-0 top-0 w-96 h-96 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl group-hover:bg-white/10 transition-all duration-1000"></div>
                     <div className="absolute left-0 bottom-0 w-64 h-64 bg-indigo-500/20 rounded-full -ml-24 -mb-24 blur-2xl"></div>
@@ -882,7 +905,7 @@ export function ProgrammeRiskRegister() {
                     </div>
                 </div>
 
-                {/* Interactive Review Queue — unchanged */}
+                {/* Interactive Review Queue — unchanged*/}
                 <AnimatePresence>
                     {pendingRisks.length > 0 && (
                         <motion.div
@@ -932,8 +955,9 @@ export function ProgrammeRiskRegister() {
                                                     </div>
                                                     <p className="font-bold text-sm mt-0.5 text-white">{risk.title}</p>
                                                     <div className="flex items-center gap-3 mt-1">
+                                                        {/*rating shown as "Severe · 24" format.*/}
                                                         <span className={clsx("px-2 py-0.5 rounded text-[8px] font-black uppercase border", rLabel(risk.residualRating || 0).c)}>
-                                                            {rLabel(risk.residualRating || 0).l} Impact
+                                                            {formatRatingDisplay(risk.residualRating || 0)}
                                                         </span>
                                                         <span className="text-[10px] text-indigo-300 font-medium italic">Escalated by {risk.owner}</span>
                                                     </div>
@@ -942,15 +966,7 @@ export function ProgrammeRiskRegister() {
                                             <div className="flex items-center gap-2.5">
                                                 <button
                                                     disabled={isRowPending(risk.id)}
-                                                    onClick={async () => {
-                                                        if (!window.confirm('Dismiss this escalation?')) return;
-                                                        try {
-                                                            await dismissRisk(risk.id);
-                                                            toast.success('Escalation dismissed.');
-                                                        } catch (err: any) {
-                                                            toast.error(err?.message || 'Failed to dismiss escalation.');
-                                                        }
-                                                    }}
+                                                    onClick={() => setDismissingRiskId(risk.id)}
                                                     className="px-4 py-2 bg-white/5 hover:bg-rose-500/20 hover:text-rose-300 border border-white/10 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                                                 >
                                                     {isRowPending(risk.id) ? 'Working…' : 'Dismiss'}
@@ -988,7 +1004,7 @@ export function ProgrammeRiskRegister() {
                     )}
                 </AnimatePresence>
 
-                {/* Summary Tiles — 4 stats cards, no progress bar */}
+                {/* Summary Tiles — 4 stats cards, no progress bar*/}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <StatsCard
                         title="Total Programme Risks"
@@ -1009,8 +1025,8 @@ export function ProgrammeRiskRegister() {
                         valueClassName="text-orange-600 dark:text-orange-400"
                     />
                     <StatsCard
-                        title="High Priority"
-                        value={allProg.filter(r => (r.residualRating || 0) > 14).length}
+                        title="Severe"
+                        value={allProg.filter(r => (r.residualRating || 0) >= SEVERE_SCORE_THRESHOLD).length}
                         unit="risks"
                         icon={AlertCircle}
                         iconBgClassName="bg-rose-50 dark:bg-rose-900/30"
@@ -1028,7 +1044,7 @@ export function ProgrammeRiskRegister() {
                     />
                 </div>
 
-                {/* DynamicTable — replaces hand-rolled table + filter row + toolbar */}
+                {/* DynamicTable — replaces hand-rolled table + filter row + toolbar*/}
                 <DynamicTable<ProgrammeRisk>
                     data={allProg}
                     columns={columns}
@@ -1111,6 +1127,33 @@ export function ProgrammeRiskRegister() {
                         pctReduction,
                         pendingEscalations: pendingRisks.length,
                     })}
+                />
+
+                {/* Dismiss-escalation confirmation.*/}
+                <ConfirmDialog
+                    open={dismissingRiskId !== null}
+                    title="Dismiss this escalation?"
+                    message="The risk will be returned to the project-level register and removed from the programme pending queue. The project manager can re-escalate later if needed."
+                    confirmLabel="Dismiss escalation"
+                    variant="danger"
+                    loading={dismissPending}
+                    onCancel={() => {
+                        if (dismissPending) return;
+                        setDismissingRiskId(null);
+                    }}
+                    onConfirm={async () => {
+                        if (!dismissingRiskId || dismissPending) return;
+                        setDismissPending(true);
+                        try {
+                            await dismissRisk(dismissingRiskId);
+                            toast.success('Escalation dismissed.');
+                            setDismissingRiskId(null);
+                        } catch (err: any) {
+                            toast.error(err?.message || 'Failed to dismiss escalation.');
+                        } finally {
+                            setDismissPending(false);
+                        }
+                    }}
                 />
             </motion.div>
         </>

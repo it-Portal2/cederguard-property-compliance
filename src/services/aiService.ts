@@ -1250,7 +1250,7 @@ export async function chatWithAI(
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// Technical Assurance Companion — Phase 2 insight orchestrator.
+// Technical Assurance Companion — insight orchestrator.
 //
 // Three-step flow that reuses the repo-wide AI infrastructure:
 //   1. server: tacBuildInsightPrompt(enquiryId)
@@ -1298,7 +1298,7 @@ export async function generateTacInsight(
   enquiryId: string,
 ): Promise<{ summary: any; enquiry: any }> {
   // Step 1 — server builds the prompt + flips to Generating. Returns the
-  // source PDF inline as base64 (Phase 4b) when the attachment is small
+  // source PDF inline as base64 when the attachment is small
   // enough — Gemini reads it visually for per-annotation x/y coords.
   const built = await api.tacBuildInsightPrompt(enquiryId);
   if (!built?.success) {
@@ -1310,7 +1310,7 @@ export async function generateTacInsight(
 
   // Step 2 — TAC-only deterministic Gemini call. Greedy decoding (topK=1)
   // + low temperature gives same enquiry → same output across regenerations.
-  // Multimodal: source PDF as inlineData when available (Phase 4b coords).
+  // Multimodal: source PDF as inlineData when available (coords).
   const inlineParts = pdfInlineData ? [pdfInlineData] : undefined;
   let summary: any;
   try {
@@ -1336,7 +1336,7 @@ export async function generateTacInsight(
     throw e;
   }
 
-  // Step 2.5 (Phase 7 hot-fix #2) — one-shot retry for missing
+  // Step 2.5 (hot-fix #2) — one-shot retry for missing
   // costProgramme on substantive enquiries. With topK=1 this should be
   // rare, but greedy decoding can still emit `costProgramme: null` if the
   // AI judges the enquiry advisory. The retry is focused: short prompt

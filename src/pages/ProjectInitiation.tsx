@@ -15,7 +15,7 @@ import { toast } from "react-hot-toast";
 import { PublicationChecklist } from "../components/PublicationChecklist";
 import { DeliveryTeamCRUD } from "../components/DeliveryTeamCRUD";
 
-// ─── Main Page 
+// ─── Main Page
 export function ProjectInitiation() {
   const navigate = useNavigate();
   const { id: urlProjectId } = useParams();
@@ -104,7 +104,7 @@ export function ProjectInitiation() {
       totalValue: "",
       totalGrant: "",
       contingencyPct: "5",
-      // Phase 6.5 — Governance Profile (linked to Framework).
+      // Governance Profile (linked to Framework).
       decisionDeliveryLevel: "",
       financialThreshold: "",
       riskRegulatoryProfile: "",
@@ -141,7 +141,7 @@ export function ProjectInitiation() {
     totalValue: "",
     totalGrant: "",
     contingencyPct: "5",
-    // Phase 6.5 — Governance Profile (linked to Framework).
+    // Governance Profile (linked to Framework).
     decisionDeliveryLevel: "",
     financialThreshold: "",
     riskRegulatoryProfile: "",
@@ -190,7 +190,7 @@ export function ProjectInitiation() {
         totalValue: p.totalValue?.toString() || "",
         totalGrant: p.totalGrant?.toString() || "",
         contingencyPct: p.contingencyPct?.toString() || "5",
-        // Phase 6.5 — Governance Profile.
+        // Governance Profile.
         decisionDeliveryLevel: (p as any).decisionDeliveryLevel || "",
         financialThreshold: (p as any).financialThreshold || "",
         riskRegulatoryProfile: (p as any).riskRegulatoryProfile || "",
@@ -486,7 +486,7 @@ export function ProjectInitiation() {
           totalValue: formData.totalValue,
           totalGrant: formData.totalGrant,
           contingencyPct: formData.contingencyPct,
-          // Phase 6.5 — Governance Profile (linked to Framework).
+          // Governance Profile (linked to Framework).
           decisionDeliveryLevel: formData.decisionDeliveryLevel || '',
           financialThreshold: formData.financialThreshold || '',
           riskRegulatoryProfile: formData.riskRegulatoryProfile || '',
@@ -590,7 +590,7 @@ export function ProjectInitiation() {
   return (
     <div className="min-h-screen bg-slate-50/50 pb-24 md:pb-12 pt-safe">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
-        {/* ── HEADER SECTION ─────────── */}
+        {/* ── HEADER SECTION ───────────*/}
         <div className="mb-8 md:mb-12">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div className="space-y-2">
@@ -666,7 +666,7 @@ export function ProjectInitiation() {
           </div>
         </div>
 
-        {/* ── MAIN CONTENT GRID ─────────── */}
+        {/* ── MAIN CONTENT GRID ───────────*/}
         <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {loading && (
             <div className="absolute inset-0 z-50 bg-white/60 backdrop-blur-[2px] rounded-3xl flex items-center justify-center">
@@ -676,13 +676,13 @@ export function ProjectInitiation() {
               </div>
             </div>
           )}
-          {/* LEFT: FORM SECTION (Column Span 8) */}
+          {/* LEFT: FORM SECTION (Column Span 8)*/}
           <div className="lg:col-span-8 order-2 lg:order-1 space-y-8">
             <form
               onSubmit={handleSubmit}
               className="bg-white border border-slate-200 rounded-3xl p-6 md:p-10 shadow-xl shadow-slate-200/50 space-y-10"
             >
-              {/* Continuing Drafts Overlay-style section */}
+              {/* Continuing Drafts Overlay-style section*/}
               {(Array.isArray(projects) ? projects : []).filter(
                 (p) => !p.isPublished,
               ).length > 0 && (
@@ -761,7 +761,7 @@ export function ProjectInitiation() {
                                 totalGrant: p.totalGrant?.toString() || "",
                                 contingencyPct:
                                   p.contingencyPct?.toString() || "5",
-                                // Phase 6.5 — Governance Profile.
+                                // Governance Profile.
                                 decisionDeliveryLevel:
                                   (p as any).decisionDeliveryLevel || "",
                                 financialThreshold:
@@ -814,7 +814,7 @@ export function ProjectInitiation() {
                 </div>
               )}
 
-              {/* ── SECTION: CORE DETAILS ── */}
+              {/* ── SECTION: CORE DETAILS ──*/}
               <div className="space-y-6">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-100">
@@ -826,7 +826,7 @@ export function ProjectInitiation() {
                 </div>
 
                 <div className="space-y-5">
-                  {/* Project Name */}
+                  {/* Project Name*/}
                   <div>
                     <label className={labelCls}>
                       Project Name{" "}
@@ -846,7 +846,7 @@ export function ProjectInitiation() {
                     )}
                   </div>
 
-                  {/* ── UX 1: Programme fields elevated to top — high-level classification ── */}
+                  {/* ── UX 1: Programme fields elevated to top — high-level classification ──*/}
                   <div className="p-4 bg-indigo-50/60 border border-indigo-100 rounded-xl space-y-4">
                     <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest leading-none">
                       Programme Classification
@@ -874,7 +874,7 @@ export function ProjectInitiation() {
                           {loadingPMs || loadingProgrammes
                             ? <option value="">Loading programmes…</option>
                             : <>
-                                {/* UX 4: explicit "independent" option — not a blank placeholder */}
+                                {/* UX 4: explicit "independent" option — not a blank placeholder*/}
                                 <option value="">— Independent (no programme link) —</option>
                                 {filteredProgrammes.map((p) => (
                                   <option key={p.id} value={p.id}>
@@ -884,7 +884,7 @@ export function ProjectInitiation() {
                               </>
                           }
                         </select>
-                        {/* UX 5: guidance for client admins */}
+                        {/* UX 5: guidance for client admins*/}
                         {isAtLeastClientAdmin(userRole) && !formData.programmeId && !loadingProgrammes && (
                           <p className="text-[10px] text-amber-600 font-semibold mt-1.5 ml-1">
                             Recommended: link to a programme or confirm as independent.
@@ -1257,12 +1257,12 @@ export function ProjectInitiation() {
 
               <hr className="border-slate-100" />
 
-              {/* ── SECTION: GOVERNANCE SETUP (Phase 6.5) ── */}
+              {/* ── SECTION: GOVERNANCE SETUP (.5) ──*/}
               {/* Standardised taxonomy that mirrors the Programme Governance
-                  Framework. Picking values resolves to a real body / threshold
-                  / route in the live framework (Q5 = B). Reporting Cycle uses
-                  the same dropdown shape as Programme Setup (Q4 = collapse to
-                  old version). */}
+ Framework. Picking values resolves to a real body / threshold
+ / route in the live framework. Reporting Cycle uses
+ the same dropdown shape as Programme Setup (Q4 = collapse to
+ old version).*/}
               <div id="project-governance" className="space-y-6 scroll-mt-24">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-100">
@@ -1305,7 +1305,7 @@ export function ProjectInitiation() {
 
               <hr className="border-slate-100" />
 
-              {/* ── SECTION: DELIVERY TEAM ── */}
+              {/* ── SECTION: DELIVERY TEAM ──*/}
               <div id="project-delivery" className="scroll-mt-24">
                 <DeliveryTeamCRUD
                   members={formData.deliveryTeam}
@@ -1340,7 +1340,7 @@ export function ProjectInitiation() {
 
               <hr className="border-slate-100" />
 
-              {/* ── SECTION: MILESTONES ── */}
+              {/* ── SECTION: MILESTONES ──*/}
               <div className="space-y-6 pb-2">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center text-white shadow-lg shadow-amber-100">
@@ -1408,14 +1408,14 @@ export function ProjectInitiation() {
             </form>
           </div>
 
-          {/* RIGHT: TRACKER SECTION (Column Span 4) */}
+          {/* RIGHT: TRACKER SECTION (Column Span 4)*/}
           <div className="lg:col-span-4 order-1 lg:order-2 sticky top-6">
             <PublicationChecklist onPublish={handlePublish} loading={publishLoading} />
           </div>
         </div>
       </div>
 
-      {/* No-Programme Warning Modal (UX 3) */}
+      {/* No-Programme Warning Modal (UX 3)*/}
       {showNoProgrammeWarning && (
         <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200">
@@ -1454,7 +1454,7 @@ export function ProjectInitiation() {
         </div>
       )}
 
-      {/* Delete Draft Modal */}
+      {/* Delete Draft Modal*/}
       {draftToDelete && (
         <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200">

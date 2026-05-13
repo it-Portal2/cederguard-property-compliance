@@ -1,4 +1,4 @@
-// Phase 8 — Compliance Lead audit dashboard.
+// Compliance Lead audit dashboard.
 //
 // Surfaces every enquiry in the workspace that's either currently flagged
 // for audit OR carries thumbs-down feedback. Powered by the
@@ -287,7 +287,7 @@ export function TacAuditDashboardPage() {
       transition={{ duration: 0.2 }}
       className="space-y-6"
     >
-      {/* Header */}
+      {/* Header*/}
       <div className="flex items-start gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
           <ShieldCheck className="h-5 w-5" strokeWidth={2.25} />
@@ -302,12 +302,12 @@ export function TacAuditDashboardPage() {
           <p className="mt-1 text-sm text-slate-500">
             Compliance Lead view of every enquiry flagged for audit or
             carrying thumbs-down feedback. First 50 responses per project
-            should be reviewed here per Q6=A in-house chartered review.
+            should be reviewed here as part of the in-house chartered review.
           </p>
         </div>
       </div>
 
-      {/* StatsCards */}
+      {/* StatsCards*/}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <StatsCard
           title="Open flags"
@@ -366,7 +366,7 @@ export function TacAuditDashboardPage() {
         }}
       />
 
-      {/* Resolve flag dialog */}
+      {/* Resolve flag dialog*/}
       <ReasonDialog
         open={resolveRow !== null}
         title="Resolve audit flag"

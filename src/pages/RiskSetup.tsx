@@ -602,7 +602,7 @@ export function RiskSetup() {
 
     return (
         <div className="min-h-screen bg-slate-50/50 pb-24 md:pb-12 pt-safe">
-            {/* Restart Confirmation Dialog */}
+            {/* Restart Confirmation Dialog*/}
             {showRestartConfirm && (
                 <div className="fixed inset-0 z-110 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-md w-full overflow-hidden animate-in zoom-in duration-300">
@@ -635,7 +635,7 @@ export function RiskSetup() {
                 </div>
             )}
 
-            {/* Restart Loading Overlay */}
+            {/* Restart Loading Overlay*/}
             {isRestarting && (
                 <div className="fixed inset-0 z-110 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-4 max-w-xs w-full mx-4">
@@ -648,7 +648,7 @@ export function RiskSetup() {
                 </div>
             )}
 
-            {/* Existing Analysis Overlay */}
+            {/* Existing Analysis Overlay*/}
             {showAnalysisExists && (
                 <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md">
                     <div className="bg-white rounded-[40px] shadow-2xl border border-slate-100 max-w-2xl w-full overflow-hidden animate-in fade-in zoom-in duration-500">
@@ -712,7 +712,7 @@ export function RiskSetup() {
             )}
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
-                {/* ── HEADER SECTION ─────────── */}
+                {/* ── HEADER SECTION ───────────*/}
                 <div className="mb-8 md:mb-12">
                     <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
                         <div className="space-y-3">
@@ -732,10 +732,10 @@ export function RiskSetup() {
                     </div>
                 </div>
 
-                {/* ── MAIN CONTENT GRID ─────────── */}
+                {/* ── MAIN CONTENT GRID ───────────*/}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                     
-                    {/* LEFT: FORM SECTION (Column Span 8) */}
+                    {/* LEFT: FORM SECTION (Column Span 8)*/}
                     <div className="lg:col-span-8 order-2 lg:order-1 space-y-8">
                         {!done && (
                             <div className="space-y-10">
@@ -848,7 +848,7 @@ export function RiskSetup() {
                                                             )}
                                                         </div>
 
-                                                        {/* AI Risk Insights (Trigger logic) */}
+                                                        {/* AI Risk Insights (Trigger logic)*/}
                                                         {q.trigger && val && val !== "None identified" && val !== "Low" && val !== "No" && !val.includes("Not yet") && !val.includes("N/A") && (
                                                             <div className="mt-3 bg-indigo-600/5 border border-indigo-100/50 rounded-2xl p-4 flex gap-4 animate-in fade-in slide-in-from-top-2 duration-500">
                                                                 <div className="shrink-0 w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
@@ -886,7 +886,7 @@ export function RiskSetup() {
                             </div>
                         )}
 
-                        {/* Suggested Risks Result */}
+                        {/* Suggested Risks Result*/}
                         {done && (
                             <div className="space-y-10 px-2 animate-in fade-in slide-in-from-bottom-8 duration-700">
                                 <div className="bg-white/60 backdrop-blur-3xl border border-white/60 rounded-[40px] p-16 text-center shadow-2xl shadow-indigo-900/10 relative overflow-hidden group">
@@ -921,9 +921,9 @@ export function RiskSetup() {
                         )}
                     </div>
 
-                    {/* RIGHT: TRACKER & NAVIGATION SECTION (Column Span 4) */}
+                    {/* RIGHT: TRACKER & NAVIGATION SECTION (Column Span 4)*/}
                     <div className="lg:col-span-4 order-1 lg:order-2 space-y-6 sticky top-6">
-                        {/* Publication Checklist (Consistency) */}
+                        {/* Publication Checklist (Consistency)*/}
                         <PublicationChecklist onPublish={async () => {
                             if (!activeProjectId) return;
                             setLoading(true);
@@ -939,7 +939,7 @@ export function RiskSetup() {
                             }
                         }} loading={loading} />
 
-                        {/* Sticky Phase Navigation (Specific to Risk Setup) */}
+                        {/* Sticky Phase Navigation (Specific to Risk Setup)*/}
                         {!done && (
                             <aside className="hidden xl:block space-y-4 animate-in slide-in-from-right-8 duration-700">
                                 <div className="p-6 bg-white/40 backdrop-blur-xl rounded-[32px] border border-white/60 shadow-2xl shadow-slate-200/40">
@@ -988,7 +988,7 @@ export function RiskSetup() {
                             </aside>
                         )}
                         
-                        {/* Selector Controls (Moved from header for cleaner mobile flow) */}
+                        {/* Selector Controls (Moved from header for cleaner mobile flow)*/}
                         <div className="space-y-4 p-6 bg-white/40 backdrop-blur-xl rounded-[32px] border border-white/60 shadow-xl shadow-slate-200/40">
                             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-2 px-2">Project Context</h3>
                             <div className="space-y-3">

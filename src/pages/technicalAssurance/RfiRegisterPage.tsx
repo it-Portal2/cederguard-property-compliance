@@ -19,7 +19,7 @@ import type {
 } from "../../types/technicalAssurance";
 import { CheckCircle2, Inbox, Send } from "lucide-react";
 
-// Phase 5 — RFI register. Workspace-scoped DynamicTable of issued RFIs.
+// RFI register. Workspace-scoped DynamicTable of issued RFIs.
 // Reuses the same DynamicTable + StatsCard chrome as the Enquiries page.
 
 const PRIORITY_PILL: Record<RfiPriority, string> = {

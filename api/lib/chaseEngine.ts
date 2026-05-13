@@ -1,8 +1,8 @@
-// Phase 12 — Chase engine (pure logic).
+// Chase engine (pure logic).
 //
 // Given the workspace's in-flight items + the current moment, return
 // the list of `ChaseEvent` records that should be PERSISTED + DISPATCHED
-// by the cron handler.  This file has no Firestore / FCM / SMTP side
+// by the cron handler. This file has no Firestore / FCM / SMTP side
 // effects — it's a pure transform so the handler can unit-test the
 // trigger rules in isolation.
 //
@@ -32,18 +32,18 @@ export const URGENT_KINDS: ChaseKind[] = [
 
 export interface ChaseEvent {
   kind: ChaseKind;
-  /** Stable item identifier — composite of kind + entityId (lesson #103). */
+  /** Stable item identifier — composite of kind + entityId.*/
   dedupeKey: string;
-  /** Recipient resolved by the handler (owner / PgM / both). */
+  /** Recipient resolved by the handler (owner / PgM / both).*/
   recipient: 'owner' | 'pgm' | 'owner+pgm';
   itemKind: 'report' | 'fpItem' | 'meeting';
   itemId: string;
   itemTitle: string;
-  /** ISO timestamp when this chase becomes due (after queue). */
+  /** ISO timestamp when this chase becomes due (after queue).*/
   scheduledFor: string;
-  /** Display-ready chase copy (1 sentence). */
+  /** Display-ready chase copy (1 sentence).*/
   message: string;
-  /** Severity → maps to FCM priority + UI banner colour. */
+  /** Severity → maps to FCM priority + UI banner colour.*/
   severity: 'info' | 'warning' | 'urgent';
 }
 
@@ -81,7 +81,7 @@ const HOURS = (n: number) => n * 60 * 60 * 1000;
 function diffHoursToDeadline(deadlineIso: string | null, now: Date): number | null {
   if (!deadlineIso) return null;
   // Treat the deadline as end-of-day local — a report due "today" isn't
-  // overdue at 09:00.  Using 17:00 UK ≈ end-of-business-day.
+  // overdue at 09:00. Using 17:00 UK ≈ end-of-business-day.
   const t = new Date(`${deadlineIso}T17:00:00Z`).getTime();
   if (Number.isNaN(t)) return null;
   return (t - now.getTime()) / HOURS(1);

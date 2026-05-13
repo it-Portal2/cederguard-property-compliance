@@ -3,7 +3,7 @@ import { motion } from "motion/react";
 import { ArrowUpRight } from "lucide-react";
 
 // Technical Assurance Companion — shared placeholder primitive used by all
-// Phase 0 routes. Mirrors the visual language of the governance Phase 0
+//  routes. Mirrors the visual language of the governance
 // placeholder (indigo-50 icon tile, slate body, tracked eyebrow) so the new
 // surface feels native immediately.
 

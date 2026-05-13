@@ -128,7 +128,7 @@ export function ProjectReport() {
 
   return (
     <div className="max-w-6xl mx-auto pb-20 print:p-0">
-      {/* ─── HEADER (Match 16.png) ─── */}
+      {/* ─── HEADER (Match 16.png) ───*/}
       <div className="bg-white p-6 md:p-10 flex flex-col lg:flex-row justify-between items-start gap-8 rounded-t-[2rem] md:rounded-t-[3rem] print:rounded-none">
         <div className="space-y-6">
             <button 
@@ -144,7 +144,7 @@ export function ProjectReport() {
             </h1>
 
             <div className="flex flex-wrap gap-4 md:gap-8 items-center">
-                {/* Programme Selector for Client Admin/Admin */}
+                {/* Programme Selector for Client Admin/Admin*/}
                 {(userIsSuperAdmin || userRole === 'client_admin') && (
                   <div className="relative group w-full md:max-w-sm">
                     <div className="flex items-center gap-3 px-4 py-2 bg-indigo-50 border border-indigo-200 rounded-xl hover:border-indigo-400 hover:bg-white transition-all cursor-pointer shadow-sm">
@@ -177,7 +177,7 @@ export function ProjectReport() {
                   </div>
                 )}
 
-                {/* Project Selector */}
+                {/* Project Selector*/}
                 <div className="relative group w-full md:max-w-sm">
                     <div className="flex items-center gap-3 px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl hover:border-indigo-400 hover:bg-white transition-all cursor-pointer shadow-sm">
                         <Building2 className="w-4 h-4 text-slate-400 shrink-0 group-hover:text-indigo-500 transition-colors" />
@@ -257,7 +257,7 @@ export function ProjectReport() {
             </div>
         ) : (
             <>
-                {/* ─── KEY PERFORMANCE INDICATORS ─── */}
+                {/* ─── KEY PERFORMANCE INDICATORS ───*/}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
                     <div className="bg-rose-50/50 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 border border-rose-100/50 flex flex-col justify-between min-h-[160px] md:min-h-[200px] shadow-sm">
                         <div className="flex justify-between items-start">
@@ -299,7 +299,7 @@ export function ProjectReport() {
                     </div>
                 </div>
 
-                {/* ─── DETAILED PROJECT RISKS ─── */}
+                {/* ─── DETAILED PROJECT RISKS ───*/}
                 <div className="space-y-6 pt-6">
                     <div className="flex justify-between items-end border-b pb-4">
                         <h2 className="text-xl font-black text-[#111827] flex items-center gap-3">
@@ -356,15 +356,15 @@ export function ProjectReport() {
                     </div>
                 </div>
 
-                {/* ─── COMPLIANCE & EXPOSURE ─── */}
+                {/* ─── COMPLIANCE & EXPOSURE ───*/}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 pt-6">
-                    {/* Compliance Progress */}
+                    {/* Compliance Progress*/}
                     <div className="space-y-6">
                         <h2 className="text-xl font-black text-[#111827] flex items-center gap-3">
                             <ShieldCheck className="w-6 h-6 text-emerald-600" /> Compliance Performance
                         </h2>
                         <div className="bg-white border border-slate-100 rounded-[1.5rem] md:rounded-[2.5rem] p-6 md:p-10 shadow-sm space-y-8">
-                            {/* Compliance Items Overview */}
+                            {/* Compliance Items Overview*/}
                             <div className="space-y-4">
                                 {projectCompliance.slice(0, 5).map((item: any, idx) => (
                                     <div key={idx} className="flex items-center justify-between group">
@@ -407,7 +407,7 @@ export function ProjectReport() {
                         </div>
                     </div>
 
-                    {/* Exposure Chart */}
+                    {/* Exposure Chart*/}
                     <div className="space-y-6">
                         <h2 className="text-xl font-black text-[#111827] flex items-center gap-3">
                             <BarChart className="w-6 h-6 text-indigo-500" /> Exposure by Category
@@ -433,7 +433,7 @@ export function ProjectReport() {
                     </div>
                 </div>
 
-                {/* ─── AI STRATEGIC INTELLIGENCE (New Tabbed Interface) ─── */}
+                {/* ─── AI STRATEGIC INTELLIGENCE (New Tabbed Interface) ───*/}
                 <div className="bg-slate-50/50 rounded-[2rem] md:rounded-[3rem] border border-slate-200/60 p-6 md:p-10 mt-12 transition-all hover:bg-white hover:shadow-xl hover:shadow-indigo-500/5">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 pb-6 border-b border-slate-100">
                         <div className="flex items-center gap-4">
@@ -791,9 +791,9 @@ export function ProjectReport() {
                     </div>
                 </div>
 
-                {/* ─── EXECUTIVE INTERNAL AUDIT ─── */}
+                {/* ─── EXECUTIVE INTERNAL AUDIT ───*/}
                 <div className="bg-[#111827] rounded-[2rem] md:rounded-[3rem] p-8 md:p-12 mt-12 mb-12 text-white flex flex-col md:flex-row justify-between items-center gap-8 shadow-2xl shadow-slate-900/20 print:hidden relative overflow-hidden transition-all hover:bg-black group/audit">
-                    {/* Abstract background glow */}
+                    {/* Abstract background glow*/}
                     <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 blur-[80px] -mr-32 -mt-32 rounded-full" />
                     
                     <div className="relative z-10 space-y-4 text-center md:text-left flex-1">
@@ -822,17 +822,17 @@ export function ProjectReport() {
                     </div>
                 </div>
 
-                {/* ─── TECHNICAL ASSURANCE ─── (Phase 9) — TAC enquiries
-                    flagged for inclusion via the Cost & programme tab's
-                    "Add to PM report" button. Renders nothing when zero
-                    enquiries are added on this project. */}
+                {/* ─── TECHNICAL ASSURANCE ─── — TAC enquiries
+ flagged for inclusion via the Cost & programme tab's
+ "Add to PM report" button. Renders nothing when zero
+ enquiries are added on this project.*/}
                 {activeProjectId ? (
                   <div className="pt-12 print:break-inside-avoid">
                     <ProjectReportTacSection projectId={activeProjectId} />
                   </div>
                 ) : null}
 
-                {/* ─── REPORT SIGN-OFF ─── */}
+                {/* ─── REPORT SIGN-OFF ───*/}
                 <div className="pt-20 border-t-2 border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-8 text-[11px] text-slate-400 uppercase font-black tracking-widest">
                     <div className="flex flex-wrap gap-12">
                         <div className="space-y-4">

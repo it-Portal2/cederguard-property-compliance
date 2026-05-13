@@ -1,6 +1,6 @@
-// Technical Assurance Companion — Phase 6 cost rates seed.
+// Technical Assurance Companion — cost rates seed.
 //
-// Q10=A locked: ~50 hand-seeded UK construction line items, council-editable
+// ~50 hand-seeded UK construction line items, council-editable
 // after seed. Used by the insight prompt as guidance and by the Cost &
 // programme tab UI as a benchmark backdrop. Rates are GBP and reflect
 // rough mid-2026 social-housing refurb / Decent-Homes-style figures —
@@ -11,7 +11,7 @@
 // Storage layout: top-level `costRates/{seed-rateId}` with `clientId: '__shared__'`
 // for the seed library, OR `costRates/{clientId_rateId}` for council overrides.
 // MVP loads the shared library on every read (one batch). When a council adds
-// a custom rate via the admin editor (Phase 6b), it lives under their
+// a custom rate via the admin editor, it lives under their
 // `clientId` and overrides any seed entry with the same rateId.
 
 import type { ApiContext } from "./context.js";
@@ -42,7 +42,7 @@ export interface CostRate {
    *  seed rate, we write a per-tenant row with `hidden: true` instead of
    *  touching the shared seed (which would affect every other tenant).
    *  `loadCostRates` filters these markers + suppresses the matching seed
-   *  for that workspace. */
+   *  for that workspace.*/
   hidden?: boolean;
 }
 

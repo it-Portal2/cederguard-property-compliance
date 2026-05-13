@@ -6,7 +6,7 @@ import type {
   DrawingAnnotationSeverity,
 } from "../../types/technicalAssurance";
 
-// Phase 4b — coordinate-accurate PDF overlay.
+// coordinate-accurate PDF overlay.
 //
 // Renders each PDF page as a <canvas> using pdfjs-dist (lazy-loaded so it
 // doesn't bloat other routes), then layers an absolutely-positioned SVG
@@ -37,14 +37,14 @@ interface PdfPageOverlayViewerProps {
 
 interface RenderedPage {
   pageNumber: number;
-  /** CSS pixel width of the rendered canvas. */
+  /** CSS pixel width of the rendered canvas.*/
   width: number;
-  /** CSS pixel height of the rendered canvas. */
+  /** CSS pixel height of the rendered canvas.*/
   height: number;
 }
 
 /** Picks a render scale that targets ~1400px wide on retina displays —
- *  legible text + reasonable bandwidth. */
+ *  legible text + reasonable bandwidth.*/
 function pickScale(viewportWidth: number, displayWidth: number): number {
   if (!viewportWidth || !displayWidth) return 1.5;
   const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
@@ -218,9 +218,9 @@ export function PdfPageOverlayViewer({
       )}
 
       {/* Page slots — pre-create exactly `numPages` wrappers so the
-          renderer can stamp canvases into them as they arrive. Wrappers
-          stay mounted across re-renders so React's reconciler doesn't blow
-          away DOM children we appended imperatively. */}
+ renderer can stamp canvases into them as they arrive. Wrappers
+ stay mounted across re-renders so React's reconciler doesn't blow
+ away DOM children we appended imperatively.*/}
       {Array.from({ length: numPages ?? 0 }).map((_, idx) => {
         const pageNumber = idx + 1;
         const rendered = pages.find((p) => p.pageNumber === pageNumber);
@@ -247,13 +247,13 @@ export function PdfPageOverlayViewer({
             />
             {rendered && (
               <>
-                {/* Page number badge — bottom-left */}
+                {/* Page number badge — bottom-left*/}
                 <span className="pointer-events-none absolute bottom-1.5 left-1.5 rounded bg-slate-900/70 px-1.5 py-0.5 font-mono text-[10px] font-bold text-white">
                   Page {pageNumber}
                 </span>
 
                 {/* Coordinate-accurate markers — SVG overlay sized to the
-                    canvas, with circles + numeric labels. */}
+ canvas, with circles + numeric labels.*/}
                 {annsWithCoords.length > 0 && (
                   <svg
                     className="pointer-events-none absolute inset-0"
@@ -272,7 +272,7 @@ export function PdfPageOverlayViewer({
                           onClick={() => onAnnotationClick?.(a.id)}
                           className="pointer-events-auto cursor-pointer"
                         >
-                          {/* Outer ring — pulses on active */}
+                          {/* Outer ring — pulses on active*/}
                           <circle
                             cx={x}
                             cy={y}
@@ -283,7 +283,7 @@ export function PdfPageOverlayViewer({
                             )}
                             strokeWidth={isActive ? 0.6 : 0.4}
                           />
-                          {/* Inner badge */}
+                          {/* Inner badge*/}
                           <circle
                             cx={x}
                             cy={y}
@@ -306,8 +306,8 @@ export function PdfPageOverlayViewer({
                 )}
 
                 {/* Annotations the AI couldn't place precisely — render as
-                    a strip along the bottom of the page so they don't
-                    disappear. */}
+ a strip along the bottom of the page so they don't
+ disappear.*/}
                 {annsWithoutCoords.length > 0 && (
                   <div className="absolute inset-x-0 bottom-0 flex flex-wrap gap-1 bg-slate-900/60 p-1.5">
                     {annsWithoutCoords.map((a) => (

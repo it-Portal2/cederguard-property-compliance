@@ -1,4 +1,4 @@
-// Phase 12 — UK business-hours queue helper.
+// UK business-hours queue helper.
 //
 // Locked answer Q8 = c (Round 5):
 //   • Non-urgent chases queue until next Mon–Fri 08:00–18:00 UK window.
@@ -6,7 +6,7 @@
 //
 // We deliberately avoid a timezone library — the requirement is "UK
 // business hours" and the working calendar (`ukBankHolidays.ts`) is
-// already England + Wales.  All math runs in `Europe/London` via the
+// already England + Wales. All math runs in `Europe/London` via the
 // browser/Node Intl APIs.
 
 import { isWorkingDay } from './ukBankHolidays.js';
@@ -15,7 +15,7 @@ export const UK_BUSINESS_OPEN_HOUR = 8; // 08:00 local
 export const UK_BUSINESS_CLOSE_HOUR = 18; // 18:00 local
 
 /**
- * Read the UK-local hour-of-day for a given moment.  Uses
+ * Read the UK-local hour-of-day for a given moment. Uses
  * `Intl.DateTimeFormat` so we respect BST automatically.
  */
 function ukHour(now: Date): number {
@@ -41,8 +41,8 @@ function ukDateString(now: Date): string {
 
 /**
  * `now` is inside business hours when:
- *   - it's a UK working day (not weekend, not bank holiday)
- *   - hour ∈ [08, 18)
+ *   it's a UK working day (not weekend, not bank holiday)
+ *   hour ∈ [08, 18)
  */
 export function isInsideBusinessHours(now: Date = new Date()): boolean {
   const dayIso = ukDateString(now);
@@ -52,12 +52,11 @@ export function isInsideBusinessHours(now: Date = new Date()): boolean {
 }
 
 /**
- * Returns the next moment a non-urgent chase can fire.  If we're
- * already inside business hours, returns `now`.  Otherwise rolls
+ * Returns the next moment a non-urgent chase can fire. If we're
+ * already inside business hours, returns `now`. Otherwise rolls
  * forward to the next working day @ 08:00 UK.
- *
  * NOTE: hour is computed in UTC for the returned ISO; precision to
- * the nearest hour is enough for chase queueing (lesson #74 — soft
+ * the nearest hour is enough for chase queueing ( — soft
  * rule, BST drift acceptable).
  */
 export function nextBusinessHour(now: Date = new Date()): string {

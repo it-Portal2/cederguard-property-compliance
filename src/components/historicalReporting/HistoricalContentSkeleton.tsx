@@ -1,13 +1,13 @@
-// HRC HR-7 polish — generic page-body skeleton shown while a snapshot
+//  polish — generic page-body skeleton shown while a snapshot
 // is loading. Used by chart / dashboard / canvas pages where there's
 // no DynamicTable to take a `loading` prop directly.
 //
-// Three layout presets that approximate the most common HRC-wired
+// Three layout presets that approximate the most common -wired
 // page shapes:
 //   • "stats-grid" — 4 stats tiles + table-ish stack (RiskDashboard,
 //                    ArchivePage, KRITracker, DashboardPage)
-//   • "table"      — toolbar stack + N rows (ComplianceTracker)
-//   • "canvas"     — large blocks (FrameworkPage)
+//   • "table" — toolbar stack + N rows (ComplianceTracker)
+//   • "canvas" — large blocks (FrameworkPage)
 //
 // All three use the same animate-pulse vocabulary as the existing
 // table skeletons so the visual language stays consistent.

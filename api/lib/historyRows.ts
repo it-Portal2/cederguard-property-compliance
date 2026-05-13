@@ -1,4 +1,4 @@
-// HRC field-level history helper.
+//  field-level history helper.
 //
 // Called pre-mutation by every server endpoint that updates one of the
 // in-place collections (risks, complianceItems, issues, kris, FP items,
@@ -125,8 +125,7 @@ export async function appendHistoryRow(
  * the history chain backwards. Returns the most recent newState whose
  * capturedAt is <= the requested timestamp, or the live state if no
  * history exists prior.
- *
- * For now this is a building block — Phase HR-2/3 wires it into the
+ * For now this is a building block — Phase /3 wires it into the
  * `useHistoricalView` server endpoint when the user picks an arbitrary
  * date (not just month-end).
  */

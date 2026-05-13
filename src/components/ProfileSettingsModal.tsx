@@ -17,7 +17,7 @@ export function ProfileSettingsModal({ isOpen, onClose }: ProfileSettingsModalPr
         jobTitle: '',
         contactPhone: '',
         geminiBackupKey: '',
-        // Phase 13 — chase notification opt-out. Default opt-IN
+        // chase notification opt-out. Default opt-IN
         // (true) so existing users keep getting chases.
         chaseEnabled: true,
     });
@@ -63,7 +63,7 @@ export function ProfileSettingsModal({ isOpen, onClose }: ProfileSettingsModalPr
         setIsSaving(true);
         setMessage(null);
         try {
-            // Phase 13 — fold the local `chaseEnabled` toggle back into
+            // fold the local `chaseEnabled` toggle back into
             // the canonical `notificationPreferences.chase` shape that
             // `governanceCron.ts` reads.
             const payload = {
@@ -191,7 +191,7 @@ export function ProfileSettingsModal({ isOpen, onClose }: ProfileSettingsModalPr
                                 </div>
                             </div>
 
-                            {/* Phase 13 — chase notification opt-out */}
+                            {/* Chase notification opt-out */}
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
                                     <BellRing className="w-4 h-4 text-slate-400" />

@@ -35,7 +35,7 @@ export function ComplianceDashboard() {
     const safeProjects = Array.isArray(projects) ? projects : [];
     const safeProgrammes = Array.isArray(programmes) ? programmes : [];
 
-    // HRC HR-5 — historical view hook. When the user picks a past month,
+    //  historical view hook. When the user picks a past month,
     // the page swaps live compliance items for the snapshot's frozen
     // state and bypasses the "setup required" gate.
     const historicalView = useHistoricalView<LegacyArraySnapshot<any>>({
@@ -103,7 +103,7 @@ export function ComplianceDashboard() {
 
     const activeDetails = (activeProjectId ? safeProjects.find(p => p.id === activeProjectId) : safeProgrammes.find(p => p.id === activeProgrammeId)) || {} as any;
 
-    // HRC HR-5 — historical view bypasses the "setup required" gate;
+    //  historical view bypasses the "setup required" gate;
     // we just render whatever was frozen at month-end.
     if (!isHistorical && (!activeDetails || !activeDetails.complianceSetupDone || !complianceAnalysis)) {
         return (
@@ -129,9 +129,9 @@ export function ComplianceDashboard() {
     const milestones = activeProgramme?.milestones || [];
 
     // Use the same store selectors as ComplianceTracker so both pages always agree.
-    // getActiveItems() → status === 'applicable', scoped to activeProjectId / activeProgrammeId
-    // getPendingItems() → status === 'pending', scoped to active context
-    // HRC HR-5 — when historical, derive equivalents from snapshot data
+    // getActiveItems → status === 'applicable', scoped to activeProjectId / activeProgrammeId
+    // getPendingItems → status === 'pending', scoped to active context
+    //  when historical, derive equivalents from snapshot data
     // using the same status filters + activeProject/activeProgramme scope.
     const liveContextCompliance = getActiveItems();
     const livePendingReview = getPendingItems();
@@ -157,8 +157,8 @@ export function ComplianceDashboard() {
     const pendingReview = isHistorical ? historicalPendingReview : livePendingReview;
 
     // Stage values stored by ComplianceTracker:
-    //   Live / Archived  → "complete" for progress purposes
-    //   In Progress      → in-flight
+    //   Live / Archived → "complete" for progress purposes
+    //   In Progress → in-flight
     //   Information Gap / Risk Identified → open / not started
     const isComplete  = (s?: string) => s === 'Live' || s === 'Archived';
     const isOpen      = (s?: string) => s === 'Information Gap' || s === 'Risk Identified';
@@ -194,9 +194,9 @@ export function ComplianceDashboard() {
         <div className="max-w-7xl mx-auto space-y-8 px-4 md:px-0 pb-12 pb-safe">
             <ServiceManagementBar className="mb-4" />
 
-            {/* HRC HR-5 — month picker + historical banner. Placed AFTER
-                ServiceManagementBar so the service status row stays the
-                page's primary header signal. */}
+            {/* month picker + historical banner. Placed AFTER
+ ServiceManagementBar so the service status row stays the
+ page's primary header signal.*/}
             <div className="flex justify-end">
                 <MonthPicker
                     monthEnd={historicalView.monthEnd}
@@ -252,7 +252,7 @@ export function ComplianceDashboard() {
                 </Link>
             </div>
 
-            {/* Programme Milestones Summary */}
+            {/* Programme Milestones Summary*/}
             {activeProgrammeId && milestones.length > 0 && (
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-700 delay-250">
                     <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/30">
@@ -285,7 +285,7 @@ export function ComplianceDashboard() {
                 </div>
             )}
 
-            {/* Enhanced AI Inquiry Visibility */}
+            {/* Enhanced AI Inquiry Visibility*/}
             <div className="bg-linear-to-br from-indigo-600 to-indigo-800 rounded-3xl p-8 text-white shadow-2xl shadow-indigo-200 relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300 group">
                 <div className="absolute right-0 top-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl group-hover:bg-white/20 transition-all duration-1000"></div>
                 <div className="absolute left-0 bottom-0 w-48 h-48 bg-indigo-500/50 rounded-full -ml-24 -mb-24 blur-2xl"></div>
@@ -379,7 +379,7 @@ export function ComplianceDashboard() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {activeDoms.map(dom => (
                         <div key={dom.id} className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:border-indigo-200 hover:shadow-md transition-all group cursor-pointer flex flex-col gap-3" style={{ borderBottomWidth: 3, borderBottomColor: dom.color }}>
-                            {/* Header: abbr + label + percentage */}
+                            {/* Header: abbr + label + percentage*/}
                             <div className="flex justify-between items-start">
                                 <div className="flex items-center gap-2">
                                     <span className="text-[10px] font-black px-2 py-0.5 rounded-md" style={{ backgroundColor: `${dom.color}15`, color: dom.color, border: `1px solid ${dom.color}30` }}>
@@ -390,15 +390,15 @@ export function ComplianceDashboard() {
                                 <span className="font-black text-slate-700 text-sm tracking-tighter">{dom.pct}%</span>
                             </div>
 
-                            {/* Total count */}
+                            {/* Total count*/}
                             <p className="text-[10px] text-slate-400 font-bold -mt-1">{dom.total} total requirement{dom.total !== 1 ? 's' : ''}</p>
 
-                            {/* Progress bar */}
+                            {/* Progress bar*/}
                             <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                                 <div className="h-full transition-all duration-1000 rounded-full" style={{ backgroundColor: dom.color, width: `${dom.pct}%` }} />
                             </div>
 
-                            {/* Status breakdown with counts */}
+                            {/* Status breakdown with counts*/}
                             <div className="grid grid-cols-3 gap-2 text-center">
                                 <div className="bg-emerald-50 rounded-lg py-1.5 px-1">
                                     <p className="text-base font-black text-emerald-700 leading-none">{dom.complete}</p>
@@ -414,7 +414,7 @@ export function ComplianceDashboard() {
                                 </div>
                             </div>
 
-                            {/* High risk warning — clearly labelled */}
+                            {/* High risk warning — clearly labelled*/}
                             {dom.highRisk > 0 && (
                                 <div className="flex items-center gap-1.5 px-2 py-1.5 bg-red-50 border border-red-100 rounded-lg">
                                     <FileWarning className="w-3 h-3 text-red-500 shrink-0" />
@@ -532,7 +532,7 @@ export function ComplianceDashboard() {
             </>}
         </div>
 
-        {/* AI Inquiry Assistant */}
+        {/* AI Inquiry Assistant*/}
         <AIInquiryPopup
             isOpen={isAIInquiryOpen} 
             onClose={() => setIsAIInquiryOpen(false)} 

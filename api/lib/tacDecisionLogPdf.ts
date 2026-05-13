@@ -1,7 +1,7 @@
-// Phase 9 — Decision log PDF renderer.
+// Decision log PDF renderer.
 //
 // Per-project chronological PDF of every Closed enquiry. Same hand-rolled
-// jspdf approach as Phase 7's compliance pack — fixed-layout document with
+// jspdf approach as compliance pack — fixed-layout document with
 // auto-pagination. Suitable for BSA Gateway 2 / 3 submission packs on HRB
 // projects.
 

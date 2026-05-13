@@ -1,21 +1,21 @@
-// HRC server endpoints — month-end snapshot read + cron entry points.
+//  server endpoints — month-end snapshot read + cron entry points.
 //
 // Three actions registered on the dispatcher:
-//   • hrcRunMonthlySnapshot   — cron-triggered (or super-admin manual)
+//   • hrcRunMonthlySnapshot — cron-triggered (or super-admin manual)
 //                                walks every workspace + builds the
 //                                snapshot for the just-ended month.
-//   • hrcRunRetentionPurge    — cron-triggered yearly walk of the
+//   • hrcRunRetentionPurge — cron-triggered yearly walk of the
 //                                monthlySnapshots collection; deletes
 //                                anything past retention.
-//   • hrcReadSnapshot         — client-facing read (signed-in users)
+//   • hrcReadSnapshot — client-facing read (signed-in users)
 //                                returning frozen state for one month.
-//   • hrcListAvailableMonths  — populates the MonthPicker dropdown.
+//   • hrcListAvailableMonths — populates the MonthPicker dropdown.
 //
 // Cron auth follows the exact same pattern as governanceCron.ts:
-//   - When CRON_SECRET env var is set, Vercel cron sends
+//   When CRON_SECRET env var is set, Vercel cron sends
 //     `Authorization: Bearer <CRON_SECRET>`. We compare strict.
-//   - Local dev (no env var) is permissive so devs can trigger by hand.
-//   - Authenticated `super_admin` always allowed (ad-hoc rebuilds).
+//   Local dev (no env var) is permissive so devs can trigger by hand.
+//   Authenticated `super_admin` always allowed (ad-hoc rebuilds).
 
 import type { ApiContext } from "../lib/context.js";
 import {
@@ -252,7 +252,7 @@ async function hrcReadSnapshot(req: any, res: any, ctx: ApiContext) {
  * Client-facing helper for the MonthPicker dropdown. Returns the list
  * of YearMonth strings for which a snapshot exists in the caller's
  * workspace, plus the deployment marker so the UI can distinguish
- * "before HRC launched" from "snapshot missing".
+ * "before launched" from "snapshot missing".
  */
 async function hrcListAvailableMonths(_req: any, res: any, ctx: ApiContext) {
   try {
@@ -317,7 +317,7 @@ async function hrcInspectSnapshot(req: any, res: any, ctx: ApiContext) {
         const sub = await parentRef.collection(collection).count().get();
         counts[collection] = sub.data().count;
       } catch {
-        counts[collection] = -1; // older Firestore SDK without count() — skip
+        counts[collection] = -1; // older Firestore SDK without count — skip
       }
     }
     return res.status(200).json({
@@ -338,8 +338,7 @@ async function hrcInspectSnapshot(req: any, res: any, ctx: ApiContext) {
 }
 
 /**
- * HR-6 — super_admin correction endpoint (Q4=B).
- *
+ * super_admin correction endpoint.
  * Lets a super_admin patch one row inside a snapshot when an honest
  * data entry error needs to be corrected after the cron has frozen
  * it. Every call:
@@ -348,7 +347,6 @@ async function hrcInspectSnapshot(req: any, res: any, ctx: ApiContext) {
  *     sub-collection (before-state + after-state + reason + uid + ts)
  *   • flips the parent doc's `anyCorrected` flag to `true`
  *   • fires an `auditEvents` row of action `historical.snapshot.corrected`
- *
  * Non-super_admin callers are rejected. The snapshot row itself is
  * patched (merge-set) so existing readers continue to work; the
  * historical view will surface a "Corrected" badge based on
@@ -493,10 +491,9 @@ async function hrcCorrectSnapshotRow(req: any, res: any, ctx: ApiContext) {
 }
 
 /**
- * HR-6 — list correction-history entries for one snapshot (or one
+ * list correction-history entries for one snapshot (or one
  * specific row). Used by the CorrectionHistory side panel so the user
  * can see who corrected what, when, and why.
- *
  * Readable by any signed-in caller in the same workspace — corrections
  * are part of the audit trail; FOI / Scrutiny readers must see them.
  */
@@ -540,7 +537,7 @@ async function hrcListCorrections(req: any, res: any, ctx: ApiContext) {
 }
 
 /**
- * Returns the workspace's HRC deployment meta — the "first available
+ * Returns the workspace's deployment meta — the "first available
  * month" + "last snapshot month" + total run count. Powers the UI
  * empty-state messaging.
  */

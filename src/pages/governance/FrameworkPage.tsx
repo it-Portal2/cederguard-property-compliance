@@ -32,10 +32,10 @@ import { HistoricalBanner } from '../../components/historicalReporting/Historica
 // full 4-tier canvas, can toggle to edit mode, open per-body modals, edit
 // thresholds + ToRs, and publish a new framework version.
 export function GovernanceFrameworkPage() {
-  // HRC HR-5 — historical view hook. Framework is multi-source (bodies +
+  //  historical view hook. Framework is multi-source (bodies +
   // thresholds + ToRs) so historical mode here is read-only-safe: we
   // force off edit mode + disable Publish, but the detail surfaces still
-  // read from the live snapshot. Full per-collection swap lands in HR-7.
+  // read from the live snapshot. Full per-collection swap lands in.
   const historicalView = useHistoricalView<{
     kind: 'governanceDoc';
     doc: any;
@@ -201,7 +201,7 @@ export function GovernanceFrameworkPage() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {/* HRC HR-5 — month picker for historical view. */}
+          {/* month picker for historical view.*/}
           <MonthPicker
             monthEnd={historicalView.monthEnd}
             availableMonths={historicalView.availableMonths}

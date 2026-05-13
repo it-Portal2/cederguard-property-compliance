@@ -1,4 +1,4 @@
-// Phase 8 — Recent enquiries panel. Mirrors the HTML prototype's "Recent
+// Recent enquiries panel. Mirrors the HTML prototype's "Recent
 // prompts" surface. Renders the N most-recently-touched enquiries owned by
 // the signed-in PM, with a click-through to open the workspace.
 //
@@ -14,7 +14,7 @@ import type { Enquiry } from "../../types/technicalAssurance";
 
 interface RecentEnquiriesPanelProps {
   enquiries: Enquiry[];
-  /** Defaults to 6. */
+  /** Defaults to 6.*/
   limit?: number;
 }
 

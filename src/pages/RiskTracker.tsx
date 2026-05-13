@@ -1,5 +1,5 @@
 import { useStore, RiskItem } from '../store/useStore';
-import { KRI_LIST, PROJECTS, KRI_OWNERS, KRI_METADATA } from '../data/riskData';
+import { KRI_LIST, KRI_OWNERS, KRI_METADATA } from '../data/riskData';
 import { clsx } from 'clsx';
 import { differenceInDays, subMonths, format } from 'date-fns';
 import { Info, BarChart as BarChartIcon, PieChart as PieChartIcon, Shield, TrendingUp, HelpCircle, ScanSearch, LayoutTemplate } from 'lucide-react';
@@ -25,7 +25,9 @@ const STATUS_COLORS: Record<string, string> = {
 
 export function RiskTracker() {
   const risks = useStore((state) => state.risks);
+  const projects = useStore((state) => state.projects);
   const safeRisks = Array.isArray(risks) ? risks : [];
+  const totalProjects = Array.isArray(projects) ? projects.length : 0;
 
   // --- KRI Data Prep ---
   const kriData = KRI_LIST.map(kri => {
@@ -44,9 +46,9 @@ export function RiskTracker() {
     const avgC = total ? kr.reduce((s, r) => s + r.residualRating, 0) / total : 0;
     const rPct = avgG > 0 ? Math.round((1 - avgC / avgG) * 100) : 0;
 
-    // Project percentage: projects with at least one risk in this KRI / total projects
+    // % of workspace projects that carry at least one risk in this KRI.
     const projectsWithRisks = new Set(kr.map(r => r.project).filter(Boolean)).size;
-    const projectPct = PROJECTS.length ? Math.round((projectsWithRisks / PROJECTS.length) * 100) : 0;
+    const projectPct = totalProjects ? Math.round((projectsWithRisks / totalProjects) * 100) : 0;
 
     // Status Logic based on KRI Metadata (Excel Audit)
     let status = "green";

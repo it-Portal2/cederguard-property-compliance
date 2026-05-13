@@ -9,9 +9,9 @@ import type {
   DrawingTabContent,
 } from "../../types/technicalAssurance";
 
-// Phase 4 — "Send to architect" modal. Q16 = D locks no SMTP infra in v1,
+// "Send to architect" modal. locks no SMTP infra in v1,
 // so the user gets a pre-filled email body they can copy + a `mailto:` link
-// that opens their default mail client. The marked-up PDF (Phase 4b) will
+// that opens their default mail client. The marked-up PDF will
 // be attached client-side; for now the email references the source drawing
 // and the AI-derived annotation list verbatim.
 
@@ -135,7 +135,7 @@ export function SendToArchitectModal({
           transition={{ type: "spring", stiffness: 220, damping: 25 }}
           className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white shadow-2xl"
         >
-          {/* Header */}
+          {/* Header*/}
           <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-6 py-4 backdrop-blur">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
@@ -163,7 +163,7 @@ export function SendToArchitectModal({
             </button>
           </div>
 
-          {/* Body */}
+          {/* Body*/}
           <div className="space-y-4 px-6 py-5">
             <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-800">
               <strong>No mail server configured in v1.</strong> Copy the
@@ -265,7 +265,7 @@ export function SendToArchitectModal({
           </div>
 
           {/* Footer — stacks on small widths so the action buttons never
-              squeeze the helper text or wrap mid-label. */}
+ squeeze the helper text or wrap mid-label.*/}
           <div className="sticky bottom-0 z-10 flex flex-col gap-3 border-t border-slate-200 bg-white/95 px-6 py-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
             <p className="hidden text-[11px] leading-snug text-slate-400 sm:block sm:max-w-[55%]">
               Edits stay on this device — the message is not stored on

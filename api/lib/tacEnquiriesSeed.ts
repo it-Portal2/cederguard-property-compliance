@@ -3,13 +3,13 @@
 // Two sample enquiries span the visible status pills (Draft + Open) so the
 // table chrome, StatsCards, RIBA pills, and attachment count column are all
 // visible immediately on a fresh workspace. Seed runs on first list-call —
-// same pattern as Phase 8a meetings + Phase 5a forward plan + Phase 6a
+// same pattern as meetings + forward plan +
 // reports.
 //
 // ALL data is stub / illustrative — the URL fields point to `about:blank`
 // because no real binaries exist in storage. The `avScanStatus` values are
 // varied to show the chip pills (clean / pending) on the workspace UI when
-// it lands in Phase 3-7.
+// it lands in 7.
 
 import type { ApiContext } from "./context.js";
 import type {
@@ -82,7 +82,7 @@ export async function seedTacEnquiriesIfMissing(
 ): Promise<void> {
   try {
     // Probe — if any enquiry exists for this client, skip seeding entirely.
-    // Cheaper than a transactional "exists?" check (lesson #22).
+    // Cheaper than a transactional "exists?" check.
     const probe = await ctx.db
       .collection("enquiries")
       .where("clientId", "==", ctx.primaryUid)

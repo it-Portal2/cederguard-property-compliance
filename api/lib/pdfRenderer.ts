@@ -4,14 +4,14 @@
 // Placeholders ({{council.logo}}, signature image URLs) are resolved at
 // render time using the resolver passed in by the route handler.
 //
-// Phase 1 prints with Helvetica (metric-equivalent to Arial — Arial was
+//  prints with Helvetica (metric-equivalent to Arial — Arial was
 // originally Microsoft's clone of Helvetica). Full Arial embed lands later
 // once the licensed TTF is provisioned.
 
 import { jsPDF } from 'jspdf';
 import { registerCedarFonts } from './pdfFonts.js';
 
-// --- Types matching the Tiptap node shapes from src/components/governance/extensions ----
+// Types matching the Tiptap node shapes from src/components/governance/extensions ----
 
 interface PMTextMark {
   type: string;
@@ -28,11 +28,11 @@ interface PMNode {
 
 export interface PDFRenderOptions {
   doc: PMNode;
-  /** Resolved at render time. URL must be data URI or accessible PNG. */
+  /** Resolved at render time. URL must be data URI or accessible PNG.*/
   councilLogoDataUri?: string | null;
-  /** Resolved Part A / Part B signatures keyed by part. */
+  /** Resolved Part A / Part B signatures keyed by part.*/
   signatureDataUris?: Partial<Record<'A' | 'B', string>>;
-  /** Used for the audit trail footer. */
+  /** Used for the audit trail footer.*/
   meta?: {
     leadOfficer?: string;
     reportAuthor?: string;
@@ -42,13 +42,13 @@ export interface PDFRenderOptions {
     consultation?: string;
   };
   /** Optional diagonal watermark — e.g. "DRAFT" / "APPROVED" / "SEALED".
-   *  Stamped on every page after the walker finishes. */
+   *  Stamped on every page after the walker finishes.*/
   watermarkText?: string | null;
-  /** Watermark colour as RGB tuple. Defaults to slate-300-ish. */
+  /** Watermark colour as RGB tuple. Defaults to slate-300-ish.*/
   watermarkColor?: [number, number, number];
 }
 
-// --- Layout constants -----------------------------------------------------
+// Layout constants -----------------------------------------------------
 
 const PAGE_MARGIN_X = 56; // ~20mm at 72dpi
 const PAGE_MARGIN_TOP = 56;
@@ -59,7 +59,7 @@ const LINE_HEIGHT_RATIO = 1.35;
 // licensed-clean Arial-equivalent — Apache 2.0); otherwise falls back
 // to `'helvetica'` (jspdf built-in, Arial-metric-equivalent).
 
-// --- Public entry point ---------------------------------------------------
+// Public entry point ---------------------------------------------------
 
 export function renderReportPdf(options: PDFRenderOptions): Buffer {
   const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
@@ -126,7 +126,7 @@ export function renderReportPdf(options: PDFRenderOptions): Buffer {
   return Buffer.from(arrayBuffer as ArrayBuffer);
 }
 
-// --- Walker ---------------------------------------------------------------
+// Walker ---------------------------------------------------------------
 
 interface RenderContext {
   pdf: jsPDF;
@@ -136,7 +136,7 @@ interface RenderContext {
   contentWidth: number;
   options: PDFRenderOptions;
   paragraphCounter: number;
-  /** Resolved per-instance: 'Arimo' when TTFs present; else 'helvetica'. */
+  /** Resolved per-instance: 'Arimo' when TTFs present; else 'helvetica'.*/
   fontFamily: string;
 }
 
@@ -191,7 +191,7 @@ function walkNode(node: PMNode, ctx: RenderContext) {
   }
 }
 
-// --- Block renderers ------------------------------------------------------
+// Block renderers ------------------------------------------------------
 
 function renderParagraph(node: PMNode, ctx: RenderContext) {
   if (!node.content || node.content.length === 0) {
@@ -473,7 +473,7 @@ function renderAttachment(node: PMNode, ctx: RenderContext) {
   ctx.cursorY += 4;
 }
 
-// --- Inline + text helpers ------------------------------------------------
+// Inline + text helpers ------------------------------------------------
 
 function inlineToText(nodes: PMNode[]): string {
   let out = '';

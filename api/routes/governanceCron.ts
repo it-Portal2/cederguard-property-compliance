@@ -1,13 +1,13 @@
-// Phase 12 — Chase engine cron endpoint.
+// Chase engine cron endpoint.
 //
 // Two callers:
-//   • Vercel cron, hourly (`/api?action=runChaseEngine`).  Runs across
-//     every workspace.  In the v1 scope, "every workspace" = the set
+//   • Vercel cron, hourly (`/api?action=runChaseEngine`). Runs across
+//     every workspace. In the v1 scope, "every workspace" = the set
 //     of distinct `clientId` values that have governance docs in
-//     Firestore.  No private auth is required because Vercel cron
+//     Firestore. No private auth is required because Vercel cron
 //     only triggers from within the deployment + the handler is
 //     idempotent.
-//   • Manual nudge (`/api?action=governanceNudgeItem`).  PgM clicks
+//   • Manual nudge (`/api?action=governanceNudgeItem`). PgM clicks
 //     "Nudge" on a Dashboard inbox row → handler fires a one-off
 //     chase regardless of the cron's queue.
 //
@@ -15,7 +15,7 @@
 // chase on the same item is suppressed if one fired in the last 12h.
 //
 // Notification dispatch in v1 = FCM push (already wired) + a
-// `chaseEvents` Firestore log row.  Real SMTP / Exchange wiring is
+// `chaseEvents` Firestore log row. Real SMTP / Exchange wiring is
 // Q9 ops track — the engine emits events, the channel layer ships
 // them.
 
@@ -49,8 +49,8 @@ async function recentDuplicate(
 interface DispatchTarget {
   uid: string;
   fcmToken: string | null;
-  /** Phase 13 — when false, the user has opted out of chase notifications.
-   *  We still log the chase to `chaseEvents` (audit) but skip dispatch. */
+  /** when false, the user has opted out of chase notifications.
+   *  We still log the chase to `chaseEvents` (audit) but skip dispatch.*/
   chaseEnabled: boolean;
 }
 
@@ -92,7 +92,7 @@ async function resolveRecipients(
     }
   }
   if (wantPgm) {
-    // PgM = the workspace owner (clientId === primaryUid).  Future
+    // PgM = the workspace owner (clientId === primaryUid). Future
     // multi-PgM workspaces can swap this for `governanceListWorkspaceMembers`
     // filtered by role.
     try {
@@ -117,7 +117,7 @@ async function dispatchPush(
   target: DispatchTarget,
   ev: ChaseEvent,
 ): Promise<{ messageId: string | null; error: string | null }> {
-  // Phase 13 — respect opt-out. The chase event still lands in the
+  // respect opt-out. The chase event still lands in the
   // audit log so we can prove we never harassed a muted user.
   if (!target.chaseEnabled) {
     return { messageId: null, error: 'Recipient opted out of chase notifications' };
@@ -287,7 +287,7 @@ async function processWorkspace(
   return result;
 }
 
-// Phase 13 — TTL purge for the chase audit log. Anything older than
+// TTL purge for the chase audit log. Anything older than
 // `maxAgeDays` is deleted, capped at `maxDeletes` per tick so we
 // don't blow the Firestore 500-op batch limit. Returns the actual
 // delete count.
@@ -313,8 +313,8 @@ async function purgeOldChaseEvents(
 
 // ── Endpoints ───────────────────────────────────────────────────────────
 
-// Phase 13 — Vercel cron sends `Authorization: Bearer <CRON_SECRET>`
-// when `CRON_SECRET` is set.  When the env var is missing (local dev),
+// Vercel cron sends `Authorization: Bearer <CRON_SECRET>`
+// when `CRON_SECRET` is set. When the env var is missing (local dev),
 // we keep the handler permissive so devs can still hit the endpoint.
 //
 // Hardening rule: if a `CRON_SECRET` is configured AND the caller is
@@ -341,15 +341,15 @@ async function runChaseEngine(req: any, res: any, ctx: ApiContext) {
         code: 'CRON_FORBIDDEN',
       });
     }
-    // V1 scope: process the caller's own workspace.  When invoked via
+    // V1 scope: process the caller's own workspace. When invoked via
     // Vercel cron we run as the platform admin account; the handler
-    // walks every workspace.  For the developer-triggered case, this
+    // walks every workspace. For the developer-triggered case, this
     // limit keeps the response tight.
     const isPlatformAdmin = !!ctx.isAdmin;
     const workspaceIds: string[] = [];
     if (isPlatformAdmin) {
       // Discover workspaces by enumerating distinct clientIds with
-      // any governance entity.  Cheap proxy: the `users` collection
+      // any governance entity. Cheap proxy: the `users` collection
       // already has one doc per workspace owner.
       try {
         const snap = await ctx.db.collection('users').limit(500).get();
@@ -372,10 +372,10 @@ async function runChaseEngine(req: any, res: any, ctx: ApiContext) {
       results.push(r);
     }
 
-    // Phase 13 — opportunistic 90-day TTL purge so the audit log
-    // doesn't grow unbounded.  Only the platform-admin cron path
+    // opportunistic 90-day TTL purge so the audit log
+    // doesn't grow unbounded. Only the platform-admin cron path
     // runs this (single-workspace ad-hoc nudges keep the log
-    // intact).  Limit per tick = 200 deletes so we never blow the
+    // intact). Limit per tick = 200 deletes so we never blow the
     // 500-op batch ceiling.
     let purgedChaseEvents = 0;
     if (isPlatformAdmin) {

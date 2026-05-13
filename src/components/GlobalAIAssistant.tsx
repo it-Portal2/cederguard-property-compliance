@@ -17,7 +17,7 @@ const SKIP_PATHS = new Set<string>([
   '/regulations',
   '/risk/programme-register',
   '/risk/dashboard',
-  // Locked skips (Anthony 2026-05-02)
+  // Locked skips
   '/governance/editor-sandbox',
   // Automated Intelligence pages — these surfaces are themselves AI-powered
   // workflows; a separate AI button would be redundant and confusing.

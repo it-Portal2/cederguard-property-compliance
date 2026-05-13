@@ -1,4 +1,4 @@
-// Phase 13 — Arial / Arial-equivalent font registration.
+// Arial / Arial-equivalent font registration.
 //
 // jspdf ships with Helvetica (Arial-equivalent metrics — Arial was
 // originally a Microsoft clone of Helvetica). For the §16 lock we
@@ -43,10 +43,9 @@ let registrationStatus: 'unattempted' | 'success' | 'unavailable' = 'unattempted
 
 /**
  * Registers the Arial-equivalent (Arimo) TTFs on a fresh `jsPDF`
- * instance.  Returns the actual font family the caller should use:
- *   - `Arimo`     when TTFs are present (preferred)
- *   - `helvetica` fallback (always works; jspdf built-in)
- *
+ * instance. Returns the actual font family the caller should use:
+ *   `Arimo` when TTFs are present (preferred)
+ *   `helvetica` fallback (always works; jspdf built-in)
  * Safe to call on every render — the TTF read happens at most once
  * per process.
  */

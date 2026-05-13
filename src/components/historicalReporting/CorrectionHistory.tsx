@@ -1,9 +1,9 @@
-// HRC HR-6 — side panel listing every correction made against a
+//  side panel listing every correction made against a
 // snapshot month.
 //
 // Mounts as a slide-in drawer, fetched on open via
 // `api.hrcListCorrections({ yearMonth })`. Read-only — corrections
-// themselves are immutable (Q4=B locks audit-trail integrity).
+// themselves are immutable (locks audit-trail integrity).
 //
 // FOI / Scrutiny readers get full visibility: who corrected what,
 // when, why, with before/after snapshots inline.
@@ -21,9 +21,9 @@ interface CorrectionHistoryProps {
   onClose: () => void;
   /** Optional row scope — if set, only corrections for this specific
    *  (collection, docId) are listed. Default: all corrections for the
-   *  month. */
+   *  month.*/
   scope?: { collection?: string; docId?: string };
-  /** Bumped to force a refetch (e.g. after a new correction lands). */
+  /** Bumped to force a refetch (e.g. after a new correction lands).*/
   refreshTick?: number;
 }
 

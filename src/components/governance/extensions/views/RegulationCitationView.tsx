@@ -4,7 +4,7 @@ import { Pencil } from 'lucide-react';
 import { textInputCls } from './nodeViewUi';
 
 // Inline regulation citation pill. Click to open a tiny popover with inputs
-// for the regulation code, full title, and external URL. Phase 6 will swap
+// for the regulation code, full title, and external URL. will swap
 // the manual inputs for a regulation-library picker — the render here
 // doesn't change when that happens.
 

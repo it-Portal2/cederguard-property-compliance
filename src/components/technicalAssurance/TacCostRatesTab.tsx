@@ -1,4 +1,4 @@
-// Phase 6b — TAC custom cost rates tab on WorkspaceSettings.
+// TAC custom cost rates tab on WorkspaceSettings.
 //
 // ClientAdmin / SuperAdmin add custom rates that shadow the seed library.
 // The merged list (shared seed + own custom) is rendered with a Source

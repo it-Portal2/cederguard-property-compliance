@@ -1,8 +1,8 @@
-// Phase 10 — Archive & Audit.
+// Archive & Audit.
 //
 // Aggregates Sealed reports + Held meetings + Published project docs
-// across the workspace.  Read-only surface — every state change has
-// already happened upstream.  Click a row → audit trail drawer.
+// across the workspace. Read-only surface — every state change has
+// already happened upstream. Click a row → audit trail drawer.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -59,7 +59,7 @@ function formatGbDate(iso: string | null | undefined): string {
 export function GovernanceArchivePage() {
   const navigate = useNavigate();
 
-  // HRC HR-7 — historical view hook is wired even though Archive is
+  //  historical view hook is wired even though Archive is
   // an aggregator: the server endpoint accepts `asOfMonth` and
   // re-runs the query against snapshot collections. We don't read
   // entries directly here — we only need the picker state +
@@ -75,7 +75,7 @@ export function GovernanceArchivePage() {
   const [trailItem, setTrailItem] = useState<ArchiveItem | null>(null);
   const [exporting, setExporting] = useState(false);
 
-  // Phase 13 — cross-surface navigation. Click an archive row → open
+  // cross-surface navigation. Click an archive row → open
   // the entity in its native surface so PgMs / FOI readers can drill
   // straight to the source instead of bouncing back to the lists.
   const navigateToEntity = useCallback(
@@ -308,8 +308,8 @@ export function GovernanceArchivePage() {
           </div>
         </div>
         <div className="inline-flex shrink-0 items-center gap-2 self-start">
-          {/* HRC HR-7 — month picker drives `asOfMonth` on the
-              aggregator endpoint. */}
+          {/* month picker drives `asOfMonth` on the
+ aggregator endpoint.*/}
           <MonthPicker
             monthEnd={historicalView.monthEnd}
             availableMonths={historicalView.availableMonths}

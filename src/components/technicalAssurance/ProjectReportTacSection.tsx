@@ -1,4 +1,4 @@
-// Phase 9 — Technical Assurance section for ProjectReport.
+// Technical Assurance section for ProjectReport.
 //
 // Reads enquiries flagged `addedToProjectReport === true` for the given
 // projectId via the dedicated server endpoint and renders a self-contained

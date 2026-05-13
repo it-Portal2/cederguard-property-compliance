@@ -1,4 +1,4 @@
-// Phase 7 — Compliance pack PDF renderer.
+// Compliance pack PDF renderer.
 //
 // Hand-rolls a structured A4 PDF with jspdf (already in stack — same dep
 // `pdfRenderer.ts` uses for the report renderer). NOT a Tiptap walker —

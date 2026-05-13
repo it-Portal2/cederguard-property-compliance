@@ -122,7 +122,7 @@ export function RiskIssues() {
   const userIsSuperAdmin = isSuperAdmin(user?.email, userRole);
   const isPM = !isAtLeastClientAdmin(userRole) && !userIsSuperAdmin;
 
-  // HRC HR-8 — historical view hook. When the user picks a past month,
+  //  historical view hook. When the user picks a past month,
   // the page swaps live `issues` for the snapshot's frozen state and
   // disables every edit affordance (add / edit / delete / bulk delete).
   const historicalView = useHistoricalView<LegacyArraySnapshot<IssueItem>>({
@@ -510,7 +510,7 @@ export function RiskIssues() {
     <>
       <ServiceManagementBar />
       <div className="max-w-[98%] mx-auto space-y-6 sm:space-y-8 p-2 sm:p-4 lg:p-6">
-        {/* Page Header */}
+        {/* Page Header*/}
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             {fromInitiation && (
@@ -527,7 +527,7 @@ export function RiskIssues() {
             <p className="text-sm text-slate-500 mt-0.5">{contextLabel}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {/* HRC HR-8 — month picker for historical view. */}
+            {/* month picker for historical view.*/}
             <MonthPicker
               monthEnd={historicalView.monthEnd}
               availableMonths={historicalView.availableMonths}
@@ -549,8 +549,8 @@ export function RiskIssues() {
           </div>
         </div>
 
-        {/* HRC HR-8 — read-only banner appears when MonthPicker is set
-            to a past month. */}
+        {/* read-only banner appears when MonthPicker is set
+ to a past month.*/}
         {isHistorical && historicalView.monthEnd && (
           <HistoricalBanner
             monthEnd={historicalView.monthEnd}
@@ -563,7 +563,7 @@ export function RiskIssues() {
           />
         )}
 
-        {/* Summary Tiles */}
+        {/* Summary Tiles*/}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <StatsCard
             title="Total"
@@ -606,7 +606,7 @@ export function RiskIssues() {
           />
         </div>
 
-        {/* AI Advisory Panel — unchanged */}
+        {/* AI Advisory Panel — unchanged*/}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="md:col-span-2 bg-indigo-900 rounded-xl p-5 text-white shadow-xl relative overflow-hidden">
             <div className="relative z-10">
@@ -681,7 +681,7 @@ export function RiskIssues() {
           </div>
         </div>
 
-        {/* DynamicTable */}
+        {/* DynamicTable*/}
         <DynamicTable<IssueItem>
           data={contextScoped}
           columns={columns}
@@ -705,7 +705,7 @@ export function RiskIssues() {
           stickyHeader
         />
 
-        {/* IssueModal — unchanged */}
+        {/* IssueModal — unchanged*/}
         <IssueModal
           isOpen={isModalOpen}
           onClose={() => {

@@ -1,4 +1,4 @@
-// Phase 12 — AI Draft modal.
+// AI Draft modal.
 //
 // Click "Draft with AI" → opens this modal.
 //   1. Context preview (top, read-only) shows what the AI will see —
@@ -219,7 +219,7 @@ export function AIDraftModal({
           transition={{ duration: 0.15 }}
           className="relative flex max-h-[min(92vh,800px)] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-slate-200"
         >
-          {/* Header */}
+          {/* Header*/}
           <header className="flex items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700">
@@ -245,9 +245,9 @@ export function AIDraftModal({
             </button>
           </header>
 
-          {/* Body */}
+          {/* Body*/}
           <div className="flex-1 overflow-y-auto px-5 py-4">
-            {/* Context preview */}
+            {/* Context preview*/}
             <section className="space-y-1.5">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                 Context the AI will see
@@ -277,7 +277,7 @@ export function AIDraftModal({
               </div>
             </section>
 
-            {/* User instruction */}
+            {/* User instruction*/}
             <section className="mt-4 space-y-1.5">
               <label
                 htmlFor="ai-instruction"
@@ -319,7 +319,7 @@ export function AIDraftModal({
               </p>
             </section>
 
-            {/* Result preview */}
+            {/* Result preview*/}
             {result && (
               <section className="mt-4 space-y-1.5">
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-indigo-600">
@@ -335,7 +335,7 @@ export function AIDraftModal({
             )}
           </div>
 
-          {/* Footer */}
+          {/* Footer*/}
           <footer className="flex items-center justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3">
             <button
               type="button"

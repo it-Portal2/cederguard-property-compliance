@@ -174,7 +174,7 @@ export function RiskDashboard() {
   const [isAIInquiryOpen, setIsAIInquiryOpen] = useState(false);
   const generatingRef = useRef(false);
 
-  // HRC HR-5 — historical view hook. When the user picks a past month
+  //  historical view hook. When the user picks a past month
   // via the MonthPicker, the page swaps `safeRisks` for the snapshot's
   // frozen state and disables every action affordance.
   const historicalView = useHistoricalView<LegacyArraySnapshot<RiskItem>>({
@@ -234,7 +234,7 @@ export function RiskDashboard() {
   });
 
   const handleGenerateStrategicInsights = async () => {
-    // HRC HR-5 — block AI generation while viewing a frozen snapshot.
+    //  block AI generation while viewing a frozen snapshot.
     if (isHistorical) {
       toast.error('Switch to live data to generate fresh strategic insights.');
       return;
@@ -413,7 +413,7 @@ export function RiskDashboard() {
 
   return (
     <>
-    {/* Bug 10 fix: full-screen overlay during strategic outlook generation */}
+    {/* Bug 10 fix: full-screen overlay during strategic outlook generation*/}
     {generatingAI && (
       <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex flex-col items-center justify-center gap-6">
         <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-500 rounded-full animate-spin shadow-xl" />
@@ -426,9 +426,9 @@ export function RiskDashboard() {
     <div className="max-w-7xl mx-auto space-y-5 px-4 md:px-0 pb-12 pb-safe">
       <ServiceManagementBar className="mb-4" />
 
-      {/* HRC HR-5 — month picker for historical view. Placed AFTER
-          ServiceManagementBar so the service status row stays the
-          page's primary header signal. */}
+      {/* month picker for historical view. Placed AFTER
+ ServiceManagementBar so the service status row stays the
+ page's primary header signal.*/}
       <div className="flex justify-end">
         <MonthPicker
           monthEnd={historicalView.monthEnd}
@@ -490,7 +490,7 @@ export function RiskDashboard() {
         badgeText="Neural Analysis"
       />
 
-      {/* Strategic Insights Results */}
+      {/* Strategic Insights Results*/}
       {strategicInsights && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <StrategicInsightCard title="Portfolio Health" icon={ShieldCheck}>
@@ -571,7 +571,7 @@ export function RiskDashboard() {
         </div>
       )}
 
-      {/* KPI Strip */}
+      {/* KPI Strip*/}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
         {[
           { label: 'TOTAL RISKS', value: totalRisks, color: 'text-blue-600', border: 'border-t-blue-600' },
@@ -588,9 +588,9 @@ export function RiskDashboard() {
         ))}
       </div>
 
-      {/* Row 1: Residual Risk Summary | Register Status | Appetite Alignment */}
+      {/* Row 1: Residual Risk Summary | Register Status | Appetite Alignment*/}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
-        {/* Residual Risk Summary */}
+        {/* Residual Risk Summary*/}
         <DashCard>
           <SectionTitle>Residual Risk Summary</SectionTitle>
           <div className="p-3">
@@ -612,7 +612,7 @@ export function RiskDashboard() {
           </div>
         </DashCard>
 
-        {/* Risk Register Status Updates */}
+        {/* Risk Register Status Updates*/}
         <DashCard>
           <SectionTitle>Risk Register Status Updates</SectionTitle>
           <div className="p-3">
@@ -638,7 +638,7 @@ export function RiskDashboard() {
           </div>
         </DashCard>
 
-        {/* Risk Appetite Alignment */}
+        {/* Risk Appetite Alignment*/}
         <DashCard>
           <SectionTitle>Risk Appetite Alignment</SectionTitle>
           <div className="p-3">
@@ -679,9 +679,9 @@ export function RiskDashboard() {
         </DashCard>
       </div>
 
-      {/* Row 2: Issue Status | Open Risks by Age */}
+      {/* Row 2: Issue Status | Open Risks by Age*/}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
-        {/* Issue Status Updates */}
+        {/* Issue Status Updates*/}
         <DashCard>
           <SectionTitle>Issue Status Updates</SectionTitle>
           <div className="p-3">
@@ -707,7 +707,7 @@ export function RiskDashboard() {
           </div>
         </DashCard>
 
-        {/* Open Risks by Age Bucket */}
+        {/* Open Risks by Age Bucket*/}
         <DashCard>
           <SectionTitle>Open Risks by Age Bucket</SectionTitle>
           <div className="p-3 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -745,9 +745,9 @@ export function RiskDashboard() {
         </DashCard>
       </div>
 
-      {/* Row 3: Programme Health | Risk Category Performance */}
+      {/* Row 3: Programme Health | Risk Category Performance*/}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-[400ms]">
-        {/* Overall {isPM || activeProjectId ? 'Project' : 'Programme'} Health Summary */}
+        {/* Overall {isPM || activeProjectId ? 'Project': 'Programme'} Health Summary*/}
         <DashCard>
           <SectionTitle>Overall {isPM || activeProjectId ? 'Project' : 'Programme'} Health Summary</SectionTitle>
           <div className="p-3">
@@ -771,7 +771,7 @@ export function RiskDashboard() {
           </div>
         </DashCard>
 
-        {/* Risk Category Performance */}
+        {/* Risk Category Performance*/}
         <DashCard>
           <SectionTitle>Risk Category Performance</SectionTitle>
           <div className="p-3">
@@ -819,7 +819,7 @@ export function RiskDashboard() {
         </DashCard>
       </div>
 
-      {/* Row 4: ALE per workstream — full width */}
+      {/* Row 4: ALE per workstream — full width*/}
       <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-[500ms]">
         <DashCard>
         <div className="p-6">
@@ -862,7 +862,7 @@ export function RiskDashboard() {
           <div className="p-3">
             {filteredRisks.filter(r => (r.residualRating || 0) >= 12).length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {/* Bug 9 fix: filter to ≥12 before sorting — prevents non-critical risks appearing here */}
+                {/* Bug 9 fix: filter to ≥12 before sorting — prevents non-critical risks appearing here*/}
                 {filteredRisks.filter(r => (r.residualRating || 0) >= 12).sort((a, b) => (b.residualRating || 0) - (a.residualRating || 0)).slice(0, 6).map(r => (
                   <div key={r.id} className="border border-slate-200 rounded-lg p-3 hover:shadow-md transition-all bg-slate-50 hover:bg-white">
                     <div className="flex justify-between items-start mb-1.5">

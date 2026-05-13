@@ -7,7 +7,7 @@
 //     suitable for appending to the Council Constitution.
 //
 // Both render with Helvetica (metric-equivalent to Arial — full Arial TTF
-// embed is still deferred to the Phase 13 polish pass).
+// embed is still deferred to the polish pass).
 
 import { jsPDF } from 'jspdf';
 

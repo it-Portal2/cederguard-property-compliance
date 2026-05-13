@@ -23,7 +23,7 @@ import { AIInquiryPopup } from "../components/AIInquiryPopup";
 import { AnalysisSummary } from "../components/compliance/AnalysisSummary";
 import { determineProjectCategory } from "../utils/complianceCategorization";
 
-// ─── Checkbox pill component 
+// ─── Checkbox pill component
 function CheckPill({
   val,
   label,
@@ -78,7 +78,7 @@ function PhaseHeader({ num, title }: { num: number; title: string }) {
   );
 }
 
-// ─── Form field wrappers 
+// ─── Form field wrappers
 const inputCls =
   "w-full border border-slate-200 rounded-2xl px-6 py-4 text-sm font-medium focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white/80 backdrop-blur-sm placeholder:text-slate-400 shadow-sm hover:border-slate-300";
 const labelCls =
@@ -111,7 +111,7 @@ function Field({
   );
 }
 
-// ─── Main component 
+// ─── Main component
 export function ComplianceSetup() {
   const {
     activeProjectId,
@@ -1048,7 +1048,7 @@ export function ComplianceSetup() {
       setSubPhase("review");
       toast.success("Compliance profile generated successfully!");
     } catch (err: any) {
-      // aiService.ts already called handleAIError() which shows a toast.
+      // aiService.ts already called handleAIError which shows a toast.
       // Only set the inline error state here to avoid double-toasting.
       const friendlyMessage =
         err?.message?.includes("429") || err?.message?.includes("RESOURCE_EXHAUSTED")
@@ -1311,7 +1311,7 @@ export function ComplianceSetup() {
             </div>
           </div>
         )}
-        {/* Restart Confirmation Dialog */}
+        {/* Restart Confirmation Dialog*/}
         {showRestartConfirm && (
           <div className="fixed inset-0 z-110 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-md w-full overflow-hidden animate-in zoom-in duration-300">
@@ -1362,7 +1362,7 @@ export function ComplianceSetup() {
             </div>
           </div>
         )}
-        {/* Existing Analysis Overlay */}
+        {/* Existing Analysis Overlay*/}
         {showAnalysisExists && (
           <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md">
             <div className="bg-white rounded-3xl sm:rounded-[40px] shadow-2xl border border-slate-100 max-w-2xl w-full overflow-hidden animate-in fade-in zoom-in duration-500">
@@ -1464,7 +1464,7 @@ export function ComplianceSetup() {
             </div>
           )}
 
-          {/* ─── Premium Breadcrumb Nav ─── */}
+          {/* ─── Premium Breadcrumb Nav ───*/}
           <div className="flex items-center justify-between bg-white/60 backdrop-blur-md p-2 sm:p-3 rounded-4xl sm:rounded-4xl border border-slate-200/50 shadow-sm mb-4 overflow-x-auto scrollbar-hide">
             <div className="flex items-center gap-1 sm:gap-2 shrink-0 min-w-max px-1">
               {[
@@ -1482,12 +1482,12 @@ export function ComplianceSetup() {
                     <button
                       disabled={isLocked && !isPast && !isActive}
                       onClick={() => {
-                        // Prevent jumping to Strategic Review (Phase 3) without AI results
+                        // Prevent jumping to Strategic Review without AI results
                         if (s.p === 3 && !lastAnalysisResults) {
                           toast.error("Run AI Analysis first to access Strategic Review.");
                           return;
                         }
-                        // Prevent jumping to Publication (Phase 4) if not finalised
+                        // Prevent jumping to Publication if not finalised
                         if (s.p === 4 && phase < 4 && !activeDetails?.complianceSetupDone) {
                           toast.error("Please click 'Finalise Analysis' to save your results before proceeding to publication.", {
                             icon: "🔒",
@@ -1637,7 +1637,7 @@ export function ComplianceSetup() {
           )}
 
 
-          {/* ─── Analysis Results (Phase 3) ─── */}
+          {/* ─── Analysis Results ───*/}
           {phase === 3 && lastAnalysisResults && (
             <AnalysisSummary
               projectInfo={projectInfo}
@@ -1661,7 +1661,7 @@ export function ComplianceSetup() {
             />
           )}
 
-          {/* ─── Phase 4: Publication & Completion ─── */}
+          {/* ─── Publication & Completion ───*/}
           {phase === 4 && (
             <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in zoom-in duration-700 pb-20">
               <div className="bg-slate-900 rounded-[4rem] p-12 text-white relative overflow-hidden shadow-2xl shadow-slate-900/40">
@@ -1825,7 +1825,7 @@ export function ComplianceSetup() {
             </div>
           )}
 
-          {/* ─── Questionnaire Flow (Phase 2 - Path A) ─── */}
+          {/* ─── Questionnaire Flow (Path A) ───*/}
           {phase === 2 &&
             pathChoice === "detailed" &&
             isQuestionnaireActive && (
@@ -1849,7 +1849,7 @@ export function ComplianceSetup() {
                           : "border-slate-50 mb-4 hover:border-slate-200",
                       )}
                     >
-                      {/* Phase Header */}
+                      {/* Phase Header*/}
                       <div
                         id={headerId}
                         className={clsx(
@@ -1929,7 +1929,7 @@ export function ComplianceSetup() {
                                       : "opacity-100 grayscale-0",
                                   )}
                                 >
-                                  {/* Hidden anchor for phase-first logic */}
+                                  {/* Hidden anchor for phase-first logic*/}
                                   {qIndex === 0 && (
                                     <div
                                       id={`phase-first-q-${qPhase.id}`}
@@ -2082,10 +2082,10 @@ export function ComplianceSetup() {
               </div>
             )}
 
-          {/* ─── Profile Selection (Phase 1) ─── */}
+          {/* ─── Profile Selection ───*/}
           {phase === 1 && !isQuestionnaireActive && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
-              {/* Left Column: Context Selection */}
+              {/* Left Column: Context Selection*/}
               <div className="lg:col-span-4 space-y-6 sm:space-y-8">
                 <div className="bg-white rounded-[2.5rem] sm:rounded-4xl border border-slate-100 p-6 sm:p-8 shadow-xl shadow-slate-200/50">
                   <PhaseHeader num={1} title="Context Selection" />
@@ -2165,7 +2165,7 @@ export function ComplianceSetup() {
                   </div>
                 </div>
 
-                {/* Tips / Info Card */}
+                {/* Tips / Info Card*/}
                 <div className="bg-indigo-600 rounded-[2.5rem] sm:rounded-4xl p-6 sm:p-8 text-white shadow-xl shadow-indigo-200 overflow-hidden relative group">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-150 duration-700"></div>
                   <div className="relative z-10">
@@ -2183,7 +2183,7 @@ export function ComplianceSetup() {
                 </div>
               </div>
 
-              {/* Right Column: Profile Details */}
+              {/* Right Column: Profile Details*/}
               <div className="lg:col-span-8">
                 <div className="bg-white rounded-4xl sm:rounded-4xl border border-slate-100 p-6 md:p-12 shadow-xl shadow-slate-200/50">
                   <PhaseHeader
@@ -2315,7 +2315,7 @@ export function ComplianceSetup() {
             </div>
           )}
 
-          {/* ─── AI Action Footer ─── */}
+          {/* ─── AI Action Footer ───*/}
           {isQuestionnaireActive && phase !== 3 && (
             <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-12 duration-1000">
               <div className="bg-slate-900/90 text-white px-8 py-5 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/10 flex items-center justify-between gap-8 backdrop-blur-xl">
@@ -2362,7 +2362,7 @@ export function ComplianceSetup() {
           )}
         </div>
       </div>
-      {/* AI Inquiry Popup */}
+      {/* AI Inquiry Popup*/}
       <AIInquiryPopup
         isOpen={isAIInquiryOpen}
         onClose={() => {
@@ -2372,7 +2372,7 @@ export function ComplianceSetup() {
         context="Compliance Setup Questionnaire"
       />
 
-      {/* Floating AI Trigger */}
+      {/* Floating AI Trigger*/}
       <button
         onClick={() => {
           userInitiatedOpen.current = true;

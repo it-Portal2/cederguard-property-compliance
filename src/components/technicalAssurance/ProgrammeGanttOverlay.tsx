@@ -1,7 +1,7 @@
-// Phase 6 — Programme Gantt overlay for the Cost & programme tab.
+// Programme Gantt overlay for the Cost & programme tab.
 //
 // Hand-rolled SVG, zero new deps. Pattern adapted from
-// `ForwardPlanTimelineView.tsx` (Phase 5b.2 governance). Read-only — the
+// `ForwardPlanTimelineView.tsx` (.2 governance). Read-only — the
 // AI generates the bars; the user does not drag them.
 //
 // Layout: sticky-left label column + scrollable timeline. Today vertical
@@ -138,7 +138,7 @@ export function ProgrammeGanttOverlay({ bars }: ProgrammeGanttOverlayProps) {
         </button>
       </div>
       <div className="flex">
-        {/* Sticky label column */}
+        {/* Sticky label column*/}
         <div
           className="shrink-0 border-r border-slate-200 bg-slate-50/40"
           style={{ width: LABEL_WIDTH }}
@@ -166,7 +166,7 @@ export function ProgrammeGanttOverlay({ bars }: ProgrammeGanttOverlayProps) {
             );
           })}
         </div>
-        {/* Scrollable timeline */}
+        {/* Scrollable timeline*/}
         <div ref={scrollRef} className="relative flex-1 overflow-x-auto">
           <svg
             width={widthPx}
@@ -175,7 +175,7 @@ export function ProgrammeGanttOverlay({ bars }: ProgrammeGanttOverlayProps) {
             role="img"
             aria-label="Programme Gantt overlay"
           >
-            {/* Month-tick header strip */}
+            {/* Month-tick header strip*/}
             <g>
               <rect x={0} y={0} width={widthPx} height={36} fill="#f8fafc" />
               {monthTicks.map((t, idx) => (
@@ -201,7 +201,7 @@ export function ProgrammeGanttOverlay({ bars }: ProgrammeGanttOverlayProps) {
               ))}
             </g>
 
-            {/* Bars */}
+            {/* Bars*/}
             {rows.map((r, rowIdx) => {
               const yBase = 36 + rowIdx * (ROW_HEIGHT + TRACK_GAP) + TRACK_GAP / 2;
               return r.bars.map((b, barIdx) => {
@@ -254,7 +254,7 @@ export function ProgrammeGanttOverlay({ bars }: ProgrammeGanttOverlayProps) {
               });
             })}
 
-            {/* Today line */}
+            {/* Today line*/}
             {todayX !== null && (
               <g>
                 <line

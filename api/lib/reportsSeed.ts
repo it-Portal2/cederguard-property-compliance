@@ -17,13 +17,13 @@ export interface SeedReport {
   id: string;
   title: string;
   /** Real seeded template short id (e.g. 'gw1', 'gw2'). Server prefixes
-   *  with `${clientId}_` when reading the templates collection. */
+   *  with `${clientId}_` when reading the templates collection.*/
   templateId: string;
-  /** Display label — usually `${code} · ${title}` of the linked template. */
+  /** Display label — usually `${code} · ${title}` of the linked template.*/
   templateLabel: string;
-  /** Real seeded FP item short id (e.g. 'fp-published-key-supplies'). */
+  /** Real seeded FP item short id (e.g. 'fp-published-key-supplies').*/
   forwardPlanItemId: string;
-  /** Display label — usually the FP item's title. */
+  /** Display label — usually the FP item's title.*/
   forwardPlanItemLabel: string;
   status: ReportStatus;
   ownerLabel: string;
@@ -31,12 +31,12 @@ export interface SeedReport {
   partClassification: 'Open' | 'Closed' | 'Part 1 and 2';
   isHRB: boolean;
   targetBoardDate?: string;
-  // Phase 5.5b — optional meeting reference. When set, the report's
+  // optional meeting reference. When set, the report's
   // "next board date" derives from `meetings/{id}.date` and an FP item
   // auto-gets created/updated as `Proposed`. Required at Submit-for-
   // Review time per Q18; optional at Draft.
   targetMeetingId?: string | null;
-  /** Free-text scheme name surfaced in the list. */
+  /** Free-text scheme name surfaced in the list.*/
   scheme: string;
   softDeleted: boolean;
   deletionReason?: string;

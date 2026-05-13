@@ -139,7 +139,6 @@ export function ProgrammeSetup() {
     const existing = safeProgrammes.find(p => p.id === activeProgrammeId);
 
     const [form, setForm] = useState<Record<string, any>>({
-        // Phase 1
         ref: existing?.reference || '',
         name: existing?.name || '',
         type: existing?.type || '',
@@ -156,7 +155,6 @@ export function ProgrammeSetup() {
         programmeStartDate: existing?.programmeStartDate || '',
         programmEndDate: existing?.programmeEndDate || (existing as any)?.endDate || '',
         createdBy: (user as any)?.displayName || '',
-        // Phase 2
         totalProjects: (existing as any)?.totalProjects || '',
         totalUnits: existing?.totalUnits || '',
         totalValue: existing?.totalValue || '',
@@ -167,14 +165,12 @@ export function ProgrammeSetup() {
         funders: Array.isArray((existing as any)?.funders) ? (existing as any).funders : (typeof (existing as any)?.funders === 'string' ? (existing as any).funders.split(',') : []),
         resourceConstraints: (existing as any)?.resourceConstraints || '',
         keyDependencies: (existing as any)?.keyDependencies || '',
-        // Phase 3
         rshStandards: Array.isArray((existing as any)?.rshStandards) ? (existing as any).rshStandards : (typeof (existing as any)?.rshStandards === 'string' ? (existing as any).rshStandards.split(',') : []),
         regulatoryObligations: Array.isArray(existing?.regulatoryObligations)
             ? existing.regulatoryObligations
             : (typeof existing?.regulatoryObligations === 'string' ? (existing.regulatoryObligations as string).split(',') : []),
         hasHRB: (existing as any)?.hasHRB || '',
         hasLeasehold: (existing as any)?.hasLeasehold || '',
-        // Phase 4
         knownStrategicRisks: existing?.knownStrategicRisks || '',
         notes: (existing as any)?.notes || '',
     });
@@ -292,7 +288,7 @@ Use precise, formal language appropriate for a board-level risk register. Focus 
 
     return (
         <div className="max-w-5xl mx-auto pb-24">
-            {/* Page header */}
+            {/* Page header*/}
             <div className="flex items-center gap-4 mb-8">
                 <button onClick={() => navigate(-1)} className="p-2 hover:bg-white rounded-xl border border-transparent hover:border-slate-200 transition-colors">
                     <ArrowLeft className="w-5 h-5 text-slate-500" />
@@ -317,7 +313,7 @@ Use precise, formal language appropriate for a board-level risk register. Focus 
                 </div>
             </div>
 
-            {/* Step indicator */}
+            {/* Step indicator*/}
             <div className="flex flex-col md:flex-row md:items-center gap-2 mb-10 bg-white/40 backdrop-blur-md p-2 rounded-[24px] border border-white/40 shadow-xl shadow-indigo-900/5 overflow-x-auto hide-scrollbar">
                 {STEPS.map((s) => {
                     const done = step > s.id;
@@ -354,10 +350,10 @@ Use precise, formal language appropriate for a board-level risk register. Focus 
                 })}
             </div>
 
-            {/* Form card */}
+            {/* Form card*/}
             <div className="bg-white/80 backdrop-blur-xl rounded-[32px] border border-white/40 shadow-2xl shadow-indigo-900/10 overflow-hidden min-h-[500px] flex flex-col">
 
-                {/* ── PHASE 1: Identity & Governance ── */}
+                {/* ── PHASE 1: Identity & Governance ──*/}
                 {step === 1 && (
                     <div className="p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
                         <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
@@ -463,7 +459,7 @@ Use precise, formal language appropriate for a board-level risk register. Focus 
                     </div>
                 )}
 
-                {/* ── PHASE 2: Scale & Financials ── */}
+                {/* ── PHASE 2: Scale & Financials ──*/}
                 {step === 2 && (
                     <div className="p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
                         <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
@@ -529,7 +525,7 @@ Use precise, formal language appropriate for a board-level risk register. Focus 
                     </div>
                 )}
 
-                {/* ── PHASE 3: Regulatory & Compliance ── */}
+                {/* ── PHASE 3: Regulatory & Compliance ──*/}
                 {step === 3 && (
                     <div className="p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
                         <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
@@ -573,7 +569,7 @@ Use precise, formal language appropriate for a board-level risk register. Focus 
                     </div>
                 )}
 
-                {/* ── PHASE 4: Strategic Risk Context ── */}
+                {/* ── PHASE 4: Strategic Risk Context ──*/}
                 {step === 4 && (
                     <div className="p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
                         <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
@@ -614,7 +610,7 @@ Use precise, formal language appropriate for a board-level risk register. Focus 
                             </div>
                         )}
 
-                        {/* Moved inside the container to correctly structure it */}
+                        {/* Moved inside the container to correctly structure it*/}
                         <div className="!mt-0">
                             <label className={labelCls}>Known Strategic / Programme-Level Risks</label>
                             <textarea
@@ -645,7 +641,7 @@ Use precise, formal language appropriate for a board-level risk register. Focus 
                     </div>
                 )}
 
-                {/* Footer nav */}
+                {/* Footer nav*/}
                 <div className="px-6 py-6 md:px-10 md:py-8 bg-slate-50/50 border-t border-slate-100 mt-auto flex flex-col-reverse md:flex-row items-center justify-between gap-4">
                     <button
                         onClick={() => setStep(s => Math.max(1, s - 1))}

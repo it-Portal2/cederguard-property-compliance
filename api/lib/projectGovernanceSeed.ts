@@ -1,12 +1,12 @@
-// Phase 9 — Project Governance Folder.
+// Project Governance Folder.
 //
 // Per-project versioned governance docs (decision logs, ToR
 // acknowledgements, meeting attendance notes, etc.). Each doc lives in
-// `projectGovernanceDocs/{clientId_docId}` (lesson #10) and carries
+// `projectGovernanceDocs/{clientId_docId}` and carries
 // optional cross-references to a Report and/or Meeting.
 //
-// State machine:  Draft → Published (version++) → optionally
-//                 superseded by a new Draft → Published v2 → ...
+// State machine: Draft → Published (version++) → optionally
+//                 superseded by a new Draft → Published v2 →.
 //                 Draft + Published can both be soft-deleted; restore
 //                 via the same endpoint with `restore: true`.
 //
@@ -42,7 +42,7 @@ export interface SeedProjectDoc {
   title: string;
   category: ProjectDocCategory;
   summary: string;
-  /** Tiptap JSON. Null → editor will start from a placeholder. */
+  /** Tiptap JSON. Null → editor will start from a placeholder.*/
   content: any | null;
   status: ProjectDocStatus;
   version: number;
@@ -51,7 +51,7 @@ export interface SeedProjectDoc {
 }
 
 // Two seeds so the table has visible content on first load. Tied to
-// the same Aspen Court project ID seeded by Phase 6/8 so cross-links
+// the same Aspen Court project ID seeded by /8 so cross-links
 // look real. If the workspace doesn't have that project, the docs
 // still render — projectId is just a string filter.
 export const SEED_PROJECT_DOCS: SeedProjectDoc[] = [

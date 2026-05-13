@@ -70,7 +70,7 @@ import { MobileHeader } from './components/MobileHeader';
 import { ProfileSettingsModal } from './components/ProfileSettingsModal';
 import { GlobalAIAssistant } from './components/GlobalAIAssistant';
 
-// Programme Governance (Phase 0 — placeholder pages)
+// Programme Governance (placeholder pages)
 import { GovernanceDashboardPage } from './pages/governance/DashboardPage';
 import { GovernanceForwardPlanPage } from './pages/governance/ForwardPlanPage';
 import { GovernanceMyReportsPage } from './pages/governance/MyReportsPage';
@@ -80,14 +80,14 @@ import { GovernanceFrameworkPage } from './pages/governance/FrameworkPage';
 import { GovernanceArchivePage } from './pages/governance/ArchivePage';
 import { GovernanceBoardCalendarPage } from './pages/governance/BoardCalendarPage';
 import { ProjectGovernanceDocsPage } from './pages/governance/ProjectGovernanceDocsPage';
-// Programme Governance (Phase 1 — editor sandbox)
+// Programme Governance (editor sandbox)
 import { GovernanceEditorSandboxPage } from './pages/governance/EditorSandboxPage';
-// Programme Governance (Phase 6a — Reports CRUD shell)
+// Programme Governance (Reports CRUD shell)
 import { GovernanceReportsListPage } from './pages/governance/ReportsListPage';
-// Programme Governance (Phase 6b — Report authoring with Tiptap editor)
+// Programme Governance (Report authoring with Tiptap editor)
 import { ReportAuthoringPage } from './pages/governance/ReportAuthoringPage';
 
-// Technical Assurance Companion (Phase 0 — placeholder pages)
+// Technical Assurance Companion (placeholder pages)
 import { TacEnquiriesListPage } from './pages/technicalAssurance/EnquiriesListPage';
 import { TacEnquiryWorkspacePage } from './pages/technicalAssurance/EnquiryWorkspacePage';
 import { TacRfiRegisterPage } from './pages/technicalAssurance/RfiRegisterPage';
@@ -164,35 +164,35 @@ function AppContent() {
               <Route path="/programmes/new" element={<RoleGuard requireClientAdmin><ProgrammeInitiation /></RoleGuard>} />
               <Route path="/programmes/edit/:id" element={<RoleGuard requireClientAdmin><ProgrammeInitiation /></RoleGuard>} />
 
-              {/* Overview */}
+              {/* Overview*/}
               <Route path="/my-tasks" element={<MyTasks />} />
               <Route path="/calendar" element={<Calendar />} />
               <Route path="/projects" element={<Projects />} />
               
-              {/* v3.0 Canonical Project Routes */}
+              {/* v3.0 Canonical Project Routes*/}
               <Route path="/project/initiation" element={<ProjectInitiation />} />
               <Route path="/project/plan" element={<ProjectPlan />} />
               
-              {/* Old Route Redirects */}
+              {/* Old Route Redirects*/}
               <Route path="/projects/new" element={<Navigate to="/project/initiation" replace />} />
               <Route path="/initiate" element={<Navigate to="/project/initiation" replace />} />
               <Route path="/project-plan" element={<Navigate to="/project/plan" replace />} />
               <Route path="/projects/edit/:id" element={<ProjectInitiation />} />
 
-              {/* Setup (Client Admin) */}
+              {/* Setup (Client Admin)*/}
               <Route path="/setup/workspace" element={<RoleGuard requireClientAdmin><WorkspaceSettings /></RoleGuard>} />
               <Route path="/setup/programme" element={<RoleGuard requireClientAdmin><ProgrammeInitiation /></RoleGuard>} />
               <Route path="/setup/project" element={<ComplianceSetup />} />
               
-              {/* v3.0 Canonical Regulation Routes */}
+              {/* v3.0 Canonical Regulation Routes*/}
               <Route path="/regulations" element={<RegulationLibrary />} />
               <Route path="/regulations/cpd" element={<CPDTraining />} />
               
-              {/* Old Route Redirects */}
+              {/* Old Route Redirects*/}
               <Route path="/setup/regulations" element={<Navigate to="/regulations" replace />} />
               <Route path="/training" element={<Navigate to="/regulations/cpd" replace />} />
 
-              {/* Compliance */}
+              {/* Compliance*/}
               <Route path="/compliance/setup" element={<ComplianceSetup />} />
               <Route path="/compliance/dashboard" element={<ComplianceDashboard />} />
               <Route path="/compliance/tracker" element={<ComplianceTracker />} />
@@ -200,7 +200,7 @@ function AppContent() {
               <Route path="/compliance/linked-regs" element={<LinkedRegs />} />
               <Route path="/compliance/alerts" element={<ComplianceAlerts />} />
 
-              {/* Risk Management */}
+              {/* Risk Management*/}
               <Route path="/risk/programme-context" element={<ProgrammeContext />} />
               <Route path="/risk/setup" element={<RiskSetup />} />
               <Route path="/risk/dashboard" element={<RiskDashboard />} />
@@ -211,7 +211,7 @@ function AppContent() {
               <Route path="/risk/alerts" element={<RiskAlerts />} />
               <Route path="/risk/report" element={<Navigate to="/reporting/project" replace />} />
 
-              {/* Monitoring & Reporting */}
+              {/* Monitoring & Reporting*/}
               <Route path="/monitoring/kri" element={<KRITracker />} />
               <Route path="/monitoring/alerts" element={<RiskAlerts />} />
               <Route path="/monitoring/aggregation" element={<RiskAggregation />} />
@@ -221,39 +221,39 @@ function AppContent() {
               <Route path="/reporting/programme" element={<ClientProgrammeReport />} />
               <Route path="/reporting/programme-report" element={<ProgrammeReport />} />
 
-              {/* SaaS & Admin */}
+              {/* SaaS & Admin*/}
               <Route path="/admin/*" element={<RoleGuard requireAdmin><AdminPanel /></RoleGuard>} />
               <Route path="/admin/calculator" element={<RoleGuard requireAdmin><CostCalculator /></RoleGuard>} />
               <Route path="/admin/mapping" element={<RoleGuard requireAdmin><MappingManager /></RoleGuard>} />
 
-              {/* Automated Intelligence */}
+              {/* Automated Intelligence*/}
               <Route path="/risk/ai" element={<AIRiskID />} />
               <Route path="/ai/controls" element={<AIControlSuggestions />} />
               <Route path="/ai/compliance" element={<AIComplianceOutlook />} />
 
-              {/* Developer */}
-              {/* Developer */}
+              {/* Developer*/}
+              {/* Developer*/}
               <Route path="/developer/keys" element={<DeveloperSettings />} />
               <Route path="/developer/docs" element={<APIDocs />} />
               
-              {/* Old Route Redirects */}
+              {/* Old Route Redirects*/}
               <Route path="/settings/developer" element={<Navigate to="/developer/keys" replace />} />
               <Route path="/api-docs" element={<Navigate to="/developer/docs" replace />} />
 
-              {/* Help Center */}
+              {/* Help Center*/}
               <Route path="/help" element={<HelpCenter />} />
 
-              {/* Team Management */}
+              {/* Team Management*/}
               <Route path="/team" element={<RoleGuard requireAdmin><ClientTeamPanel /></RoleGuard>} />
 
-              {/* Knowledge & Training */}
+              {/* Knowledge & Training*/}
               <Route path="/training" element={<CPDTraining />} />
               <Route path="/lessons-learned" element={<LessonsLearned />} />
 
-              {/* Billing */}
+              {/* Billing*/}
               <Route path="/admin/billing" element={<RoleGuard requireAdmin><BillingPanel /></RoleGuard>} />
 
-              {/* Programme Governance */}
+              {/* Programme Governance*/}
               <Route path="/governance/dashboard" element={<RoleGuard requirePM><GovernanceDashboardPage /></RoleGuard>} />
               <Route path="/governance/forward-plan" element={<RoleGuard requirePM><GovernanceForwardPlanPage /></RoleGuard>} />
               <Route path="/governance/my-reports" element={<RoleGuard requirePM><GovernanceMyReportsPage /></RoleGuard>} />
@@ -263,18 +263,18 @@ function AppContent() {
               <Route path="/governance/meetings" element={<RoleGuard requirePM><GovernanceMeetingsPage /></RoleGuard>} />
               <Route path="/governance/framework" element={<RoleGuard requireClientAdmin><GovernanceFrameworkPage /></RoleGuard>} />
               <Route path="/governance/archive" element={<RoleGuard requirePM><GovernanceArchivePage /></RoleGuard>} />
-              {/* Phase 5.5c — public board calendar. Q14 = c.
-                  Read-only view of every scheduled meeting; available
-                  to all signed-in workspace members (no PM role gate). */}
+              {/*public board calendar. Q14 = c.
+ Read-only view of every scheduled meeting; available
+ to all signed-in workspace members (no PM role gate).*/}
               <Route path="/governance/board-calendar" element={<GovernanceBoardCalendarPage />} />
-              {/* Phase 9 — Project Governance Folder. Scopes by global
-                  activeProjectId (mirrors ComplianceTracker / RiskRegister). */}
+              {/* Project Governance Folder. Scopes by global
+ activeProjectId (mirrors ComplianceTracker / RiskRegister).*/}
               <Route path="/governance/project-docs" element={<RoleGuard requirePM><ProjectGovernanceDocsPage /></RoleGuard>} />
               <Route path="/governance/editor-sandbox" element={<RoleGuard requireClientAdmin><GovernanceEditorSandboxPage /></RoleGuard>} />
 
-              {/* Technical Assurance Companion (TAC) — Phase 0 placeholders.
-                  Routes shipped now so the sidebar links resolve; real
-                  surfaces land in Phases 1-9 per plan §TAC-8. */}
+              {/* Technical Assurance Companion (TAC) — placeholders.
+ Routes shipped now so the sidebar links resolve; real
+ surfaces land in Phases 1-9 per plan §TAC-8.*/}
               <Route path="/technical-assurance/enquiries" element={<RoleGuard requirePM><TacEnquiriesListPage /></RoleGuard>} />
               <Route path="/technical-assurance/enquiries/:id" element={<RoleGuard requirePM><TacEnquiryWorkspacePage /></RoleGuard>} />
               <Route path="/technical-assurance/rfis" element={<RoleGuard requirePM><TacRfiRegisterPage /></RoleGuard>} />
@@ -286,18 +286,18 @@ function AppContent() {
         </main>
         <MobileNav />
         {/* Global CedarGuard AI floating button — appears on every authenticated
-            route except those with their own per-page AI button (skip set inside
-            the component) and routes where it doesn't fit (login, editor sandbox,
-            report authoring). */}
+ route except those with their own per-page AI button (skip set inside
+ the component) and routes where it doesn't fit (login, editor sandbox,
+ report authoring).*/}
         <GlobalAIAssistant />
-        {/* Global Modals rendered at the root to avoid CSS positioning traps */}
+        {/* Global Modals rendered at the root to avoid CSS positioning traps*/}
         {isProfileSettingsOpen && (
           <ProfileSettingsModal
             isOpen={isProfileSettingsOpen}
             onClose={() => setProfileSettingsOpen(false)}
           />
         )}
-        {/* Full-page context-switching overlay — sits above everything */}
+        {/* Full-page context-switching overlay — sits above everything*/}
         <ContextSwitchingOverlay />
       </div>
     </div>

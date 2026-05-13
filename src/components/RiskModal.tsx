@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import { RiskItem, useStore } from "../store/useStore";
 import {
-  KRI_LIST,
-  RISK_STATUSES,
   RISK_RESPONSES,
   APPETITES,
 } from "../data/riskData";
+import {
+  statusOptions,
+  kriOptionsOrNull,
+} from "../data/riskRegisterOptions";
 import {
   STRATEGIC_CATEGORY_NAMES,
   OPERATIONAL_CATEGORY_NAMES,
@@ -35,6 +37,12 @@ import {
   type RiskLevel,
 } from "../data/riskBands";
 import {
+  calculateMatrixScore,
+  impactBandsForRisk,
+  type ImpactBandRange,
+} from "../data/riskScoringMatrix";
+import { RiskMatrixHeatmap } from "./RiskMatrixHeatmap";
+import {
   Plus,
   CheckCircle2,
   Circle,
@@ -52,10 +60,76 @@ interface RiskModalProps {
   initialData?: RiskItem | null;
 }
 
-/** Convert stored probability (0-1 or 0-100) → display value (0-100) */
+/** Convert stored probability (0-1 or 0-100) → display value (0-100)*/
 function toDisplayProb(stored?: number): number {
   if (!stored) return 0;
   return stored > 1 ? Math.round(stored) : Math.round(stored * 100);
+}
+
+// Inline £-band reference card Excel "Quick Reference Guide
+// Find Your Project Category" + "How to Use These Impact Bands" steps
+// (rows 6-12). Highlights the currently selected
+// Impact level so the user can pick the right band against their estimated £.
+//
+// Project vs Programme branching is handled by the caller via `bands` —
+// see riskScoringMatrix.impactBandsForRisk(risk, projectSize).
+function ImpactBandReference({
+  bands,
+  selectedLevel,
+  contextLabel,
+}: {
+  bands: ImpactBandRange[];
+  selectedLevel: number;
+  contextLabel: string;
+}) {
+  return (
+    <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50/60 p-2">
+      <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+          Impact £ bands
+        </span>
+        <span
+          className="text-[9px] font-medium text-slate-400 italic truncate max-w-full"
+          title={contextLabel}
+        >
+          {contextLabel}
+        </span>
+      </div>
+      <div className="space-y-0.5">
+        {bands.map((b) => {
+          const isSelected = b.level === selectedLevel;
+          return (
+            <div
+              key={b.level}
+              className={clsx(
+                "flex items-center gap-2 px-2 py-1 rounded text-[10px] transition-all",
+                isSelected
+                  ? "bg-indigo-50 ring-1 ring-indigo-300 text-indigo-900 font-bold"
+                  : "text-slate-600 hover:bg-white",
+              )}
+            >
+              <span
+                className={clsx(
+                  "w-4 h-4 rounded inline-flex items-center justify-center text-[9px] font-black shrink-0",
+                  isSelected
+                    ? "bg-indigo-600 text-white"
+                    : "bg-slate-200 text-slate-600",
+                )}
+              >
+                {b.level}
+              </span>
+              <span className="font-semibold shrink-0 w-20 truncate">
+                {b.bandLabel}
+              </span>
+              <span className="font-mono text-[10px] truncate tabular-nums">
+                {b.rangeLabel}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 const emptyForm = (): Partial<RiskItem> => ({
@@ -120,9 +194,7 @@ export function RiskModal({
   const activeFormProject = safeProjectsList.find(
     (p) => p.id === formData.projectId,
   );
-  const derivedProjectSize: ProjectSize = deriveProjectSize(
-    activeFormProject as any,
-  );
+  const derivedProjectSize: ProjectSize = deriveProjectSize(activeFormProject);
   const ctx = {
     isProgrammeLevel: !!formData.isProgrammeLevel,
     projectSize: derivedProjectSize,
@@ -148,7 +220,7 @@ export function RiskModal({
       );
       const initCtx = {
         isProgrammeLevel,
-        projectSize: deriveProjectSize(initProject as any),
+        projectSize: deriveProjectSize(initProject),
       };
       const grossI = clampRiskLevel(initialData.grossI);
       const residualI = clampRiskLevel(initialData.residualI);
@@ -179,7 +251,7 @@ export function RiskModal({
       const isProgrammeLevel = !activeProjectId && !!activeProgrammeId;
       const newCtx = {
         isProgrammeLevel,
-        projectSize: deriveProjectSize(currentProject as any),
+        projectSize: deriveProjectSize(currentProject),
       };
       // Default L=1, I=1 → derive Impact £ from the lookup, not the empty-form 0.
       const defaultI: RiskLevel = 1;
@@ -240,7 +312,7 @@ export function RiskModal({
         field === "projectId" || field === "isProgrammeLevel";
       const nextCtx = {
         isProgrammeLevel,
-        projectSize: deriveProjectSize(activeProject as any),
+        projectSize: deriveProjectSize(activeProject),
       };
 
       if (field === "grossI" || recomputeBoth) {
@@ -277,7 +349,7 @@ export function RiskModal({
     const saveProject = safeProjects.find((p) => p.id === updated.projectId);
     const saveCtx = {
       isProgrammeLevel: !!updated.isProgrammeLevel,
-      projectSize: deriveProjectSize(saveProject as any),
+      projectSize: deriveProjectSize(saveProject),
     };
     const gI = clampRiskLevel(updated.grossI ?? 1);
     const rI = clampRiskLevel(updated.residualI ?? 1);
@@ -296,8 +368,10 @@ export function RiskModal({
     updated.grossProb = gProb;
     updated.residualProb = rProb;
 
-    updated.grossRating = gL * gI;
-    updated.residualRating = rL * rI;
+    // Calibrated 5×5 matrix. NOT multiplication.
+    // Example: L=1, I=2 → 3 (not 1 × 2 = 2). See riskScoringMatrix.SCORE_MATRIX.
+    updated.grossRating = calculateMatrixScore(gL, gI);
+    updated.residualRating = calculateMatrixScore(rL, rI);
     updated.grossALE = updated.grossImpact * gProb;
     updated.residualALE = updated.residualImpact * rProb;
     updated.riskReduction =
@@ -320,18 +394,41 @@ export function RiskModal({
     }
   };
 
+  // 5-band scheme :
+  // Insignificant 1-3 · Minor 4-6 · Moderate 7-11 · Major 12-18 · Severe 19-25.
   const scoreColor = (score: number) => {
-    if (!score || score <= 6)
+    if (!score || score <= 3)
       return "bg-emerald-100 text-emerald-800 border-emerald-200";
-    if (score <= 14) return "bg-amber-100 text-amber-800 border-amber-200";
-    return "bg-rose-100 text-rose-800 border-rose-200 font-bold";
+    if (score <= 6) return "bg-lime-100 text-lime-800 border-lime-200";
+    if (score <= 11) return "bg-amber-100 text-amber-800 border-amber-200";
+    if (score <= 18) return "bg-orange-100 text-orange-800 border-orange-200";
+    return "bg-rose-200 text-rose-900 border-rose-300 font-bold";
   };
 
-  const currGross = (formData.grossL || 1) * (formData.grossI || 1);
-  const currResidual = (formData.residualL || 1) * (formData.residualI || 1);
+  // Live preview scores in modal header. Matrix lookup per PDF — NOT L × I.
+  const currGross = calculateMatrixScore(
+    formData.grossL || 1,
+    formData.grossI || 1,
+  );
+  const currResidual = calculateMatrixScore(
+    formData.residualL || 1,
+    formData.residualI || 1,
+  );
   const gALE = (formData.grossImpact || 0) * ((formData.grossProb || 0) / 100);
   const rALE =
     (formData.residualImpact || 0) * ((formData.residualProb || 0) / 100);
+
+  // £-band reference table data. Programme-level risks see the single
+  // programme table (<£250k → >£15M); project-level risks see the size-tier
+  // table (Small/Medium/Large/Major). Recomputes when `isProgrammeLevel` or
+  // the resolved project size changes.
+  const impactBandsForCurrentRisk = impactBandsForRisk(
+    { isProgrammeLevel: ctx.isProgrammeLevel },
+    ctx.projectSize,
+  );
+  const impactBandsContextLabel = ctx.isProgrammeLevel
+    ? "Programme bands"
+    : `Project size: ${ctx.projectSize}`;
 
   // Projects scoped to the selected/active programme
   const safeProjects = Array.isArray(projects) ? projects : [];
@@ -344,13 +441,13 @@ export function RiskModal({
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50">
       {/*
-        Modal shell:
-        - h-full + max-h cap so it never exceeds viewport
-        - flex-col with min-h-0 on children → header/footer fixed, middle scrolls
-        - overflow-hidden on the shell prevents any internal element bleeding out
+ Modal shell:
+h-full + max-h cap so it never exceeds viewport
+flex-col with min-h-0 on children → header/footer fixed, middle scrolls
+overflow-hidden on the shell prevents any internal element bleeding out
       */}
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl h-full max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2rem)] md:max-h-[90vh] flex flex-col overflow-hidden">
-        {/* Header — fixed, never scrolls */}
+        {/* Header — fixed, never scrolls*/}
         <div className="flex items-start justify-between gap-3 p-4 sm:p-6 border-b border-slate-100 shrink-0">
           <div className="min-w-0 flex-1">
             <div className="flex items-center flex-wrap gap-2">
@@ -382,11 +479,11 @@ export function RiskModal({
         </div>
 
         {/*
-          Scrollable region — the ONLY thing that scrolls.
-          - flex-1 + min-h-0 makes flexbox actually allow this to shrink and scroll
-          - overflow-y-auto + overflow-x-hidden contains all overflow
-          - We removed the disabled <fieldset> wrapping (it killed scrolling while saving)
-            and instead disable individual interactive controls via the saving state.
+ Scrollable region — the ONLY thing that scrolls.
+flex-1 + min-h-0 makes flexbox actually allow this to shrink and scroll
+overflow-y-auto + overflow-x-hidden contains all overflow
+We removed the disabled <fieldset> wrapping (it killed scrolling while saving)
+ and instead disable individual interactive controls via the saving state.
         */}
         <div
           className={clsx(
@@ -395,7 +492,7 @@ export function RiskModal({
           )}
         >
           <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
-            {/* Warnings / Banners — now inside the scroll area so they don't squeeze the form */}
+            {/* Warnings / Banners — now inside the scroll area so they don't squeeze the form*/}
             {(formData.escalated || formData.convertedToIssue) && (
               <div className="space-y-2">
                 {formData.escalated && (
@@ -432,7 +529,7 @@ export function RiskModal({
               </div>
             )}
 
-            {/* Section 1: Core Details */}
+            {/* Section 1: Core Details*/}
             <div>
               <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">
                 Core Details
@@ -489,7 +586,7 @@ export function RiskModal({
                   />
                 </div>
 
-                {/* Project / Context — only show projects in scope */}
+                {/* Project / Context — only show projects in scope*/}
                 <div className="min-w-0">
                   <label className="block text-sm font-medium text-slate-700 mb-1">
                     Project (Optional)
@@ -563,30 +660,37 @@ export function RiskModal({
                       (Optional)
                     </span>
                   </label>
-                  <select
-                    value={formData.kri || ""}
-                    onChange={(e) => handleChange("kri", e.target.value)}
-                    disabled={isSaving}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 disabled:opacity-60"
-                  >
-                    <option value="">— None —</option>
-                    {KRI_LIST.map((k) => (
-                      <option key={k} value={k}>
-                        {k}
-                      </option>
-                    ))}
-                  </select>
+                  {/* Programme-level risks do not carry a KRI; render a slate placeholder. */}
+                  {kriOptionsOrNull({ isProgrammeLevel: formData.isProgrammeLevel }) ? (
+                    <select
+                      value={formData.kri || ""}
+                      onChange={(e) => handleChange("kri", e.target.value)}
+                      disabled={isSaving}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 disabled:opacity-60"
+                    >
+                      <option value="">— None —</option>
+                      {kriOptionsOrNull({ isProgrammeLevel: formData.isProgrammeLevel })!.map((k) => (
+                        <option key={k} value={k}>
+                          {k}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-[11px] text-slate-400 italic">
+                      KRI not applicable for programme-level risks
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* Section 2: Assessment & Controls */}
+            {/* Section 2: Assessment & Controls*/}
             <div>
               <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">
                 Assessment & Controls
               </h3>
 
-              {/* Probability legend */}
+              {/* Probability legend*/}
               <div className="mb-4 flex gap-2 flex-wrap">
                 {Object.entries(L_TO_PCT).map(([l, pct]) => (
                   <span
@@ -601,7 +705,7 @@ export function RiskModal({
                 </span>
               </div>
 
-              {/* Exposure derivation context — tells PMs WHY the £ values look the way they do */}
+              {/* Exposure derivation context — tells PMs WHY the £ values look the way they do*/}
               <div className="mb-4">
                 {ctx.isProgrammeLevel ? (
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold uppercase tracking-wider">
@@ -629,7 +733,7 @@ export function RiskModal({
 
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 sm:p-5 mb-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-                  {/* Gross */}
+                  {/* Gross*/}
                   <div className="min-w-0">
                     <h4 className="font-semibold text-slate-800 mb-3 flex items-center justify-between gap-2">
                       <span className="truncate">Gross Score (Inherent)</span>
@@ -674,13 +778,31 @@ export function RiskModal({
                           disabled={isSaving}
                           className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 disabled:opacity-60"
                         >
-                          {[1, 2, 3, 4, 5].map((n) => (
-                            <option key={n} value={n}>
-                              {n}
+                          {impactBandsForCurrentRisk.map((b) => (
+                            <option key={b.level} value={b.level}>
+                              {b.level} — {b.bandLabel}
                             </option>
                           ))}
                         </select>
                       </div>
+                    </div>
+                    {/* £-band reference highlights the picked level so the user can cross-check
+                        against their estimated £ value. */}
+                    <ImpactBandReference
+                      bands={impactBandsForCurrentRisk}
+                      selectedLevel={Number(formData.grossI) || 1}
+                      contextLabel={impactBandsContextLabel}
+                    />
+                    {/* +: mini 5×5 heatmap with selected (L, I)
+ cell highlighted. Live cell preview removes any
+ ambiguity about how the score is derived.*/}
+                    <div className="mt-3">
+                      <RiskMatrixHeatmap
+                        likelihood={formData.grossL ?? 1}
+                        impact={formData.grossI ?? 1}
+                        variant="gross"
+                        compact
+                      />
                     </div>
                     <div className="grid grid-cols-2 gap-3 sm:gap-4 mt-4">
                       <div className="min-w-0">
@@ -730,7 +852,7 @@ export function RiskModal({
                     </div>
                   </div>
 
-                  {/* Residual */}
+                  {/* Residual*/}
                   <div className="min-w-0">
                     <h4 className="font-semibold text-slate-800 mb-3 flex items-center justify-between gap-2">
                       <span className="truncate">Residual Risk Score</span>
@@ -775,13 +897,28 @@ export function RiskModal({
                           disabled={isSaving}
                           className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 disabled:opacity-60"
                         >
-                          {[1, 2, 3, 4, 5].map((n) => (
-                            <option key={n} value={n}>
-                              {n}
+                          {impactBandsForCurrentRisk.map((b) => (
+                            <option key={b.level} value={b.level}>
+                              {b.level} — {b.bandLabel}
                             </option>
                           ))}
                         </select>
                       </div>
+                    </div>
+                    {/* same £-band reference, residual side.*/}
+                    <ImpactBandReference
+                      bands={impactBandsForCurrentRisk}
+                      selectedLevel={Number(formData.residualI) || 1}
+                      contextLabel={impactBandsContextLabel}
+                    />
+                    {/* +: residual matrix mini-heatmap.*/}
+                    <div className="mt-3">
+                      <RiskMatrixHeatmap
+                        likelihood={formData.residualL ?? 1}
+                        impact={formData.residualI ?? 1}
+                        variant="residual"
+                        compact
+                      />
                     </div>
                     <div className="grid grid-cols-2 gap-3 sm:gap-4 mt-4">
                       <div className="min-w-0">
@@ -899,7 +1036,7 @@ export function RiskModal({
               </div>
             </div>
 
-            {/* Section 3: Management */}
+            {/* Section 3: Management*/}
             <div>
               <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">
                 Management
@@ -1131,13 +1268,16 @@ export function RiskModal({
                   <label className="block text-sm font-medium text-slate-700 mb-1">
                     Status
                   </label>
+                  {/* Status options diverge by risk kind:
+                      project    → Open / Closed / Managed / Mitigated / In Progress
+                      programme  → Open / Closed / Managed / Mitigated / Tolerated. */}
                   <select
                     value={formData.status || "Open"}
                     onChange={(e) => handleChange("status", e.target.value)}
                     disabled={isSaving}
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 disabled:opacity-60"
                   >
-                    {RISK_STATUSES.map((s) => (
+                    {statusOptions({ isProgrammeLevel: formData.isProgrammeLevel }).map((s) => (
                       <option key={s} value={s}>
                         {s}
                       </option>
@@ -1175,7 +1315,7 @@ export function RiskModal({
           </div>
         </div>
 
-        {/* Footer — fixed, never scrolls */}
+        {/* Footer — fixed, never scrolls*/}
         <div className="p-4 sm:p-6 border-t border-slate-100 bg-slate-50 rounded-b-2xl flex justify-end gap-3 shrink-0">
           <button
             onClick={onClose}

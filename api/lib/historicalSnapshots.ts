@@ -1,4 +1,4 @@
-// HRC monthly snapshot helpers.
+//  monthly snapshot helpers.
 //
 // Two surfaces:
 //   1. Cron / manual trigger calls `buildMonthlySnapshot(ctx, clientId,
@@ -6,18 +6,18 @@
 //   2. Read endpoints call `readMonthlySnapshot(ctx, clientId, yearMonth,
 //      collection)` to return the snapshot rows for a given collection.
 //
-// Storage shape (under monthlySnapshots/{clientId}_{YYYY-MM}/...):
-//   .meta            ← parent doc with monthEnd, retentionUntil, etc.
-//   risks/{projId}      ← LegacyArraySnapshot (whole array)
-//   complianceItems/{projId}   ← same
-//   issues/{projId}     ← same
-//   kris/{projId}       ← same
-//   forwardPlanItems/{docId}   ← GovernanceDocSnapshot (per-doc)
-//   meetings/{docId}    ← same
-//   reports/{docId}     ← same
-//   ... etc
+// Storage shape (under monthlySnapshots/{clientId}_{YYYY-MM}/.):
+//   .meta ← parent doc with monthEnd, retentionUntil, etc.
+//   risks/{projId} ← LegacyArraySnapshot (whole array)
+//   complianceItems/{projId} ← same
+//   issues/{projId} ← same
+//   kris/{projId} ← same
+//   forwardPlanItems/{docId} ← GovernanceDocSnapshot (per-doc)
+//   meetings/{docId} ← same
+//   reports/{docId} ← same
+//   . etc
 //
-// Retention (Q5=A): 25 years for HRB workspaces, 7 years standard.
+// Retention: 25 years for HRB workspaces, 7 years standard.
 // Calculated at write time and stored on the parent doc; the yearly
 // retention-purge cron uses it as a simple gate.
 
@@ -122,11 +122,11 @@ export function snapshotParentDocId(clientId: string, yearMonth: YearMonth): str
   return `${clientId}_${yearMonth}`;
 }
 
-// ── Deployment marker (HR-1) ─────────────────────────────────────────────
+// ── Deployment marker ─────────────────────────────────────────────
 //
-// Q6=A locks "start fresh from May 2026". The UI needs to distinguish two
+//  locks "start fresh from May 2026". The UI needs to distinguish two
 // reasons a snapshot read returns empty:
-//   (a) The user picked a month from BEFORE HRC was activated for their
+//   (a) The user picked a month from BEFORE was activated for their
 //       workspace — show "Feature launched {month}; earlier months
 //       unavailable" message.
 //   (b) The user picked a month AFTER activation but the cron failed for
@@ -196,7 +196,7 @@ export async function readDeploymentMeta(
 // Idempotent: re-running the builder for the same (clientId, yearMonth)
 // pair OVERWRITES the existing snapshot rows in place. The parent doc's
 // `correctionHistory` sub-collection is not touched (Firestore preserves
-// sub-collections when the parent doc is .set()).
+// sub-collections when the parent doc is .set).
 //
 // The `skipIfExists` option is the canonical entry point for the cron —
 // if a snapshot already exists for this (clientId, yearMonth), skip the
@@ -290,7 +290,7 @@ export async function buildMonthlySnapshot(
   }
 
   // ── Step 3: snapshot governance per-doc collections by clientId ──────
-  // All Phase 5+ governance docs use composite IDs `{clientId}_{...}` so
+  // All + governance docs use composite IDs `{clientId}_{.}` so
   // we can prefix-scan, but the safer/simpler query is a where clause on
   // the clientId field which every governance doc carries.
   let governanceDocsWritten = 0;
@@ -366,9 +366,9 @@ export async function buildMonthlySnapshot(
 // ── Reader ────────────────────────────────────────────────────────────────
 //
 // Returns:
-//   - LegacyArraySnapshot[]  for legacy collections (one per project)
-//   - GovernanceDocSnapshot[] for governance collections (one per doc)
-//   - null when no snapshot exists for this (clientId, yearMonth)
+//   LegacyArraySnapshot for legacy collections (one per project)
+//   GovernanceDocSnapshot for governance collections (one per doc)
+//   null when no snapshot exists for this (clientId, yearMonth)
 export async function readMonthlySnapshot(
   ctx: ApiContext,
   clientId: string,

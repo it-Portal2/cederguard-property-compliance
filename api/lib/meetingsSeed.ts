@@ -1,5 +1,5 @@
-// Phase 8a — Meetings CRUD shell.
-// Storage: `meetings/{clientId_meetingId}` (lesson #10). Seed runs on
+// Meetings CRUD shell.
+// Storage: `meetings/{clientId_meetingId}`. Seed runs on
 // first list-call so PgMs see real data immediately. 8b adds tabs +
 // state transitions; 8a is title / body / date / time / location /
 // chair / attendees / agenda + soft-delete.
@@ -30,7 +30,7 @@ export interface SeedMeeting {
   chairLabel: string;
   status: MeetingStatus;
   attendees: SeedAttendee[];
-  /** One bullet per agenda item — markdown not required in 8a. */
+  /** One bullet per agenda item — markdown not required in 8a.*/
   agenda: string[];
   softDeleted: boolean;
   deletionReason?: string | null;

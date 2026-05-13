@@ -1,10 +1,10 @@
-// Phase 6 — Cost & programme tab.
+// Cost & programme tab.
 //
 // Renders the AI-generated `costProgramme` block from `tabs/summary.content`.
 // 4-tile StatsCard row + line-item DynamicTable (canonical list surface,
-// lesson #16) + Programme Gantt overlay. CSV export rides DynamicTable's
+// ) + Programme Gantt overlay. CSV export rides DynamicTable's
 // built-in export chrome — no separate server endpoint required for the
-// happy path. The PM-report handoff is deferred to Phase 9 alongside the
+// happy path. The PM-report handoff is deferred to alongside the
 // actual ProjectReport integration.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -71,7 +71,7 @@ export function CostProgrammeTab({
   // off until ratesLoaded is true eliminates that flash.
   const [ratesLoaded, setRatesLoaded] = useState(false);
 
-  // Phase 9 — Add to PM report. Local mirror of the enquiry's flag so the
+  // Add to PM report. Local mirror of the enquiry's flag so the
   // button flips to "Added" without a refetch. Initialised from the prop
   // so cached deliverables show the correct state on mount.
   const [addedToReport, setAddedToReport] = useState<boolean>(
@@ -303,7 +303,7 @@ export function CostProgrammeTab({
 
   return (
     <div className="space-y-6">
-      {/* 4-tile metrics row */}
+      {/* 4-tile metrics row*/}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Total cost"
@@ -386,7 +386,7 @@ export function CostProgrammeTab({
         </div>
       ) : null}
 
-      {/* Cost lines table — DynamicTable canonical surface (lesson #16). */}
+      {/* Cost lines table — DynamicTable canonical surface.*/}
       <div>
         <div className="mb-3 flex items-end justify-between gap-3">
           <div>
@@ -453,10 +453,10 @@ export function CostProgrammeTab({
         />
       </div>
 
-      {/* Programme Gantt overlay */}
+      {/* Programme Gantt overlay*/}
       <ProgrammeGanttOverlay bars={programmeBars} />
 
-      {/* Footer caveat — honest framing per Q10=A locked spec */}
+      {/* Footer caveat — honest framing spec*/}
       <div className="rounded-lg border border-slate-200 bg-slate-50/40 p-3 text-[11px] leading-5 text-slate-500">
         Rates are indicative, hand-seeded against UK social-housing benchmarks
         and the council's own cost-rates library. Cross-check against your

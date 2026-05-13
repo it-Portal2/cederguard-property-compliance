@@ -35,10 +35,10 @@ import type { ChangeKind } from '../../src/types/historicalReporting.js';
 const BODY_ID_RE = /^[a-z0-9_-]{1,80}$/i;
 const STAMP_LIKE_RE = /^[a-z0-9_-]{1,80}$/i;
 
-// HRC HR-4 — fire-and-forget history capture for framework + ToR mutations.
+//  fire-and-forget history capture for framework + ToR mutations.
 // Bodies and thresholds are children of the framework — their changes are
 // captured against the framework doc's history so a single timeline tells
-// the whole story. ToRs are a separate collection per HRC types.
+// the whole story. ToRs are a separate collection per types.
 function captureFrameworkHistory(
   ctx: ApiContext,
   args: {
@@ -303,7 +303,7 @@ async function governancePublishFramework(_req: any, res: any, ctx: ApiContext) 
       return next;
     });
 
-    // HRC HR-4 — capture publish as a framework history row.
+    //  capture publish as a framework history row.
     const fwAfter = (await fwRef.get()).data() ?? null;
     captureFrameworkHistory(ctx, {
       prevState: prevFrameworkState,
@@ -384,7 +384,7 @@ async function governanceUpsertBody(req: any, res: any, ctx: ApiContext) {
     );
 
     const latest = (await ref.get()).data();
-    // HRC HR-4 — body changes are framework changes; capture against
+    //  body changes are framework changes; capture against
     // framework history so the timeline shows the body edit alongside
     // the framework's draft/published status flip.
     captureFrameworkHistory(ctx, {
@@ -686,7 +686,7 @@ async function governanceUpsertToR(req: any, res: any, ctx: ApiContext) {
       return { docId: docRef.id, payload, prevTorState, isNewDoc };
     });
 
-    // HRC HR-4 — capture ToR mutation as a tor history row.
+    //  capture ToR mutation as a tor history row.
     captureTorHistory(ctx, {
       torId: result.docId,
       prevState: result.prevTorState,

@@ -20,7 +20,7 @@ export const aiRoutes: Record<
     if (!prompt) return res.status(400).json({ error: "Missing prompt text" });
 
     // Optional multimodal payload — array of { mimeType, data (base64) } that
-    // get appended after the text prompt. Used by Phase 4b TAC drawing
+    // get appended after the text prompt. Used by TAC drawing
     // overlay (sends the source PDF inline so Gemini can read it visually
     // and return per-annotation x/y coordinates).
     const safeInlineParts: Array<{ mimeType: string; data: string }> =

@@ -30,7 +30,7 @@ export function ProgrammeIssues() {
   const [projects, setProjects] = useState<ProjectIssueRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // HRC HR-8 — historical view hook. When the user picks a past month,
+  //  historical view hook. When the user picks a past month,
   // the per-project issue counts are derived from the snapshot's frozen
   // arrays instead of the live API aggregation.
   const historicalView = useHistoricalView<LegacyArraySnapshot<IssueItem>>({
@@ -52,7 +52,7 @@ export function ProgrammeIssues() {
     }).catch(console.error).finally(() => setLoading(false));
   }, [activeProgrammeId]);
 
-  // HRC HR-8 — per-project counts derived from the issues snapshot.
+  //  per-project counts derived from the issues snapshot.
   // Each LegacyArraySnapshot entry holds one project's array of issues at
   // month-end. Build a Map<projectId, {open, escalated}> we can merge
   // into the project list.
@@ -136,7 +136,7 @@ export function ProgrammeIssues() {
       <ServiceManagementBar />
       <div className="max-w-[98%] lg:max-w-7xl mx-auto p-2 sm:p-4 lg:p-6 space-y-5 sm:space-y-6">
 
-        {/* HRC HR-8 — month picker for historical view. */}
+        {/* month picker for historical view.*/}
         <div className="flex justify-end">
           <MonthPicker
             monthEnd={historicalView.monthEnd}
@@ -158,7 +158,7 @@ export function ProgrammeIssues() {
         )}
 
         {/* KPI tiles — derived from effective rows so historical mode
-            shows month-end totals, not live ones. */}
+ shows month-end totals, not live ones.*/}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           <div className="bg-white border-t-4 border-t-amber-500 border border-slate-200 rounded-xl p-4 shadow-sm">
             <div className="text-2xl font-bold text-amber-600 mb-1">{loading || historicalView.loading ? '—' : totals.open}</div>
@@ -170,7 +170,7 @@ export function ProgrammeIssues() {
           </div>
         </div>
 
-        {/* DynamicTable */}
+        {/* DynamicTable*/}
         <DynamicTable<ProjectIssueRow>
           data={effectiveProjects}
           columns={columns}

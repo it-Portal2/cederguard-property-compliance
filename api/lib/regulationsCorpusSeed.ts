@@ -1,11 +1,11 @@
 // Technical Assurance Companion — Regulations Corpus seed.
 //
-// Hand-curated v1 corpus (Q1=B locked) — ~10 most-cited clauses across
+// Hand-curated v1 corpus — ~10 most-cited clauses across
 // Approved Documents (Building Regulations), BSA 2022, PAS 2035, Awaab's
 // Law, CDM 2015, RSH Consumer Standards. Seeded on first read of the
 // corpus collection. Promoted from the existing static
 // `src/data/regulationsLibraryData.ts` shape so the AI corpus refreshes
-// independently of code deploys (Phase 10 cron extends this).
+// independently of code deploys (cron extends this).
 //
 // Every cited regulation in an AI insight MUST resolve back to one of these
 // regIds — that's how PRD US-2.2 enforces "no citation, no insight" + "no
@@ -180,7 +180,7 @@ export const SEED_CORPUS: RegulationCorpusEntry[] = [
     ribaRelevance: ["S6", "S7"],
   },
 
-  // --- Approved Document K · stair detail clauses ----------------------
+  // Approved Document K · stair detail clauses ----------------------
   // Common cite-magnets when users upload AD K. Without these, the AI
   // sees the document's full clause set + drops everything except adk-1.2.
   {
@@ -226,7 +226,7 @@ export const SEED_CORPUS: RegulationCorpusEntry[] = [
     ribaRelevance: ["S3", "S4"],
   },
 
-  // --- Approved Document B · fire safety supplementary -----------------
+  // Approved Document B · fire safety supplementary -----------------
   {
     regId: "adb-vol1-3.2",
     document: "adb-vol1",
@@ -270,7 +270,7 @@ export const SEED_CORPUS: RegulationCorpusEntry[] = [
     ribaRelevance: ["S3", "S4", "S5"],
   },
 
-  // --- Building Safety Act 2022 · Gateways + Accountable Person --------
+  // Building Safety Act 2022 · Gateways + Accountable Person --------
   {
     regId: "bsa-2022-gw2",
     document: "bsa-2022",
@@ -314,7 +314,7 @@ export const SEED_CORPUS: RegulationCorpusEntry[] = [
     ribaRelevance: ["S6", "S7"],
   },
 
-  // --- PAS 2035 supplementary -------------------------------------------
+  // PAS 2035 supplementary -------------------------------------------
   {
     regId: "pas-2035-9",
     document: "pas-2035",
@@ -330,7 +330,7 @@ export const SEED_CORPUS: RegulationCorpusEntry[] = [
     ribaRelevance: ["S2", "S3", "S4"],
   },
 
-  // --- RSH Consumer Standards supplementary -----------------------------
+  // RSH Consumer Standards supplementary -----------------------------
   {
     regId: "rsh-cs-tsm-2",
     document: "rsh-cs",
@@ -346,7 +346,7 @@ export const SEED_CORPUS: RegulationCorpusEntry[] = [
     ribaRelevance: ["S6", "S7"],
   },
 
-  // --- CDM 2015 supplementary -------------------------------------------
+  // CDM 2015 supplementary -------------------------------------------
   {
     regId: "cdm-2015-r9",
     document: "cdm-2015",
@@ -379,11 +379,10 @@ export const SEED_CORPUS: RegulationCorpusEntry[] = [
 
 /**
  * Idempotent platform-wide seed. Returns silently if any corpus entry
- * already exists. Cheaper than a transaction (lesson #22). Best-effort —
+ * already exists. Cheaper than a transaction. Best-effort —
  * failures are logged but do not abort the caller's response.
- *
  * Note: corpus is platform-wide (NOT scoped per clientId) — the same
- * regulations apply to every council. The Phase 10 quarterly refresh cron
+ * regulations apply to every council. The quarterly refresh cron
  * extends this same shape.
  */
 export async function seedRegulationsCorpusIfMissing(

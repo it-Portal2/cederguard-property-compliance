@@ -26,6 +26,7 @@ import {
 import { clsx } from "clsx";
 import { RiskModal } from "../components/RiskModal";
 import { stripMarkdown } from "../lib/utils";
+import { calculateMatrixScore } from "../data/riskScoringMatrix";
 import { api, ApiError } from "../lib/api";
 import { AIErrorAlert } from "../components/AIErrorAlert";
 
@@ -260,8 +261,9 @@ export function AIRiskID() {
             grossI: gI,
             residualL: rL,
             residualI: rI,
-            grossRating: gL * gI,
-            residualRating: rL * rI,
+            // Calibrated 5×5 matrix.
+            grossRating: calculateMatrixScore(gL, gI),
+            residualRating: calculateMatrixScore(rL, rI),
             grossImpact: gImp,
             grossProb: gProb,
             residualImpact: rImp,
@@ -468,7 +470,7 @@ export function AIRiskID() {
 
   return (
     <div className="max-w-[98%] lg:max-w-6xl mx-auto p-2 sm:p-4 lg:p-6 space-y-4 sm:space-y-6 pb-40">
-      {/* Restart Confirmation Dialog */}
+      {/* Restart Confirmation Dialog*/}
       {showRestartConfirm && (
         <div className="fixed inset-0 z-120 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
           <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 border border-slate-100 animate-in zoom-in-95 duration-200">
@@ -501,7 +503,7 @@ export function AIRiskID() {
         </div>
       )}
 
-      {/* Restarting Loading Overlay */}
+      {/* Restarting Loading Overlay*/}
       {isRestarting && (
         <div className="fixed inset-0 z-110 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm">
           <Loader2 className="w-10 h-10 text-indigo-600 animate-spin mb-4" />
@@ -509,7 +511,7 @@ export function AIRiskID() {
         </div>
       )}
 
-      {/* Empty Accept Confirmation Dialog */}
+      {/* Empty Accept Confirmation Dialog*/}
       {showEmptyConfirm && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
           <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 border border-slate-100 animate-in zoom-in-95 duration-200">

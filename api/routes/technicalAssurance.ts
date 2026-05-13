@@ -1,21 +1,21 @@
 // Technical Assurance Companion (TAC) — backend route handler map.
 //
-// Phase 1 — Enquiry capture (E1). Six endpoints for the CRUD shell:
-//   1. tacListEnquiries       — list scoped by clientId; optional `mine`
-//   2. tacGetEnquiry          — single read, cross-tenant guard
-//   3. tacUpsertEnquiry       — Draft only; field whitelist; auto-id on create
-//   4. tacAttachFile          — base64 → storage → append to enquiry doc
-//   5. tacRemoveAttachment    — delete from storage + remove from doc
-//   6. tacSoftDeleteEnquiry   — soft-delete + restore via the same endpoint
+// Enquiry capture (E1). Six endpoints for the CRUD shell:
+//   1. tacListEnquiries — list scoped by clientId; optional `mine`
+//   2. tacGetEnquiry — single read, cross-tenant guard
+//   3. tacUpsertEnquiry — Draft only; field whitelist; auto-id on create
+//   4. tacAttachFile — base64 → storage → append to enquiry doc
+//   5. tacRemoveAttachment — delete from storage + remove from doc
+//   6. tacSoftDeleteEnquiry — soft-delete + restore via the same endpoint
 //
-// Phase 2 lands `tacBuildInsightPrompt` + `tacFinaliseInsight`. The actual
+//  lands `tacBuildInsightPrompt` + `tacFinaliseInsight`. The actual
 // Gemini call goes through the existing `aiRoutes.geminiPrompt` route so
 // all AI traffic shares the dual-key + dual-model + retry rotation.
 // Phases 4-9 layer state-transition,
 // share, close, unlock and audit endpoints on top.
 //
 // Standard return shape:
-//   success → { success: true, ...payload }
+//   success → { success: true, .payload }
 //   failure → { success: false, error: string, code?: string }
 
 import type { ApiContext } from "../lib/context.js";
@@ -50,7 +50,7 @@ import {
   decisionLogFilename,
 } from "../lib/tacDecisionLogPdf.js";
 
-// --- Constants ------------------------------------------------------------
+// Constants ------------------------------------------------------------
 
 const RIBA_STAGES = new Set([
   "S0",
@@ -64,7 +64,7 @@ const RIBA_STAGES = new Set([
 ]);
 
 // Whitelisted fields client may set on an enquiry via tacUpsertEnquiry.
-// Anything not on this list is silently dropped (lesson #12).
+// Anything not on this list is silently dropped.
 const ENQUIRY_WRITABLE_FIELDS = [
   "title",
   "query",
@@ -75,7 +75,7 @@ const ENQUIRY_WRITABLE_FIELDS = [
 const ENQUIRY_TITLE_MAX = 200;
 const ENQUIRY_QUERY_MAX = 8000;
 
-// --- Helpers --------------------------------------------------------------
+// Helpers --------------------------------------------------------------
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -111,12 +111,10 @@ function compositeId(clientId: string, enquiryId: string): string {
 
 /**
  * Load an enquiry doc + run the standard tenant + state guard.
- *
  * Mirrors the `loadEditableMeeting` / `loadFpItemForTransition` pattern from
- * Phase 8b / 5.5b governance — centralises ID validation + cross-tenant
+ *  / 5.5b governance — centralises ID validation + cross-tenant
  * scoping + owner-or-admin check + state-machine guard so each endpoint
- * stays focused on its own logic (lesson #80).
- *
+ * stays focused on its own logic.
  * Returns `{ docRef, doc }` on success, or `null` after writing the error
  * response (the caller just `return`s).
  */
@@ -186,14 +184,14 @@ async function loadEnquiryForMutation(
   return { docRef, doc };
 }
 
-// --- Endpoint 1: tacListEnquiries ----------------------------------------
+// Endpoint 1: tacListEnquiries ----------------------------------------
 
 async function tacListEnquiries(req: any, res: any, ctx: ApiContext) {
   try {
     const { mine } = req.body ?? {};
     // Seed-on-first-read — gives a fresh workspace 2 sample enquiries so the
     // table chrome + StatsCards are visually verifiable from first load.
-    // Lesson #22: probe-then-batch pattern, idempotent — never duplicates.
+    // probe-then-batch pattern, idempotent — never duplicates.
     await seedTacEnquiriesIfMissing(ctx);
     let q: any = ctx.db
       .collection("enquiries")
@@ -219,7 +217,7 @@ async function tacListEnquiries(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// --- Endpoint 2: tacGetEnquiry -------------------------------------------
+// Endpoint 2: tacGetEnquiry -------------------------------------------
 
 async function tacGetEnquiry(req: any, res: any, ctx: ApiContext) {
   try {
@@ -259,7 +257,7 @@ async function tacGetEnquiry(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// --- Endpoint 3: tacUpsertEnquiry ----------------------------------------
+// Endpoint 3: tacUpsertEnquiry ----------------------------------------
 
 async function tacUpsertEnquiry(req: any, res: any, ctx: ApiContext) {
   try {
@@ -380,7 +378,7 @@ async function tacUpsertEnquiry(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// --- Endpoint 4: tacAttachFile -------------------------------------------
+// Endpoint 4: tacAttachFile -------------------------------------------
 
 async function tacAttachFile(req: any, res: any, ctx: ApiContext) {
   try {
@@ -460,7 +458,7 @@ async function tacAttachFile(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// --- Endpoint 5: tacRemoveAttachment -------------------------------------
+// Endpoint 5: tacRemoveAttachment -------------------------------------
 
 async function tacRemoveAttachment(req: any, res: any, ctx: ApiContext) {
   try {
@@ -517,7 +515,7 @@ async function tacRemoveAttachment(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// --- Endpoint 6: tacDeleteEnquiry ----------------------------------------
+// Endpoint 6: tacDeleteEnquiry ----------------------------------------
 //
 // Permanent (hard) delete — removes the enquiry doc, every `tabs/*`
 // sub-collection deliverable, every Firebase Storage file referenced by the
@@ -604,17 +602,17 @@ async function tacDeleteEnquiry(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// --- Endpoint 7: tacBuildInsightPrompt (Phase 2 step 1) -------------------
+// Endpoint 7: tacBuildInsightPrompt (step 1) -------------------
 //
 // Two-step pipeline (the actual Gemini call happens via the existing
 // `aiRoutes.geminiPrompt` route — single source of truth for AI traffic +
 // the dual-key + dual-model + retry rotation).
 //
-//   step 1 → tacBuildInsightPrompt   (this endpoint)
+//   step 1 → tacBuildInsightPrompt (this endpoint)
 //                ↓
 //            client calls existing api.geminiPrompt(prompt, config)
 //                ↓
-//   step 2 → tacFinaliseInsight       (writes deliverable + flips status)
+//   step 2 → tacFinaliseInsight (writes deliverable + flips status)
 
 // Hard cap on PDF base64 payload size — Vercel serverless has a body limit
 // and Gemini handles inline binary up to a few MB cleanly. Larger PDFs fall
@@ -624,7 +622,7 @@ const PDF_INLINE_MAX_BYTES = 6 * 1024 * 1024; // 6 MB raw → ~8 MB base64
 /** Pulls the first PDF attachment from the enquiry doc + tries to load its
  *  bytes from Storage as a base64 string suitable for `inlineData`. Returns
  *  null on any failure (PDF too big / not present / read error) so the
- *  insight generation degrades gracefully to no overlay. */
+ *  insight generation degrades gracefully to no overlay.*/
 async function loadPrimaryPdfInline(
   ctx: ApiContext,
   doc: any,
@@ -677,12 +675,12 @@ async function tacBuildInsightPrompt(req: any, res: any, ctx: ApiContext) {
       });
     }
 
-    // Phase 4b — also try to load the source PDF inline so the client can
+    // also try to load the source PDF inline so the client can
     // pass it to Gemini for visual analysis (yields per-annotation x/y
     // coordinates). Best-effort: null on any failure.
     const pdfInlineData = await loadPrimaryPdfInline(ctx, guard.doc);
 
-    // Phase 7 hot-fix #2 — flag whether the enquiry has substantive context
+    //  hot-fix #2 — flag whether the enquiry has substantive context
     // that warrants a one-shot retry if costProgramme comes back null. The
     // client uses this to decide whether to re-prompt for cost+programme.
     const queryLen = String(guard.doc.query ?? "").length;
@@ -708,7 +706,7 @@ async function tacBuildInsightPrompt(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// --- Endpoint 7b: tacFinaliseInsight (Phase 2 step 2) --------------------
+// Endpoint 7b: tacFinaliseInsight (step 2) --------------------
 
 async function tacFinaliseInsight(req: any, res: any, ctx: ApiContext) {
   try {
@@ -756,8 +754,8 @@ async function tacFinaliseInsight(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// --- Endpoint 8: tacGetEnquiryDeliverable (Phase 2) ----------------------
-// Reads a single tab's deliverable doc (Phase 3-7 will use this for the
+// Endpoint 8: tacGetEnquiryDeliverable ----------------------
+// Reads a single tab's deliverable doc (7 will use this for the
 // Drawing / RFI / Cost / Compliance tabs as they land).
 
 async function tacGetEnquiryDeliverable(req: any, res: any, ctx: ApiContext) {
@@ -822,11 +820,11 @@ async function tacGetEnquiryDeliverable(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// --- Endpoint 9: tacUpsertRfiDraft (Phase 5) -----------------------------
+// Endpoint 9: tacUpsertRfiDraft -----------------------------
 //
 // User-edited tweaks to the auto-populated RFI on the RFI tab. Patches
 // the `tabs/rfi.content` deliverable in place. Status must remain `Draft`
-// — once Issued, the RFI is locked + lives in `rfis/{rfiNumber}`.
+// once Issued, the RFI is locked + lives in `rfis/{rfiNumber}`.
 
 const RFI_WRITABLE_FIELDS = [
   "subject",
@@ -914,11 +912,11 @@ async function tacUpsertRfiDraft(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// --- Endpoint 10: tacIssueRfi (Phase 5) ----------------------------------
+// Endpoint 10: tacIssueRfi ----------------------------------
 //
 // Generates an `RFI-{XXXX}-{NNN}` number, persists the RFI to the top-level
 // `rfis/{clientId_rfiNumber}` collection (rules + indexes already provisioned
-// in Phase 0), flips `tabs/rfi.content.status` to `Issued`, and stamps
+// in ), flips `tabs/rfi.content.status` to `Issued`, and stamps
 // issuedAt + issuedBy.
 
 function makeRfiNumber(projectId: string, sequence: number): string {
@@ -973,7 +971,7 @@ async function tacIssueRfi(req: any, res: any, ctx: ApiContext) {
 
     // Per-project RFI counter — looks at existing rfis for this clientId +
     // projectId and picks max(sequence) + 1. For a v1 with low write volume
-    // this is fine; can be replaced with a Firestore counter doc in Phase 5b
+    // this is fine; can be replaced with a Firestore counter doc in
     // if concurrent issues are a concern.
     const projectId = String(guard.doc.projectId ?? "TAC");
     const existingRfisSnap = await ctx.db
@@ -1035,7 +1033,7 @@ async function tacIssueRfi(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// --- Endpoint 11: tacListRfis (Phase 5) ----------------------------------
+// Endpoint 11: tacListRfis ----------------------------------
 //
 // Workspace-scoped list of issued RFIs. Used by RfiRegisterPage.
 
@@ -1063,7 +1061,7 @@ async function tacListRfis(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// --- Endpoint 12: tacListCostRates (Phase 6) -----------------------------
+// Endpoint 12: tacListCostRates -----------------------------
 //
 // Returns the merged cost-rates library (shared seed unioned with the
 // council's own custom rates). Used by `CostProgrammeTab` for tooltip
@@ -1086,7 +1084,7 @@ async function tacListCostRates(_req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// --- Endpoint 13: tacExportCostCsv (Phase 6) -----------------------------
+// Endpoint 13: tacExportCostCsv -----------------------------
 //
 // Renders the enquiry's cost+programme costLines as a CSV string for
 // download via a `<a download>` Blob URL on the client. Header row +
@@ -1107,7 +1105,7 @@ async function tacExportCostCsv(req: any, res: any, ctx: ApiContext) {
     const { enquiryId } = req.body ?? {};
     // Reuse the canonical loader so we get composite-key resolution + tenant
     // guard for free. Bare doc(enquiryId) lookups always 404 because the
-    // collection is keyed `{primaryUid}_{enquiryId}` (lesson #10).
+    // collection is keyed `{primaryUid}_{enquiryId}`.
     const guard = await loadEnquiryForMutation(ctx, enquiryId, res);
     if (!guard) return;
     const summaryTab = await guard.docRef
@@ -1154,11 +1152,11 @@ async function tacExportCostCsv(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// --- Endpoint 14: tacDownloadCompliancePack (Phase 7) --------------------
+// Endpoint 14: tacDownloadCompliancePack --------------------
 //
 // Renders the enquiry's compliance deliverable (dimensional + system checks
 // + citations + recommended option lede) as a structured PDF using the
-// Phase 7 jspdf renderer. Requires the enquiry to have a Summary
+//  jspdf renderer. Requires the enquiry to have a Summary
 // deliverable already generated (insight pipeline must have run); returns
 // 404 NO_INSIGHT otherwise.
 
@@ -1236,10 +1234,10 @@ async function tacDownloadCompliancePack(
   }
 }
 
-// --- Endpoint 15: tacSaveToGoldenThread (Phase 7) ------------------------
+// Endpoint 15: tacSaveToGoldenThread ------------------------
 //
 // HRB-only — server-guarded by checking `Project.isHRB === true`. Writes
-// an immutable WORM chain doc to `goldenThread` following the Phase 6d
+// an immutable WORM chain doc to `goldenThread` following the
 // pattern (sourceKind = 'enquiry' to distinguish from report-sealed
 // records). Idempotent across re-clicks: each click chains a new version
 // with `previousId` linking to the prior enquiry-sourced GT doc; the
@@ -1308,7 +1306,7 @@ async function tacSaveToGoldenThread(
 
     const ts = new Date().toISOString();
     // Chain — find prior enquiry-sourced GT records for THIS enquiry to
-    // capture re-saves as a versioned chain (matches Phase 6d pattern).
+    // capture re-saves as a versioned chain (matches pattern).
     const priorSnap = await ctx.db
       .collection("goldenThread")
       .where("clientId", "==", ctx.primaryUid)
@@ -1372,16 +1370,16 @@ async function tacSaveToGoldenThread(
   }
 }
 
-// --- Phase 8 — Feedback + Audit + Archive endpoints ----------------------
+// Feedback + Audit + Archive endpoints ----------------------
 //
-// Phase 8 = E4 (prompt management) + US-2.4 (feedback) + Compliance Lead
+//  = E4 (prompt management) + US-2.4 (feedback) + Compliance Lead
 // audit dashboard. Endpoints mutate fields already declared on the
 // Enquiry shape (`feedback`, `flaggedForAudit`, status `Archived`).
 
 /** Compliance Lead extra-role check on the server. Mirrors the client
- *  `isComplianceLead` helper — reads `userData.extraRoles[]` (or its
+ *  `isComplianceLead` helper — reads `userData.extraRoles` (or its
  *  TAC-specific alias). Compliance Lead is held alongside a primary role
- *  (typically client_admin); admins always pass. */
+ *  (typically client_admin); admins always pass.*/
 function isComplianceLeadCtx(ctx: ApiContext): boolean {
   if (ctx.isAdmin || ctx.isClientAdmin) return true;
   const data = ctx.userData ?? {};
@@ -1393,7 +1391,7 @@ function isComplianceLeadCtx(ctx: ApiContext): boolean {
   return tacExtras.includes("compliance_lead");
 }
 
-// --- Endpoint 16: tacSubmitFeedback (Phase 8 / US-2.4) -------------------
+// Endpoint 16: tacSubmitFeedback (/ US-2.4) -------------------
 //
 // Thumbs-up / thumbs-down feedback on the Summary tab. Thumbs-down
 // optionally captures a categorised reason + free-text note. Re-submitting
@@ -1449,7 +1447,7 @@ async function tacSubmitFeedback(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// --- Endpoint 17: tacFlagForAudit (Phase 8) ------------------------------
+// Endpoint 17: tacFlagForAudit ------------------------------
 //
 // Compliance Lead / ClientAdmin / SuperAdmin flags an enquiry for audit
 // review. Stamps `flaggedForAudit` with timestamp + flagger uid. Optional
@@ -1498,7 +1496,7 @@ async function tacFlagForAudit(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// --- Endpoint 18: tacResolveFlag (Phase 8) -------------------------------
+// Endpoint 18: tacResolveFlag -------------------------------
 //
 // Resolve an existing audit flag. Compliance Lead / admin only. Required
 // resolution note (≥5 chars) explains the resolution. Stamps resolvedAt +
@@ -1563,7 +1561,7 @@ async function tacResolveFlag(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// --- Endpoint 19: tacArchiveEnquiry (Phase 8) ----------------------------
+// Endpoint 19: tacArchiveEnquiry ----------------------------
 //
 // Move enquiry to `Archived` cold-state. Allowed from any state EXCEPT
 // `Generating` (don't yank an in-flight insight). Owner or admin only.
@@ -1619,7 +1617,7 @@ async function tacArchiveEnquiry(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// --- Endpoint 20: tacListAuditFlagged (Phase 8) --------------------------
+// Endpoint 20: tacListAuditFlagged --------------------------
 //
 // Compliance Lead / admin-only list of every enquiry currently flagged for
 // audit OR carrying thumbs-down feedback. Powers AuditDashboardPage.
@@ -1681,9 +1679,9 @@ async function tacListAuditFlagged(_req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// --- Phase 9 — Close + Unlock + Decision Log + Add to PM report ----------
+// Close + Unlock + Decision Log + Add to PM report ----------
 
-// --- Endpoint 21: tacCloseEnquiry (Phase 9) ------------------------------
+// Endpoint 21: tacCloseEnquiry ------------------------------
 //
 // Owner-or-admin closes an Open or Approved enquiry. For HRB projects,
 // also writes a Golden Thread chain doc (sourceKind 'enquiry') so the
@@ -1803,10 +1801,10 @@ async function tacCloseEnquiry(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// --- Endpoint 22: tacUnlockEnquiry (Phase 9) -----------------------------
+// Endpoint 22: tacUnlockEnquiry -----------------------------
 //
 // Compliance Lead / SuperAdmin re-opens a Closed enquiry. Required reason
-// (≥10 chars) — appended to a `unlockHistory[]` array on the enquiry so
+// (≥10 chars) — appended to a `unlockHistory` array on the enquiry so
 // the audit trail of every unlock is permanent. Returns to status `Open`.
 
 async function tacUnlockEnquiry(req: any, res: any, ctx: ApiContext) {
@@ -1874,7 +1872,7 @@ async function tacUnlockEnquiry(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// --- Endpoint 23: tacExportDecisionLog (Phase 9) -------------------------
+// Endpoint 23: tacExportDecisionLog -------------------------
 //
 // Per-project chronological PDF export of every closed enquiry on the
 // project. Cover sheet (project meta + BSA Gateway references for HRB) +
@@ -1981,8 +1979,7 @@ async function tacExportDecisionLog(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// --- Endpoint 24 + 25: tacAddToProjectReport / tacRemoveFromProjectReport
-//                                                                (Phase 9)
+// Endpoint 24 + 25: tacAddToProjectReport / tacRemoveFromProjectReport
 //
 // Flags an enquiry for inclusion in the project's status report. The
 // ProjectReport page reads enquiries where `addedToProjectReport === true`
@@ -2047,7 +2044,7 @@ async function tacRemoveFromProjectReport(
   }
 }
 
-// --- Endpoint 26: tacListProjectReportEnquiries (Phase 9) ----------------
+// Endpoint 26: tacListProjectReportEnquiries ----------------
 //
 // ProjectReport reads this to render the Technical Assurance section.
 // Returns enriched rows for each enquiry flagged `addedToProjectReport`
@@ -2139,20 +2136,20 @@ async function tacListProjectReportEnquiries(
   }
 }
 
-// --- Phase 9b — Share-for-review endpoints -------------------------------
+// Share-for-review endpoints -------------------------------
 //
 // Owner shares an enquiry with another workspace member for read-only
 // review. Recipient sees a "Shared with me" filter on EnquiriesListPage,
 // opens the workspace, and approves or rejects with an optional note.
-// Multiple recipients per enquiry supported (`shares[]` array).
+// Multiple recipients per enquiry supported (`shares` array).
 
 function makeShareId(): string {
   return `shr-${Math.random().toString(36).slice(2, 10)}-${Date.now().toString(36)}`;
 }
 
-// --- Endpoint 27: tacShareEnquiry (Phase 9b) -----------------------------
+// Endpoint 27: tacShareEnquiry -----------------------------
 //
-// Owner-or-admin shares with a workspace member. Adds entry to `shares[]`.
+// Owner-or-admin shares with a workspace member. Adds entry to `shares`.
 // Server validates the recipient is in the same `clientId` workspace.
 
 async function tacShareEnquiry(req: any, res: any, ctx: ApiContext) {
@@ -2249,10 +2246,10 @@ async function tacShareEnquiry(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// --- Endpoint 28: tacDecideOnShare (Phase 9b) ----------------------------
+// Endpoint 28: tacDecideOnShare ----------------------------
 //
 // Recipient approves or rejects their share. Only the user listed as
-// `shares[].sharedWith` can decide on that share — owner / admin can NOT
+// `shares.sharedWith` can decide on that share — owner / admin can NOT
 // decide on someone else's behalf (would defeat the audit point).
 
 async function tacDecideOnShare(req: any, res: any, ctx: ApiContext) {
@@ -2375,7 +2372,7 @@ async function tacDecideOnShare(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// --- Endpoint 29: tacListSharedWithMe (Phase 9b) -------------------------
+// Endpoint 29: tacListSharedWithMe -------------------------
 //
 // Returns enquiries shared with the current user. Used by the "Shared with
 // me" filter on EnquiriesListPage. Filtering by `array-contains` on a
@@ -2416,10 +2413,10 @@ async function tacListSharedWithMe(_req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// --- Phase 10 — Polish: corpus refresh cron + citation integrity scan ----
+// Polish: corpus refresh cron + citation integrity scan ----
 //
 // Hardening jobs that run platform-wide (not workspace-scoped). Cron auth
-// follows the same `CRON_SECRET` Bearer pattern as the HRC + chase-engine
+// follows the same `CRON_SECRET` Bearer pattern as the + chase-engine
 // crons in this codebase.
 
 function isAuthorisedTacCronCall(req: any, ctx: ApiContext): boolean {
@@ -2431,7 +2428,7 @@ function isAuthorisedTacCronCall(req: any, ctx: ApiContext): boolean {
   return auth === `Bearer ${secret}`;
 }
 
-// --- Endpoint 30: tacRefreshCorpus (Phase 10, cron) ----------------------
+// Endpoint 30: tacRefreshCorpus (, cron) ----------------------
 //
 // Quarterly cron that re-runs `seedRegulationsCorpusIfMissing` so any
 // hand-curated entries added to the seed file land in production without
@@ -2448,7 +2445,7 @@ async function tacRefreshCorpus(req: any, res: any, ctx: ApiContext) {
       });
     }
     // Re-import dynamically so a future TAC corpus implementation that
-    // pulls from a vendor (Q1=B Phase 2 track) can swap this out without
+    // pulls from a vendor (track) can swap this out without
     // touching the cron entry itself.
     const corpusMod = await import("../lib/regulationsCorpusSeed.js");
     await corpusMod.seedRegulationsCorpusIfMissing(ctx);
@@ -2468,12 +2465,12 @@ async function tacRefreshCorpus(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// --- Endpoint 31: tacScanCitationIntegrity (Phase 10, admin) -------------
+// Endpoint 31: tacScanCitationIntegrity (, admin) -------------
 //
 // Walks every enquiry's `tabs/summary` deliverable in the workspace and
 // checks each citation's `regId` resolves in the current corpus. Reports
 // any non-resolving citations grouped by enquiry. Used as a one-off
-// post-deploy gate after corpus changes (Q1=B vendor swap, etc.) and
+// post-deploy gate after corpus changes (vendor swap, etc.) and
 // satisfies PRD §5 DoD ("≥95% of insights carry full citation trail").
 
 async function tacScanCitationIntegrity(
@@ -2566,7 +2563,7 @@ async function tacScanCitationIntegrity(
   }
 }
 
-// --- Phase 6b — Admin rates editor ---------------------------------------
+// Admin rates editor ---------------------------------------
 //
 // ClientAdmin / SuperAdmin add custom rates that shadow the seed library.
 // Stored under `costRates/{primaryUid}_{rateId}` with `clientId` = the
@@ -2593,7 +2590,7 @@ const COST_RATE_VALID_CATEGORIES = new Set([
 ]);
 const COST_RATE_VALID_UNITS = new Set(["m", "m2", "m3", "no", "hr", "item"]);
 
-// --- Endpoint 32: tacUpsertCostRate (Phase 6b, admin) --------------------
+// Endpoint 32: tacUpsertCostRate (, admin) --------------------
 //
 // Create / update a custom cost rate for the caller's workspace. Custom
 // rates shadow seed entries by `rateId` (the merge in `loadCostRates`
@@ -2617,7 +2614,7 @@ async function tacUpsertCostRate(req: any, res: any, ctx: ApiContext) {
       });
     }
     // Whitelist write — drop any fields the caller may have added (e.g.
-    // `clientId`, `lastUpdated`). Lesson #12 (whitelist on every upsert).
+    // `clientId`, `lastUpdated`). (whitelist on every upsert).
     const patch: any = {};
     for (const key of COST_RATE_WRITABLE_FIELDS) {
       if (rateInput[key] !== undefined) patch[key] = rateInput[key];
@@ -2691,7 +2688,7 @@ async function tacUpsertCostRate(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// --- Endpoint 33: tacDeleteCostRate (Phase 6b, admin) --------------------
+// Endpoint 33: tacDeleteCostRate (, admin) --------------------
 //
 // Delete a custom cost rate. Refuses to delete shared-seed rates (those
 // are platform-wide and should not be deleted by individual tenants —
@@ -2774,7 +2771,7 @@ async function tacDeleteCostRate(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// --- Route map -----------------------------------------------------------
+// Route map -----------------------------------------------------------
 
 export const technicalAssuranceRoutes: Record<string, any> = {
   tacListEnquiries,
@@ -2783,48 +2780,48 @@ export const technicalAssuranceRoutes: Record<string, any> = {
   tacAttachFile,
   tacRemoveAttachment,
   tacDeleteEnquiry,
-  // Phase 2 — AI insight generation (two-step: build prompt, then finalise
+  // AI insight generation (two-step: build prompt, then finalise
   // after client-side call to existing `aiRoutes.geminiPrompt`).
   tacBuildInsightPrompt,
   tacFinaliseInsight,
   tacGetEnquiryDeliverable,
-  // Phase 5 — RFI tab + register.
+  // RFI tab + register.
   tacUpsertRfiDraft,
   tacIssueRfi,
   tacListRfis,
-  // Phase 6 — Cost & programme tab.
+  // Cost & programme tab.
   tacListCostRates,
   tacExportCostCsv,
-  // Phase 7 — Compliance & citations tab.
+  // Compliance & citations tab.
   tacDownloadCompliancePack,
   tacSaveToGoldenThread,
-  // Phase 8 — Feedback + Audit + Archive.
+  // Feedback + Audit + Archive.
   tacSubmitFeedback,
   tacFlagForAudit,
   tacResolveFlag,
   tacArchiveEnquiry,
   tacListAuditFlagged,
-  // Phase 9 — Close + Unlock + Decision Log + Add to PM report.
+  // Close + Unlock + Decision Log + Add to PM report.
   tacCloseEnquiry,
   tacUnlockEnquiry,
   tacExportDecisionLog,
   tacAddToProjectReport,
   tacRemoveFromProjectReport,
   tacListProjectReportEnquiries,
-  // Phase 9b — Share-for-review.
+  // Share-for-review.
   tacShareEnquiry,
   tacDecideOnShare,
   tacListSharedWithMe,
-  // Phase 6b — Admin rates editor.
+  // Admin rates editor.
   tacUpsertCostRate,
   tacDeleteCostRate,
-  // Phase 10 — Polish: corpus refresh cron + integrity scan.
+  // Polish: corpus refresh cron + integrity scan.
   tacRefreshCorpus,
   tacScanCitationIntegrity,
-  // Phase 4: tacRenderAnnotatedPdf, tacSendDrawingToArchitect.
-  // Phase 5: tacIssueRfi, tacListRfis, tacGetRfi, tacUpsertRfiDraft.
-  // Phase 6b (deferred): tacUpsertCostRate (admin rates editor).
-  // Phase 9: tacCloseEnquiry, tacUnlockEnquiry, tacShareEnquiry,
+  // tacRenderAnnotatedPdf, tacSendDrawingToArchitect.
+  // tacIssueRfi, tacListRfis, tacGetRfi, tacUpsertRfiDraft.
+  //  (deferred): tacUpsertCostRate (admin rates editor).
+  // tacCloseEnquiry, tacUnlockEnquiry, tacShareEnquiry,
   //          tacDecideOnShare, tacExportDecisionLog.
-  // Phase 10: refreshRegulationsCorpus.
+  // refreshRegulationsCorpus.
 };

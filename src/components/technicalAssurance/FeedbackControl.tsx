@@ -1,11 +1,11 @@
-// Phase 8 — Thumbs-up / thumbs-down feedback control. PRD US-2.4.
+// Thumbs-up / thumbs-down feedback control. PRD US-2.4.
 //
 // Inline thumbs pair on the Summary tab. Thumbs-up submits immediately
 // (one click, no dialog). Thumbs-down opens a dialog with a categorised
 // reason picker (inaccurate / missed_regulation / wrong_stage / other) +
 // optional free-text note. Re-submitting overwrites prior feedback.
 //
-// Uses motion-driven custom modal (no native window.confirm — lesson #41).
+// Uses motion-driven custom modal (no native window.confirm — ).
 
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";

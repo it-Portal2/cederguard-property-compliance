@@ -10,11 +10,11 @@
 
 import { uploadAsset, deleteAsset } from "./storage.js";
 
-// --- Limits ---------------------------------------------------------------
+// Limits ---------------------------------------------------------------
 export const TAC_MAX_FILE_BYTES = 50 * 1024 * 1024; // 50 MB per file (PRD US-1.2)
 export const TAC_MAX_ENQUIRY_BYTES = 200 * 1024 * 1024; // 200 MB total per enquiry
 
-// --- Allow-list of MIME types (PRD US-1.2) -------------------------------
+// Allow-list of MIME types (PRD US-1.2) -------------------------------
 // Construction file formats + standard office docs + raster images. Treated
 // as a whitelist — anything not on this list is rejected at decode.
 //
@@ -59,7 +59,7 @@ export const TAC_TRUSTED_EXTENSIONS = new Set<string>([
   "rfa",
 ]);
 
-// --- Helpers --------------------------------------------------------------
+// Helpers --------------------------------------------------------------
 function fileExtension(fileName: string): string {
   if (typeof fileName !== "string") return "";
   const dot = fileName.lastIndexOf(".");
@@ -85,7 +85,7 @@ export function decodeBase64TacFile(
     throw new Error("fileName is required.");
   }
 
-  // Accept both bare base64 and `data:...;base64,...` URIs.
+  // Accept both bare base64 and `data:.;base64,.` URIs.
   const match = base64.match(/^data:([\w+\/.\-]+);base64,(.+)$/);
   let mime = (declaredMime || "application/octet-stream").toLowerCase();
   let payload = base64;
@@ -164,10 +164,10 @@ export async function deleteTacAttachment(path: string): Promise<void> {
   return deleteAsset(path);
 }
 
-// --- Virus-scan stub ------------------------------------------------------
-// Q4=A locks ClamAV via a Cloud Function. Phase 1 ships the data shape only —
+// Virus-scan stub ------------------------------------------------------
+//  locks ClamAV via a Cloud Function. ships the data shape only —
 // `avScanStatus: 'pending'` is recorded on every upload so a later Cloud
-// Function (or the Phase 10 retention cron) can pick the doc up, scan it,
+// Function (or the retention cron) can pick the doc up, scan it,
 // and patch the status to `'clean'` / `'infected'` / `'failed'`. The UI
 // shows the status pill so users know the file is queued for scan.
 export type TacAvStatus = "pending" | "clean" | "infected" | "failed";

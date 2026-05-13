@@ -77,8 +77,8 @@ function optional(id: string, order: number, name: string, guidance: string, ext
   };
 }
 
-// Standard gateway / milestone section layout — consistent with the Southwark
-// GW2 + Enfield KD samples and the plan §17 prefab skeletons.
+// Standard section layout shared by gateway, milestone, and cabinet
+// templates. Edit here to roll layout changes across all variants.
 function gatewayStyleSections(variant: 'gateway' | 'milestone' | 'cabinet'): SeedSection[] {
   const isGateway = variant === 'gateway';
   return [

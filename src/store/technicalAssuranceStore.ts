@@ -7,7 +7,7 @@ import type { Enquiry } from "../types/technicalAssurance";
 // so TAC surfaces never touch existing state and the existing mega-store stays
 // untouched (lesson §25 ADD-never-MODIFY).
 //
-// Phase 1 — populated:
+// populated:
 //   enquiriesCache: list cache for the EnquiriesListPage; used to give an
 //   instant render after first load so subsequent refetches feel snappy.
 //   `null` means "never loaded"; an empty array means "loaded, none exist".
@@ -21,7 +21,7 @@ export interface TechnicalAssuranceState {
   setEnquiries: (items: Enquiry[]) => void;
   clearEnquiries: () => void;
 
-  // Phase 2 — id of the enquiry currently being run through the AI insight
+  // id of the enquiry currently being run through the AI insight
   // generator. Used by the list page to disable other row actions on the same
   // row + show the pulse/loading state on the "Generate insight" button.
   generatingId: string | null;

@@ -22,14 +22,14 @@ import type {
   DrawingAnnotationSeverity,
 } from "../../../types/technicalAssurance";
 
-// Phase 4 — Drawing tab. Side-by-side: source PDF on the left (EmbedPDF
+// Drawing tab. Side-by-side: source PDF on the left (EmbedPDF
 // viewer reused from governance) + annotation list on the right. The user
-// mentally maps numbered callouts to the PDF using the badges; Phase 4b
+// mentally maps numbered callouts to the PDF using the badges;
 // will add an actual SVG overlay rendered server-side via pdf-lib.
 //
 // Locked decisions:
-//   • Q9 = A — server-side overlay (deferred to 4b; viewer stays read-only)
-//   • Q16 = D — send to architect via PDF + clipboard email (no SMTP)
+//   • — server-side overlay (deferred to 4b; viewer stays read-only)
+//   • — send to architect via PDF + clipboard email (no SMTP)
 //   • PRD US-3.2 — minimum 3 numbered callouts (validated server-side)
 
 const SEVERITY_PILL: Record<DrawingAnnotationSeverity, string> = {
@@ -135,12 +135,12 @@ export function DrawingTab({ enquiry, drawing }: DrawingTabProps) {
   );
   const [sendOpen, setSendOpen] = useState(false);
 
-  // Phase 4b' — multi-PDF picker. When the enquiry has multiple PDF
+  // multi-PDF picker. When the enquiry has multiple PDF
   // attachments, the PM can switch which one the viewer shows. The
   // AI-annotated PDF (the one with `drawing.basePdfPath`) keeps its
   // overlay markers; other PDFs render in the bare GovernancePDFViewer
   // with no annotations (AI annotates only the primary drawing per
-  // PRD US-3.2 — multi-PDF AI annotation is a Phase 2c+ track because it
+  // PRD US-3.2 — multi-PDF AI annotation is a + track because it
   // doubles inline-data + token cost per Gemini call).
   const allPdfs = useMemo(() => {
     const atts = enquiry.attachments ?? [];
@@ -165,7 +165,7 @@ export function DrawingTab({ enquiry, drawing }: DrawingTabProps) {
     !!aiAnnotatedPath && activePdf?.storagePath === aiAnnotatedPath;
   const showMultiPicker = allPdfs.length > 1;
 
-  // Phase 4b — when at least one annotation has an x/y coordinate, the
+  // when at least one annotation has an x/y coordinate, the
   // overlay viewer renders the markers ON the PDF. Otherwise we fall back
   // to the bare GovernancePDFViewer (no overlay) and let the side panel
   // carry the numbered list. The viewer itself handles per-annotation
@@ -176,7 +176,7 @@ export function DrawingTab({ enquiry, drawing }: DrawingTabProps) {
 
   return (
     <div className="space-y-4">
-      {/* Header strip */}
+      {/* Header strip*/}
       <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
         <div className="flex items-start gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
@@ -220,10 +220,10 @@ export function DrawingTab({ enquiry, drawing }: DrawingTabProps) {
         </div>
       </div>
 
-      {/* Phase 4b' — Multi-PDF picker. Visible when the enquiry has more
-          than one PDF attached. Each chip shows the file name; the
-          AI-annotated PDF gets an indigo "AI" pill. Switching to a
-          non-annotated PDF renders it in the bare viewer (no overlay). */}
+      {/* Multi-PDF picker. Visible when the enquiry has more
+ than one PDF attached. Each chip shows the file name; the
+ AI-annotated PDF gets an indigo "AI" pill. Switching to a
+ non-annotated PDF renders it in the bare viewer (no overlay).*/}
       {showMultiPicker ? (
         <div
           className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
@@ -279,7 +279,7 @@ export function DrawingTab({ enquiry, drawing }: DrawingTabProps) {
         </div>
       ) : null}
 
-      {/* Side-by-side: PDF + annotations */}
+      {/* Side-by-side: PDF + annotations*/}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <div className="lg:col-span-7">
           {activePdf?.url ? (

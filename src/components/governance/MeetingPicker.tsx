@@ -1,4 +1,4 @@
-// Phase 5.5b — Two-step meeting picker.
+// Two-step meeting picker.
 //
 // Step 1: pick a framework body (free choice — Q7 = a)
 // Step 2: pick a Scheduled meeting of that body (sorted ascending,
@@ -18,13 +18,13 @@ const inputCls =
   'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 transition-colors hover:border-slate-300 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100';
 
 interface Props {
-  /** Currently selected meetingId (or null when nothing picked yet). */
+  /** Currently selected meetingId (or null when nothing picked yet).*/
   value: string | null;
-  /** Called with the new meetingId on every pick. */
+  /** Called with the new meetingId on every pick.*/
   onChange: (meetingId: string | null) => void;
-  /** Disable interaction when the host modal is read-only. */
+  /** Disable interaction when the host modal is read-only.*/
   disabled?: boolean;
-  /** Compact display in narrow contexts. */
+  /** Compact display in narrow contexts.*/
   compact?: boolean;
 }
 

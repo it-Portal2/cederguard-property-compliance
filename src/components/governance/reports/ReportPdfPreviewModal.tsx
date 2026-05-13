@@ -22,11 +22,11 @@ interface Props {
   reportTitle: string;
   /** Pre-rendered base64 PDF if the caller already has one (e.g. sealed
    *  PDF download). When null/undefined the modal renders a fresh preview
-   *  via governanceRenderReportPdf. */
+   *  via governanceRenderReportPdf.*/
   pdfBase64?: string | null;
-  /** Pre-set filename. Defaults to `<reportId>-<status>.pdf`. */
+  /** Pre-set filename. Defaults to `<reportId>-<status>.pdf`.*/
   filename?: string;
-  /** Heading shown above the viewer; defaults to "Preview PDF". */
+  /** Heading shown above the viewer; defaults to "Preview PDF".*/
   title?: string;
   onClose: () => void;
 }
@@ -48,7 +48,7 @@ export function ReportPdfPreviewModal({
   // for reading dense content. Disabled when the caller pre-supplied a PDF
   // (e.g. sealed download — already finalised).
   const [hideWatermark, setHideWatermark] = useState(false);
-  // Phase 13 — FOI / public-publication mode. When true, sections marked
+  // FOI / public-publication mode. When true, sections marked
   // Part 2 / Closed are replaced by a placeholder line in the rendered
   // PDF (the closed body is never written to the buffer). Defaults
   // false so internal previews show everything.
@@ -119,7 +119,7 @@ export function ReportPdfPreviewModal({
   ]);
 
   // Hide the toggle when the caller pre-rendered (sealed downloads etc.)
-  // — there's no server round-trip to flip the watermark on those.
+  // there's no server round-trip to flip the watermark on those.
   const canToggleWatermark = !pdfBase64;
 
   const dataUri = base64 ? `data:application/pdf;base64,${base64}` : null;

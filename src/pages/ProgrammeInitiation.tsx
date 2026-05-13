@@ -198,7 +198,7 @@ export function ProgrammeInitiation() {
         boardComposition: '',
         reportingCycle: '',
         governanceFramework: '',
-        // Phase 6.5 — standardised Governance Profile (Anthony Apr 2026).
+        // standardised Governance Profile.
         // Linked to the Programme Governance Framework — picking values
         // resolves to the matching body / threshold / route.
         decisionDeliveryLevel: '',
@@ -243,7 +243,7 @@ export function ProgrammeInitiation() {
         boardComposition: '',
         reportingCycle: '',
         governanceFramework: '',
-        // Phase 6.5 — standardised Governance Profile (Anthony Apr 2026).
+        // standardised Governance Profile.
         // Linked to the Programme Governance Framework — picking values
         // resolves to the matching body / threshold / route.
         decisionDeliveryLevel: '',
@@ -299,7 +299,7 @@ export function ProgrammeInitiation() {
             boardComposition: prog.boardComposition || '',
             reportingCycle: prog.reportingCycle || '',
             governanceFramework: prog.governanceFramework || '',
-            // Phase 6.5 — Governance Profile.
+            // Governance Profile.
             decisionDeliveryLevel: (prog as any).decisionDeliveryLevel || '',
             financialThreshold: (prog as any).financialThreshold || '',
             riskRegulatoryProfile: (prog as any).riskRegulatoryProfile || '',
@@ -532,7 +532,7 @@ export function ProgrammeInitiation() {
                 strategicObjectives: form.strategicObjectives || '',
                 geographicScope: form.geographicScope || '',
                 escalationRoute: form.escalationRoute || '',
-                // Phase 6.5 — Governance Profile (linked to Framework).
+                // Governance Profile (linked to Framework).
                 decisionDeliveryLevel: form.decisionDeliveryLevel || '',
                 financialThreshold: form.financialThreshold || '',
                 riskRegulatoryProfile: form.riskRegulatoryProfile || '',
@@ -620,7 +620,7 @@ export function ProgrammeInitiation() {
     return (
         <div className="min-h-screen bg-slate-50/50 pb-24 md:pb-12 pt-safe">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
-                {/* ── HEADER SECTION ────────────────────────────────────────── */}
+                {/* ── HEADER SECTION ──────────────────────────────────────────*/}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 md:mb-12 border-b border-slate-100 pb-8">
                     <div className="flex items-center gap-4">
                         <button onClick={() => navigate(-1)} className="p-2 hover:bg-slate-50 rounded-xl transition-colors">
@@ -680,9 +680,9 @@ export function ProgrammeInitiation() {
                     </div>
                 </div>
 
-                {/* ── MAIN CONTENT ── */}
+                {/* ── MAIN CONTENT ──*/}
                 <div className="relative flex flex-col lg:flex-row gap-8">
-                    {/* Full-section loader overlay during create / update */}
+                    {/* Full-section loader overlay during create / update*/}
                     {loading && (
                         <div className="absolute inset-0 z-30 bg-white/70 backdrop-blur-[3px] rounded-2xl flex flex-col items-center justify-center gap-4 min-h-[200px]">
                             <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin shadow-md" />
@@ -691,9 +691,9 @@ export function ProgrammeInitiation() {
                             </span>
                         </div>
                     )}
-                    {/* ── LEFT: Main Form ────────────────────────────────────────── */}
+                    {/* ── LEFT: Main Form ──────────────────────────────────────────*/}
                     <div className="flex-1 min-w-0 space-y-8">
-                        {/* Continue Setup Section */}
+                        {/* Continue Setup Section*/}
                         {unfinishedProgrammes.length > 0 && !activeProgrammeId && (
                             <div className="p-6 bg-indigo-50 border border-indigo-100 rounded-2xl">
                                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -723,7 +723,7 @@ export function ProgrammeInitiation() {
                         )}
 
                         <div className="space-y-6 md:space-y-8">
-                            {/* Section 1: Identity & Governance */}
+                            {/* Section 1: Identity & Governance*/}
                             <div id="programme-identity" className="p-5 md:p-8 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-6">
                                 <div className="flex items-center gap-3 pb-6 border-b border-slate-50">
                                     <div className="p-2.5 bg-indigo-50 rounded-xl"><Target className="w-5 h-5 text-indigo-600" /></div>
@@ -766,13 +766,13 @@ export function ProgrammeInitiation() {
                                     {formErrors.strategicObjectives && <p className="mt-1 ml-1 text-[11px] text-rose-500 font-bold">{formErrors.strategicObjectives}</p>}
                                 </div>
 
-                                {/* Phase 6.5 — Anthony's standardised Governance Profile.
-                                    Replaces SRO / Strategic Sponsor / Governance Framework /
-                                    Escalation Route (per Q1, Q2, Q3 = A). Reporting Cycle
-                                    kept (Q4 = collapse to old version). Board Composition
-                                    kept (not in Anthony's removal list). Linked to the
-                                    Programme Governance Framework so each pick resolves
-                                    to a real body / threshold / route (Q5 = B). */}
+                                {/*standardised Governance Profile.
+ Replaces SRO / Strategic Sponsor / Governance Framework /
+ Escalation Route (per Q1, Q2, ). Reporting Cycle
+ kept (Q4 = collapse to old version). Board Composition
+ kept (not in removal list). Linked to the
+ Programme Governance Framework so each pick resolves
+ to a real body / threshold / route.*/}
                                 <GovernanceProfileFields
                                     classes={{ label: labelCls, input: inputCls }}
                                     values={{
@@ -800,7 +800,7 @@ export function ProgrammeInitiation() {
                             </div>
 
 
-                            {/* Section 3: Scale & Financials */}
+                            {/* Section 3: Scale & Financials*/}
                             <div id="programme-finance" className="p-5 md:p-8 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-6">
                                 <div className="flex items-center gap-3 pb-6 border-b border-slate-50">
                                     <div className="p-2.5 bg-emerald-50 rounded-xl"><DollarSign className="w-5 h-5 text-emerald-600" /></div>
@@ -844,7 +844,7 @@ export function ProgrammeInitiation() {
                                 </div>
                             </div>
 
-                            {/* Section 4: Regulatory & Compliance */}
+                            {/* Section 4: Regulatory & Compliance*/}
                             <div id="programme-compliance" className="p-5 md:p-8 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-6">
                                 <div className="flex items-center gap-3 pb-6 border-b border-slate-50">
                                     <div className="p-2.5 bg-violet-50 rounded-xl"><Shield className="w-5 h-5 text-violet-600" /></div>
@@ -896,7 +896,7 @@ export function ProgrammeInitiation() {
                                 </div>
                             </div>
 
-                            {/* Section 5: Strategic Risk Identification */}
+                            {/* Section 5: Strategic Risk Identification*/}
                             <div id="programme-risk" className="p-5 md:p-8 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-6">
                                 <div className="flex items-center gap-3 pb-6 border-b border-slate-50">
                                     <div className="p-2.5 bg-rose-50 rounded-xl"><AlertTriangle className="w-5 h-5 text-rose-600" /></div>
@@ -944,7 +944,7 @@ export function ProgrammeInitiation() {
                                 </div>
                             </div>
 
-                            {/* Section 5: Delivery Team */}
+                            {/* Section 5: Delivery Team*/}
                             <div id="programme-delivery" className="scroll-mt-24">
                                 <DeliveryTeamCRUD
                                     members={Array.isArray(form.deliveryTeam) ? form.deliveryTeam : []}
@@ -974,7 +974,7 @@ export function ProgrammeInitiation() {
                         </div>
                     </div>
 
-                    {/* ── RIGHT: Sidebar ────────────────────────────────────────── */}
+                    {/* ── RIGHT: Sidebar ──────────────────────────────────────────*/}
                     <div className="w-full lg:w-80 flex-shrink-0 order-first lg:order-last">
                         <div className="sticky top-20 lg:top-6 z-20">
                             <PublicationChecklist onPublish={handlePublish} />

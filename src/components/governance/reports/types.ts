@@ -33,7 +33,7 @@ export interface Report {
   partClassification: Classification;
   isHRB: boolean;
   targetBoardDate: string | null;
-  // Phase 5.5b — additive meeting reference. Replaces (functionally)
+  // additive meeting reference. Replaces (functionally)
   // the legacy `targetBoardDate` string for new reports. Both kept
   // for back-compat (ADD-never-MODIFY).
   targetMeetingId?: string | null;
@@ -54,7 +54,7 @@ export interface Report {
   amendmentsRequestedAt?: string | null;
   amendmentsRequestedBy?: string | null;
   /** Append-only audit of every Sealed → Drafting unlock. Each entry has
-   *  { at, by, reason, previousSealedAt?, previousSealedBy?, previousSealedPdfPath? }. */
+   *  { at, by, reason, previousSealedAt?, previousSealedBy?, previousSealedPdfPath? }.*/
   unlockHistory?: Array<{
     at: string;
     by: string;
@@ -133,7 +133,7 @@ export const CLASSIFICATION_OPTIONS: Classification[] = [
   'Part 1 and 2',
 ];
 
-// Phase 6c — Amendment doc (top-level `amendments` collection).
+// Amendment doc (top-level `amendments` collection).
 export interface Amendment {
   _id: string;
   clientId: string;
@@ -147,7 +147,7 @@ export interface Amendment {
   resolvedBy: string | null;
 }
 
-// Phase 6b — Report section sub-doc.
+// Report section sub-doc.
 export interface ReportSection {
   _id: string;
   sectionId: string;
@@ -158,7 +158,7 @@ export interface ReportSection {
   statutory: boolean;
   aiDraftAllowed: boolean;
   complianceCheck: boolean;
-  /** Tiptap JSON document. */
+  /** Tiptap JSON document.*/
   content: any;
   wordCount: number;
   lastEditedAt: string | null;

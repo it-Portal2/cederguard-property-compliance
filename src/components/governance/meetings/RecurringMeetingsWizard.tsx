@@ -1,4 +1,4 @@
-// Phase 5.5a — Recurring meetings bulk-create wizard.
+// Recurring meetings bulk-create wizard.
 //
 // PgM picks a body + cadence + start date + N occurrences. Server
 // generates dates, auto-shifting bank holidays to the next working
@@ -225,7 +225,7 @@ export function RecurringMeetingsWizard({ isOpen, onClose, onCreated }: Props) {
           </header>
 
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-            {/* Body */}
+            {/* Body*/}
             <div>
               <label className={labelCls}>Governance body</label>
               <select
@@ -249,7 +249,7 @@ export function RecurringMeetingsWizard({ isOpen, onClose, onCreated }: Props) {
               )}
             </div>
 
-            {/* Pattern */}
+            {/* Pattern*/}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className={labelCls}>Cadence</label>

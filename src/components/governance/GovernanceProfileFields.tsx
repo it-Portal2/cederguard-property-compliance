@@ -3,7 +3,7 @@ import { Loader2, Link2, AlertTriangle } from 'lucide-react';
 import { clsx } from 'clsx';
 import { api } from '../../lib/api';
 
-// ───── Standardised taxonomy (Anthony's spec, Apr 2026) ──────────────────
+// ───── Standardised taxonomy ──────────────────
 
 export const DECISION_LEVEL_OPTIONS = [
   'Strategic',
@@ -53,14 +53,14 @@ interface Props {
   ) => void;
   disabled?: boolean;
   /** Tailwind class strings — passed through so we visually match the host
-   *  page (Programme uses one set of input classes, Project another). */
+   *  page (Programme uses one set of input classes, Project another).*/
   classes: {
     label: string;
     input: string;
   };
 }
 
-// ───── Framework lookup helpers (Q5 = B: linked to live Framework) ──────
+// ───── Framework lookup helpers (: linked to live Framework) ──────
 
 interface BodyLite {
   _id: string;
@@ -166,7 +166,7 @@ export function GovernanceProfileFields({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-50 pt-6">
-      {/* Decision & Delivery Level */}
+      {/* Decision & Delivery Level*/}
       <FieldWrap classes={classes} label="Decision & Delivery Level">
         <select
           className={classes.input}
@@ -199,7 +199,7 @@ export function GovernanceProfileFields({
         />
       </FieldWrap>
 
-      {/* Financial Threshold */}
+      {/* Financial Threshold*/}
       <FieldWrap classes={classes} label="Financial Threshold">
         <select
           className={classes.input}
@@ -232,7 +232,7 @@ export function GovernanceProfileFields({
         />
       </FieldWrap>
 
-      {/* Risk / Regulatory Profile */}
+      {/* Risk / Regulatory Profile*/}
       <FieldWrap classes={classes} label="Risk / Regulatory Profile">
         <select
           className={classes.input}
@@ -264,7 +264,7 @@ export function GovernanceProfileFields({
         </p>
       </FieldWrap>
 
-      {/* Decision Authority */}
+      {/* Decision Authority*/}
       <FieldWrap classes={classes} label="Decision Authority">
         <select
           className={classes.input}

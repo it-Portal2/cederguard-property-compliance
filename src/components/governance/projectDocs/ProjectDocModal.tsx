@@ -1,7 +1,7 @@
-// Phase 9 — Project Governance Doc create/edit modal.
+// Project Governance Doc create/edit modal.
 //
-// Single modal handling create + edit (lesson #28).  Reuses the shared
-// GovernanceEditor (Phase 1) for the body content, with auto-save wired
+// Single modal handling create + edit. Reuses the shared
+// GovernanceEditor for the body content, with auto-save wired
 // to governanceUpsertProjectDoc on every change.
 //
 // Read-only surfaces:
@@ -75,7 +75,7 @@ export function ProjectDocModal({
   const [publishBusy, setPublishBusy] = useState(false);
   const [confirmPublish, setConfirmPublish] = useState(false);
   // Memoise initial editor content so the editor doesn't remount on every
-  // unrelated state change (lesson #71).
+  // unrelated state change.
   const initialContent = useMemo(() => doc?.content ?? null, [doc?.id]);
 
   useEffect(() => {
@@ -229,7 +229,7 @@ export function ProjectDocModal({
           transition={{ duration: 0.15 }}
           className="relative flex h-[min(92vh,840px)] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-slate-200"
         >
-          {/* Header */}
+          {/* Header*/}
           <header className="flex items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">
             <div className="flex min-w-0 items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700">
@@ -279,10 +279,10 @@ export function ProjectDocModal({
             </div>
           </header>
 
-          {/* Body */}
+          {/* Body*/}
           <div className="flex flex-1 min-h-0 overflow-hidden">
             <div className="flex flex-1 min-w-0 flex-col overflow-y-auto">
-              {/* Banners */}
+              {/* Banners*/}
               {status === 'Published' && (
                 <div className="border-b border-emerald-200 bg-emerald-50 px-5 py-3 text-xs text-emerald-800">
                   This is the Published v{docState?.version}. The body is read-only — soft-delete and create a new doc to publish a successor.
@@ -294,7 +294,7 @@ export function ProjectDocModal({
                 </div>
               )}
 
-              {/* Metadata form */}
+              {/* Metadata form*/}
               <div className="grid gap-4 border-b border-slate-200 px-5 py-4 md:grid-cols-2">
                 <label className="md:col-span-2 flex flex-col gap-1.5 text-xs font-medium text-slate-600">
                   Title
@@ -361,7 +361,7 @@ export function ProjectDocModal({
                 </label>
               </div>
 
-              {/* Editor */}
+              {/* Editor*/}
               <div className="flex-1 px-5 py-4">
                 {isCreate && !docState ? (
                   <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center text-sm text-slate-500">
@@ -381,7 +381,7 @@ export function ProjectDocModal({
               </div>
             </div>
 
-            {/* History panel */}
+            {/* History panel*/}
             {showHistory && (
               <aside className="hidden w-72 shrink-0 border-l border-slate-200 bg-slate-50 md:flex md:flex-col">
                 <div className="border-b border-slate-200 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -425,7 +425,7 @@ export function ProjectDocModal({
             )}
           </div>
 
-          {/* Footer */}
+          {/* Footer*/}
           <footer className="flex items-center justify-end gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3">
             <button
               type="button"

@@ -1,4 +1,4 @@
-// Technical Assurance Companion — insight orchestration helpers (Phase 2).
+// Technical Assurance Companion — insight orchestration helpers.
 //
 // The actual Gemini call is delegated to the existing repo-wide route
 // `aiRoutes.geminiPrompt` in `api/routes/ai.ts` so all AI traffic benefits
@@ -11,9 +11,9 @@
 //      `enquiries/{docId}/tabs/summary` + status flips.
 //
 // Pipeline split across two server endpoints:
-//   - tacBuildInsightPrompt(enquiryId) → flips Draft → Generating, returns
+//   tacBuildInsightPrompt(enquiryId) → flips Draft → Generating, returns
 //     the prompt for the client to send through `aiRoutes.geminiPrompt`.
-//   - tacFinaliseInsight(enquiryId, summary) → validates the AI response
+//   tacFinaliseInsight(enquiryId, summary) → validates the AI response
 //     and either writes the deliverable + flips Generating → Open, or
 //     rolls status back to Draft on validation failure.
 
@@ -29,15 +29,15 @@ import {
   type CostRate,
 } from "./costRatesSeed.js";
 
-// Types 
+// Types
 export interface InsightCitation {
   regId: string;
-  /** Human-readable rationale for why this citation applies. */
+  /** Human-readable rationale for why this citation applies.*/
   appliedTo: string;
-  /** Verbatim quote excerpt (≤300 chars) from the corpus entry. */
+  /** Verbatim quote excerpt (≤300 chars) from the corpus entry.*/
   quote: string;
   /** Server-enriched from corpus at validation time (NOT AI-supplied) —
-   *  drive the citation card's heading + external "Open source" link. */
+   *  drive the citation card's heading + external "Open source" link.*/
   documentLabel?: string;
   clause?: string;
   sourceUrl?: string;
@@ -51,20 +51,20 @@ export interface InsightOption {
   costDelta: number;
   programmeDelta: number;
   rationale: string;
-  /** Server marks the recommended one — first compliant + lowest cost+prog. */
+  /** Server marks the recommended one — first compliant + lowest cost+prog.*/
   recommended?: boolean;
 }
 
 export interface InsightDrawingAnnotation {
   id: string;
-  /** Display number ("1", "2", …) the AI assigns; clients render in this order. */
+  /** Display number ("1", "2", …) the AI assigns; clients render in this order.*/
   number: string;
   label: string;
   page: number;
-  /** 0-100 percent across the page width (left-edge = 0). Phase 4b — only
-   *  set when Gemini sees the PDF visually via inlineData. */
+  /** 0-100 percent across the page width (left-edge = 0). only
+   *  set when Gemini sees the PDF visually via inlineData.*/
   xPct?: number;
-  /** 0-100 percent down the page height (top = 0). */
+  /** 0-100 percent down the page height (top = 0).*/
   yPct?: number;
   dimension?: string;
   note?: string;
@@ -104,12 +104,12 @@ export interface InsightRfi {
   issuedBy?: string;
 }
 
-// Phase 6 — cost + programme tab content. Generated alongside the rest of
+// cost + programme tab content. Generated alongside the rest of
 // the insight so the user sees indicative pounds-and-weeks impact for the
 // recommended option without having to re-prompt.
 export interface InsightCostLine {
   /** Optional reference back to a `costRates` library entry. May be `null`
-   *  if the AI invents a line that doesn't match the council library. */
+   *  if the AI invents a line that doesn't match the council library.*/
   rateId?: string;
   description: string;
   unit: "m" | "m2" | "m3" | "no" | "hr" | "item";
@@ -119,34 +119,34 @@ export interface InsightCostLine {
 }
 
 export interface InsightProgrammeBar {
-  /** Short label, e.g. "Existing programme", "Recommended option", "Float". */
+  /** Short label, e.g. "Existing programme", "Recommended option", "Float".*/
   label: string;
-  /** ISO date (YYYY-MM-DD). */
+  /** ISO date (YYYY-MM-DD).*/
   startDate: string;
-  /** ISO date (YYYY-MM-DD). */
+  /** ISO date (YYYY-MM-DD).*/
   endDate: string;
-  /** Vertical track index (0..N). 0 = master schedule, 1+ = options/floats. */
+  /** Vertical track index (0.N). 0 = master schedule, 1+ = options/floats.*/
   track: number;
-  /** Optional severity-style colour cue (`info` | `warning` | `critical`). */
+  /** Optional severity-style colour cue (`info` | `warning` | `critical`).*/
   emphasis?: "info" | "warning" | "critical";
 }
 
 export interface InsightCostProgramme {
   costLines: InsightCostLine[];
-  /** Sum of all costLines (server-recomputed; AI value ignored). */
+  /** Sum of all costLines (server-recomputed; AI value ignored).*/
   totalDelta: number;
   programmeBars: InsightProgrammeBar[];
   /** Working days remaining of float on the master schedule after the
-   *  recommended option is absorbed. Negative = critical-path slip. */
+   *  recommended option is absorbed. Negative = critical-path slip.*/
   floatRemaining: number;
-  /** Estimated contingency draw (% of project value) implied by totalDelta. */
+  /** Estimated contingency draw (% of project value) implied by totalDelta.*/
   contingencyDrawPct?: number;
   /** Brief 1-2 sentence framing of how the option's cost+programme impact
-   *  was assembled (referenced rates, unknown items, assumptions). */
+   *  was assembled (referenced rates, unknown items, assumptions).*/
   summaryNote?: string;
 }
 
-// Phase 7 — Compliance & citations tab. Adds optional categorisation +
+// Compliance & citations tab. Adds optional categorisation +
 // optional regId linkage so each check can resolve to the regulation that
 // drove its pass/warn/fail outcome. Both fields are optional so the
 // existing Summary tab (which iterates the flat list) keeps rendering
@@ -156,35 +156,35 @@ export type InsightComplianceCategory = "dimensional" | "system";
 export interface InsightComplianceCheck {
   check: string;
   status: "pass" | "warn" | "fail";
-  /** Optional grouping for the Phase 7 Compliance tab. When absent, the
-   *  Compliance tab heuristically buckets the check into "system". */
+  /** Optional grouping for the Compliance tab. When absent, the
+   *  Compliance tab heuristically buckets the check into "system".*/
   category?: InsightComplianceCategory;
-  /** Optional reference to a corpus regId that drove the verdict. */
+  /** Optional reference to a corpus regId that drove the verdict.*/
   regId?: string;
-  /** 1-line evidence snippet — what dimension or system was checked. */
+  /** 1-line evidence snippet — what dimension or system was checked.*/
   evidence?: string;
 }
 
 export interface InsightSummary {
-  /** Stage-prefixed lede shown at the top of the Summary tab. */
+  /** Stage-prefixed lede shown at the top of the Summary tab.*/
   lede: string;
   options: InsightOption[];
   citations: InsightCitation[];
   complianceSnapshot: InsightComplianceCheck[];
   nextActions: string[];
   /** Drawing tab content. Populated only when the enquiry has a PDF
-   *  attachment; otherwise the AI is told to omit the field. */
+   *  attachment; otherwise the AI is told to omit the field.*/
   drawing?: InsightDrawing;
   /** RFI tab content. Auto-populated from the same generation; the user
-   *  edits it on the RFI tab and presses Issue to commit a numbered RFI. */
+   *  edits it on the RFI tab and presses Issue to commit a numbered RFI.*/
   rfi?: InsightRfi;
   /** Cost + programme impact for the recommended option. Optional — the
    *  AI may omit it for purely advisory enquiries with no cost or
-   *  programme implications, in which case the tab renders an empty state. */
+   *  programme implications, in which case the tab renders an empty state.*/
   costProgramme?: InsightCostProgramme;
 }
 
-// --- Stage-aware prompt branching -----------------------------------------
+// Stage-aware prompt branching -----------------------------------------
 
 const STAGE_GUIDANCE: Record<string, string> = {
   S0: "Stage 0 (Strategic Definition) — frame the answer around feasibility, business case alignment and high-level risk identification. No detailed specifications.",
@@ -229,7 +229,7 @@ function summariseAttachments(attachments: any[]): string {
 }
 
 /** Picks the first PDF attachment as the source drawing for the Drawing tab.
- *  Phase 4 MVP — single drawing per enquiry. Multi-drawing support deferred. */
+ *   MVP — single drawing per enquiry. Multi-drawing support deferred.*/
 function pickPrimaryDrawing(attachments: any[]):
   | { fileName: string; storagePath: string; url?: string }
   | null {
@@ -441,7 +441,7 @@ Rules:
       : `
 7. No PDF drawing is attached — set the "drawing" field to null. Do NOT fabricate annotations.`
   }
-8. rfi MUST be populated. subject ≤ 90 chars, body ≥ 60 chars (multi-paragraph). priority must be one of "high" | "medium" | "low" — pick "high" if any compliance check failed or any drawing annotation severity is "critical", otherwise "medium" by default. walkthroughChapters: produce 4-6 numbered install / inspection steps the site team can follow. Captions should be imperative (e.g. "Set out the drop", "Frame the bulkhead"). DO NOT include video URLs — text only (Q11=B locked).
+8. rfi MUST be populated. subject ≤ 90 chars, body ≥ 60 chars (multi-paragraph). priority must be one of "high" | "medium" | "low" — pick "high" if any compliance check failed or any drawing annotation severity is "critical", otherwise "medium" by default. walkthroughChapters: produce 4-6 numbered install / inspection steps the site team can follow. Captions should be imperative (e.g. "Set out the drop", "Frame the bulkhead"). Text only — DO NOT include video URLs.
 
 9. costProgramme is REQUIRED. UK social-housing enquiries virtually always carry a cost or programme implication — even an advisory query about a regulation interpretation has compliance-checking cost, design-review time, or a downstream works cost worth flagging. DO NOT set costProgramme to null unless the enquiry is a pure definitions question with absolutely no implementation pathway (e.g. "what is the difference between Approved Doc B Vol 1 and Vol 2?"). Speculative-but-defensible figures are MORE useful to the PM than nothing — frame them honestly via summaryNote.
 
@@ -470,7 +470,7 @@ ${summariseCostRates(rates)}${
 Now return the JSON object.`;
 }
 
-// --- Defensive markdown stripping ----------------------------------------
+// Defensive markdown stripping ----------------------------------------
 //
 // The prompt tells Gemini to return plain text, but it routinely ignores the
 // rule and emits "**bold**" / "*italic*" / "# heading" inside RFI bodies +
@@ -565,8 +565,7 @@ export function validateInsight(
     ? parsed.citations
     : [];
   const droppedRegIds: string[] = [];
-  // Step 1 — drop non-corpus regIds (hallucination guard, lesson #2 from
-  // Phase 4b citation validator).
+  // Step 1: drop non-corpus regIds — hallucination guard.
   const corpusFilteredCitations = rawCitations.filter((c: any) => {
     if (!c || typeof c.regId !== "string") return false;
     if (!corpusIds.has(c.regId)) {
@@ -1108,8 +1107,8 @@ export async function finaliseInsightGeneration(args: {
 
   // Drawing + RFI deliverables live INSIDE `tabs/summary.content` — the UI
   // reads from there on every reload, so writing separate `tabs/drawing` /
-  // `tabs/rfi` docs would just create stale duplicates. Single source of
-  // truth = `tabs/summary.content` (lesson locked Phase 5).
+  // `tabs/rfi` docs would only create stale duplicates. The summary doc is
+  // the single source of truth.
 
   await docRef.set({ status: "Open", updatedAt: now }, { merge: true });
   const updated = await docRef.get();

@@ -11,7 +11,7 @@ import { api } from '../../lib/api';
 const SANDBOX_SECTION_ID = 'phase1-sandbox-section-1';
 
 // Initial content showcases every custom node so the test page exercises the
-// full Phase 1 surface area in one shot.
+// full surface area in one shot.
 const INITIAL_CONTENT: JSONContent = {
   type: 'doc',
   content: [
@@ -161,7 +161,7 @@ export function GovernanceEditorSandboxPage() {
           version: 'sandbox',
           dated: new Date().toISOString().slice(0, 10),
           keyDecision: 'Yes',
-          consultation: 'Phase 1 editor test',
+          consultation: 'Editor sandbox test',
         },
       });
       const dataUrl = `data:application/pdf;base64,${res.pdfBase64}`;
@@ -179,7 +179,7 @@ export function GovernanceEditorSandboxPage() {
     () => ({
       title: 'Editor sandbox',
       subtitle:
-        'Phase 1 standalone test surface — exercises every custom node, auto-save, mobile menus and the server-side PDF renderer end-to-end.',
+        'Standalone test surface — exercises every custom node, auto-save, mobile menus and the server-side PDF renderer end-to-end.',
     }),
     [],
   );
@@ -198,7 +198,7 @@ export function GovernanceEditorSandboxPage() {
           </div>
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-              Programme Governance · Phase 1
+              Programme Governance · Editor Sandbox
             </p>
             <h1 className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl dark:text-slate-100">
               {headerCopy.title}

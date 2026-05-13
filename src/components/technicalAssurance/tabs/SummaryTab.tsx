@@ -12,7 +12,7 @@ import { ComplianceSnapshot } from "../ComplianceSnapshot";
 import { FeedbackControl } from "../FeedbackControl";
 import type { TacWorkspaceTabId } from "./TabStrip";
 
-// Phase 3 — Summary tab. Renders the AI-produced summary deliverable
+// Summary tab. Renders the AI-produced summary deliverable
 // (`tabs/summary` doc) + an action bar that jumps the user into the deeper
 // tabs (Drawing / RFI / Cost / Compliance) once those phases ship.
 //
@@ -24,9 +24,9 @@ interface SummaryTabProps {
   content: SummaryTabContent;
   deliverable: EnquiryDeliverable<SummaryTabContent>;
   onNavigateTab: (tab: TacWorkspaceTabId) => void;
-  /** Optional — when present, renders the FeedbackControl (Phase 8). The
+  /** Optional — when present, renders the FeedbackControl. The
    *  enquiry is what carries the existing feedback object + the id we
-   *  POST against. Workspace owns the feedback state mirror. */
+   *  POST against. Workspace owns the feedback state mirror.*/
   enquiry?: Enquiry;
 }
 
@@ -77,7 +77,7 @@ export function SummaryTab({
 
   return (
     <div className="space-y-4">
-      {/* Lede */}
+      {/* Lede*/}
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-start justify-between gap-3">
           <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
@@ -100,10 +100,10 @@ export function SummaryTab({
         </p>
       </div>
 
-      {/* Compliance snapshot — visual tile grid */}
+      {/* Compliance snapshot — visual tile grid*/}
       <ComplianceSnapshot checks={content.complianceSnapshot} />
 
-      {/* Ranked options */}
+      {/* Ranked options*/}
       {content.options.length > 0 && (
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
@@ -123,7 +123,7 @@ export function SummaryTab({
         </div>
       )}
 
-      {/* Citations */}
+      {/* Citations*/}
       {content.citations.length > 0 && (
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-2">
@@ -155,7 +155,7 @@ export function SummaryTab({
         </div>
       )}
 
-      {/* Next actions */}
+      {/* Next actions*/}
       {content.nextActions.length > 0 && (
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-2">
@@ -179,9 +179,9 @@ export function SummaryTab({
       )}
 
       {/* Action bar — jumps the user into the deliverable tabs that land in
-          Phases 4-7. Buttons are always rendered so the workspace's
-          information architecture is consistent; clicks switch tabs even if
-          the destination is still placeholder. */}
+ Phases 4-7. Buttons are always rendered so the workspace's
+ information architecture is consistent; clicks switch tabs even if
+ the destination is still placeholder.*/}
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
           Continue with

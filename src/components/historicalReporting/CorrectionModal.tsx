@@ -1,4 +1,4 @@
-// HRC HR-6 — super_admin correction modal.
+//  super_admin correction modal.
 //
 // Lets a platform super_admin patch a single field on a snapshot row.
 // Generic by design: takes a target (collection + docId), shows the
@@ -8,7 +8,7 @@
 //
 // Workflow:
 //   1. Admin picks collection from dropdown (HRC_ALL_COLLECTIONS).
-//   2. Admin types the docId. (We don't list rows — for HR-6 the
+//   2. Admin types the docId. (We don't list rows — for the
 //      admin already knows the docId from the page they were viewing
 //      or from the inspect endpoint.)
 //   3. Frozen row content is fetched on-demand and displayed read-only.
@@ -34,10 +34,10 @@ import {
 interface CorrectionModalProps {
   open: boolean;
   yearMonth: YearMonth | null;
-  /** Pre-fill the collection if opened from a specific page (e.g. risks). */
+  /** Pre-fill the collection if opened from a specific page (e.g. risks).*/
   defaultCollection?: HrcCollection;
   onClose: () => void;
-  /** Fired after a successful correction so the parent can refresh. */
+  /** Fired after a successful correction so the parent can refresh.*/
   onCorrected?: () => void;
 }
 
@@ -260,7 +260,7 @@ export function CorrectionModal({
                   </label>
                 </div>
 
-                {/* Frozen row preview */}
+                {/* Frozen row preview*/}
                 <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
                   <p className="border-b border-slate-100 bg-white px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                     Frozen row preview

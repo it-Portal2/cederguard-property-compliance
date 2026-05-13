@@ -22,8 +22,8 @@ import { HistoricalContentSkeleton } from '../components/historicalReporting/His
 import type { LegacyArraySnapshot } from '../types/historicalReporting';
 
 /* ═══════════════════════════════════════════════════
-   CONSTANTS
-   ═══════════════════════════════════════════════════ */
+ CONSTANTS
+ ═══════════════════════════════════════════════════*/
 
 const STAGES = [
   'Information Gap',
@@ -34,8 +34,8 @@ const STAGES = [
 ];
 
 /* ═══════════════════════════════════════════════════
-   UI COMPONENTS
-   ═══════════════════════════════════════════════════ */
+ UI COMPONENTS
+ ═══════════════════════════════════════════════════*/
 
 const Badge = ({ children, variant = 'default', className = '' }: { children: React.ReactNode, variant?: string, className?: string }) => {
   const variants: Record<string, string> = {
@@ -74,8 +74,8 @@ function cn(...classes: (string | boolean | undefined | null)[]) {
 }
 
 /* ═══════════════════════════════════════════════════
-   MAIN COMPONENT: COMPLIANCE TRACKER
-   ═══════════════════════════════════════════════════ */
+ MAIN COMPONENT: COMPLIANCE TRACKER
+ ═══════════════════════════════════════════════════*/
 
 export function ComplianceTracker() {
   const {
@@ -107,7 +107,7 @@ export function ComplianceTracker() {
 
   const [isLoading, setIsLoading] = useState(false);
 
-  // HRC HR-5 — historical view hook. When the user picks a past month,
+  //  historical view hook. When the user picks a past month,
   // the page swaps live compliance items + active/pending derivations
   // for the snapshot's frozen state and disables every edit affordance.
   const historicalView = useHistoricalView<LegacyArraySnapshot<ComplianceItem>>({
@@ -171,7 +171,7 @@ export function ComplianceTracker() {
   const isPM = !isAtLeastClientAdmin(currentUser?.profile?.role);
   // Explicit useMemo so that stats, domainStats, and filteredItems all recompute
   // the instant complianceItems changes in the store (e.g. after an optimistic add/update).
-  // HRC HR-5 — when historical, derive equivalents from snapshot data using
+  //  when historical, derive equivalents from snapshot data using
   // the same status filters + activeProject/activeProgramme scope as the
   // store selectors.
   const liveActiveItems = useMemo(() => getActiveItems(), [complianceItems, activeProjectId, activeProgrammeId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -241,7 +241,7 @@ export function ComplianceTracker() {
     return () => { cancelled = true; };
   }, [expandedId, contextId]);
 
-  // Confirmation dialog state — replaces all window.confirm() calls
+  // Confirmation dialog state — replaces all window.confirm calls
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -377,7 +377,7 @@ export function ComplianceTracker() {
   };
 
   const dismissedItems = useMemo(() => {
-    // HRC HR-5 — historical view sources from frozen snapshot.
+    //  historical view sources from frozen snapshot.
     const source = isHistorical ? historicalCompliance : (complianceItems || []);
     return source.filter(i => i.status === 'dismissed');
   }, [complianceItems, isHistorical, historicalCompliance]);
@@ -489,9 +489,9 @@ export function ComplianceTracker() {
     <div className="max-w-7xl mx-auto min-h-screen bg-slate-50/50 p-4 sm:p-6 lg:px-8 space-y-6 sm:space-y-8">
       <ServiceManagementBar className="mb-4" />
 
-      {/* HRC HR-5 — month picker + historical banner. Placed AFTER
-          ServiceManagementBar so the service status row stays the
-          page's primary header signal. */}
+      {/* month picker + historical banner. Placed AFTER
+ ServiceManagementBar so the service status row stays the
+ page's primary header signal.*/}
       <div className="flex justify-end">
         <MonthPicker
           monthEnd={historicalView.monthEnd}
@@ -515,7 +515,7 @@ export function ComplianceTracker() {
       {historicalView.loading && <HistoricalContentSkeleton variant="table" />}
       {!historicalView.loading && <>
 
-      {/* Verification Queue (Dynamic) */}
+      {/* Verification Queue (Dynamic)*/}
       <AnimatePresence>
         {pendingItems.length > 0 && (
           <motion.div
@@ -609,7 +609,7 @@ export function ComplianceTracker() {
         )}
       </AnimatePresence>
 
-      {/* Summary Dashboard Section */}
+      {/* Summary Dashboard Section*/}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <motion.div
           whileHover={{ y: -4 }}
@@ -689,7 +689,7 @@ export function ComplianceTracker() {
         </motion.div>
       </div>
 
-      {/* Enhanced AI Inquiry Visibility Banner */}
+      {/* Enhanced AI Inquiry Visibility Banner*/}
       <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-3xl p-8 text-white shadow-2xl shadow-indigo-200 relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300 group">
         <div className="absolute right-0 top-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl group-hover:bg-white/20 transition-all duration-1000"></div>
         <div className="absolute left-0 bottom-0 w-48 h-48 bg-indigo-500/50 rounded-full -ml-24 -mb-24 blur-2xl"></div>
@@ -719,7 +719,7 @@ export function ComplianceTracker() {
         </div>
       </div>
 
-      {/* Controls & Search */}
+      {/* Controls & Search*/}
       <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -1452,7 +1452,7 @@ export function ComplianceTracker() {
           </motion.div>
         )}
       </AnimatePresence>
-      {/* Add Requirement Modal */}
+      {/* Add Requirement Modal*/}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[calc(100dvh-2rem)] md:max-h-[90vh] overflow-hidden flex flex-col border border-slate-200">
@@ -1559,7 +1559,7 @@ export function ComplianceTracker() {
           </div>
         </div>
       )}
-      {/* Confirmation Dialog */}
+      {/* Confirmation Dialog*/}
       {confirmDialog.isOpen && (
         <div
           className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4"
@@ -1607,7 +1607,7 @@ export function ComplianceTracker() {
         </div>
       )}
       </>}
-      {/* AI Inquiry Popup */}
+      {/* AI Inquiry Popup*/}
       <AIInquiryPopup
         isOpen={isAIInquiryOpen}
         onClose={() => setIsAIInquiryOpen(false)}

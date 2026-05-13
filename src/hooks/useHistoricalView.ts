@@ -1,12 +1,12 @@
-// HRC client hook — page-level toggle between live data and a frozen
+//  client hook — page-level toggle between live data and a frozen
 // month-end snapshot.
 //
 // Usage:
 //   const view = useHistoricalView({ collection: 'risks' });
 //   // view.isHistorical === false → render live data, edit allowed
-//   // view.isHistorical === true  → render view.entries, banner + read-only
+//   // view.isHistorical === true → render view.entries, banner + read-only
 //   // view.setMonthEnd('2026-04') → switch to April snapshot
-//   // view.setMonthEnd(null)      → back to live data
+//   // view.setMonthEnd(null) → back to live data
 //
 // The actual rendering page still owns its own data fetching for the
 // LIVE state. This hook is layered on top: when monthEnd is set, the
@@ -32,36 +32,36 @@ export interface UseHistoricalViewArgs {
 }
 
 export interface UseHistoricalViewResult<TEntry = any> {
-  /** Snapshot entries when historical, empty when live. */
+  /** Snapshot entries when historical, empty when live.*/
   entries: TEntry[];
-  /** True when monthEnd is set AND the snapshot fetch resolved. */
+  /** True when monthEnd is set AND the snapshot fetch resolved.*/
   isHistorical: boolean;
-  /** Currently selected snapshot month, or null in live mode. */
+  /** Currently selected snapshot month, or null in live mode.*/
   monthEnd: YearMonth | null;
-  /** All months that have a snapshot for the current workspace. */
+  /** All months that have a snapshot for the current workspace.*/
   availableMonths: YearMonth[];
-  /** True while the snapshot is loading. */
+  /** True while the snapshot is loading.*/
   loading: boolean;
-  /** Error message from the snapshot fetch, or null. */
+  /** Error message from the snapshot fetch, or null.*/
   error: string | null;
-  /** Snapshot meta (parent doc) when historical. */
+  /** Snapshot meta (parent doc) when historical.*/
   meta: any | null;
   /**
    * The first YearMonth ever snapshotted for this workspace, or null
    * before the cron has ever run. Drives the "feature launched in {N}"
-   * empty-state message when the user picks a month before HRC was
-   * activated. Q6=A locks "start fresh".
+   * empty-state message when the user picks a month before was
+   * activated. locks "start fresh".
    */
   activatedYearMonth: YearMonth | null;
-  /** Why the current snapshot read returned empty, when applicable. */
+  /** Why the current snapshot read returned empty, when applicable.*/
   emptyReason:
     | "BEFORE_ACTIVATION"
     | "SNAPSHOT_MISSING"
     | "EMPTY_DATA"
     | null;
-  /** Toggle to a past month, or back to live (null). */
+  /** Toggle to a past month, or back to live (null).*/
   setMonthEnd: (m: YearMonth | null) => void;
-  /** Re-trigger fetch (e.g. after a super_admin correction). */
+  /** Re-trigger fetch (e.g. after a super_admin correction).*/
   refresh: () => void;
 }
 
@@ -82,7 +82,7 @@ export function useHistoricalView<TEntry = any>(
 
   // Load the available-months list once per mount (cheap; ~one query).
   // The endpoint also returns the deployment marker so the empty-state
-  // can distinguish "before HRC launched" from "snapshot missing".
+  // can distinguish "before launched" from "snapshot missing".
   useEffect(() => {
     let cancelled = false;
     (async () => {

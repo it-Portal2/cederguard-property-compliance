@@ -1,11 +1,11 @@
-// Phase 9b — Share-for-review modal.
+// Share-for-review modal.
 //
 // Owner picks a workspace member from the existing
 // `governanceListWorkspaceMembers` endpoint (re-used cross-feature; same
 // shape used for governance attendees / reviewers). Optional 500-char
 // note explains what to review. On submit, posts to `tacShareEnquiry`.
 //
-// Lesson #41 — motion-driven custom modal, no native dialogs.
+// motion-driven custom modal, no native dialogs.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
@@ -36,9 +36,9 @@ interface ShareEnquiryModalProps {
   enquiryId: string;
   enquiryTitle: string;
   /** uids that already have an active (undecided) share — disabled in the
-   *  member list so the owner doesn't double-share. */
+   *  member list so the owner doesn't double-share.*/
   alreadySharedUids?: string[];
-  /** Owner's own uid — hidden from the picker so they can't share with themselves. */
+  /** Owner's own uid — hidden from the picker so they can't share with themselves.*/
   ownerUid: string;
   onClose: () => void;
   onShared: () => void;

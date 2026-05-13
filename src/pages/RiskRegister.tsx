@@ -41,23 +41,31 @@ import type { ColumnDef, RowAction, BulkAction, FilterDef } from "../components/
 import { useHistoricalView } from "../hooks/useHistoricalView";
 import { MonthPicker } from "../components/historicalReporting/MonthPicker";
 import { HistoricalBanner } from "../components/historicalReporting/HistoricalBanner";
+import {
+  BAND_STYLES,
+  bandForScore,
+  bandLabelForScore,
+  formatRatingDisplay,
+  SEVERE_SCORE_THRESHOLD,
+} from "../data/riskScoringMatrix";
 
-// ── Helper functions (unchanged) ──────────────────────────────────────────────
+// Score-to-pill helpers using the 5-band scheme:
+// Insignificant 1-3 · Minor 4-6 · Moderate 7-11 · Major 12-18 · Severe 19-25.
 
 function rsScore(score: number) {
-  if (!score || score <= 6)
-    return "bg-emerald-50 text-emerald-600 border-emerald-200 shadow-sm";
-  if (score <= 14)
-    return "bg-amber-50 text-amber-600 border-amber-200 shadow-sm";
-  return "bg-rose-50 text-rose-600 border-rose-200 shadow-sm font-black animate-pulse";
+  const band = bandForScore(score);
+  const base = BAND_STYLES[band].pill;
+  // Severe band keeps the original page's "pulse" emphasis so the most
+  // critical scores remain visually loud at a glance.
+  return band === "severe" ? `${base} shadow-sm animate-pulse` : `${base} shadow-sm`;
 }
 
 function rLabel(s: number) {
-  if (!s || s <= 6)
-    return { l: "Low", c: "bg-emerald-50 text-emerald-600 border-emerald-200" };
-  if (s <= 14)
-    return { l: "Medium", c: "bg-amber-50 text-amber-600 border-amber-200" };
-  return { l: "High", c: "bg-rose-50 text-rose-600 border-rose-200 font-bold" };
+  const band = bandForScore(s);
+  return {
+    l: BAND_STYLES[band].label,
+    c: BAND_STYLES[band].pill,
+  };
 }
 
 function fGBP(v?: number) {
@@ -151,9 +159,9 @@ export function RiskRegister() {
   const userIsSuperAdmin = isSuperAdmin(user?.email, userRole);
   const isPM = !isAtLeastClientAdmin(userRole) && !userIsSuperAdmin;
 
-  // HRC HR-3 — historical view hook. When the user picks a past month
+  //  historical view hook. When the user picks a past month
   // via the MonthPicker, the page swaps live `risks` for the snapshot
-  // (LegacyArraySnapshot[] — one entry per project containing a frozen
+  // (LegacyArraySnapshot — one entry per project containing a frozen
   // risk array) and disables every edit affordance.
   const historicalView = useHistoricalView<{
     kind: "legacyArray";
@@ -208,7 +216,7 @@ export function RiskRegister() {
     }
   }, [searchParams, setSearchParams]);
 
-  // HRC HR-3 — effective risks source. Historical mode flattens the
+  //  effective risks source. Historical mode flattens the
   // snapshot's per-project arrays into one big risk list so the existing
   // context-scoping + filter + sort logic below runs unchanged.
   const historicalRisks = useMemo<RiskItem[]>(() => {
@@ -440,29 +448,44 @@ export function RiskRegister() {
       truncate: true,
       tooltip: (_v: any, r: RiskItem) =>
         `${stripMarkdown(r.title)}\n\n${stripMarkdown(r.desc) || "No description provided."}`,
-      render: (_v, r) => (
-        <div className="min-w-0">
-          <div className="flex items-center flex-wrap gap-2">
-            <span className="font-bold text-slate-900 leading-tight text-[11px] line-clamp-1">
-              {stripMarkdown(r.title)}
-            </span>
-            {r.isNew !== false &&
-              differenceInDays(new Date(), new Date(r.dateAdded || "")) < 1 && (
-                <span className="px-1.5 py-0.5 bg-indigo-600 text-white text-[7px] font-black uppercase rounded shadow-sm">
-                  New
+      render: (_v, r) => {
+        // Severe trigger: rose ESCALATE pill when EITHER gross OR
+        // residual Impact = 5.: "Escalate
+        // Band 5 risks to senior management immediately".
+        const isSevere =
+          (Number(r.grossI) || 0) >= 5 || (Number(r.residualI) || 0) >= 5;
+        return (
+          <div className="min-w-0">
+            <div className="flex items-center flex-wrap gap-2">
+              <span className="font-bold text-slate-900 leading-tight text-[11px] line-clamp-1">
+                {stripMarkdown(r.title)}
+              </span>
+              {isSevere && (
+                <span
+                  title="Severe Impact (Band 5) — escalate to senior management immediately"
+                  className="px-1.5 py-0.5 bg-rose-100 text-rose-700 text-[8px] font-black uppercase tracking-wider rounded border border-rose-200"
+                >
+                  Escalate
                 </span>
               )}
-            {!r.owner && (
-              <span title="Missing Owner">
-                <AlertCircle className="w-3 h-3 text-rose-500" />
-              </span>
-            )}
+              {r.isNew !== false &&
+                differenceInDays(new Date(), new Date(r.dateAdded || "")) < 1 && (
+                  <span className="px-1.5 py-0.5 bg-indigo-600 text-white text-[7px] font-black uppercase rounded shadow-sm">
+                    New
+                  </span>
+                )}
+              {!r.owner && (
+                <span title="Missing Owner">
+                  <AlertCircle className="w-3 h-3 text-rose-500" />
+                </span>
+              )}
+            </div>
+            <span className="text-[10px] text-slate-400 font-normal leading-relaxed line-clamp-2">
+              {stripMarkdown(r.desc)}
+            </span>
           </div>
-          <span className="text-[10px] text-slate-400 font-normal leading-relaxed line-clamp-2">
-            {stripMarkdown(r.desc)}
-          </span>
-        </div>
-      ),
+        );
+      },
     },
     // Gross Risk Rating group
     {
@@ -607,17 +630,18 @@ export function RiskRegister() {
     },
     {
       key: "_label" as any,
-      label: "Label",
+      label: "Rating Label",
+      // show "Severe · 24" format (text label + numeric score)
       render: (_v, r) => {
-        const c = rLabel(r.residualRating || 0);
+        const { c: pillClass } = rLabel(r.residualRating || 0);
         return (
           <span
             className={clsx(
               "px-1.5 py-0.5 rounded text-[10px] font-bold border whitespace-nowrap",
-              c.c,
+              pillClass,
             )}
           >
-            {c.l}
+            {formatRatingDisplay(r.residualRating || 0)}
           </span>
         );
       },
@@ -923,7 +947,7 @@ export function RiskRegister() {
       <ServiceManagementBar />
       <div className="max-w-[98%] mx-auto space-y-6 sm:space-y-8 p-2 sm:p-4 lg:p-6">
 
-        {/* Page Header */}
+        {/* Page Header*/}
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             {fromInitiation && (
@@ -940,7 +964,7 @@ export function RiskRegister() {
             <p className="text-sm text-slate-500 mt-0.5">{contextLabel}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {/* HRC HR-3 — month picker for historical view. */}
+            {/* month picker for historical view.*/}
             <MonthPicker
               monthEnd={historicalView.monthEnd}
               availableMonths={historicalView.availableMonths}
@@ -962,9 +986,9 @@ export function RiskRegister() {
           </div>
         </div>
 
-        {/* HRC HR-3 — read-only banner appears when MonthPicker is set
-            to a past month. HR-7 — banner also renders the friendly
-            empty-state panel when there's nothing to show for that month. */}
+        {/* read-only banner appears when MonthPicker is set
+ to a past month. banner also renders the friendly
+ empty-state panel when there's nothing to show for that month.*/}
         {isHistorical && historicalView.monthEnd && (
           <HistoricalBanner
             monthEnd={historicalView.monthEnd}
@@ -977,7 +1001,7 @@ export function RiskRegister() {
           />
         )}
 
-        {/* Summary Tiles */}
+        {/* Summary Tiles*/}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
           <StatsCard
             title="Total Risks"
@@ -998,13 +1022,13 @@ export function RiskRegister() {
             valueClassName="text-orange-600 dark:text-orange-400"
           />
           <StatsCard
-            title="High / Severe"
-            value={contextScoped.filter((r) => (r.residualRating || 0) >= 16).length}
+            title="Severe"
+            value={contextScoped.filter((r) => (r.residualRating || 0) >= SEVERE_SCORE_THRESHOLD).length}
             unit="risks"
             icon={Flame}
-            iconBgClassName="bg-red-50 dark:bg-red-900/30"
-            iconClassName="text-red-600 dark:text-red-400"
-            valueClassName="text-red-600 dark:text-red-400"
+            iconBgClassName="bg-rose-50 dark:bg-rose-900/30"
+            iconClassName="text-rose-600 dark:text-rose-400"
+            valueClassName="text-rose-600 dark:text-rose-400"
           />
           <StatsCard
             title="Escalated"
@@ -1036,7 +1060,7 @@ export function RiskRegister() {
           />
         </div>
 
-        {/* Source Project filter — programme level only, unchanged logic */}
+        {/* Source Project filter — programme level only, unchanged logic*/}
         {!activeProjectId && scopedProjects.length > 0 && (
           <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
@@ -1058,7 +1082,7 @@ export function RiskRegister() {
           </div>
         )}
 
-        {/* DynamicTable */}
+        {/* DynamicTable*/}
         <DynamicTable<RiskItem>
           data={contextScoped}
           columns={columns}
@@ -1088,7 +1112,7 @@ export function RiskRegister() {
           stickyHeader
         />
 
-        {/* RiskModal — unchanged */}
+        {/* RiskModal — unchanged*/}
         <RiskModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}

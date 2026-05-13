@@ -21,8 +21,8 @@ interface Props {
   onCommitted: () => void;
   /** Which review stage the amendment is being raised at. Default 'pgm'
    *  routes via `governanceRequestAmendments` (existing). 'seniorPm'
-   *  routes via the Phase 6e Senior PM endpoint so the audit trail tags
-   *  the source stage. */
+   *  routes via the Senior PM endpoint so the audit trail tags
+   *  the source stage.*/
   stage?: 'pgm' | 'seniorPm';
 }
 

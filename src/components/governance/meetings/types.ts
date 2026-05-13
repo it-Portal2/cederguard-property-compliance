@@ -1,4 +1,4 @@
-// Phase 8a — client-side meeting types. Mirrors api/lib/meetingsSeed.ts.
+// client-side meeting types. Mirrors api/lib/meetingsSeed.ts.
 
 export type MeetingStatus = 'Scheduled' | 'Held' | 'Cancelled';
 
@@ -60,7 +60,6 @@ export interface Meeting {
   attendees: Attendee[];
   agenda: string[];
 
-  // Phase 8b
   minutes?: MeetingMinutes;
   decisions?: MeetingDecision[];
   actionItems?: MeetingActionItem[];

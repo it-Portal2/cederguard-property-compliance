@@ -1,16 +1,16 @@
-// HRC HR-7 — friendly empty-state for historical reads.
+//  friendly empty-state for historical reads.
 //
 // Three distinct "no data" states the user can hit when picking a
 // past month, each with its own explanation so they don't think the
 // app is broken:
 //
 //   1. BEFORE_ACTIVATION — picked month is earlier than the workspace's
-//      first-ever snapshot. Q6=A locks "start fresh" — there is genuinely
-//      no data to show. Tell the user when HRC started recording.
-//   2. SNAPSHOT_MISSING  — month is on/after activation but the cron
+//      first-ever snapshot. locks "start fresh" — there is genuinely
+//      no data to show. Tell the user when started recording.
+//   2. SNAPSHOT_MISSING — month is on/after activation but the cron
 //      didn't run for that month (rare; usually means manual rebuild
 //      pending). Surface so super_admin can run `hrcRunMonthlySnapshot`.
-//   3. EMPTY_DATA        — snapshot exists but the surface had zero
+//   3. EMPTY_DATA — snapshot exists but the surface had zero
 //      rows at month-end. Genuinely empty in real life.
 
 import { CalendarOff, History, Inbox } from "lucide-react";
@@ -43,7 +43,7 @@ interface HistoricalEmptyStateProps {
   reason: "BEFORE_ACTIVATION" | "SNAPSHOT_MISSING" | "EMPTY_DATA";
   monthEnd: YearMonth;
   activatedYearMonth?: YearMonth | null;
-  /** Override the default surface label — e.g. "risk register" / "reports". */
+  /** Override the default surface label — e.g. "risk register" / "reports".*/
   surfaceLabel?: string;
 }
 

@@ -74,7 +74,7 @@ export function GovernanceMyReportsPage() {
   const userIsAdmin =
     isAtLeastClientAdmin(user?.role) || isSuperAdmin(user?.email, user?.role);
 
-  // HRC HR-5 — historical view hook. When the user picks a past month,
+  //  historical view hook. When the user picks a past month,
   // the page swaps live items for the snapshot's frozen state and
   // disables every edit affordance.
   const historicalView = useHistoricalView<{
@@ -104,7 +104,7 @@ export function GovernanceMyReportsPage() {
       ]);
       // Keep soft-deleted rows in the table data so the built-in filter
       // can toggle them — pre-stripping breaks the filter chrome
-      // (lesson #43). Stats counts exclude them; visual treatment
+      // . Stats counts exclude them; visual treatment
       // (line-through + slate) flags them in the default view.
       const all = ((reportsRes.items ?? []) as Report[]).filter(
         (r) => r.ownerUid === user?.uid,
@@ -124,7 +124,7 @@ export function GovernanceMyReportsPage() {
     void refresh();
   }, [refresh]);
 
-  // HRC HR-5 — effective items source. Switches between live `items`
+  //  effective items source. Switches between live `items`
   // (filtered to caller's reports) and the snapshot's frozen rows
   // (also filtered to caller's reports) based on the MonthPicker.
   const historicalItems = useMemo<Report[]>(() => {
@@ -137,10 +137,10 @@ export function GovernanceMyReportsPage() {
 
   // ── StatsCards ─────────────────────────────────────────────────────────
   // PM-facing tiles (different from PgM list page):
-  //  • Drafting          — status === 'Draft'
-  //  • With PgM           — InReview + PendingSeniorPmReview
-  //  • Amendments         — AmendmentsRequested
-  //  • Approved (qtr)     — Approved/Sealed in current quarter
+  //  • Drafting — status === 'Draft'
+  //  • With PgM — InReview + PendingSeniorPmReview
+  //  • Amendments — AmendmentsRequested
+  //  • Approved (qtr) — Approved/Sealed in current quarter
   const counts = useMemo(() => {
     const now = new Date();
     const qStart = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
@@ -194,8 +194,8 @@ export function GovernanceMyReportsPage() {
   }, [effectiveItems]);
 
   // ── Briefing copy ──────────────────────────────────────────────────────
-  // Stub lines are computed locally for instant render (lesson #61).
-  // Phase 12: a background call to `governanceGenerateBriefing` rewrites
+  // Stub lines are computed locally for instant render.
+  // a background call to `governanceGenerateBriefing` rewrites
   // them into a Gemini paragraph; if the call falls back to stub (no
   // key / quota / timeout), we just render the local stub.
   const stubBriefingLines = useMemo<string[]>(() => {
@@ -486,7 +486,7 @@ export function GovernanceMyReportsPage() {
   // Per plan §11: 5 stages — All / Drafting / With PgM / Amendments / Approved.
   // Implemented as a single `stage` virtual filter that maps each chip to
   // the underlying status set. Single dropdown keeps the chrome consistent
-  // with ReportsListPage + Forward Plan (lesson #43).
+  // with ReportsListPage + Forward Plan.
   const filters: FilterDef<Report>[] = useMemo(
     () => [
       {
@@ -567,7 +567,7 @@ export function GovernanceMyReportsPage() {
       transition={{ duration: 0.25, ease: 'easeOut' }}
       className="mx-auto space-y-6"
     >
-      {/* Header */}
+      {/* Header*/}
       <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-6">
         <div className="flex items-start gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
@@ -586,7 +586,7 @@ export function GovernanceMyReportsPage() {
             </p>
           </div>
         </div>
-        {/* HRC HR-5 — month picker for historical view. */}
+        {/* month picker for historical view.*/}
         <div className="self-start md:mt-1">
           <MonthPicker
             monthEnd={historicalView.monthEnd}
@@ -605,7 +605,7 @@ export function GovernanceMyReportsPage() {
         />
       )}
 
-      {/* Briefing card (PM variant) */}
+      {/* Briefing card (PM variant)*/}
       <section className="rounded-xl border border-indigo-100 bg-linear-to-br from-indigo-50 via-white to-white p-5 shadow-sm">
         <div className="flex items-start gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700">

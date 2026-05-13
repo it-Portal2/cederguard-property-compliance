@@ -5,7 +5,7 @@
 
 export type ForwardPlanStatus =
   | 'Draft'
-  | 'Proposed'   // Phase 5.5b — PM raised via report meeting picker, awaits PgM Confirm
+  | 'Proposed'   // PM raised via report meeting picker, awaits PgM Confirm
   | 'Published'
   | 'Decided'
   | 'Deferred'
@@ -15,9 +15,8 @@ export type EntryType = 'New' | 'Change' | 'Delete';
 export type Classification = 'Open' | 'Closed' | 'Part 1 and 2';
 export type RoutingMode = 'sequential' | 'parallel';
 export type BoardGateStatus = 'scheduled' | 'held' | 'deferred' | 'na';
-// Phase 5.5e — Column F on the real Southwark FP sheet. Distinct from
-// `status` (Draft/Proposed/Published/Decided/...). Tracks whether the
-// underlying report has been ratified at the decision point.
+// Distinct from the FP `status` field. Tracks whether the underlying
+// report has been ratified at the decision point.
 export type ApprovalStatus = 'Pending' | 'Approved';
 
 export interface BoardGate {
@@ -53,7 +52,7 @@ export interface SeedForwardPlanItem {
   comments?: string;
   fileLink?: string;
   decisionLink?: string;
-  // Phase 5.5b — meeting reference (replaces per-body boardGates for new
+  // meeting reference (replaces per-body boardGates for new
   // items; legacy `boardGates` stays as read-only fallback per ADD-never-MODIFY).
   meetingId?: string | null;
   // Set when a PM raised the item via the Report meeting picker;
@@ -66,12 +65,12 @@ export interface SeedForwardPlanItem {
   lastDeclineReason?: string | null;
   lastDeclinedBy?: string | null;
   lastDeclinedAt?: string | null;
-  // Phase 5.5c — flag set by server when the meeting this FP item
+  // flag set by server when the meeting this FP item
   // references gets cancelled. UI surfaces a re-routing pill.
   needsRerouting?: boolean;
   // Optional report linkage when the FP item was raised from a Report.
   reportId?: string | null;
-  // Phase 5.5e — Approval Status (Excel Column F). Independent of `status`.
+  // Approval Status (Excel Column F). Independent of `status`.
   approvalStatus?: ApprovalStatus | null;
 }
 
@@ -122,8 +121,8 @@ export const SEED_FORWARD_PLAN_ITEMS: SeedForwardPlanItem[] = [
     softDeleted: false,
     fileLink: 'https://example.gov.uk/forwardplan/materials-fp.pdf',
     comments: 'Pre-agreed framework; supplier shortlist already vetted.',
-    // Phase 5.5b — confirmed slot at the seeded May DPB. The Confirm
-    // path appends report.id to meeting.linkedReportIds[].
+    // confirmed slot at the seeded May DPB. The Confirm
+    // path appends report.id to meeting.linkedReportIds.
     meetingId: 'mtg-dpb-2026-05',
     reportId: 'rpt-inreview-materials-gw2',
     approvalStatus: 'Pending',
@@ -175,7 +174,7 @@ export const SEED_FORWARD_PLAN_ITEMS: SeedForwardPlanItem[] = [
     approvalStatus: 'Approved',
   },
   {
-    // Phase 5.5b/5.5c demo — PM raised this via the Report meeting
+    // .5b/5.5c demo — PM raised this via the Report meeting
     // picker; awaiting PgM Confirm. Renders the rose "pending requests"
     // banner on the FP page so the new flow is visible from first load.
     id: 'fp-proposed-cladding-amendment',

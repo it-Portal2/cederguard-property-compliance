@@ -1,4 +1,4 @@
-// Historical Reporting Capability (HRC) — shared types.
+// Historical Reporting Capability — shared types.
 //
 // Two distinct shapes are stored on the server depending on the source
 // collection:
@@ -107,7 +107,7 @@ export interface HistoryRow<T = any> {
 }
 
 // `correctionHistory` row appended every time a super_admin edits a
-// snapshot row (Q4=B). Immutable.
+// snapshot row. Immutable.
 export interface CorrectionEvent {
   id: string;
   clientId: string;

@@ -1,11 +1,11 @@
 // Programme Governance — Forward Plan endpoints.
 //
 // Storage: `forwardPlanItems/{clientId_itemId}` — top-level collection with
-// `clientId` field for cheap multi-tenant queries (lesson #10 pattern).
+// `clientId` field for cheap multi-tenant queries.
 //
 // CRUD:
-//   • governanceListForwardPlanItems  — list (seeds 5 sample items on first read)
-//   • governanceGetForwardPlanItem    — single item
+//   • governanceListForwardPlanItems — list (seeds 5 sample items on first read)
+//   • governanceGetForwardPlanItem — single item
 //   • governanceUpsertForwardPlanItem — create + update + publish
 //   • governanceSoftDeleteForwardPlanItem — soft-delete with reason (rule §23)
 //   • governanceMarkForwardPlanItemDecided — flip status to 'Decided'
@@ -30,7 +30,7 @@ import type { ChangeKind } from '../../src/types/historicalReporting.js';
 
 const ITEM_ID_RE = /^[a-z0-9_-]{1,80}$/i;
 
-// HRC HR-2 — fire-and-forget history capture for FP item mutations.
+//  fire-and-forget history capture for FP item mutations.
 // Called after the primary write succeeds. Errors are swallowed inside
 // appendHistoryRow so a history failure never blocks the user's save.
 function captureFpHistory(
@@ -76,7 +76,7 @@ const FP_WRITABLE_FIELDS = [
   'comments',
   'fileLink',
   'decisionLink',
-  // Phase 5.5e — Excel Column F. Independent of `status`.
+  // Excel Column F. Independent of `status`.
   'approvalStatus',
   // status is allowed via patch but only between Draft / Published. Other
   // transitions go through dedicated endpoints (mark-as-decided, soft-delete).
@@ -191,10 +191,10 @@ function seedToDoc(seed: SeedForwardPlanItem, ctx: ApiContext, ts: string) {
     comments: seed.comments ?? '',
     fileLink: seed.fileLink ?? '',
     decisionLink: seed.decisionLink ?? '',
-    // Phase 5.5e — Excel Column F. Carried through from seed; null when
+    // Excel Column F. Carried through from seed; null when
     // the seed didn't set it (most starter rows).
     approvalStatus: seed.approvalStatus ?? null,
-    // Phase 5.5b/5.5c — demo data on new shape (Q34). Resolves
+    // .5b/5.5c — demo data on new shape (Q34). Resolves
     // `meetingId` etc. to ctx where applicable so the same seed file
     // works across workspaces.
     meetingId: seed.meetingId ?? null,
@@ -333,7 +333,7 @@ async function governanceUpsertForwardPlanItem(req: any, res: any, ctx: ApiConte
         code: 'INVALID_INPUT',
       });
     }
-    // Phase 5.5e — Approval Status (Excel Column F). null/undefined clears
+    // Approval Status (Excel Column F). null/undefined clears
     // the field; otherwise must be one of the locked enum values.
     if (
       safePatch.approvalStatus !== undefined &&
@@ -590,7 +590,7 @@ async function loadFrameworkBodiesLite(ctx: ApiContext) {
 
 function decodeXlsxPayload(fileBase64: unknown): Buffer | null {
   if (typeof fileBase64 !== 'string' || !fileBase64) return null;
-  // Strip optional `data:...;base64,` prefix so clients can send either.
+  // Strip optional `data:.;base64,` prefix so clients can send either.
   const commaIdx = fileBase64.indexOf(',');
   const b64 = commaIdx >= 0 && fileBase64.startsWith('data:')
     ? fileBase64.slice(commaIdx + 1)
@@ -724,7 +724,7 @@ async function governanceImportForwardPlanCommit(
     const batch = ctx.db.batch();
     let written = 0;
     // Track imported items so we can fire history rows after the batch
-    // commit (HR-2). Each imported item is brand new — prevState=null,
+    // commit. Each imported item is brand new — prevState=null,
     // changeKind='create'.
     const importedForHistory: Array<{ id: string; doc: Record<string, any> }> = [];
     for (const row of commitable) {
@@ -745,7 +745,7 @@ async function governanceImportForwardPlanCommit(
     }
     await batch.commit();
 
-    // HRC HR-2 — fire one history row per imported item. Best-effort,
+    //  fire one history row per imported item. Best-effort,
     // doesn't await each call to keep response time tight; appendHistoryRow
     // swallows errors internally.
     for (const { id, doc } of importedForHistory) {
@@ -824,7 +824,7 @@ function parsedItemToDoc(
     comments: parsed.comments,
     fileLink: parsed.fileLink,
     decisionLink: parsed.decisionLink,
-    // Phase 5.5e — Excel Column F. Importer normalises to Pending /
+    // Excel Column F. Importer normalises to Pending /
     // Approved / null; commit just persists the parsed value.
     approvalStatus: parsed.approvalStatus,
     createdAt: ts,
@@ -836,7 +836,7 @@ function parsedItemToDoc(
   };
 }
 
-// ── Phase 5.5b · Proposed/Confirm/Decline/Withdraw flow ─────────────────
+// ── Proposed/Confirm/Decline/Withdraw flow ─────────────────
 
 const PROPOSED_PENDING_STATES: ForwardPlanStatus[] = ['Proposed'];
 
@@ -847,11 +847,10 @@ function isOwnerOrAdmin(ctx: ApiContext, ownerUid?: string | null): boolean {
 }
 
 /**
- * Phase 5.5b — auto-create or update an FP item when a PM picks a
+ * auto-create or update an FP item when a PM picks a
  * meeting on a report. Status lands as `Proposed` (Q3 = a strict
  * approval). Inherits what we can from the report; PgM fills the
  * rest on Confirm.
- *
  * Idempotency: if a Proposed/Draft FP item already exists for this
  * `reportId`, update it (re-pointing meetingId, flipping back to
  * Proposed). Never duplicates.
@@ -954,7 +953,7 @@ export async function ensureFpItemFromReport(
       },
       { merge: true },
     );
-    // HRC HR-2 — capture the re-point as an update history row.
+    //  capture the re-point as an update history row.
     try {
       const latest = (await existing.ref.get()).data();
       captureFpHistory(ctx, {
@@ -1010,7 +1009,7 @@ export async function ensureFpItemFromReport(
     updatedAt: ts,
     updatedBy: ctx.uid,
   });
-  // HRC HR-2 — capture create as a history row.
+  //  capture create as a history row.
   try {
     const latest = (await ref.get()).data();
     captureFpHistory(ctx, {
@@ -1317,7 +1316,7 @@ export const governanceForwardPlanRoutes: Record<string, any> = {
   governanceMarkForwardPlanItemDecided,
   governanceImportForwardPlanDryRun,
   governanceImportForwardPlanCommit,
-  // Phase 5.5b — Proposed/Confirm/Decline/Withdraw flow
+  // Proposed/Confirm/Decline/Withdraw flow
   governanceConfirmFpItem,
   governanceDeclineFpItem,
   governanceWithdrawFpItem,

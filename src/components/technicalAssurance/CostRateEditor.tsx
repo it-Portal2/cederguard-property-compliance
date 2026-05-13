@@ -1,9 +1,9 @@
-// Phase 6b — Cost rate editor modal.
+// Cost rate editor modal.
 //
 // Single-form create/edit. Validates rateId regex (lowercase + hyphens
 // only — matches the seed convention so the AI prompt's rate library
 // listing stays consistent), category enum, unit enum, rate ≥ 0,
-// description ≥ 3 chars. Server re-validates everything (lesson #75).
+// description ≥ 3 chars. Server re-validates everything.
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";

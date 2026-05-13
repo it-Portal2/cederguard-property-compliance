@@ -1,7 +1,7 @@
-// Phase 5.5a — Meetings Excel import modal (PgM-only).
+// Meetings Excel import modal (PgM-only).
 //
-// Mirrors the FP import flow (Phase 5c). Two-step: dry-run preview,
-// then commit. Server re-parses on commit (lesson #55) — never trusts
+// Mirrors the FP import flow. Two-step: dry-run preview,
+// then commit. Server re-parses on commit — never trusts
 // client-held parsed rows.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -292,7 +292,7 @@ export function MeetingsImportModal({ isOpen, onClose, onCommitted }: Props) {
 
             {(phase === 'preview' || phase === 'committing') && summary && (
               <>
-                {/* Summary cards */}
+                {/* Summary cards*/}
                 <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
                   <SummaryCard label="Total" value={summary.totalRows} tone="slate" />
                   <SummaryCard label="Valid" value={summary.validRows} tone="emerald" />
@@ -312,7 +312,7 @@ export function MeetingsImportModal({ isOpen, onClose, onCommitted }: Props) {
                   </div>
                 )}
 
-                {/* Preview table */}
+                {/* Preview table*/}
                 <div className="overflow-hidden rounded-lg border border-slate-200">
                   <table className="w-full text-left text-xs">
                     <thead className="border-b border-slate-100 bg-slate-50">

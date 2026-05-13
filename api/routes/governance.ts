@@ -1,8 +1,8 @@
 // Programme Governance API — route handler map.
 // All actions follow the project's standard return shape:
-//   success → { success: true, ...payload }
+//   success → { success: true, .payload }
 //   failure → { success: false, error: string, code?: string }
-// See other route files (e.g. ./team.ts) for reference.
+// See other route files (e.g./team.ts) for reference.
 
 import { renderReportPdf } from '../lib/pdfRenderer.js';
 import type { ApiContext } from '../lib/context.js';
@@ -19,11 +19,11 @@ import {
   assetPaths,
 } from '../lib/storage.js';
 
-// --- Phase 1: editor sandbox endpoints -----------------------------------
+// editor sandbox endpoints -----------------------------------
 // These power the standalone editor test page at /governance/editor-sandbox.
 // They are deliberately scoped to a per-user sandbox document under
 // `_governanceSandbox/{uid}` and DO NOT touch any real `reports` collection.
-// Real report persistence lands in Phase 6.
+// Real report persistence lands in.
 
 const SANDBOX_COLLECTION = '_governanceSandbox';
 
@@ -162,8 +162,8 @@ async function governanceRenderSandboxPdf(req: any, res: any, ctx: ApiContext) {
       meta: meta ?? {},
     });
 
-    // Return as base64 — the client wraps it as a `data:application/pdf;base64,...`
-    // URL and feeds it to EmbedPDF. This keeps Phase 1 self-contained (no
+    // Return as base64 — the client wraps it as a `data:application/pdf;base64,.`
+    // URL and feeds it to EmbedPDF. This keeps self-contained (no
     // Firebase Storage roundtrip).
     const base64 = buffer.toString('base64');
 
@@ -184,7 +184,7 @@ async function governanceRenderSandboxPdf(req: any, res: any, ctx: ApiContext) {
   }
 }
 
-// --- Phase 2: branding asset uploads -------------------------------------
+// branding asset uploads -------------------------------------
 // Council logo + named stamps live on the org-owner user doc keyed by the
 // caller's primaryUid (= clientId). User signatures live on the caller's own
 // user doc. Every upload runs through `sharp` for compression / white-bg
@@ -437,7 +437,7 @@ export const governanceRoutes: Record<string, any> = {
   governanceSandboxSaveSection,
   governanceSandboxLoadSection,
   governanceRenderSandboxPdf,
-  // Phase 2 — branding assets
+  // branding assets
   governanceUploadCouncilLogo,
   governanceDeleteCouncilLogo,
   governanceUploadCouncilStamp,

@@ -1,10 +1,9 @@
-// Phase 5.5c — Public board calendar (read-only).
+// Public board calendar (read-only).
 //
 // Q14 = c. Surfaces the year-ahead schedule to non-PM workspace
 // members (Strategic Director, Viewer, etc.) so they can see what's
 // coming up without needing access to the FP / Reports surfaces.
 // Reuses MeetingsCalendarView + MeetingModal (canEdit=false) from
-// Phase 8c.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
@@ -35,7 +34,7 @@ function formatGbDate(iso: string | null | undefined): string {
 }
 
 export function GovernanceBoardCalendarPage() {
-  // HRC HR-5 — historical view hook. The page is already read-only,
+  //  historical view hook. The page is already read-only,
   // so the only behavioural change in historical mode is the data
   // source swap.
   const historicalView = useHistoricalView<{
@@ -70,7 +69,7 @@ export function GovernanceBoardCalendarPage() {
     void refresh();
   }, [refresh]);
 
-  // HRC HR-5 — effective items: live or snapshot based on MonthPicker.
+  //  effective items: live or snapshot based on MonthPicker.
   const historicalItems = useMemo<Meeting[]>(() => {
     if (!isHistorical) return [];
     return historicalView.entries
@@ -117,7 +116,7 @@ export function GovernanceBoardCalendarPage() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 self-start">
-          {/* HRC HR-5 — month picker for historical view. */}
+          {/* month picker for historical view.*/}
           <MonthPicker
             monthEnd={historicalView.monthEnd}
             availableMonths={historicalView.availableMonths}
@@ -189,8 +188,7 @@ export function GovernanceBoardCalendarPage() {
         <PublicMeetingList items={visibleItems} onOpen={handleOpen} />
       )}
 
-      {/* Read-only modal — `canEdit={false}` ensures all tabs are
-          view-only. Same Phase 8 chrome the PgM sees. */}
+      {/* Read-only modal — `canEdit={false}` ensures all tabs are view-only. */}
       <MeetingModal
         isOpen={modalOpen}
         meeting={opened}
