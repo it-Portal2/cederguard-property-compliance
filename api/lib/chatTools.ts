@@ -1052,3 +1052,15 @@ export function getGeminiToolDeclarations(ctx: ApiContext) {
     parameters: t.parameters,
   }));
 }
+
+// OpenAI-compatible tool declarations (used by chatStream with OpenRouter/OpenAI)
+export function getOpenAIToolDeclarations(ctx: ApiContext) {
+  return CHAT_TOOLS.filter((t) => t.isAllowed(ctx)).map((t) => ({
+    type: "function" as const,
+    function: {
+      name: t.name,
+      description: t.description,
+      parameters: t.parameters,
+    },
+  }));
+}

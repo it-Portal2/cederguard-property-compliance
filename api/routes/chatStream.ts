@@ -9,21 +9,22 @@
 //   {"event":"error","data":{"message":"..."}}
 //   {"event":"done","data":{"messageId":"..."}}
 //
+// AI provider: OpenRouter (free, primary) → OpenAI (fallback).
 // Loop strategy:
-//   • All rounds with function calls: generateContent (structured, non-streaming).
-//   • Final text-only round: generateContentStream for real token-level streaming.
+//   • Tool-call rounds: non-streaming createCompletion (reliable tool_calls detection).
+//   • Final text-only round: streaming createCompletion for real token streaming.
 //   • Max MAX_TOOL_ROUNDS rounds to prevent runaway loops.
 
-import { GoogleGenAI } from "@google/genai";
+import OpenAI from "openai";
 import type { ApiContext } from "../lib/context.js";
 import { checkAndRecordChatMessage } from "../lib/chatRateLimit.js";
 import {
   executeTool,
-  getGeminiToolDeclarations,
+  getOpenAIToolDeclarations,
   type ToolName,
 } from "../lib/chatTools.js";
+import { createChatClient } from "../lib/aiClient.js";
 
-const CHAT_MODEL = "gemini-2.5-flash";
 const MAX_TOOL_ROUNDS = 6;
 
 // NDJSON event writer — writes one JSON line and flushes
@@ -34,41 +35,41 @@ function writeEvent(res: any, event: string, data: Record<string, any>) {
 // Build citation route from kind + id
 function citationRoute(kind: string, id: string): string {
   switch (kind) {
-    case "risk":       return `/risk/register?riskId=${id}`;
-    case "issue":      return `/risk/issues?issueId=${id}`;
-    case "compliance": return `/compliance/tracker?itemId=${id}`;
-    case "project":    return `/project/initiation?projectId=${id}`;
-    case "programme":  return `/programmes?programmeId=${id}`;
-    case "kri":        return `/monitoring/kri?kriId=${id}`;
-    case "forwardPlan":return `/governance/forward-plan?itemId=${id}`;
-    case "meeting":    return `/governance/meetings?meetingId=${id}`;
-    case "report":     return `/governance/reports-list/${id}`;
-    case "enquiry":    return `/technical-assurance/enquiries/${id}`;
-    case "rfi":        return `/technical-assurance/rfis?rfiNumber=${id}`;
-    case "task":       return `/my-tasks`;
-    default:           return `/`;
+    case "risk":        return `/risk/register?riskId=${id}`;
+    case "issue":       return `/risk/issues?issueId=${id}`;
+    case "compliance":  return `/compliance/tracker?itemId=${id}`;
+    case "project":     return `/project/initiation?projectId=${id}`;
+    case "programme":   return `/programmes?programmeId=${id}`;
+    case "kri":         return `/monitoring/kri?kriId=${id}`;
+    case "forwardPlan": return `/governance/forward-plan?itemId=${id}`;
+    case "meeting":     return `/governance/meetings?meetingId=${id}`;
+    case "report":      return `/governance/reports-list/${id}`;
+    case "enquiry":     return `/technical-assurance/enquiries/${id}`;
+    case "rfi":         return `/technical-assurance/rfis?rfiNumber=${id}`;
+    case "task":        return `/my-tasks`;
+    default:            return `/`;
   }
 }
 
 function toolNameToCitationKind(toolName: string): string {
   const map: Record<string, string> = {
-    listAccessibleProjects:      "project",
-    getProjectDetails:           "project",
-    listAccessibleProgrammes:    "programme",
-    getProgrammeDetails:         "programme",
-    searchRisks:                 "risk",
-    searchIssues:                "issue",
-    searchComplianceItems:       "compliance",
-    getKRIs:                     "kri",
-    searchForwardPlanItems:      "forwardPlan",
-    searchMeetings:              "meeting",
-    searchReports:               "report",
-    searchTacEnquiries:          "enquiry",
-    searchRfis:                  "rfi",
-    getMyTasks:                  "task",
-    getMonthlyHistoricalSnapshot:"project",
-    crossTenantListClients:      "project",
-    setQueryClientContext:       "project",
+    listAccessibleProjects:       "project",
+    getProjectDetails:            "project",
+    listAccessibleProgrammes:     "programme",
+    getProgrammeDetails:          "programme",
+    searchRisks:                  "risk",
+    searchIssues:                 "issue",
+    searchComplianceItems:        "compliance",
+    getKRIs:                      "kri",
+    searchForwardPlanItems:       "forwardPlan",
+    searchMeetings:               "meeting",
+    searchReports:                "report",
+    searchTacEnquiries:           "enquiry",
+    searchRfis:                   "rfi",
+    getMyTasks:                   "task",
+    getMonthlyHistoricalSnapshot: "project",
+    crossTenantListClients:       "project",
+    setQueryClientContext:        "project",
   };
   return map[toolName] ?? "project";
 }
@@ -100,15 +101,16 @@ export const chatStreamRoutes: Record<
     // ── 1. Rate limit ─────────────────────────────────────────────────
     const rateResult = await checkAndRecordChatMessage(ctx);
     if (!rateResult.allowed) {
+      const denied = rateResult as { allowed: false; remaining: 0; resetAt: number; retryAfterSeconds: number };
       res.setHeader("Content-Type", "application/x-ndjson");
       res.setHeader("Transfer-Encoding", "chunked");
       res.setHeader("X-Accel-Buffering", "no");
       res.status(429);
       writeEvent(res, "error", {
-        message: `Rate limit reached. You may send your next message in ${rateResult.retryAfterSeconds} seconds.`,
+        message: `Rate limit reached. You may send your next message in ${denied.retryAfterSeconds} seconds.`,
         code: "RATE_LIMITED",
-        retryAfterSeconds: rateResult.retryAfterSeconds,
-        resetAt: rateResult.resetAt,
+        retryAfterSeconds: denied.retryAfterSeconds,
+        resetAt: denied.resetAt,
       });
       writeEvent(res, "done", { messageId: null });
       res.end();
@@ -121,7 +123,8 @@ export const chatStreamRoutes: Record<
       return res.status(400).json({ error: "messages array is required" });
     }
 
-    const safeMessages = messages
+    // Convert incoming {role:"user"|"model", text:""} to OpenAI format
+    const openAIHistory: OpenAI.ChatCompletionMessageParam[] = messages
       .filter(
         (m: any) =>
           m &&
@@ -131,11 +134,11 @@ export const chatStreamRoutes: Record<
       )
       .slice(-40)
       .map((m: any) => ({
-        role: m.role as "user" | "model",
-        parts: [{ text: m.text.trim().slice(0, 8000) }],
+        role: (m.role === "model" ? "assistant" : "user") as "assistant" | "user",
+        content: m.text.trim().slice(0, 8000),
       }));
 
-    if (!safeMessages.length) {
+    if (!openAIHistory.length) {
       return res.status(400).json({ error: "No valid messages after sanitization" });
     }
 
@@ -172,93 +175,142 @@ You help users query and understand their own data: projects, programmes, risks,
 7. If a query returns no results, say so clearly and suggest alternative searches.
 8. For date comparisons, today is ${new Date().toISOString().split("T")[0]}.`;
 
-    // ── 5. Setup ──────────────────────────────────────────────────────
-    const apiKey = process.env.GEMINI_API_KEY || userData?.geminiBackupKey;
-    if (!apiKey) {
+    // ── 5. Resolve AI provider keys ───────────────────────────────────
+    const openRouterKey = (process.env.OPENROUTER_API_KEY ?? "").trim() ||
+      (userData?.openrouterApiKey ?? "").trim();
+    const openAiKey = (process.env.OPENAI_API_KEY ?? "").trim() ||
+      (userData?.openaiApiKey ?? "").trim();
+
+    if (!openRouterKey && !openAiKey) {
       writeEvent(res, "error", { message: "AI service not configured" });
       writeEvent(res, "done", { messageId: null });
       res.end();
       return;
     }
 
-    const ai = new GoogleGenAI({ apiKey });
-    const toolDeclarations = getGeminiToolDeclarations(ctx);
+    const { client, model, fallbackClient, fallbackModel } = createChatClient(
+      openRouterKey,
+      openAiKey,
+    );
 
+    const toolDeclarations = getOpenAIToolDeclarations(ctx);
     const allCitations: Array<{
       kind: string; id: string; label: string; route: string;
     }> = [];
 
-    const commonConfig = {
-      systemInstruction,
+    const commonParams = {
       temperature: 0.4,
-      maxOutputTokens: 4096,
-      tools: toolDeclarations.length > 0
-        ? [{ functionDeclarations: toolDeclarations }]
-        : undefined,
+      max_tokens: 4096,
+      ...(toolDeclarations.length > 0
+        ? { tools: toolDeclarations, tool_choice: "auto" as const }
+        : {}),
     };
 
-    let contents = [...safeMessages];
+    // Full message array — system message prepended
+    let msgHistory: OpenAI.ChatCompletionMessageParam[] = [
+      { role: "system", content: systemInstruction },
+      ...openAIHistory,
+    ];
+
+    // Helper: try with primary client, fall back on quota/overload errors
+    const doCompletion = async (
+      params: OpenAI.ChatCompletionCreateParamsNonStreaming,
+    ) => {
+      try {
+        return await client.chat.completions.create(params);
+      } catch (err: any) {
+        const retryable =
+          err?.status === 429 || err?.status === 503 || err?.status === 529;
+        if (retryable && fallbackClient) {
+          console.warn("[chatStream] primary failed, using fallback:", err?.message);
+          return await fallbackClient.chat.completions.create({
+            ...params,
+            model: fallbackModel!,
+          });
+        }
+        throw err;
+      }
+    };
+
+    const doStream = async (
+      params: OpenAI.ChatCompletionCreateParamsStreaming,
+    ) => {
+      try {
+        return client.chat.completions.create(params);
+      } catch (err: any) {
+        const retryable =
+          err?.status === 429 || err?.status === 503 || err?.status === 529;
+        if (retryable && fallbackClient) {
+          return fallbackClient.chat.completions.create({
+            ...params,
+            model: fallbackModel!,
+          });
+        }
+        throw err;
+      }
+    };
 
     try {
       for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-        // ── Non-streaming round (tool-call detection) ─────────────────
-        // We use generateContent for all rounds to reliably detect function
-        // calls. Once we have a final text-only response, we re-issue the
-        // same prompt with generateContentStream for true token streaming.
-        const response = await ai.models.generateContent({
-          model: CHAT_MODEL,
-          contents,
-          config: commonConfig,
-        });
+        // ── Non-streaming round (reliable tool_calls detection) ───────
+        const response = await doCompletion({ model, messages: msgHistory, ...commonParams });
 
-        const candidate = response.candidates?.[0];
-        if (!candidate) {
+        const choice = response.choices?.[0];
+        if (!choice) {
           writeEvent(res, "error", { message: "No response from AI" });
           break;
         }
 
-        const parts = candidate.content?.parts ?? [];
-        const functionCallParts = parts.filter((p: any) => p.functionCall);
-        const textParts = parts.filter((p: any) => p.text);
-        const hasFunctionCalls = functionCallParts.length > 0;
+        const assistantMsg = choice.message;
+        const hasToolCalls =
+          choice.finish_reason === "tool_calls" &&
+          Array.isArray(assistantMsg.tool_calls) &&
+          assistantMsg.tool_calls.some((tc) => tc.type === "function");
 
-        if (!hasFunctionCalls) {
-          // Final text-only round — stream it using generateContentStream
-          const fullText = textParts.map((p: any) => p.text).join("");
-          if (fullText) {
+        if (!hasToolCalls) {
+          // Final text-only round — re-issue as streaming
+          const fallbackText = assistantMsg.content ?? "";
+          if (fallbackText) {
             try {
-              const streamResponse = await ai.models.generateContentStream({
-                model: CHAT_MODEL,
-                contents,
-                config: commonConfig,
+              const stream = await doStream({
+                model,
+                messages: msgHistory,
+                ...commonParams,
+                stream: true,
               });
-              for await (const chunk of streamResponse) {
-                const delta = chunk.candidates?.[0]?.content?.parts
-                  ?.filter((p: any) => p.text)
-                  .map((p: any) => p.text)
-                  .join("") ?? "";
-                if (delta) {
-                  writeEvent(res, "text", { delta });
-                }
+              for await (const chunk of stream) {
+                const delta = chunk.choices?.[0]?.delta?.content ?? "";
+                if (delta) writeEvent(res, "text", { delta });
               }
             } catch (streamErr: any) {
-              // Fallback: emit the already-fetched text in chunks
+              // Streaming unavailable — emit the non-streamed text in chunks
               console.warn("[chatStream] streaming fallback:", streamErr?.message);
               const chunkSize = 50;
-              for (let i = 0; i < fullText.length; i += chunkSize) {
-                writeEvent(res, "text", { delta: fullText.slice(i, i + chunkSize) });
+              for (let i = 0; i < fallbackText.length; i += chunkSize) {
+                writeEvent(res, "text", { delta: fallbackText.slice(i, i + chunkSize) });
               }
             }
           }
           break;
         }
 
-        // ── Execute function calls ────────────────────────────────────
-        const functionResponses: any[] = [];
+        // ── Execute tool calls ────────────────────────────────────────
+        // Append assistant message with tool_calls to history
+        msgHistory = [...msgHistory, assistantMsg];
 
-        for (const part of functionCallParts) {
-          const toolName = part.functionCall.name as ToolName;
-          const toolArgs = (part.functionCall.args ?? {}) as Record<string, any>;
+        const functionCalls = (assistantMsg.tool_calls ?? []).filter(
+          (tc): tc is OpenAI.ChatCompletionMessageFunctionToolCall =>
+            tc.type === "function",
+        );
+
+        for (const toolCall of functionCalls) {
+          const toolName = toolCall.function.name as ToolName;
+          let toolArgs: Record<string, any> = {};
+          try {
+            toolArgs = JSON.parse(toolCall.function.arguments ?? "{}");
+          } catch {
+            toolArgs = {};
+          }
 
           writeEvent(res, "tool", { name: toolName, status: "running" });
           const { result, error } = await executeTool(ctx, toolName, toolArgs);
@@ -275,28 +327,24 @@ You help users query and understand their own data: projects, programmes, risks,
             allCitations.push(...extractCitations(toolName, result));
           }
 
-          functionResponses.push({
-            functionResponse: {
-              name: toolName,
-              response: error ? { error } : { result: result ?? null },
+          // Append tool result message
+          msgHistory = [
+            ...msgHistory,
+            {
+              role: "tool",
+              tool_call_id: toolCall.id,
+              content: JSON.stringify(error ? { error } : { result: result ?? null }),
             },
-          });
+          ];
         }
-
-        // Append model turn + function responses to conversation history
-        contents = [
-          ...contents,
-          { role: "model" as const, parts },
-          { role: "user" as const, parts: functionResponses },
-        ];
       }
     } catch (err: any) {
       console.error("[chatStream] error:", err?.message);
       writeEvent(res, "error", {
         message:
-          err?.message?.includes("quota") || err?.status === 429
+          err?.status === 429 || err?.message?.includes("quota")
             ? "AI quota exceeded. Please try again shortly."
-            : err?.message?.includes("overloaded") || err?.status === 503
+            : err?.status === 503 || err?.message?.includes("overloaded")
             ? "AI service is temporarily busy. Please try again."
             : "An error occurred while generating the response.",
       });
