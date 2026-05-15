@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router';
-import { LayoutDashboard, CheckSquare, ShieldAlert, MessageSquare, FolderKanban } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, ShieldAlert, ScanSearch, FolderKanban } from 'lucide-react';
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '../store/useStore';
@@ -19,7 +19,7 @@ export function MobileNav() {
     { to: '/dashboard', icon: LayoutDashboard, label: 'Home' },
     { to: `/compliance/dashboard${queryParams}`, icon: CheckSquare, label: 'Compliance' },
     { to: `/risk/dashboard${queryParams}`, icon: ShieldAlert, label: 'Risks' },
-    { to: '/chat', icon: MessageSquare, label: 'AI Chat' },
+    { to: '/risk/ai', icon: ScanSearch, label: 'AI' },
     { to: '/projects', icon: FolderKanban, label: 'Projects' },
   ];
 
