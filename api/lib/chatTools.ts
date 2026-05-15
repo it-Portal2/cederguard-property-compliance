@@ -754,8 +754,10 @@ export const CHAT_TOOLS: ToolDef[] = [
         if (args.status && e.status !== args.status) continue;
         if (args.projectId && e.projectId !== args.projectId) continue;
         if (q && !`${e.subject || ""} ${e.reference || ""}`.toLowerCase().includes(q)) continue;
+        // doc id is {clientId}_{enquiryId} — expose just the entity id for routing
+        const bareId = (e.id as string) ?? d.id.replace(`${primaryUid}_`, "");
         results.push({
-          id: d.id,
+          id: bareId,
           reference: e.reference,
           subject: e.subject,
           status: e.status,
@@ -808,7 +810,7 @@ export const CHAT_TOOLS: ToolDef[] = [
         if (args.projectId && r.projectId !== args.projectId) continue;
         if (q && !`${r.subject || ""} ${r.rfiNumber || ""}`.toLowerCase().includes(q)) continue;
         results.push({
-          id: d.id,
+          id: r.rfiNumber ?? d.id,  // rfiNumber used as citation id for route ?rfiNumber=X
           rfiNumber: r.rfiNumber,
           subject: r.subject,
           status: r.status,
@@ -837,51 +839,57 @@ export const CHAT_TOOLS: ToolDef[] = [
     },
     isAllowed: anySignedIn,
     execute: async (ctx, args) => {
-      const { db, uid, primaryUid } = ctx;
+      const { db, uid } = ctx;
       const limit = Math.min(Number(args.limit) || 50, 100);
+      const results: any[] = [];
 
-      // Tasks are stored via the generic saveData path under the user's own collection
-      // Try user-specific tasks doc first
-      const taskDoc = await db
+      const pushTasks = (tasks: any[]) => {
+        for (const t of tasks) {
+          if (results.length >= limit) break;
+          if (args.status && t.status !== args.status) continue;
+          results.push({
+            id: t.id,
+            title: t.title,
+            description: t.description,
+            status: t.status,
+            priority: t.priority,
+            dueDate: t.dueDate,
+            projectId: t.projectId,
+            projectName: t.projectName,
+          });
+        }
+      };
+
+      // 1. User-scoped tasks (no project context): users/{uid}/data/tasks
+      const userTaskDoc = await db
         .collection("users")
         .doc(uid)
         .collection("data")
         .doc("tasks")
         .get();
+      if (userTaskDoc.exists) {
+        const d = userTaskDoc.data() as any;
+        pushTasks(Array.isArray(d?.data) ? d.data : []);
+      }
 
-      let tasks: any[] = [];
-      if (taskDoc.exists) {
-        const d = taskDoc.data() as any;
-        tasks = Array.isArray(d?.data) ? d.data : [];
-      } else {
-        // Fallback: tasks saved via generic collection pattern
-        const fallbackDoc = await db
-          .collection("projects")
-          .doc(uid)
-          .collection("data")
-          .doc("tasks")
-          .get();
-        if (fallbackDoc.exists) {
-          const d = fallbackDoc.data() as any;
-          tasks = Array.isArray(d?.data) ? d.data : [];
+      // 2. Tasks from accessible projects: projects/{pid}/data/tasks
+      if (results.length < limit) {
+        const projectIds = await getAccessibleProjectIds(ctx);
+        for (const pid of projectIds) {
+          if (results.length >= limit) break;
+          const projTaskDoc = await db
+            .collection("projects")
+            .doc(pid)
+            .collection("data")
+            .doc("tasks")
+            .get();
+          if (projTaskDoc.exists) {
+            const d = projTaskDoc.data() as any;
+            pushTasks(Array.isArray(d?.data) ? d.data : []);
+          }
         }
       }
 
-      const results: any[] = [];
-      for (const t of tasks) {
-        if (results.length >= limit) break;
-        if (args.status && t.status !== args.status) continue;
-        results.push({
-          id: t.id,
-          title: t.title,
-          description: t.description,
-          status: t.status,
-          priority: t.priority,
-          dueDate: t.dueDate,
-          projectId: t.projectId,
-          projectName: t.projectName,
-        });
-      }
       return results;
     },
   },
