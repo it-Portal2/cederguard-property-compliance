@@ -32,6 +32,8 @@ const SKIP_PATHS = new Set<string>([
   '/reporting/programme-report',
   // Workspace management — admin settings, not a query surface.
   '/setup/workspace',
+  // Full-page AI Chat — has its own chat surface; floating button would be redundant.
+  '/chat',
 ]);
 
 // Pattern-based skips (dynamic segments).

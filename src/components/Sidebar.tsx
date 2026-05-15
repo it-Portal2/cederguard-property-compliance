@@ -93,7 +93,9 @@ export function Sidebar() {
   // Auto-expand based on route
   useEffect(() => {
     const path = location.pathname;
-    if (path.startsWith('/dashboard') || path.startsWith('/calendar') || path.startsWith('/tasks')) {
+    if (path.startsWith('/chat')) {
+      setOpenGroup('Overview');
+    } else if (path.startsWith('/dashboard') || path.startsWith('/calendar') || path.startsWith('/tasks')) {
       setOpenGroup('Overview');
     } else if (path.startsWith('/project/initiation') || path.startsWith('/projects/edit') || path.startsWith('/project/plan')) {
       setOpenGroup('Project Initiation');
@@ -187,6 +189,7 @@ export function Sidebar() {
             onToggle={() => toggleGroup('Overview')}
           >
             <NavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
+            <NavItem to="/chat" icon={MessageSquare} label="AI Chat" iconClass="text-indigo-500" />
             <NavItem to="/calendar" icon={CalendarIcon} label="Calendar" />
             <NavItem to="/my-tasks" icon={CheckSquare} label="My Tasks" />
             <NavItem to="/projects" icon={FolderKanban} label="All Projects" />
