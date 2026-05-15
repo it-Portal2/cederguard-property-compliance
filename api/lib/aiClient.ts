@@ -18,9 +18,11 @@ export interface CompletionOptions {
 
 const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
 
-// Default free model on OpenRouter — override with OPENROUTER_MODEL env var
+// Default: openrouter/free router (selects from all 25 free models, smartly
+// filters for features needed per request including vision/tool-use support).
+// Override with OPENROUTER_MODEL env var to pin a specific model.
 const DEFAULT_OPENROUTER_MODEL =
-  process.env.OPENROUTER_MODEL ?? "meta-llama/llama-3.3-70b-instruct:free";
+  process.env.OPENROUTER_MODEL ?? "openrouter/free";
 const DEFAULT_OPENAI_MODEL = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
 
 function makeOpenRouterClient(apiKey: string): OpenAI {
