@@ -21,6 +21,11 @@ export type ToolName =
   | "searchReports"
   | "searchTacEnquiries"
   | "searchRfis"
+  | "searchMeetingTemplates"
+  | "getGovernanceFramework"
+  | "listProjectGovernanceDocs"
+  | "listGovernanceArchive"
+  | "listAuditFlaggedTacEnquiries"
   | "getMyTasks"
   | "getMonthlyHistoricalSnapshot"
   | "crossTenantListClients";
@@ -178,12 +183,12 @@ async function readProjectSubCollection(
   return Array.isArray(d?.data) ? d.data : [];
 }
 
-/**
- * Mirror of readProjectSubCollection but for data stored at the programme
- * level (risks/issues/complianceItems/kris that aren't tied to a specific
- * project — e.g. "Programme Level" risks visible on the Programme Risk
- * Register). Lives at `programmes/{programmeId}/data/{subDoc}`.
- */
+// Programme-level sub-collection reader. IMPORTANT: programme data shares the
+// SAME Firestore path family as project data — `projects/{id}/data/{subDoc}` —
+// with the programmeId used as the {id}. See useStore.loadProgrammeData and
+// api/routes/data.ts:getData where `api.getData("risks", programmeId)` hits
+// exactly this path. Reading from `programmes/{id}/data/...` returned nothing
+// because that collection isn't where the app writes.
 async function readProgrammeSubCollection(
   ctx: ApiContext,
   programmeId: string,
@@ -194,7 +199,7 @@ async function readProgrammeSubCollection(
   const authorised = await ctx.isAuthorizedForContext(programmeId);
   if (!authorised) return [];
   const doc = await db
-    .collection("programmes")
+    .collection("projects")
     .doc(programmeId)
     .collection("data")
     .doc(subDoc)
@@ -771,7 +776,7 @@ export const CHAT_TOOLS: ToolDef[] = [
   {
     name: "searchMeetings",
     description:
-      "Search governance meetings. Returns id, title, governance body, date, status, attendees, and linked reports.",
+      "Search governance meetings. Returns id, title, governance body, date, status, attendees, and linked reports. Use governanceBodyId to scope to a specific board, or projectId to find meetings that have linked a given project.",
     parameters: {
       type: "object",
       properties: {
@@ -781,6 +786,7 @@ export const CHAT_TOOLS: ToolDef[] = [
           description: "Filter by status (e.g. 'Scheduled', 'Held', 'Cancelled')",
         },
         governanceBodyId: { type: "string", description: "Filter by governance body" },
+        projectId: { type: "string", description: "Filter to meetings whose linkedProjectIds contains this project" },
         fromDate: { type: "string", description: "ISO date: only meetings on or after this date" },
         limit: { type: "number", description: "Max results (default 50)" },
       },
@@ -790,6 +796,13 @@ export const CHAT_TOOLS: ToolDef[] = [
       const { db, primaryUid, isAdmin } = ctx;
       const limit = Math.min(Number(args.limit) || 50, TOOL_RESULT_HARD_CAP);
       const q = (args.query || "").toLowerCase();
+      // Authorise project scoping. Server-side check so the AI can't probe a
+      // foreign project by passing its id; unauthorised → empty result set,
+      // not an error (consistent with other tools).
+      if (args.projectId) {
+        const ok = await ctx.isAuthorizedForContext(args.projectId);
+        if (!ok) return [];
+      }
 
       const READ_CAP = Math.min(limit * 5, 500);
       let baseQuery: FirebaseFirestore.Query = isAdmin
@@ -806,6 +819,10 @@ export const CHAT_TOOLS: ToolDef[] = [
         if (m.deletedAt) continue;
         if (args.status && m.status !== args.status) continue;
         if (args.governanceBodyId && m.governanceBodyId !== args.governanceBodyId) continue;
+        if (args.projectId) {
+          const linked = Array.isArray(m.linkedProjectIds) ? m.linkedProjectIds : [];
+          if (!linked.includes(args.projectId)) continue;
+        }
         if (args.fromDate && m.date < args.fromDate) continue;
         if (q && !`${m.title ?? ""} ${m.location ?? ""}`.toLowerCase().includes(q)) continue;
         matched.push({
@@ -1034,6 +1051,308 @@ export const CHAT_TOOLS: ToolDef[] = [
       const truncated = matched.length > limit || snap.size === READ_CAP;
       const out = matched.slice(0, limit);
       return truncated ? [...out, { _truncated: true, totalMatched: matched.length, returned: out.length, hint: "Refine filters to narrow results." }] : out;
+    },
+  },
+
+  // ── Governance Templates (report / meeting templates) ─────────────────
+  {
+    name: "searchMeetingTemplates",
+    description:
+      "List governance report and meeting templates available in this workspace. Use to answer 'what templates do we have' / 'show me the gateway report template'. Returns id, category, title, description, defaultRoute, and whether senior PM review is required.",
+    parameters: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "Text search in title/description" },
+        category: { type: "string", description: "Filter by category (e.g. 'PartA', 'PartB', 'KeyDecision')" },
+        limit: { type: "number", description: "Max results (default 50)" },
+      },
+    },
+    isAllowed: anySignedIn,
+    execute: async (ctx, args) => {
+      const { db, primaryUid } = ctx;
+      const limit = Math.min(Number(args.limit) || 50, TOOL_RESULT_HARD_CAP);
+      const q = (args.query || "").toLowerCase();
+      const snap = await db
+        .collection("reportTemplates")
+        .where("clientId", "==", primaryUid)
+        .limit(500)
+        .get();
+      const matched: any[] = [];
+      for (const d of snap.docs) {
+        const t = d.data();
+        if (args.category && t.category !== args.category) continue;
+        if (q && !`${t.title ?? ""} ${t.description ?? ""}`.toLowerCase().includes(q)) continue;
+        matched.push({
+          id: d.id,
+          category: t.category,
+          title: t.title,
+          description: t.description,
+          defaultRoute: t.defaultRoute,
+          requireSeniorPmReview: t.requireSeniorPmReview,
+          sectionCount: Array.isArray(t.sections) ? t.sections.length : 0,
+        });
+      }
+      const truncated = matched.length > limit;
+      const out = matched.slice(0, limit);
+      return truncated ? [...out, { _truncated: true, totalMatched: matched.length, returned: out.length, hint: "Refine by category or query." }] : out;
+    },
+  },
+
+  // ── Governance Framework (bodies + thresholds + TORs) ─────────────────
+  {
+    name: "getGovernanceFramework",
+    description:
+      "Get the workspace governance framework: list of governance bodies (boards/committees) with cadence + chair, financial/risk thresholds, and active terms-of-reference per body. Use this BEFORE searching meetings/forward plan/reports when the user asks about a specific board so you can pass the right governanceBodyId.",
+    parameters: { type: "object", properties: {} },
+    isAllowed: anySignedIn,
+    execute: async (ctx) => {
+      const { db, primaryUid } = ctx;
+      const [bodiesSnap, torSnap] = await Promise.all([
+        db.collection("governanceBodies").where("clientId", "==", primaryUid).get(),
+        db
+          .collection("termsOfReference")
+          .where("clientId", "==", primaryUid)
+          .where("status", "in", ["draft", "published"])
+          .get(),
+      ]);
+      const torByBody: Record<string, any> = {};
+      for (const d of torSnap.docs) {
+        const data = d.data() as any;
+        const owner = data.ownerBodyId;
+        if (!owner) continue;
+        const existing = torByBody[owner];
+        if (!existing || (data.status === "draft" && existing.status === "published")) {
+          torByBody[owner] = data;
+        }
+      }
+      return {
+        bodies: bodiesSnap.docs.map((d) => {
+          const b = d.data() as any;
+          const tor = torByBody[d.id];
+          return {
+            id: d.id,
+            name: b.name,
+            type: b.type,
+            cadence: b.cadence,
+            chairLabel: b.chairLabel,
+            torStatus: tor?.status ?? null,
+            torSummary: tor?.summary ?? null,
+          };
+        }),
+      };
+    },
+  },
+
+  // ── Project Governance Docs (per-project signed-off documents) ────────
+  {
+    name: "listProjectGovernanceDocs",
+    description:
+      "List project governance documents (charter, brief, scope, risk strategy etc.) for one project or all projects under a programme. Returns id, projectId, docType, title, status, version, signedAt.",
+    parameters: {
+      type: "object",
+      properties: {
+        projectId: { type: "string", description: "Scope to a single project" },
+        programmeId: { type: "string", description: "Scope to every project under this programme" },
+        status: { type: "string", description: "Filter by status (e.g. 'Draft', 'Published')" },
+        limit: { type: "number", description: "Max results (default 50)" },
+      },
+    },
+    isAllowed: anySignedIn,
+    execute: async (ctx, args) => {
+      const { db, primaryUid, isAdmin } = ctx;
+      const limit = Math.min(Number(args.limit) || 50, TOOL_RESULT_HARD_CAP);
+      // Authorise the scoping arg the same way the search tools do.
+      if (args.projectId) {
+        const ok = await ctx.isAuthorizedForContext(args.projectId);
+        if (!ok) return [];
+      }
+      const targetProjectIds = new Set(await resolveTargetProjectIds(ctx, args));
+      if (targetProjectIds.size === 0) return [];
+
+      let baseQuery: FirebaseFirestore.Query = isAdmin
+        ? db.collection("projectGovernanceDocs")
+        : db.collection("projectGovernanceDocs").where("clientId", "==", primaryUid);
+      const READ_CAP = Math.min(limit * 5, 500);
+      const snap = await baseQuery.limit(READ_CAP).get();
+      const matched: any[] = [];
+      for (const d of snap.docs) {
+        const doc = d.data() as any;
+        if (doc.deletedAt) continue;
+        if (doc.projectId && !targetProjectIds.has(doc.projectId)) continue;
+        if (args.status && doc.status !== args.status) continue;
+        matched.push({
+          id: d.id,
+          projectId: doc.projectId,
+          docType: doc.docType,
+          title: doc.title,
+          status: doc.status,
+          version: doc.version,
+          signedAt: doc.signedAt,
+          updatedAt: doc.updatedAt,
+        });
+      }
+      const truncated = matched.length > limit || snap.size === READ_CAP;
+      const out = matched.slice(0, limit);
+      return truncated ? [...out, { _truncated: true, totalMatched: matched.length, returned: out.length, hint: "Refine by projectId or status." }] : out;
+    },
+  },
+
+  // ── Governance Archive (sealed/held/published artefacts) ──────────────
+  {
+    name: "listGovernanceArchive",
+    description:
+      "List sealed governance artefacts in the workspace archive: sealed reports, held meetings, and published project governance documents. Read-only audit trail; use for 'show me the archive' / 'what's been sealed this year'.",
+    parameters: {
+      type: "object",
+      properties: {
+        kind: {
+          type: "string",
+          description: "Filter to one kind: 'report' | 'meeting' | 'projectDoc'. Omit for all.",
+        },
+        limit: { type: "number", description: "Max results per kind (default 30)" },
+      },
+    },
+    isAllowed: isProgrammeManager,
+    execute: async (ctx, args) => {
+      const { db, primaryUid } = ctx;
+      const limit = Math.min(Number(args.limit) || 30, TOOL_RESULT_HARD_CAP);
+      const wantReports = !args.kind || args.kind === "report";
+      const wantMeetings = !args.kind || args.kind === "meeting";
+      const wantDocs = !args.kind || args.kind === "projectDoc";
+
+      const [reportsSnap, meetingsSnap, docsSnap] = await Promise.all([
+        wantReports
+          ? db
+              .collection("reports")
+              .where("clientId", "==", primaryUid)
+              .where("status", "==", "Sealed")
+              .limit(limit)
+              .get()
+          : Promise.resolve(null),
+        wantMeetings
+          ? db
+              .collection("meetings")
+              .where("clientId", "==", primaryUid)
+              .where("status", "==", "Held")
+              .limit(limit)
+              .get()
+          : Promise.resolve(null),
+        wantDocs
+          ? db
+              .collection("projectGovernanceDocs")
+              .where("clientId", "==", primaryUid)
+              .where("status", "==", "Published")
+              .limit(limit)
+              .get()
+          : Promise.resolve(null),
+      ]);
+
+      return {
+        reports: reportsSnap
+          ? reportsSnap.docs.map((d) => {
+              const r = d.data() as any;
+              return {
+                id: d.id,
+                reference: r.reference,
+                title: r.title,
+                sealedAt: r.sealedAt ?? r.approvedAt ?? null,
+                authorName: r.authorName,
+              };
+            })
+          : [],
+        meetings: meetingsSnap
+          ? meetingsSnap.docs.map((d) => {
+              const m = d.data() as any;
+              return {
+                id: d.id,
+                title: m.title,
+                date: m.date,
+                governanceBodyId: m.governanceBodyId,
+                chair: m.chairLabel,
+              };
+            })
+          : [],
+        projectDocs: docsSnap
+          ? docsSnap.docs.map((d) => {
+              const doc = d.data() as any;
+              return {
+                id: d.id,
+                projectId: doc.projectId,
+                docType: doc.docType,
+                title: doc.title,
+                version: doc.version,
+                signedAt: doc.signedAt,
+              };
+            })
+          : [],
+      };
+    },
+  },
+
+  // ── TAC Audit-flagged enquiries (Compliance Lead / admin only) ────────
+  {
+    name: "listAuditFlaggedTacEnquiries",
+    description:
+      "Compliance-lead / admin only. List TAC enquiries currently flagged for audit OR carrying thumbs-down feedback. Powers the Audit Dashboard. Returns id, title, RIBA stage, status, owner, flag and feedback summaries.",
+    parameters: {
+      type: "object",
+      properties: {
+        limit: { type: "number", description: "Max results (default 50)" },
+      },
+    },
+    // Compliance Lead permission is checked on the route; we mirror that here
+    // with the closest existing predicate (programme manager / admin) and let
+    // the inner execute do the precise role check.
+    isAllowed: isProgrammeManager,
+    execute: async (ctx, args) => {
+      const { db, primaryUid, isAdmin, isClientAdmin, userData } = ctx;
+      // Mirror isComplianceLeadCtx — but without importing route-internal
+      // helpers. Compliance Lead is signalled by admin/client_admin or by an
+      // explicit role string. Anyone else: empty array (silent denial keeps
+      // the AI from leaking that the dashboard exists).
+      const isComplianceLead =
+        isAdmin ||
+        isClientAdmin ||
+        userData?.role === "compliance_lead" ||
+        userData?.role === ROLE_STRINGS.STRATEGIC_DIRECTOR;
+      if (!isComplianceLead) return [];
+
+      const limit = Math.min(Number(args.limit) || 50, TOOL_RESULT_HARD_CAP);
+      const snap = await db
+        .collection("enquiries")
+        .where("clientId", "==", primaryUid)
+        .limit(500)
+        .get();
+      const matched: any[] = [];
+      for (const d of snap.docs) {
+        const data = d.data() as any;
+        const isFlagged =
+          data.flaggedForAudit && !data.flaggedForAudit.resolvedAt;
+        const hasThumbsDown = data.feedback?.thumbs === "down";
+        if (!isFlagged && !hasThumbsDown) continue;
+        matched.push({
+          id: data.id ?? d.id.replace(`${primaryUid}_`, ""),
+          title: data.title ?? "",
+          ribaStage: data.ribaStage ?? "S0",
+          status: data.status ?? "Draft",
+          ownerUid: data.ownerUid ?? "",
+          projectId: data.projectId ?? null,
+          flaggedAt: data.flaggedForAudit?.flaggedAt ?? null,
+          flagReason: data.flaggedForAudit?.reason ?? null,
+          thumbs: data.feedback?.thumbs ?? null,
+        });
+      }
+      // Same sort as the route: open flags first (oldest), then thumbs-down.
+      matched.sort((a: any, b: any) => {
+        const aOpen = !!a.flaggedAt;
+        const bOpen = !!b.flaggedAt;
+        if (aOpen && !bOpen) return -1;
+        if (!aOpen && bOpen) return 1;
+        return (a.flaggedAt ?? "").localeCompare(b.flaggedAt ?? "");
+      });
+      const out = matched.slice(0, limit);
+      const truncated = matched.length > limit;
+      return truncated ? [...out, { _truncated: true, totalMatched: matched.length, returned: out.length, hint: "Increase limit if you need more." }] : out;
     },
   },
 
