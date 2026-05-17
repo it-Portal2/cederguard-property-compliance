@@ -64,9 +64,17 @@ export function useChatStream(scopeContext: ScopeContext | null) {
     setIsStreaming(false);
     if (streamingIdRef.current) {
       setMessages((prev) =>
-        prev.map((m) =>
-          m.id === streamingIdRef.current ? { ...m, isStreaming: false } : m,
-        ),
+        prev.map((m) => {
+          if (m.id !== streamingIdRef.current) return m;
+          // Empty bubble after stop looks like a hang — fill it with a
+          // polite cancellation note so the user sees an immediate, clear
+          // acknowledgement instead of a spinner-less blank card.
+          const hadOutput = !!m.text && m.text.length > 0;
+          const stopNote = hadOutput
+            ? `${m.text}\n\n*— Response stopped by you. Ask another question anytime.*`
+            : "*Response stopped. Ask another question anytime.*";
+          return { ...m, isStreaming: false, text: stopNote };
+        }),
       );
       streamingIdRef.current = null;
     }
