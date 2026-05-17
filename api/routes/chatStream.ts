@@ -443,14 +443,19 @@ export const chatStreamRoutes: Record<
     const requestedModelId =
       typeof model === "string" ? model : DEFAULT_MODEL_ID;
     const requested = CHAT_MODELS.find((m) => m.id === requestedModelId);
-    // GDPR Article 28 / data-handling gate: tenants whose userData has
-    // `clientFeatures.allowFreeAIModels !== true` cannot route through free
-    // third-party providers (OpenRouter shared pool). Falls back silently to
-    // the safety-net (in-tenant Gemini). Default is restrictive — opt-in.
-    const tenantAllowsFreeModels =
-      ctx.userData?.clientFeatures?.allowFreeAIModels === true;
+    // GDPR Article 28 / data-handling gate: free OpenRouter models route
+    // user prompt text through third-party providers (shared pool). Default
+    // is OPEN — tenants can use free models — because the ModelSelector
+    // dropdown already renders a per-row data-handling warning and most
+    // workspaces are not high-confidentiality. To block free models for a
+    // specific high-confidentiality tenant (e.g. a council on strict FOI
+    // material), set `clientFeatures.allowFreeAIModels: false` on that
+    // tenant's userData; that and only that explicit-false will force a
+    // silent fall-back to the in-tenant Gemini safety-net.
+    const tenantBlocksFreeModels =
+      ctx.userData?.clientFeatures?.allowFreeAIModels === false;
     const tenantBlocksThisModel =
-      !tenantAllowsFreeModels && requested?.backend === "openrouter";
+      tenantBlocksFreeModels && requested?.backend === "openrouter";
     const resolved: ChatModelOption =
       !requested || requested.disabled || tenantBlocksThisModel
         ? CHAT_MODELS.find((m) => m.id === SAFETY_NET_MODEL_ID)!
