@@ -12,9 +12,7 @@ export type ChatModelId =
   | "free-deepseek-v4-flash"
   | "free-openai-gpt-oss-20b"
   | "free-openai-gpt-oss-120b"
-  | "free-minimax-m2"
-  | "free-nemotron-3-super-120b"
-  | "free-auto";
+  | "free-minimax-m2";
 
 export type ChatModelBackend = "google-direct" | "openrouter" | "disabled";
 export type ChatModelGroup = "premium" | "default" | "free";
@@ -34,6 +32,11 @@ export interface ChatModelOption {
 
 export const DEFAULT_MODEL_ID: ChatModelId = "gemini-existing";
 export const SAFETY_NET_MODEL_ID: ChatModelId = "gemini-existing";
+// Kept exported because chatStream.ts uses it as the cascading-fallback
+// step 2 target (selected model fails → retry against the free auto-router
+// before falling through to safety-net Gemini). It is intentionally NOT
+// listed in CHAT_MODELS so the user can't pick it directly from the
+// dropdown — it only ever runs as an automatic backend rescue.
 export const FREE_AUTOROUTER_OPENROUTER_ID = "openrouter/owl-alpha";
 
 export const CHAT_MODELS: ChatModelOption[] = [
@@ -94,22 +97,6 @@ export const CHAT_MODELS: ChatModelOption[] = [
     tagline: "Free · MiniMax latest free tier",
     backend: "openrouter",
     openRouterId: "minimax/minimax-m2:free",
-  },
-  {
-    id: "free-nemotron-3-super-120b",
-    group: "free",
-    label: "NVIDIA Nemotron 3 Super 120B",
-    tagline: "Free · 1M context",
-    backend: "openrouter",
-    openRouterId: "nvidia/nemotron-3-super-120b-a12b:free",
-  },
-  {
-    id: "free-auto",
-    group: "free",
-    label: "Auto-router (smartest free)",
-    tagline: "Free · routes to best free model per query",
-    backend: "openrouter",
-    openRouterId: FREE_AUTOROUTER_OPENROUTER_ID,
   },
 ];
 
