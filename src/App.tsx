@@ -93,6 +93,7 @@ import { TacEnquiryWorkspacePage } from './pages/technicalAssurance/EnquiryWorks
 import { TacRfiRegisterPage } from './pages/technicalAssurance/RfiRegisterPage';
 import { TacAuditDashboardPage } from './pages/technicalAssurance/AuditDashboardPage';
 import { ComplianceLeadGuard } from './components/technicalAssurance/ComplianceLeadGuard';
+import { ChatPage } from './pages/ChatPage';
 
 function ContextSwitchingOverlay() {
   const isContextSwitching = useStore(state => state.isContextSwitching);
@@ -279,6 +280,11 @@ function AppContent() {
               <Route path="/technical-assurance/enquiries/:id" element={<RoleGuard requirePM><TacEnquiryWorkspacePage /></RoleGuard>} />
               <Route path="/technical-assurance/rfis" element={<RoleGuard requirePM><TacRfiRegisterPage /></RoleGuard>} />
               <Route path="/technical-assurance/audit" element={<ComplianceLeadGuard><TacAuditDashboardPage /></ComplianceLeadGuard>} />
+
+              {/* AI Chat */}
+              {/* AI Chat is gated to PM+ — viewers shouldn't be able to query
+                  data their UI normally hides via the assistant. */}
+              <Route path="/chat" element={<RoleGuard requirePM><ChatPage /></RoleGuard>} />
 
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>

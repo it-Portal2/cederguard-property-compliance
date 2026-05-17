@@ -20,6 +20,7 @@ import { governanceDashboardRoutes } from './governanceDashboard.js';
 import { governanceCronRoutes } from './governanceCron.js';
 import { historicalReportingRoutes } from './historicalReporting.js';
 import { technicalAssuranceRoutes } from './technicalAssurance.js';
+import { chatStreamRoutes } from './chatStream.js';
 
 export const allRoutes: Record<string, any> = {
   ...projectRoutes,
@@ -44,4 +45,5 @@ export const allRoutes: Record<string, any> = {
   ...governanceCronRoutes,
   ...historicalReportingRoutes,
   ...technicalAssuranceRoutes,
+  ...chatStreamRoutes,
 };

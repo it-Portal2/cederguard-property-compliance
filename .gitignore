@@ -80,3 +80,4 @@ regulations.html
 
 # Temporary directories
 tmp/
+.env*.local

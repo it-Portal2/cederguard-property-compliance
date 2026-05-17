@@ -349,6 +349,14 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // --- AI Chat Rate Limits ---
+    // Only the owning user may read their own rate limit doc.
+    // All writes come from the server (Firebase Admin SDK) — client writes blocked.
+    match /chatRateLimits/{uid} {
+      allow read: if isOwner(uid);
+      allow write: if false;
+    }
+
     // --- Deny all unmatched paths ---
     match /{document=**} {
       allow read, write: if false;
