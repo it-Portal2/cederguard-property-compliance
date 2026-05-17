@@ -3,14 +3,16 @@
 // dispatcher) so we never accept raw model strings from a request body.
 
 export type ChatModelId =
-  // Premium — disabled until paid keys are wired
-  | "openai-latest"
+  // Premium — paid via OpenRouter, disabled until credit is loaded
+  | "openai-gpt-4o-mini"
   | "gemini-2.5-flash-openrouter"
   // Default — direct Gemini SDK against existing GEMINI_API_KEY
   | "gemini-existing"
   // Free OpenRouter models — work today
   | "free-deepseek-v4-flash"
-  | "free-gemma-4-31b"
+  | "free-openai-gpt-oss-20b"
+  | "free-openai-gpt-oss-120b"
+  | "free-minimax-m2"
   | "free-nemotron-3-super-120b"
   | "free-auto";
 
@@ -36,13 +38,14 @@ export const FREE_AUTOROUTER_OPENROUTER_ID = "openrouter/owl-alpha";
 
 export const CHAT_MODELS: ChatModelOption[] = [
   {
-    id: "openai-latest",
+    id: "openai-gpt-4o-mini",
     group: "premium",
-    label: "GPT-5 (latest)",
-    tagline: "OpenAI flagship — requires paid OpenAI key",
+    label: "GPT-4o-mini (OpenRouter)",
+    tagline: "OpenAI proprietary — needs paid OpenRouter credit (~$0.001/msg)",
     backend: "disabled",
     disabled: true,
-    disabledReason: "Activate a paid OpenAI key in workspace settings to enable.",
+    disabledReason:
+      "Load paid OpenRouter credit (openrouter.ai/settings/credits), then flip this row's disabled flag.",
   },
   {
     id: "gemini-2.5-flash-openrouter",
@@ -69,12 +72,28 @@ export const CHAT_MODELS: ChatModelOption[] = [
     openRouterId: "deepseek/deepseek-v4-flash:free",
   },
   {
-    id: "free-gemma-4-31b",
+    id: "free-openai-gpt-oss-20b",
     group: "free",
-    label: "Google Gemma 4 31B",
-    tagline: "Free · 262k context",
+    label: "OpenAI GPT-OSS 20B",
+    tagline: "Free · OpenAI open-weight · fast & cheap",
     backend: "openrouter",
-    openRouterId: "google/gemma-4-31b-it:free",
+    openRouterId: "openai/gpt-oss-20b:free",
+  },
+  {
+    id: "free-openai-gpt-oss-120b",
+    group: "free",
+    label: "OpenAI GPT-OSS 120B",
+    tagline: "Free · OpenAI open-weight · higher quality",
+    backend: "openrouter",
+    openRouterId: "openai/gpt-oss-120b:free",
+  },
+  {
+    id: "free-minimax-m2",
+    group: "free",
+    label: "MiniMax M2",
+    tagline: "Free · MiniMax latest free tier",
+    backend: "openrouter",
+    openRouterId: "minimax/minimax-m2:free",
   },
   {
     id: "free-nemotron-3-super-120b",

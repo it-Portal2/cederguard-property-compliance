@@ -1,6 +1,8 @@
 // OpenRouter (OpenAI-compatible) backend driver for chat.
-// One factory per request: pass the OpenRouter model id you want to call,
-// optionally pass an OpenAI direct client to fall back to on 429/503.
+// One factory per request: pass the OpenRouter model id you want to call.
+// The OpenAI npm package is used as the SDK client here ONLY because
+// OpenRouter exposes an OpenAI-compatible API surface — there is no
+// direct call to OpenAI's own endpoint anywhere in this file.
 
 import OpenAI from "openai";
 import type {
@@ -13,9 +15,6 @@ import type {
 interface OpenRouterBackendOptions {
   openRouterClient: OpenAI;
   openRouterModelId: string;
-  /** Optional fallback for paid OpenAI ids when OpenRouter is overloaded. */
-  openAiClient?: OpenAI;
-  openAiModelId?: string;
   /** Sampling shared across both rounds. */
   temperature?: number;
   maxTokens?: number;
@@ -38,16 +37,12 @@ interface OpenRouterExtras {
   user?: string;
 }
 
-const RETRYABLE_STATUSES = new Set([429, 503, 529]);
-
 export function createOpenRouterBackend(
   opts: OpenRouterBackendOptions,
 ): ChatBackend {
   const {
     openRouterClient,
     openRouterModelId,
-    openAiClient,
-    openAiModelId,
     temperature = 0.4,
     // Bumped from 4096 → 8192 to match the Gemini backend so multi-section
     // structured answers fit in a single final round.
@@ -61,52 +56,26 @@ export function createOpenRouterBackend(
     ...(endUserId ? { user: endUserId } : {}),
   };
 
-  const isRetryable = (err: any) =>
-    !!err && RETRYABLE_STATUSES.has(err.status);
-
   async function nonStreamingCall(
     params: OpenAI.ChatCompletionCreateParamsNonStreaming,
   ): Promise<OpenAI.ChatCompletion> {
     // Merge OpenRouter-specific extras (user, provider routing flags) into
     // every call. SDK types don't know about these fields → `as any`.
     const enriched = { ...params, ...openRouterExtras } as typeof params;
-    try {
-      return await openRouterClient.chat.completions.create(enriched);
-    } catch (err: any) {
-      if (isRetryable(err) && openAiClient && openAiModelId) {
-        console.warn(
-          "[openRouterBackend] primary failed, using OpenAI direct fallback:",
-          err?.message,
-        );
-        // OpenAI direct doesn't understand the `provider` field — strip it.
-        const { provider: _provider, ...openAiSafe } = enriched as any;
-        return await openAiClient.chat.completions.create({
-          ...openAiSafe,
-          model: openAiModelId,
-        });
-      }
-      throw err;
-    }
+    // No in-backend retry to a different provider — when OpenRouter fails,
+    // we propagate the error and let chatStream's cascading fallback (free
+    // auto-router → safety-net Gemini direct) handle recovery in a single
+    // place. Keeps provider-selection logic from being split across files.
+    return await openRouterClient.chat.completions.create(enriched);
   }
 
   async function streamingCall(
     params: OpenAI.ChatCompletionCreateParamsStreaming,
   ): Promise<AsyncIterable<OpenAI.ChatCompletionChunk>> {
     const enriched = { ...params, ...openRouterExtras };
-    try {
-      return (await openRouterClient.chat.completions.create(
-        enriched as OpenAI.ChatCompletionCreateParamsStreaming,
-      )) as unknown as AsyncIterable<OpenAI.ChatCompletionChunk>;
-    } catch (err: any) {
-      if (isRetryable(err) && openAiClient && openAiModelId) {
-        const { provider: _provider, ...openAiSafe } = enriched as any;
-        return (await openAiClient.chat.completions.create({
-          ...openAiSafe,
-          model: openAiModelId,
-        } as OpenAI.ChatCompletionCreateParamsStreaming)) as unknown as AsyncIterable<OpenAI.ChatCompletionChunk>;
-      }
-      throw err;
-    }
+    return (await openRouterClient.chat.completions.create(
+      enriched as OpenAI.ChatCompletionCreateParamsStreaming,
+    )) as unknown as AsyncIterable<OpenAI.ChatCompletionChunk>;
   }
 
   return {
