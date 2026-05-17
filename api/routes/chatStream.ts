@@ -169,12 +169,13 @@ function buildGoogleBackend(bctx: BackendBuildContext): ChatBackend {
 function pickBackend(
   option: ChatModelOption,
   bctx: BackendBuildContext,
+  endUserId?: string,
 ): ChatBackend {
   if (option.backend === "google-direct") {
     return buildGoogleBackend(bctx);
   }
   if (option.backend === "openrouter") {
-    return buildOpenRouterBackend(option.openRouterId!, bctx);
+    return buildOpenRouterBackend(option.openRouterId!, bctx, endUserId);
   }
   throw new Error("disabled model picked — should be unreachable");
 }
@@ -182,6 +183,7 @@ function pickBackend(
 function buildOpenRouterBackend(
   openRouterModelId: string,
   bctx: BackendBuildContext,
+  endUserId?: string,
 ): ChatBackend {
   const orKey = bctx.envOpenRouterKey || bctx.userOpenRouterKey;
   const aiKey = bctx.envOpenAiKey || bctx.userOpenAiKey;
@@ -207,6 +209,7 @@ function buildOpenRouterBackend(
     return createOpenRouterBackend({
       openRouterClient: openAiClient,
       openRouterModelId: "openai/gpt-4o-mini",
+      endUserId,
     });
   }
   return createOpenRouterBackend({
@@ -214,6 +217,7 @@ function buildOpenRouterBackend(
     openRouterModelId,
     openAiClient: openAiClient ?? undefined,
     openAiModelId: openAiClient ? "gpt-4o-mini" : undefined,
+    endUserId,
   });
 }
 
@@ -360,25 +364,53 @@ You help users query and understand their own data: projects, programmes, risks,
 
     const toolDeclarations = getOpenAIToolDeclarations(ctx) as OpenAI.ChatCompletionTool[];
 
+    // Track which backend actually answered the user (i.e. the one that
+    // produced the final text). Logged at the end so ops can grep for
+    // "answered via" to see real provider distribution including fallbacks.
+    let answeringBackend: ChatBackend | null = null;
+
     async function runChatWith(backend: ChatBackend): Promise<void> {
+      console.info(`[chatStream] trying backend: ${backend.displayName}`);
       let msgHistory: ChatMessageParam[] = [...baseHistory];
 
       for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
         if (clientAborted) return;
 
-        const { assistantMessage, toolCalls } = await backend.runToolRound(
-          msgHistory,
-          toolDeclarations,
-        );
+        const { assistantMessage, toolCalls, contentText } =
+          await backend.runToolRound(msgHistory, toolDeclarations);
         if (clientAborted) return;
 
         if (toolCalls.length === 0) {
-          // Re-issue as a streaming final round so the user sees tokens.
+          // If the tool-round already produced text, emit it directly
+          // (chunked so the UI still gets progressive text). Avoids a
+          // wasted second AI call AND avoids losing the answer when
+          // flaky free providers return empty on the streaming retry.
+          if (contentText && contentText.length > 0) {
+            const chunkSize = 40;
+            for (let i = 0; i < contentText.length; i += chunkSize) {
+              if (clientAborted) return;
+              writeEvent(res, "text", { delta: contentText.slice(i, i + chunkSize) });
+            }
+            answeringBackend = backend;
+            return;
+          }
+          // No text yet — re-issue as a streaming final round.
+          let streamedChars = 0;
           await backend.runFinalStream(
             msgHistory,
-            (delta) => writeEvent(res, "text", { delta }),
+            (delta) => {
+              streamedChars += delta.length;
+              writeEvent(res, "text", { delta });
+            },
             () => clientAborted,
           );
+          // Empty-response guard: if the provider returned 0 chars (free
+          // models are flaky here), throw so the outer cascading fallback
+          // can route to the next backend instead of leaving an empty bubble.
+          if (!clientAborted && streamedChars === 0) {
+            throw new Error("EMPTY_AI_RESPONSE: provider returned no content");
+          }
+          answeringBackend = backend;
           return;
         }
 
@@ -449,6 +481,7 @@ You help users query and understand their own data: projects, programmes, risks,
         (delta) => writeEvent(res, "text", { delta }),
         () => clientAborted,
       );
+      answeringBackend = backend;
     }
 
     // ── 8. Cascading fallback chain ───────────────────────────────────
@@ -468,7 +501,7 @@ You help users query and understand their own data: projects, programmes, risks,
 
     try {
       try {
-        await runChatWith(pickBackend(resolved, bctx));
+        await runChatWith(pickBackend(resolved, bctx, ctx.uid));
       } catch (errPrimary: any) {
         if (clientAborted) throw errPrimary;
         console.warn(
@@ -487,6 +520,7 @@ You help users query and understand their own data: projects, programmes, risks,
             const autoRouterBackend = buildOpenRouterBackend(
               FREE_AUTOROUTER_OPENROUTER_ID,
               bctx,
+              ctx.uid,
             );
             await runChatWith(autoRouterBackend);
             emitFallbackChip(fbId, "done", "Auto-router answered");
@@ -537,9 +571,17 @@ You help users query and understand their own data: projects, programmes, risks,
 
     function finalize() {
       if (clientAborted) {
+        console.info(
+          `[chatStream] aborted by client (requested=${resolved.id}, answeringBackend=${answeringBackend?.displayName ?? "none"})`,
+        );
         try { res.end(); } catch { /* socket already gone */ }
         return;
       }
+      // One-line summary of which backend served the answer (useful for
+      // ops to see fallback distribution: requested vs effective vs answered).
+      console.info(
+        `[chatStream] ✓ answered via ${answeringBackend?.displayName ?? "<error — no backend completed>"} (requested=${resolved.id})`,
+      );
       // Deduplicate citations
       if (allCitations.length > 0) {
         const seen = new Set<string>();

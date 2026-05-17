@@ -59,15 +59,18 @@ function renderInline(text: string): React.ReactNode {
     if (boldMatch) {
       if (boldMatch[1]) parts.push(boldMatch[1]);
       parts.push(<strong key={key++}>{boldMatch[2]}</strong>);
-      remaining = boldMatch[3];
+      remaining = boldMatch[3] ?? "";
       continue;
     }
     // Italic *text* (not **)
+    // Regex has 3 capture groups (lookbehinds/lookaheads don't capture);
+    // tail-after-italic is group [3], not [4]. Previous code read [4] which
+    // is always undefined → `remaining.length` crashed on the next loop tick.
     const italicMatch = remaining.match(/^(.*?)(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)(.*)/s);
     if (italicMatch) {
       if (italicMatch[1]) parts.push(italicMatch[1]);
       parts.push(<em key={key++}>{italicMatch[2]}</em>);
-      remaining = italicMatch[4];
+      remaining = italicMatch[3] ?? "";
       continue;
     }
     // Inline code `code`
@@ -82,7 +85,7 @@ function renderInline(text: string): React.ReactNode {
           {codeMatch[2]}
         </code>,
       );
-      remaining = codeMatch[3];
+      remaining = codeMatch[3] ?? "";
       continue;
     }
     parts.push(remaining);
