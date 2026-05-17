@@ -6,7 +6,7 @@
 
 import type { ApiContext } from "./context.js";
 import { ROLE_STRINGS } from "../../src/lib/roleConstants.js";
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue, FieldPath } from "firebase-admin/firestore";
 
 export type ToolName =
   | "listAccessibleProjects"
@@ -236,6 +236,42 @@ async function readProjectSubCollectionsBulk(
     }),
   );
   return results.flat();
+}
+
+// Batched project-name lookup. Returns a Map<projectId, projectName>.
+// Used by the search tools to enrich each row with a HUMAN-READABLE project
+// label so the AI never has to fall back to a raw projectId in its prose
+// (free models ignore the "no raw IDs" prompt rule about 30% of the time;
+// removing the ID from the AI-facing projection makes the rule moot).
+async function fetchProjectNames(
+  ctx: ApiContext,
+  projectIds: string[],
+): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  const unique = [...new Set(projectIds.filter(Boolean))];
+  if (unique.length === 0) return out;
+  // Firestore Admin `in` clause supports up to 30 ids per query. Chunk.
+  const CHUNK = 30;
+  const chunks: string[][] = [];
+  for (let i = 0; i < unique.length; i += CHUNK) chunks.push(unique.slice(i, i + CHUNK));
+  await Promise.all(
+    chunks.map(async (ids) => {
+      // documentId() lookup avoids exposing other fields and is index-free.
+      const snap = await ctx.db
+        .collection("projects")
+        .where(FieldPath.documentId(), "in", ids)
+        .get();
+      for (const d of snap.docs) {
+        const data = d.data() as any;
+        const name =
+          (typeof data?.name === "string" && data.name) ||
+          (typeof data?.projectName === "string" && data.projectName) ||
+          null;
+        if (name) out.set(d.id, name);
+      }
+    }),
+  );
+  return out;
 }
 
 // --- Tool definitions ---
@@ -502,6 +538,10 @@ export const CHAT_TOOLS: ToolDef[] = [
 
       const projectRows = await readProjectSubCollectionsBulk(ctx, projectIds, "risks");
       const all = [...programmeRows, ...projectRows];
+      const nameMap = await fetchProjectNames(
+        ctx,
+        all.map((x) => x.projectId).filter((p): p is string => !!p),
+      );
 
       const matched: any[] = [];
       for (const { projectId: pid, row: r } of all) {
@@ -511,7 +551,10 @@ export const CHAT_TOOLS: ToolDef[] = [
         if (q && !`${r.title ?? ""} ${r.description ?? ""}`.toLowerCase().includes(q)) continue;
         matched.push({
           id: r.id,
-          projectId: pid,
+          // Human-readable project label — the AI quotes this in prose
+          // rather than leaking the raw projectId. Citation chips use
+          // item.id (risk id) so chip routing is unaffected.
+          project: pid ? nameMap.get(pid) ?? "(project name unavailable)" : null,
           scope: pid ? "project" : "programme",
           title: r.title,
           category: r.category,
@@ -570,6 +613,10 @@ export const CHAT_TOOLS: ToolDef[] = [
 
       const projectRows = await readProjectSubCollectionsBulk(ctx, projectIds, "issues");
       const all = [...programmeRows, ...projectRows];
+      const nameMap = await fetchProjectNames(
+        ctx,
+        all.map((x) => x.projectId).filter((p): p is string => !!p),
+      );
 
       const matched: any[] = [];
       for (const { projectId: pid, row: i } of all) {
@@ -579,7 +626,7 @@ export const CHAT_TOOLS: ToolDef[] = [
         if (q && !`${i.title ?? ""} ${i.description ?? ""}`.toLowerCase().includes(q)) continue;
         matched.push({
           id: i.id,
-          projectId: pid,
+          project: pid ? nameMap.get(pid) ?? "(project name unavailable)" : null,
           scope: pid ? "project" : "programme",
           title: i.title,
           description: i.description,
@@ -636,6 +683,10 @@ export const CHAT_TOOLS: ToolDef[] = [
 
       const projectRows = await readProjectSubCollectionsBulk(ctx, projectIds, "complianceItems");
       const all = [...programmeRows, ...projectRows];
+      const nameMap = await fetchProjectNames(
+        ctx,
+        all.map((x) => x.projectId).filter((p): p is string => !!p),
+      );
 
       const matched: any[] = [];
       for (const { projectId: pid, row: c } of all) {
@@ -645,7 +696,7 @@ export const CHAT_TOOLS: ToolDef[] = [
         if (q && !`${c.title ?? c.item ?? ""} ${c.description ?? ""}`.toLowerCase().includes(q)) continue;
         matched.push({
           id: c.id,
-          projectId: pid,
+          project: pid ? nameMap.get(pid) ?? "(project name unavailable)" : null,
           scope: pid ? "project" : "programme",
           title: c.title || c.item,
           domain: c.domain,
@@ -698,6 +749,10 @@ export const CHAT_TOOLS: ToolDef[] = [
 
       const projectRows = await readProjectSubCollectionsBulk(ctx, projectIds, "kris");
       const all = [...programmeRows, ...projectRows];
+      const nameMap = await fetchProjectNames(
+        ctx,
+        all.map((x) => x.projectId).filter((p): p is string => !!p),
+      );
 
       const matched: any[] = [];
       for (const { projectId: pid, row: k } of all) {
@@ -709,7 +764,7 @@ export const CHAT_TOOLS: ToolDef[] = [
         if (args.breached === true && !isBreached) continue;
         matched.push({
           id: k.id,
-          projectId: pid,
+          project: pid ? nameMap.get(pid) ?? "(project name unavailable)" : null,
           scope: pid ? "project" : "programme",
           name: k.name,
           description: k.description,
@@ -959,7 +1014,7 @@ export const CHAT_TOOLS: ToolDef[] = [
         .limit(READ_CAP)
         .get();
 
-      const matched: any[] = [];
+      const stagedDocs: Array<{ d: any; e: any; bareId: string }> = [];
       for (const d of snap.docs) {
         const e = d.data();
         if (e.deletedAt) continue;
@@ -978,18 +1033,23 @@ export const CHAT_TOOLS: ToolDef[] = [
             ? d.id.slice(prefix.length)
             : d.id;
         if (!bareId) continue;
-        matched.push({
-          id: bareId,
-          reference: e.reference,
-          subject: e.subject,
-          status: e.status,
-          projectId: e.projectId,
-          ribaStage: e.ribaStage,
-          createdAt: e.createdAt,
-          closedAt: e.closedAt,
-          createdBy: e.createdBy,
-        });
+        stagedDocs.push({ d, e, bareId });
       }
+      const nameMap = await fetchProjectNames(
+        ctx,
+        stagedDocs.map((s) => s.e.projectId).filter((p): p is string => !!p),
+      );
+      const matched: any[] = stagedDocs.map(({ e, bareId }) => ({
+        id: bareId,
+        reference: e.reference,
+        subject: e.subject,
+        status: e.status,
+        project: e.projectId ? nameMap.get(e.projectId) ?? "(project name unavailable)" : null,
+        ribaStage: e.ribaStage,
+        createdAt: e.createdAt,
+        closedAt: e.closedAt,
+        createdBy: e.createdBy,
+      }));
       const truncated = matched.length > limit || snap.size === READ_CAP;
       const out = matched.slice(0, limit);
       return truncated ? [...out, { _truncated: true, totalMatched: matched.length, returned: out.length, hint: "Refine filters to narrow results." }] : out;
@@ -1040,7 +1100,7 @@ export const CHAT_TOOLS: ToolDef[] = [
         .limit(READ_CAP)
         .get();
 
-      const matched: any[] = [];
+      const stagedRfis: Array<{ r: any }> = [];
       for (const d of snap.docs) {
         const r = d.data();
         // Citation chip routes to ?rfiNumber=X — require a real rfiNumber.
@@ -1049,18 +1109,23 @@ export const CHAT_TOOLS: ToolDef[] = [
         if (args.projectId && r.projectId !== args.projectId) continue;
         if (programmeProjectIdSet && !programmeProjectIdSet.has(r.projectId)) continue;
         if (q && !`${r.subject ?? ""} ${r.rfiNumber}`.toLowerCase().includes(q)) continue;
-        matched.push({
-          id: r.rfiNumber,
-          rfiNumber: r.rfiNumber,
-          subject: r.subject,
-          status: r.status,
-          enquiryId: r.enquiryId,
-          projectId: r.projectId,
-          issuedAt: r.issuedAt,
-          responseDeadline: r.responseDeadline,
-          respondedAt: r.respondedAt,
-        });
+        stagedRfis.push({ r });
       }
+      const nameMap = await fetchProjectNames(
+        ctx,
+        stagedRfis.map((s) => s.r.projectId).filter((p): p is string => !!p),
+      );
+      const matched: any[] = stagedRfis.map(({ r }) => ({
+        id: r.rfiNumber,
+        rfiNumber: r.rfiNumber,
+        subject: r.subject,
+        status: r.status,
+        enquiryId: r.enquiryId,
+        project: r.projectId ? nameMap.get(r.projectId) ?? "(project name unavailable)" : null,
+        issuedAt: r.issuedAt,
+        responseDeadline: r.responseDeadline,
+        respondedAt: r.respondedAt,
+      }));
       const truncated = matched.length > limit || snap.size === READ_CAP;
       const out = matched.slice(0, limit);
       return truncated ? [...out, { _truncated: true, totalMatched: matched.length, returned: out.length, hint: "Refine filters to narrow results." }] : out;
@@ -1187,23 +1252,28 @@ export const CHAT_TOOLS: ToolDef[] = [
         : db.collection("projectGovernanceDocs").where("clientId", "==", primaryUid);
       const READ_CAP = Math.min(limit * 5, 500);
       const snap = await baseQuery.limit(READ_CAP).get();
-      const matched: any[] = [];
+      const staged: Array<{ d: any; doc: any }> = [];
       for (const d of snap.docs) {
         const doc = d.data() as any;
         if (doc.deletedAt) continue;
         if (doc.projectId && !targetProjectIds.has(doc.projectId)) continue;
         if (args.status && doc.status !== args.status) continue;
-        matched.push({
-          id: d.id,
-          projectId: doc.projectId,
-          docType: doc.docType,
-          title: doc.title,
-          status: doc.status,
-          version: doc.version,
-          signedAt: doc.signedAt,
-          updatedAt: doc.updatedAt,
-        });
+        staged.push({ d, doc });
       }
+      const nameMap = await fetchProjectNames(
+        ctx,
+        staged.map((s) => s.doc.projectId).filter((p): p is string => !!p),
+      );
+      const matched: any[] = staged.map(({ d, doc }) => ({
+        id: d.id,
+        project: doc.projectId ? nameMap.get(doc.projectId) ?? "(project name unavailable)" : null,
+        docType: doc.docType,
+        title: doc.title,
+        status: doc.status,
+        version: doc.version,
+        signedAt: doc.signedAt,
+        updatedAt: doc.updatedAt,
+      }));
       const truncated = matched.length > limit || snap.size === READ_CAP;
       const out = matched.slice(0, limit);
       return truncated ? [...out, { _truncated: true, totalMatched: matched.length, returned: out.length, hint: "Refine by projectId or status." }] : out;
@@ -1260,6 +1330,13 @@ export const CHAT_TOOLS: ToolDef[] = [
           : Promise.resolve(null),
       ]);
 
+      const docProjectIds: string[] = docsSnap
+        ? docsSnap.docs
+            .map((d) => (d.data() as any)?.projectId)
+            .filter((p): p is string => !!p)
+        : [];
+      const docNameMap = await fetchProjectNames(ctx, docProjectIds);
+
       return {
         reports: reportsSnap
           ? reportsSnap.docs.map((d) => {
@@ -1290,7 +1367,9 @@ export const CHAT_TOOLS: ToolDef[] = [
               const doc = d.data() as any;
               return {
                 id: d.id,
-                projectId: doc.projectId,
+                project: doc.projectId
+                  ? docNameMap.get(doc.projectId) ?? "(project name unavailable)"
+                  : null,
                 docType: doc.docType,
                 title: doc.title,
                 version: doc.version,
@@ -1401,10 +1480,21 @@ export const CHAT_TOOLS: ToolDef[] = [
         ? (Array.isArray((userTaskDoc.data() as any)?.data) ? (userTaskDoc.data() as any).data : [])
         : [];
 
+      // Resolve project names up-front so we don't leak raw projectIds.
+      const taskProjectIds = [
+        ...userTasks.map((t: any) => t?.projectId).filter((p: any): p is string => !!p),
+        ...projTasksFlat.map((r) => r.projectId).filter((p): p is string => !!p),
+      ];
+      const taskNameMap = await fetchProjectNames(ctx, taskProjectIds);
+
       const matched: any[] = [];
       const acceptTask = (t: any, pid?: string) => {
         if (!t || !t.id) return;
         if (args.status && t.status !== args.status) return;
+        const resolvedPid = (t.projectId as string | undefined) ?? pid;
+        const resolvedName =
+          (typeof t.projectName === "string" && t.projectName) ||
+          (resolvedPid ? taskNameMap.get(resolvedPid) ?? null : null);
         matched.push({
           id: t.id,
           title: t.title,
@@ -1412,8 +1502,7 @@ export const CHAT_TOOLS: ToolDef[] = [
           status: t.status,
           priority: t.priority,
           dueDate: t.dueDate,
-          projectId: t.projectId ?? pid,
-          projectName: t.projectName,
+          project: resolvedName ?? (resolvedPid ? "(project name unavailable)" : null),
         });
       };
       for (const t of userTasks) acceptTask(t);
