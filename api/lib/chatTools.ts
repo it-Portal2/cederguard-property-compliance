@@ -178,6 +178,32 @@ async function readProjectSubCollection(
   return Array.isArray(d?.data) ? d.data : [];
 }
 
+/**
+ * Mirror of readProjectSubCollection but for data stored at the programme
+ * level (risks/issues/complianceItems/kris that aren't tied to a specific
+ * project — e.g. "Programme Level" risks visible on the Programme Risk
+ * Register). Lives at `programmes/{programmeId}/data/{subDoc}`.
+ */
+async function readProgrammeSubCollection(
+  ctx: ApiContext,
+  programmeId: string,
+  subDoc: string,
+): Promise<any[]> {
+  const { db } = ctx;
+  if (!programmeId) return [];
+  const authorised = await ctx.isAuthorizedForContext(programmeId);
+  if (!authorised) return [];
+  const doc = await db
+    .collection("programmes")
+    .doc(programmeId)
+    .collection("data")
+    .doc(subDoc)
+    .get();
+  if (!doc.exists) return [];
+  const d = doc.data() as any;
+  return Array.isArray(d?.data) ? d.data : [];
+}
+
 // Reads the same sub-collection across many projects concurrently. Annotates
 // each row with its parent project id and returns a flat array.
 async function readProjectSubCollectionsBulk(
@@ -439,14 +465,26 @@ export const CHAT_TOOLS: ToolDef[] = [
     isAllowed: anySignedIn,
     execute: async (ctx, args) => {
       const projectIds = await resolveTargetProjectIds(ctx, args);
-
-      if (!projectIds.length) return [];
-
       const { query, status, minScore, limit: rawLimit } = args;
       const limit = Math.min(Number(rawLimit) || 50, TOOL_RESULT_HARD_CAP);
       const q = (query || "").toLowerCase();
 
-      const all = await readProjectSubCollectionsBulk(ctx, projectIds, "risks");
+      // Programme-level risks live at programmes/{progId}/data/risks
+      // (not under any project). When programmeId is set we MUST pull
+      // these alongside the per-project rows or programme-level risks
+      // are invisible — which was the original bug.
+      const programmeRows = args.programmeId
+        ? (await readProgrammeSubCollection(ctx, args.programmeId, "risks")).map((row) => ({
+            projectId: null as string | null,
+            row,
+          }))
+        : [];
+
+      if (!projectIds.length && programmeRows.length === 0) return [];
+
+      const projectRows = await readProjectSubCollectionsBulk(ctx, projectIds, "risks");
+      const all = [...programmeRows, ...projectRows];
+
       const matched: any[] = [];
       for (const { projectId: pid, row: r } of all) {
         if (!r || !r.id) continue;
@@ -456,6 +494,7 @@ export const CHAT_TOOLS: ToolDef[] = [
         matched.push({
           id: r.id,
           projectId: pid,
+          scope: pid ? "project" : "programme",
           title: r.title,
           category: r.category,
           likelihood: r.likelihood,
@@ -499,13 +538,21 @@ export const CHAT_TOOLS: ToolDef[] = [
     isAllowed: anySignedIn,
     execute: async (ctx, args) => {
       const projectIds = await resolveTargetProjectIds(ctx, args);
-      if (!projectIds.length) return [];
-
       const { query, priority, status, limit: rawLimit } = args;
       const limit = Math.min(Number(rawLimit) || 50, TOOL_RESULT_HARD_CAP);
       const q = (query || "").toLowerCase();
 
-      const all = await readProjectSubCollectionsBulk(ctx, projectIds, "issues");
+      const programmeRows = args.programmeId
+        ? (await readProgrammeSubCollection(ctx, args.programmeId, "issues")).map((row) => ({
+            projectId: null as string | null,
+            row,
+          }))
+        : [];
+      if (!projectIds.length && programmeRows.length === 0) return [];
+
+      const projectRows = await readProjectSubCollectionsBulk(ctx, projectIds, "issues");
+      const all = [...programmeRows, ...projectRows];
+
       const matched: any[] = [];
       for (const { projectId: pid, row: i } of all) {
         if (!i || !i.id) continue;
@@ -515,6 +562,7 @@ export const CHAT_TOOLS: ToolDef[] = [
         matched.push({
           id: i.id,
           projectId: pid,
+          scope: pid ? "project" : "programme",
           title: i.title,
           description: i.description,
           priority: i.priority,
@@ -556,13 +604,21 @@ export const CHAT_TOOLS: ToolDef[] = [
     isAllowed: anySignedIn,
     execute: async (ctx, args) => {
       const projectIds = await resolveTargetProjectIds(ctx, args);
-      if (!projectIds.length) return [];
-
       const { query, domain, status, limit: rawLimit } = args;
       const limit = Math.min(Number(rawLimit) || 50, TOOL_RESULT_HARD_CAP);
       const q = (query || "").toLowerCase();
 
-      const all = await readProjectSubCollectionsBulk(ctx, projectIds, "complianceItems");
+      const programmeRows = args.programmeId
+        ? (await readProgrammeSubCollection(ctx, args.programmeId, "complianceItems")).map((row) => ({
+            projectId: null as string | null,
+            row,
+          }))
+        : [];
+      if (!projectIds.length && programmeRows.length === 0) return [];
+
+      const projectRows = await readProjectSubCollectionsBulk(ctx, projectIds, "complianceItems");
+      const all = [...programmeRows, ...projectRows];
+
       const matched: any[] = [];
       for (const { projectId: pid, row: c } of all) {
         if (!c || !c.id) continue;
@@ -572,6 +628,7 @@ export const CHAT_TOOLS: ToolDef[] = [
         matched.push({
           id: c.id,
           projectId: pid,
+          scope: pid ? "project" : "programme",
           title: c.title || c.item,
           domain: c.domain,
           status: c.status,
@@ -611,10 +668,19 @@ export const CHAT_TOOLS: ToolDef[] = [
     isAllowed: anySignedIn,
     execute: async (ctx, args) => {
       const projectIds = await resolveTargetProjectIds(ctx, args);
-      if (!projectIds.length) return [];
-
       const limit = Math.min(Number(args.limit) || 50, TOOL_RESULT_HARD_CAP);
-      const all = await readProjectSubCollectionsBulk(ctx, projectIds, "kris");
+
+      const programmeRows = args.programmeId
+        ? (await readProgrammeSubCollection(ctx, args.programmeId, "kris")).map((row) => ({
+            projectId: null as string | null,
+            row,
+          }))
+        : [];
+      if (!projectIds.length && programmeRows.length === 0) return [];
+
+      const projectRows = await readProjectSubCollectionsBulk(ctx, projectIds, "kris");
+      const all = [...programmeRows, ...projectRows];
+
       const matched: any[] = [];
       for (const { projectId: pid, row: k } of all) {
         if (!k || !k.id) continue;
@@ -626,6 +692,7 @@ export const CHAT_TOOLS: ToolDef[] = [
         matched.push({
           id: k.id,
           projectId: pid,
+          scope: pid ? "project" : "programme",
           name: k.name,
           description: k.description,
           currentValue: k.currentValue,
