@@ -6,6 +6,7 @@
 
 import type { ApiContext } from "./context.js";
 import { ROLE_STRINGS } from "../../src/lib/roleConstants.js";
+import { FieldValue } from "firebase-admin/firestore";
 
 export type ToolName =
   | "listAccessibleProjects"
@@ -156,12 +157,24 @@ async function resolveProgrammeProjectIds(
  *   - projectId wins (most specific)
  *   - programmeId next (programme expansion)
  *   - otherwise all accessible projects
+ *
+ * CRITICAL — every branch must authorise BEFORE returning an id.
+ * `readProjectSubCollection` reads `projects/{id}/data/{subDoc}` via the
+ * Admin SDK (which bypasses Firestore rules), so if an unauthorised id
+ * slips through here the downstream read leaks foreign-tenant data. The
+ * bare-projectId branch in particular used to return the arg verbatim;
+ * the model can be steered into supplying a foreign id (via scopeContext
+ * pollution, a leaked screenshot, ID guessing, etc.) so we now require
+ * `isAuthorizedForContext` to clear before yielding it.
  */
 async function resolveTargetProjectIds(
   ctx: ApiContext,
   args: { projectId?: string; programmeId?: string },
 ): Promise<string[]> {
-  if (args.projectId) return [args.projectId];
+  if (args.projectId) {
+    const ok = await ctx.isAuthorizedForContext(args.projectId);
+    return ok ? [args.projectId] : [];
+  }
   if (args.programmeId) return resolveProgrammeProjectIds(ctx, args.programmeId);
   return getAccessibleProjectIds(ctx);
 }
@@ -1491,6 +1504,21 @@ export const CHAT_TOOLS: ToolDef[] = [
         .where("role", "in", ["client_admin", "enterprise"])
         .limit(limit)
         .get();
+      // Cross-tenant queries are audit-logged unconditionally. Fire-and-forget
+      // so a logging failure never blocks the user; failures land in stderr
+      // for ops visibility.
+      db.collection("auditEvents")
+        .add({
+          actorUid: ctx.uid,
+          actorEmail: ctx.email,
+          action: "chat.crossTenantListClients",
+          args: { limit },
+          resultCount: snap.size,
+          ts: FieldValue.serverTimestamp(),
+        })
+        .catch((e) =>
+          console.error("[auditEvents] crossTenantListClients log failed:", e?.message),
+        );
       // Minimal projection only — never expose user emails to the AI provider.
       return snap.docs.map((d) => {
         const u = d.data();
@@ -1521,11 +1549,42 @@ export async function executeTool(
   if (!tool.isAllowed(ctx)) {
     return { result: null, error: `Forbidden: your role cannot use ${toolName}` };
   }
+  const startedAt = Date.now();
   try {
     const result = await tool.execute(ctx, toolArgs ?? {});
+    // Audit log — fire-and-forget. Compliance need: a forensic trail of who
+    // asked the AI to fetch what. Errors land in stderr only — never block
+    // the user-visible response on a logging failure.
+    const resultCount = Array.isArray(result) ? result.length : result ? 1 : 0;
+    ctx.db
+      .collection("chatToolCallLog")
+      .add({
+        uid: ctx.uid,
+        primaryUid: ctx.primaryUid,
+        tool: toolName,
+        args: toolArgs ?? {},
+        resultCount,
+        durationMs: Date.now() - startedAt,
+        ts: FieldValue.serverTimestamp(),
+      })
+      .catch((e) =>
+        console.error(`[chatToolCallLog] write failed for ${toolName}:`, e?.message),
+      );
     return { result };
   } catch (err: any) {
     console.error(`[chatTools] ${toolName} error:`, err?.message);
+    ctx.db
+      .collection("chatToolCallLog")
+      .add({
+        uid: ctx.uid,
+        primaryUid: ctx.primaryUid,
+        tool: toolName,
+        args: toolArgs ?? {},
+        error: String(err?.message ?? "unknown"),
+        durationMs: Date.now() - startedAt,
+        ts: FieldValue.serverTimestamp(),
+      })
+      .catch(() => {});
     return { result: null, error: `Tool execution failed: ${err?.message}` };
   }
 }

@@ -145,6 +145,14 @@ export function ModelSelector({
                   >
                     {GROUP_LABELS[group]}
                   </div>
+                  {group === "free" && (
+                    <div
+                      className="px-3 pb-1.5 -mt-1 text-[10px] leading-snug text-amber-700 dark:text-amber-400"
+                      role="note"
+                    >
+                      Free models route your question through third-party providers — don't use for confidential or FOI material.
+                    </div>
+                  )}
                   {items.map((option) => {
                     const isSelected = option.id === selectedId;
                     const isFree = option.group === "free";

@@ -19,9 +19,36 @@ import type { ApiContext } from "./context.js";
 const WINDOW_MS = 60 * 60 * 1000; // 1 hour
 const MAX_MESSAGES = 20;
 
+// Per-user daily token budget. Bounds variable-cost LLM spend even when the
+// per-hour message cap is fully utilised (20 msgs/hr × 24h = 480 msgs/day
+// could still be a 5-figure bill without this). Char→token approximation:
+// ~4 chars per token. We pre-charge each message for its input chars plus a
+// flat output-budget estimate (max output tokens per response ≈ 8k, but most
+// answers are 500–2000; 2000 is a fair worst-case for accounting).
+const DAILY_WINDOW_MS = 24 * 60 * 60 * 1000;
+const USER_DAILY_TOKEN_BUDGET = (() => {
+  const raw = Number(process.env.USER_DAILY_TOKEN_BUDGET);
+  return Number.isFinite(raw) && raw > 0 ? raw : 500_000;
+})();
+const OUTPUT_TOKEN_BUDGET_PER_MESSAGE = 2_000;
+
+export function estimateTokensForMessage(inputChars: number): number {
+  return Math.ceil(inputChars / 4) + OUTPUT_TOKEN_BUDGET_PER_MESSAGE;
+}
+
 export type RateLimitResult =
   | { allowed: true; remaining: number; resetAt: number | null }
   | { allowed: false; remaining: 0; resetAt: number; retryAfterSeconds: number };
+
+export type TokenBudgetResult =
+  | { allowed: true; remainingTokens: number; resetAt: number | null }
+  | {
+      allowed: false;
+      remainingTokens: 0;
+      resetAt: number;
+      retryAfterSeconds: number;
+      budget: number;
+    };
 
 export async function checkAndRecordChatMessage(
   ctx: ApiContext,
@@ -70,6 +97,69 @@ export async function checkAndRecordChatMessage(
       allowed: true,
       remaining: MAX_MESSAGES - nextCount,
       resetAt: effectiveWindowStart + WINDOW_MS,
+    };
+  });
+}
+
+/**
+ * Atomic check-and-charge of the per-user 24-hour token budget. Shares the
+ * same chatRateLimits/{uid} doc as the message limiter (no extra hot doc).
+ * Super admins are exempt — same as the message limiter.
+ */
+export async function checkAndChargeDailyTokens(
+  ctx: ApiContext,
+  estTokens: number,
+): Promise<TokenBudgetResult> {
+  if (ctx.isAdmin) {
+    return { allowed: true, remainingTokens: USER_DAILY_TOKEN_BUDGET, resetAt: null };
+  }
+
+  const { db, uid } = ctx;
+  const ref = db.collection("chatRateLimits").doc(uid);
+  const now = Date.now();
+
+  return db.runTransaction(async (tx) => {
+    const doc = await tx.get(ref);
+    const data = doc.exists ? (doc.data() ?? {}) : {};
+    const dailyWindowStartMs: number =
+      typeof data.dailyWindowStartMs === "number" ? data.dailyWindowStartMs : 0;
+    const dailyTokens: number =
+      typeof data.dailyTokens === "number" ? data.dailyTokens : 0;
+
+    const windowExpired =
+      !dailyWindowStartMs || now - dailyWindowStartMs >= DAILY_WINDOW_MS;
+    const effectiveTokens = windowExpired ? 0 : dailyTokens;
+    const effectiveWindowStart = windowExpired ? now : dailyWindowStartMs;
+
+    if (effectiveTokens + estTokens > USER_DAILY_TOKEN_BUDGET) {
+      const resetAt = effectiveWindowStart + DAILY_WINDOW_MS;
+      const retryAfterSeconds = Math.max(1, Math.ceil((resetAt - now) / 1000));
+      return {
+        allowed: false,
+        remainingTokens: 0,
+        resetAt,
+        retryAfterSeconds,
+        budget: USER_DAILY_TOKEN_BUDGET,
+      };
+    }
+
+    const nextTokens = effectiveTokens + estTokens;
+    const payload: Record<string, any> = {
+      uid,
+      dailyTokens: nextTokens,
+      dailyWindowStartMs: effectiveWindowStart,
+      lastTokenChargeAt: now,
+    };
+    // Preserve the message-limiter fields if the doc already exists; otherwise
+    // initialise them empty so a future checkAndRecordChatMessage call works
+    // against a complete doc shape.
+    if (doc.exists) tx.update(ref, payload);
+    else tx.set(ref, { ...payload, count: 0, windowStartMs: 0, lastMessageAt: 0 });
+
+    return {
+      allowed: true,
+      remainingTokens: USER_DAILY_TOKEN_BUDGET - nextTokens,
+      resetAt: effectiveWindowStart + DAILY_WINDOW_MS,
     };
   });
 }
