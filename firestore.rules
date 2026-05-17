@@ -43,8 +43,17 @@ service cloud.firestore {
       allow read: if isOwner(userId) || isAdmin();
       // Users can create their own profile on first login
       allow create: if isOwner(userId);
-      // Users can update their own profile; admins can update any
-      allow update: if isOwner(userId) || isAdmin();
+      // Users can update their own profile EXCEPT the privileged fields
+      // role/clientId/email — those are server-derived and must never be
+      // settable from the client SDK. Admins may change anything.
+      // (Field-absence is null on both sides → null == null still holds,
+      // so legacy docs without these fields are unaffected.)
+      allow update: if (
+        isOwner(userId)
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.clientId == resource.data.clientId
+        && request.resource.data.email == resource.data.email
+      ) || isAdmin();
       // Only admins can delete user records
       allow delete: if isAdmin();
 
