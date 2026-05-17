@@ -111,6 +111,56 @@ async function getAccessibleProjectIds(ctx: ApiContext): Promise<string[]> {
   return [...ids].slice(0, 100);
 }
 
+/**
+ * Resolve a programme id to the set of project ids inside that programme
+ * that the current user is also allowed to see. Used by every search tool
+ * that accepts a `programmeId` filter — lets the AI ask "risks in
+ * Greater London Housing Renewal 2026" and bridge programme → projects →
+ * sub-collection reads without leaking projects from another tenant.
+ */
+async function resolveProgrammeProjectIds(
+  ctx: ApiContext,
+  programmeId: string,
+): Promise<string[]> {
+  const { db, primaryUid, isAdmin, isClientAdmin } = ctx;
+  if (!programmeId || typeof programmeId !== "string") return [];
+  const authorised = await ctx.isAuthorizedForContext(programmeId);
+  if (!authorised) return [];
+
+  let query: FirebaseFirestore.Query = db
+    .collection("projects")
+    .where("programmeId", "==", programmeId);
+  if (!isAdmin) {
+    query = query.where("clientId", "==", primaryUid);
+  }
+  const snap = await query.limit(500).get();
+  const programmeProjectIds = snap.docs.map((d) => d.id);
+
+  // Admin and client_admin see every project in their tenant — no extra
+  // narrowing needed. PM / Programme Manager only see projects they're
+  // assigned to, so intersect with their accessible set.
+  if (isAdmin || isClientAdmin) return programmeProjectIds;
+  const accessible = new Set(await getAccessibleProjectIds(ctx));
+  return programmeProjectIds.filter((id) => accessible.has(id));
+}
+
+/**
+ * One-shot resolver for the (projectId? | programmeId? | nothing) arg
+ * triple every search tool now accepts. Returns the project ids to read
+ * sub-collections from. The order matters:
+ *   - projectId wins (most specific)
+ *   - programmeId next (programme expansion)
+ *   - otherwise all accessible projects
+ */
+async function resolveTargetProjectIds(
+  ctx: ApiContext,
+  args: { projectId?: string; programmeId?: string },
+): Promise<string[]> {
+  if (args.projectId) return [args.projectId];
+  if (args.programmeId) return resolveProgrammeProjectIds(ctx, args.programmeId);
+  return getAccessibleProjectIds(ctx);
+}
+
 async function readProjectSubCollection(
   ctx: ApiContext,
   projectId: string,
@@ -150,13 +200,18 @@ export const CHAT_TOOLS: ToolDef[] = [
   {
     name: "listAccessibleProjects",
     description:
-      "List all projects the current user has access to. Returns id, name, status, programme, RIBA stage, and key dates.",
+      "List all projects the current user has access to. Optionally filter by programmeId to enumerate only projects under that programme — useful for answering 'what projects are in this programme'. Returns id, name, status, programme, RIBA stage, and key dates.",
     parameters: {
       type: "object",
       properties: {
         statusFilter: {
           type: "string",
           description: "Optional: filter by project status (e.g. 'Active', 'Complete')",
+        },
+        programmeId: {
+          type: "string",
+          description:
+            "Optional: only return projects under this programme. Use this to enumerate a programme's children.",
         },
         limit: {
           type: "number",
@@ -167,7 +222,9 @@ export const CHAT_TOOLS: ToolDef[] = [
     isAllowed: anySignedIn,
     execute: async (ctx, args) => {
       const { db } = ctx;
-      const projectIds = await getAccessibleProjectIds(ctx);
+      const projectIds = args.programmeId
+        ? await resolveProgrammeProjectIds(ctx, args.programmeId)
+        : await getAccessibleProjectIds(ctx);
       if (!projectIds.length) return [];
 
       const limit = Math.min(Number(args.limit) || 50, TOOL_RESULT_HARD_CAP);
@@ -351,7 +408,7 @@ export const CHAT_TOOLS: ToolDef[] = [
   {
     name: "searchRisks",
     description:
-      "Search risks across accessible projects. Returns id, title, category, likelihood, impact, score, status, owner, and project.",
+      "Search risks across accessible projects. Accepts EITHER projectId for a single project OR programmeId to expand across every project inside that programme. Returns id, title, category, likelihood, impact, score, status, owner, and project.",
     parameters: {
       type: "object",
       properties: {
@@ -362,6 +419,11 @@ export const CHAT_TOOLS: ToolDef[] = [
         projectId: {
           type: "string",
           description: "Filter to a specific project ID",
+        },
+        programmeId: {
+          type: "string",
+          description:
+            "Filter to a specific programme — expands to every project under that programme the user can access. Use this when the user asks about risks for a programme.",
         },
         status: {
           type: "string",
@@ -376,9 +438,7 @@ export const CHAT_TOOLS: ToolDef[] = [
     },
     isAllowed: anySignedIn,
     execute: async (ctx, args) => {
-      const projectIds = args.projectId
-        ? [args.projectId]
-        : await getAccessibleProjectIds(ctx);
+      const projectIds = await resolveTargetProjectIds(ctx, args);
 
       if (!projectIds.length) return [];
 
@@ -417,12 +477,17 @@ export const CHAT_TOOLS: ToolDef[] = [
   {
     name: "searchIssues",
     description:
-      "Search issues across accessible projects. Returns id, title, priority, status, owner, linked risk, and project.",
+      "Search issues across accessible projects. Accepts EITHER projectId for a single project OR programmeId to expand across every project under that programme. Returns id, title, priority, status, owner, linked risk, and project.",
     parameters: {
       type: "object",
       properties: {
         query: { type: "string", description: "Text search in title/description" },
         projectId: { type: "string", description: "Limit to a specific project" },
+        programmeId: {
+          type: "string",
+          description:
+            "Filter to a specific programme — expands to every project under that programme.",
+        },
         priority: {
           type: "string",
           description: "Filter by priority (e.g. 'High', 'Medium', 'Low')",
@@ -433,9 +498,7 @@ export const CHAT_TOOLS: ToolDef[] = [
     },
     isAllowed: anySignedIn,
     execute: async (ctx, args) => {
-      const projectIds = args.projectId
-        ? [args.projectId]
-        : await getAccessibleProjectIds(ctx);
+      const projectIds = await resolveTargetProjectIds(ctx, args);
       if (!projectIds.length) return [];
 
       const { query, priority, status, limit: rawLimit } = args;
@@ -471,12 +534,17 @@ export const CHAT_TOOLS: ToolDef[] = [
   {
     name: "searchComplianceItems",
     description:
-      "Search compliance items across accessible projects. Returns id, title, domain, status, regulation, and project.",
+      "Search compliance items across accessible projects. Accepts EITHER projectId for a single project OR programmeId to expand across every project under that programme. Returns id, title, domain, status, regulation, and project.",
     parameters: {
       type: "object",
       properties: {
         query: { type: "string", description: "Text search in title/description" },
         projectId: { type: "string", description: "Limit to a specific project" },
+        programmeId: {
+          type: "string",
+          description:
+            "Filter to a specific programme — expands to every project under that programme.",
+        },
         domain: { type: "string", description: "Filter by compliance domain" },
         status: {
           type: "string",
@@ -487,9 +555,7 @@ export const CHAT_TOOLS: ToolDef[] = [
     },
     isAllowed: anySignedIn,
     execute: async (ctx, args) => {
-      const projectIds = args.projectId
-        ? [args.projectId]
-        : await getAccessibleProjectIds(ctx);
+      const projectIds = await resolveTargetProjectIds(ctx, args);
       if (!projectIds.length) return [];
 
       const { query, domain, status, limit: rawLimit } = args;
@@ -525,11 +591,16 @@ export const CHAT_TOOLS: ToolDef[] = [
   {
     name: "getKRIs",
     description:
-      "Get Key Risk Indicators (KRIs) for accessible projects. Returns id, name, value, threshold, status, and project.",
+      "Get Key Risk Indicators (KRIs) for accessible projects. Accepts EITHER projectId for a single project OR programmeId to expand across every project under that programme. Returns id, name, value, threshold, status, and project.",
     parameters: {
       type: "object",
       properties: {
         projectId: { type: "string", description: "Limit to a specific project" },
+        programmeId: {
+          type: "string",
+          description:
+            "Filter to a specific programme — expands to every project under that programme.",
+        },
         breached: {
           type: "boolean",
           description: "If true, return only KRIs that have breached their threshold",
@@ -539,9 +610,7 @@ export const CHAT_TOOLS: ToolDef[] = [
     },
     isAllowed: anySignedIn,
     execute: async (ctx, args) => {
-      const projectIds = args.projectId
-        ? [args.projectId]
-        : await getAccessibleProjectIds(ctx);
+      const projectIds = await resolveTargetProjectIds(ctx, args);
       if (!projectIds.length) return [];
 
       const limit = Math.min(Number(args.limit) || 50, TOOL_RESULT_HARD_CAP);
@@ -751,7 +820,7 @@ export const CHAT_TOOLS: ToolDef[] = [
   {
     name: "searchTacEnquiries",
     description:
-      "Search Technical Assurance Companion enquiries. Returns id, reference, subject, status, project, and stage.",
+      "Search Technical Assurance Companion enquiries. Accepts projectId for one project or programmeId to filter to enquiries on every project under that programme. Returns id, reference, subject, status, project, and stage.",
     parameters: {
       type: "object",
       properties: {
@@ -761,6 +830,11 @@ export const CHAT_TOOLS: ToolDef[] = [
           description: "Filter by status (e.g. 'Draft', 'Open', 'Closed')",
         },
         projectId: { type: "string", description: "Filter by project" },
+        programmeId: {
+          type: "string",
+          description:
+            "Filter to enquiries whose project sits under this programme.",
+        },
         limit: { type: "number", description: "Max results (default 50)" },
       },
     },
@@ -769,6 +843,15 @@ export const CHAT_TOOLS: ToolDef[] = [
       const { db, primaryUid, isAdmin } = ctx;
       const limit = Math.min(Number(args.limit) || 50, TOOL_RESULT_HARD_CAP);
       const q = (args.query || "").toLowerCase();
+
+      // If programmeId was supplied, resolve to project ids up-front so we
+      // can apply the filter in JS after the Firestore read.
+      let programmeProjectIdSet: Set<string> | null = null;
+      if (args.programmeId) {
+        const ids = await resolveProgrammeProjectIds(ctx, args.programmeId);
+        programmeProjectIdSet = new Set(ids);
+        if (programmeProjectIdSet.size === 0) return [];
+      }
 
       const READ_CAP = Math.min(limit * 5, 500);
       let baseQuery: FirebaseFirestore.Query = isAdmin
@@ -785,6 +868,7 @@ export const CHAT_TOOLS: ToolDef[] = [
         if (e.deletedAt) continue;
         if (args.status && e.status !== args.status) continue;
         if (args.projectId && e.projectId !== args.projectId) continue;
+        if (programmeProjectIdSet && !programmeProjectIdSet.has(e.projectId)) continue;
         if (q && !`${e.subject ?? ""} ${e.reference ?? ""}`.toLowerCase().includes(q)) continue;
         // doc id is `{ownerClientId}_{enquiryId}`. Prefer the stored bare id if
         // present; otherwise strip the doc's OWN clientId prefix (not the
@@ -819,12 +903,17 @@ export const CHAT_TOOLS: ToolDef[] = [
   {
     name: "searchRfis",
     description:
-      "Search Request for Information (RFI) items across TAC enquiries. Returns rfi number, subject, status, enquiry, and project.",
+      "Search Request for Information (RFI) items across TAC enquiries. Accepts projectId for one project or programmeId to filter to RFIs on every project under that programme. Returns rfi number, subject, status, enquiry, and project.",
     parameters: {
       type: "object",
       properties: {
         query: { type: "string", description: "Text search in subject" },
         projectId: { type: "string", description: "Filter by project" },
+        programmeId: {
+          type: "string",
+          description:
+            "Filter to RFIs whose project sits under this programme.",
+        },
         status: {
           type: "string",
           description: "Filter by RFI status (e.g. 'Draft', 'Issued', 'Responded')",
@@ -837,6 +926,13 @@ export const CHAT_TOOLS: ToolDef[] = [
       const { db, primaryUid, isAdmin } = ctx;
       const limit = Math.min(Number(args.limit) || 50, TOOL_RESULT_HARD_CAP);
       const q = (args.query || "").toLowerCase();
+
+      let programmeProjectIdSet: Set<string> | null = null;
+      if (args.programmeId) {
+        const ids = await resolveProgrammeProjectIds(ctx, args.programmeId);
+        programmeProjectIdSet = new Set(ids);
+        if (programmeProjectIdSet.size === 0) return [];
+      }
 
       const READ_CAP = Math.min(limit * 5, 500);
       let baseQuery: FirebaseFirestore.Query = isAdmin
@@ -854,6 +950,7 @@ export const CHAT_TOOLS: ToolDef[] = [
         if (!r.rfiNumber) continue;
         if (args.status && r.status !== args.status) continue;
         if (args.projectId && r.projectId !== args.projectId) continue;
+        if (programmeProjectIdSet && !programmeProjectIdSet.has(r.projectId)) continue;
         if (q && !`${r.subject ?? ""} ${r.rfiNumber}`.toLowerCase().includes(q)) continue;
         matched.push({
           id: r.rfiNumber,
