@@ -240,7 +240,23 @@ export function useChatStream(scopeContext: ScopeContext | null) {
           controller.signal,
         );
       } catch (err: any) {
-        if (err.name !== "AbortError") {
+        if (err.name === "AbortError") {
+          // User pressed Stop. stopStream already queued a setMessages
+          // with the cancellation note; mirror it here defensively in
+          // case React batched stopStream's update after this catch fires
+          // (would otherwise leave the bubble stuck on "Thinking…").
+          setMessages((prev) =>
+            prev.map((m) => {
+              if (m.id !== assistantMsgId) return m;
+              if (!m.isStreaming && m.text) return m; // already finalised
+              const hadOutput = !!m.text && m.text.length > 0;
+              const stopNote = hadOutput
+                ? `${m.text}\n\n*— Response stopped by you. Ask another question anytime.*`
+                : "*Response stopped. Ask another question anytime.*";
+              return { ...m, isStreaming: false, text: stopNote };
+            }),
+          );
+        } else {
           setMessages((prev) =>
             prev.map((m) =>
               m.id === assistantMsgId
@@ -255,6 +271,17 @@ export function useChatStream(scopeContext: ScopeContext | null) {
         }
       } finally {
         setIsStreaming(false);
+        // Belt-and-braces: guarantee the assistant bubble's per-message
+        // isStreaming flag is cleared whatever path got us here. Without
+        // this, an aborted stream + a slow React batch could leave the
+        // bubble rendering its "Thinking…" placeholder forever.
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMsgId && m.isStreaming
+              ? { ...m, isStreaming: false }
+              : m,
+          ),
+        );
         streamingIdRef.current = null;
         abortRef.current = null;
       }
