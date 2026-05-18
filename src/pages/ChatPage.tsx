@@ -18,11 +18,59 @@ import { ChatComposer } from "../components/chat/ChatComposer";
 import {
   CHAT_MODELS,
   DEFAULT_MODEL_ID,
-  type ChatModelId,
+  type ChatModelOption,
 } from "../components/chat/composerModels";
 import type { ScopeContext } from "../lib/chatTransport";
+import { api } from "../lib/api";
 
 const MODEL_STORAGE_KEY = "cedar.chat.model";
+
+interface ServerActiveChatEntry {
+  id: string;
+  label: string;
+  group: "premium" | "default" | "free";
+  backend: "openrouter" | "google-direct";
+  modelString: string;
+  enabled: boolean;
+  isDefault: boolean;
+  meta?: {
+    contextLength: number;
+    promptCostUsdPer1M: number;
+    completionCostUsdPer1M: number;
+    isFree: boolean;
+  };
+}
+
+/**
+ * Adapt a server-side ChatModelEntry into the ChatModelOption shape the
+ * ModelSelector renders. Preserves the entry's backend (google-direct
+ * entries skip the openRouterId mapping — they route through Gemini
+ * direct using the server's env + user backup key). Synthesises a
+ * tagline from the meta block so admins curating cost/context see it
+ * surface in the dropdown.
+ */
+function serverEntryToOption(e: ServerActiveChatEntry): ChatModelOption {
+  const tagline = e.meta
+    ? `${e.meta.isFree ? "Free" : "Paid"} · ${
+        e.meta.contextLength >= 1_000_000
+          ? `${(e.meta.contextLength / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`
+          : `${Math.round(e.meta.contextLength / 1_000)}k`
+      } context`
+    : e.backend === "google-direct"
+      ? "Uses existing Gemini config"
+      : "";
+  return {
+    id: e.id as ChatModelOption["id"],
+    group: e.group,
+    label: e.label,
+    tagline,
+    backend: e.backend,
+    // openRouterId is only meaningful when backend === "openrouter".
+    // Setting it for google-direct entries is harmless (the dispatcher
+    // ignores it) but we leave it undefined for cleanliness.
+    ...(e.backend === "openrouter" ? { openRouterId: e.modelString } : {}),
+  };
+}
 
 const EXAMPLE_PROMPTS = [
   {
@@ -51,13 +99,17 @@ const EXAMPLE_PROMPTS = [
   },
 ];
 
-function loadStoredModel(): ChatModelId {
+/**
+ * First-render seed: the locally-bundled CHAT_MODELS list, with the stored
+ * id from localStorage if it matches anything in that fallback. The useEffect
+ * below replaces both with the server-fetched lineup as soon as it lands.
+ */
+function loadStoredModelAgainstFallback(): string {
   if (typeof window === "undefined") return DEFAULT_MODEL_ID;
   try {
     const raw = window.localStorage.getItem(MODEL_STORAGE_KEY);
     if (!raw) return DEFAULT_MODEL_ID;
     const match = CHAT_MODELS.find((m) => m.id === raw);
-    // Ignore stored id if it no longer exists or has since been disabled.
     if (!match || match.disabled) return DEFAULT_MODEL_ID;
     return match.id;
   } catch {
@@ -69,7 +121,46 @@ export function ChatPage() {
   const { activeProject, activeProgramme } = useStore();
   const [inputValue, setInputValue] = useState("");
   const [showScrollBtn, setShowScrollBtn] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<ChatModelId>(loadStoredModel);
+
+  // ── Model registry — server-curated, falls back to local registry ──
+  // First render uses the local composerModels.ts list so the dropdown
+  // is never empty. As soon as getActiveChatModels resolves we replace
+  // both `models` and `selectedModel` to honour the admin curation and
+  // reconcile any stale localStorage id against the live lineup.
+  const [models, setModels] = useState<ChatModelOption[]>(CHAT_MODELS);
+  const [selectedModel, setSelectedModel] = useState<string>(loadStoredModelAgainstFallback);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await api.getActiveChatModels();
+        if (cancelled) return;
+        const serverEntries: ServerActiveChatEntry[] = Array.isArray(res?.chatModels) ? res.chatModels : [];
+        if (serverEntries.length === 0) return; // keep the local fallback
+        const adminOptions = serverEntries.map(serverEntryToOption);
+        setModels(adminOptions);
+        // Reconcile the stored selection against the admin lineup.
+        const storedRaw = (() => {
+          try { return window.localStorage.getItem(MODEL_STORAGE_KEY); } catch { return null; }
+        })();
+        const storedMatch = storedRaw && adminOptions.find((m) => m.id === storedRaw);
+        const adminDefaultId: string | null = res?.defaultModelId ?? adminOptions[0]?.id ?? null;
+        setSelectedModel((curr) => {
+          if (storedMatch) return storedRaw!;
+          if (adminOptions.find((m) => m.id === curr)) return curr;
+          return adminDefaultId ?? curr;
+        });
+      } catch (e: any) {
+        // Network / 5xx — stay on the local CHAT_MODELS fallback. The
+        // hardcoded list is exactly what was shipped before this feature,
+        // so users see a working dropdown even when the admin endpoint
+        // is unreachable.
+        console.warn("[ChatPage] getActiveChatModels failed, using local fallback:", e?.message);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   // Persist model pick across sessions.
   useEffect(() => {
@@ -295,6 +386,7 @@ export function ChatPage() {
           onStop={stopStream}
           isStreaming={isStreaming}
           rateLimit={rateLimit}
+          models={models}
           selectedModel={selectedModel}
           onModelChange={setSelectedModel}
         />

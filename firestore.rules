@@ -366,6 +366,16 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // --- Admin platform configuration ---
+    // Single doc `adminConfig/aiModelConfig` holds the admin-curated lists
+    // of chat + operation models. Server-only via Admin SDK — clients go
+    // through dedicated API actions (adminGetAIModelConfig /
+    // adminUpdateAIModelConfig / getActiveChatModels), all role-gated and
+    // tenant-safe. Direct client reads/writes are blocked.
+    match /adminConfig/{docId} {
+      allow read, write: if false;
+    }
+
     // --- Deny all unmatched paths ---
     match /{document=**} {
       allow read, write: if false;

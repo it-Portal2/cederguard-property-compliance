@@ -1,6 +1,6 @@
 import { ApiContext } from "../lib/context.js";
 import { parseAIResponse } from "../lib/context.js";
-import { GoogleGenAI } from "@google/genai";
+import { runAIOperation } from "../lib/aiOperationRouter.js";
 
 export const aiRoutes: Record<
   string,
@@ -36,15 +36,7 @@ export const aiRoutes: Record<
             .slice(0, 8) // cap to 8 parts so a runaway client can't OOM the function
         : [];
 
-    const PRIMARY_MODEL = "gemini-2.5-flash";
-    const BACKUP_MODEL = "gemini-2.5-flash-lite";
-
-    const systemKey = process.env.GEMINI_API_KEY;
-
-    // Logic: Use system key first, fallback to user's personal key if configured
     const userPersonalKey = (userData?.geminiBackupKey || "").trim();
-    const primaryKey = systemKey || userPersonalKey;
-    const backupKey = primaryKey === systemKey ? userPersonalKey : null; // Only use user key as backup if system was primary
 
     const isJsonAction = [
       "analyzeCompliance",
@@ -60,7 +52,11 @@ export const aiRoutes: Record<
       : action === "analyzeRisks" ? 16384
       : 8192;
 
-    const generationConfig = {
+    // Generation config preserved verbatim from the previous Gemini-direct
+    // path — only the transport (runAIOperation) changes. responseSchema
+    // remains a Gemini-only feature; OpenRouter entries silently ignore it
+    // and emit best-effort JSON which parseAIResponse below heals.
+    const routerConfig = {
       temperature: config?.temperature || 0.7,
       topP: config?.topP || 0.95,
       topK: config?.topK || 40,
@@ -71,87 +67,30 @@ export const aiRoutes: Record<
       responseSchema: isJsonAction ? config?.responseSchema : undefined,
     };
 
-    const TIMEOUT_MS = 90000;
-
-    const tryGenerate = async (
-      ai: GoogleGenAI,
-      modelName: string,
-      maxRetries = 1,
-    ) => {
-      let attempts = 0;
-      while (attempts <= maxRetries) {
-        try {
-          const parts: any[] = [{ text: prompt }];
-          for (const p of safeInlineParts) {
-            parts.push({ inlineData: { mimeType: p.mimeType, data: p.data } });
-          }
-          const generatePromise = ai.models.generateContent({
-            model: modelName,
-            contents: [{ parts }],
-            config: generationConfig,
-          });
-          const timeoutPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("AI request timed out after 55 seconds")), TIMEOUT_MS)
-          );
-          const result: any = await Promise.race([generatePromise, timeoutPromise]);
-          let val = result.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (isJsonAction || config?.responseMimeType === "application/json") {
-            val = parseAIResponse(
-              val || "",
-              action === "analyzeCompliance" ? {} : [],
-            );
-          }
-          return val;
-        } catch (err: any) {
-          attempts++;
-          const isRetryable =
-            err.message?.includes("AI_PARSE_CRITICAL_FAILURE") ||
-            err?.status === 503 ||
-            err.message?.includes("overloaded") ||
-            err.message?.includes("503");
-          if (isRetryable && attempts <= maxRetries) {
-            console.warn(
-              `[AI Retry Interceptor] Retryable failure. Retrying... (Attempt ${attempts} of ${maxRetries})`,
-            );
-            if (err?.status === 503 || err.message?.includes("overloaded")) {
-              await new Promise(r => setTimeout(r, 5000));
-            }
-            continue;
-          }
-          throw err;
-        }
-      }
-    };
-
     try {
-      if (!primaryKey) throw new Error("No API key configured");
-      const primaryAI = new GoogleGenAI({ apiKey: primaryKey });
-      const result = await tryGenerate(primaryAI, PRIMARY_MODEL);
-      return res.status(200).json({ success: true, result });
-    } catch (initialError: any) {
-      console.error("PRIMARY AI ATTEMPT FAILED:", {
-        status: initialError?.status,
-        message: initialError?.message,
+      const routed = await runAIOperation({
+        ctx,
+        prompt,
+        inlineParts: safeInlineParts,
+        config: routerConfig,
+        action,
+      });
+      let val: any = routed.text;
+      if (isJsonAction || config?.responseMimeType === "application/json") {
+        val = parseAIResponse(
+          val || "",
+          action === "analyzeCompliance" ? {} : [],
+        );
+      }
+      return res.status(200).json({ success: true, result: val });
+    } catch (routerError: any) {
+      console.error("AI OPERATION FAILED:", {
+        status: routerError?.status,
+        message: routerError?.message,
         source: userPersonalKey ? "user" : "system",
         action,
       });
-
-      if (backupKey && backupKey !== primaryKey) {
-        try {
-          console.log("Attempting fallback to backup key...");
-          const backupAI = new GoogleGenAI({ apiKey: backupKey });
-          const result = await tryGenerate(backupAI, BACKUP_MODEL);
-          return res.status(200).json({ success: true, result });
-        } catch (backupError: any) {
-          console.error("BACKUP AI ATTEMPT FAILED:", {
-            status: backupError?.status,
-            message: backupError?.message,
-            action,
-          });
-          return handleError(backupError, "system");
-        }
-      }
-      return handleError(initialError, userPersonalKey ? "user" : "system");
+      return handleError(routerError, userPersonalKey ? "user" : "system");
     }
 
     function handleError(err: any, source: "user" | "system") {

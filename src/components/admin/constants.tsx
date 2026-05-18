@@ -1,4 +1,4 @@
-import { Users, Building2, Shield, Briefcase, User, BarChart, History, Settings, Loader2 } from 'lucide-react';
+import { Users, Building2, Shield, Briefcase, User, BarChart, History, Settings, Loader2, Cpu } from 'lucide-react';
 import { clsx } from 'clsx';
 
 // ─── Role Configuration ────────────────────────────────────────────────────────
@@ -44,6 +44,7 @@ export const TABS = [
     { id: 'mappings', label: 'Mapping Editor', icon: Briefcase },
     { id: 'regulations', label: 'Regulations', icon: Shield },
     { id: 'pricing', label: 'Cost Config', icon: Settings },
+    { id: 'ai-models', label: 'AI Models', icon: Cpu },
     { id: 'activity', label: 'Activity Log', icon: History },
 ];
 

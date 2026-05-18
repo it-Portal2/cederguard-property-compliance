@@ -24,6 +24,7 @@ import { ActivityTab } from '../components/admin/ActivityTab';
 import { ProjectsTab } from '../components/admin/ProjectsTab';
 import { PricingTab } from '../components/admin/PricingTab';
 import { OverviewTab } from '../components/admin/OverviewTab';
+import { AIModelsTab } from '../components/admin/AIModelsTab';
 
 export function AdminPanel() {
     const navigate = useNavigate();
@@ -163,6 +164,7 @@ export function AdminPanel() {
             {tab === 'mappings' && <MappingManager />}
             {tab === 'regulations' && <RegulationManager />}
             {tab === 'pricing' && <PricingTab />}
+            {tab === 'ai-models' && <AIModelsTab isAdmin={userIsSuperAdmin} />}
             {tab === 'activity' && <ActivityTab isAdmin={userIsSuperAdmin} users={allUsers} />}
 
             <DetailsModal 

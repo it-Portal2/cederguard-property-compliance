@@ -218,6 +218,17 @@ export const api = {
   adminUpdatePricingConfig: (config: any) =>
     callApi("adminUpdatePricingConfig", { config }),
 
+  // ── AI model configuration ──────────────────────────────────────────
+  // Super-admin endpoints for the AI Models admin tab; auth-only endpoint
+  // exposing the active chat lineup to every signed-in user; super-admin
+  // endpoint exposing the live OpenRouter catalog for the picker dropdown.
+  adminGetAIModelConfig: () => callApi("adminGetAIModelConfig"),
+  adminUpdateAIModelConfig: (config: any) =>
+    callApi("adminUpdateAIModelConfig", { config }),
+  getActiveChatModels: () => callApi("getActiveChatModels"),
+  adminGetOpenRouterCatalog: (opts: { force?: boolean } = {}) =>
+    callApi("adminGetOpenRouterCatalog", { force: opts.force === true }),
+
   adminCreateInvoice: (invoice: any) =>
     callApi("adminCreateInvoice", { invoice }),
   adminGetInvoices: () => callApi("adminGetInvoices"),

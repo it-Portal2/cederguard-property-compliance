@@ -8,7 +8,7 @@ import { ArrowUp, Square, Clock, AlertCircle } from "lucide-react";
 import { clsx } from "clsx";
 import type { RateLimitState } from "../../hooks/useChatStream";
 import { ModelSelector } from "./ModelSelector";
-import type { ChatModelId } from "./composerModels";
+import type { ChatModelOption } from "./composerModels";
 
 interface ChatComposerProps {
   value: string;
@@ -17,8 +17,14 @@ interface ChatComposerProps {
   onStop: () => void;
   isStreaming: boolean;
   rateLimit: RateLimitState;
-  selectedModel: ChatModelId;
-  onModelChange: (id: ChatModelId) => void;
+  /**
+   * Resolved list of chat models to render in the dropdown. Owned by the
+   * parent so the source of truth (admin-curated server config, with the
+   * static composerModels.ts list as offline fallback) lives in one place.
+   */
+  models: ChatModelOption[];
+  selectedModel: string;
+  onModelChange: (id: string) => void;
   disabled?: boolean;
 }
 
@@ -39,6 +45,7 @@ export function ChatComposer({
   onStop,
   isStreaming,
   rateLimit,
+  models,
   selectedModel,
   onModelChange,
   disabled = false,
@@ -197,6 +204,7 @@ export function ChatComposer({
             {/* Right cluster — Model + Send/Stop */}
             <div className="flex items-center gap-1.5 min-w-0">
               <ModelSelector
+                models={models}
                 selectedId={selectedModel}
                 onSelect={onModelChange}
                 disabled={isInputDisabled}

@@ -2,6 +2,17 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { ApiContext } from '../lib/context.js';
 import crypto from 'crypto';
 import { ROLE_STRINGS, PM_LEVELS } from '../../src/lib/roleConstants.js';
+import {
+  CONFIG_DOC_PATH,
+  SEED_CONFIG,
+  loadAIModelConfig,
+  validateAIModelConfig,
+  bumpAIModelConfigCacheBuster,
+  getAIModelConfigCacheBuster,
+  type AIModelConfig,
+  type ChatModelEntry,
+} from '../lib/aiModelConfig.js';
+import { fetchOpenRouterCatalog } from '../lib/openRouterCatalog.js';
 
 const canonicalOf = (role?: string | null): string => {
   switch (role) {
@@ -495,4 +506,122 @@ export const adminRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =
 
     return res.status(200).json({ success: true });
   },
+
+  // ── AI model configuration ────────────────────────────────────────────
+  //
+  // Single Firestore doc (adminConfig/aiModelConfig) holds two lists:
+  // chatModels (the /chat dropdown) and operationModels (priority-ordered
+  // targets used by legacy AI ops). Editable only by super-admin; read
+  // surface for the dropdown (getActiveChatModels) is auth-only and
+  // returns just the enabled chat entries + the admin-marked default.
+
+  adminGetAIModelConfig: async (_req, res, ctx) => {
+    const { isAdmin } = ctx;
+    if (!isAdmin) return res.status(403).json({ error: 'Forbidden' });
+    try {
+      const config = await loadAIModelConfig(ctx);
+      return res.status(200).json({ success: true, config, seedReturned: !config.updatedAt });
+    } catch (e: any) {
+      console.error('[adminGetAIModelConfig] failed:', e?.message);
+      return res.status(500).json({ success: false, error: 'Failed to load AI model config' });
+    }
+  },
+
+  adminUpdateAIModelConfig: async (req, res, ctx) => {
+    const { db, uid, email, isAdmin } = ctx;
+    if (!isAdmin) return res.status(403).json({ error: 'Forbidden' });
+    const payload = req.body?.config;
+    const validation = validateAIModelConfig(payload);
+    if (!validation.valid) {
+      return res.status(400).json({ success: false, errors: validation.errors });
+    }
+    try {
+      const next: AIModelConfig = {
+        ...(payload as AIModelConfig),
+        updatedAt: FieldValue.serverTimestamp(),
+        updatedBy: uid,
+        updatedByEmail: email, // human label for the AI Models tab footer
+      };
+      await db.doc(CONFIG_DOC_PATH).set(next, { merge: false });
+      bumpAIModelConfigCacheBuster();
+      // Fire-and-forget audit trail. Never block the response on log failures.
+      db.collection('auditEvents').add({
+        actorUid: uid,
+        action: 'adminConfig.updateAIModelConfig',
+        ts: FieldValue.serverTimestamp(),
+      }).catch((e) => console.error('[auditEvents] updateAIModelConfig log failed:', e?.message));
+      return res.status(200).json({ success: true });
+    } catch (e: any) {
+      console.error('[adminUpdateAIModelConfig] failed:', e?.message);
+      return res.status(500).json({ success: false, error: 'Failed to save AI model config' });
+    }
+  },
+
+  getActiveChatModels: async (_req, res, ctx) => {
+    // Any signed-in user — the dropdown needs to render for everyone.
+    // 60-second in-memory cache keyed by primaryUid + cache-buster.
+    // Cache-buster is bumped by adminUpdateAIModelConfig so the next read
+    // after a super-admin save is fresh.
+    try {
+      const cacheKey = `${ctx.primaryUid}::${getAIModelConfigCacheBuster()}`;
+      const hit = _activeChatModelsCache.get(cacheKey);
+      const now = Date.now();
+      if (hit && now - hit.fetchedAt < ACTIVE_CHAT_MODELS_TTL_MS) {
+        return res.status(200).json({
+          success: true,
+          chatModels: hit.payload.chatModels,
+          defaultModelId: hit.payload.defaultModelId,
+          cached: true,
+        });
+      }
+      const config = await loadAIModelConfig(ctx);
+      const enabled = (config.chatModels || []).filter((m) => m.enabled);
+      const defaultEntry: ChatModelEntry | undefined =
+        enabled.find((m) => m.isDefault) ?? enabled[0];
+      const payload = {
+        chatModels: enabled,
+        defaultModelId: defaultEntry?.id ?? null,
+      };
+      _activeChatModelsCache.set(cacheKey, { fetchedAt: now, payload });
+      return res.status(200).json({ success: true, ...payload, cached: false });
+    } catch (e: any) {
+      console.error('[getActiveChatModels] failed:', e?.message);
+      // Surface a safe fallback shape so the client can fall back to its
+      // local registry without throwing in the UI.
+      return res.status(500).json({ success: false, error: 'Failed to load active chat models' });
+    }
+  },
+
+  adminGetOpenRouterCatalog: async (req, res, ctx) => {
+    const { isAdmin } = ctx;
+    if (!isAdmin) return res.status(403).json({ error: 'Forbidden' });
+    const force = req.body?.force === true || req.query?.force === 'true';
+    try {
+      const result = await fetchOpenRouterCatalog({ force });
+      return res.status(200).json({
+        success: true,
+        entries: result.entries,
+        cached: result.cached,
+        fetchedAt: result.fetchedAt,
+      });
+    } catch (e: any) {
+      console.warn('[adminGetOpenRouterCatalog] upstream fetch failed:', e?.message);
+      // Surface as a soft failure so the admin UI can render its hardcoded
+      // curated fallback list instead of blocking the operator.
+      return res.status(502).json({
+        success: false,
+        error: 'OpenRouter catalog temporarily unavailable',
+      });
+    }
+  },
 };
+
+// Module-level cache for getActiveChatModels. Keyed by primaryUid so two
+// tenants can't poison each other's view. TTL = 60s; explicit cache-buster
+// (from aiModelConfig.bumpAIModelConfigCacheBuster) is folded into the key
+// so a super-admin save invalidates every in-process slot at once.
+const ACTIVE_CHAT_MODELS_TTL_MS = 60 * 1000;
+const _activeChatModelsCache = new Map<
+  string,
+  { fetchedAt: number; payload: { chatModels: ChatModelEntry[]; defaultModelId: string | null } }
+>();
