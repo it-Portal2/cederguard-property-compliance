@@ -24,7 +24,7 @@ export function NewsArticle() {
 
   if (!article) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#030303] pt-32 pb-20 px-6 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#030303] pt-12 md:pt-16 pb-20 px-6 flex items-center justify-center">
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -46,7 +46,7 @@ export function NewsArticle() {
   return (
     <div className="min-h-screen bg-white dark:bg-[#030303] text-slate-800 dark:text-slate-300 transition-colors duration-500 selection:bg-indigo-100 dark:selection:bg-cyan-500/30">
       {/* Article Header */}
-      <div className="relative pt-40 pb-32 bg-slate-50 dark:bg-slate-900/40 border-b border-slate-200 dark:border-white/10 overflow-hidden">
+      <div className="relative pt-12 md:pt-16 pb-32 bg-slate-50 dark:bg-slate-900/40 border-b border-slate-200 dark:border-white/10 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 dark:from-cyan-500/10 to-transparent opacity-50" />
         
         {/* Decorative elements */}

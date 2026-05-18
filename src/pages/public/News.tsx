@@ -13,7 +13,7 @@ export function News() {
     : newsArticles.filter(article => article.category === selectedCategory);
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pt-32 pb-20 transition-colors duration-500">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pt-12 md:pt-16 pb-20 transition-colors duration-500">
       <div className="max-w-7xl mx-auto px-6">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-10">

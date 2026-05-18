@@ -4,7 +4,7 @@ import { motion } from 'motion/react';
 
 export const Contact: React.FC = () => {
     return (
-        <div className="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 font-sans min-h-screen pt-40 pb-32 px-6 relative overflow-hidden transition-colors duration-500">
+        <div className="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 font-sans min-h-screen pt-12 md:pt-16 pb-32 px-6 relative overflow-hidden transition-colors duration-500">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-cyan-900/10 blur-[150px] rounded-full pointer-events-none" />
 
             <div className="max-w-6xl mx-auto relative z-10 flex flex-col lg:grid lg:grid-cols-2 gap-24">

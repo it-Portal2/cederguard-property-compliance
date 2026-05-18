@@ -143,7 +143,7 @@ export const Product: React.FC = () => {
     return (
         <div className="bg-slate-50 dark:bg-[#030303] text-slate-600 dark:text-slate-300 font-sans antialiased selection:bg-cyan-500/30 selection:text-white min-h-screen transition-colors duration-500">
             {/* ── HERO SECTION ── */}
-            <section className="relative pt-48 pb-32 px-6 overflow-hidden flex flex-col items-center justify-center text-center">
+            <section className="relative pt-12 md:pt-16 pb-32 px-6 overflow-hidden flex flex-col items-center justify-center text-center">
                 {/* Background decorative elements */}
                 <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-indigo-500/10 dark:bg-cyan-500/10 blur-[120px] rounded-full pointer-events-none opacity-50" />
                 <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-cyan-500/10 dark:bg-indigo-500/10 blur-[120px] rounded-full pointer-events-none opacity-50" />

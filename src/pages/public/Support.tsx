@@ -36,7 +36,7 @@ export function Support() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pt-32 pb-20 text-slate-600 dark:text-slate-300 transition-colors duration-500">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pt-12 md:pt-16 pb-20 text-slate-600 dark:text-slate-300 transition-colors duration-500">
       <div className="max-w-7xl mx-auto px-6">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}

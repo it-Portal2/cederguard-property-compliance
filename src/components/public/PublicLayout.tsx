@@ -1,15 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
-import { Menu, X, Sun, Moon, Download } from 'lucide-react';
+import { Menu, X, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { clsx } from 'clsx';
 import { useStore } from '../../store/useStore';
 
 export const PublicLayout: React.FC = () => {
     const [scrolled, setScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const location = useLocation();
+    const menuTriggerRef = useRef<HTMLButtonElement>(null);
 
-    const { deferredPrompt, installPWA, isMarketingDarkMode, setIsMarketingDarkMode } = useStore();
+    // `isMarketingDarkMode` left in the store on purpose — other consumers
+    // (e.g. landing-page hero variants) may still read it. We just don't
+    // render a toggle in the marketing chrome any more, since modern B2B
+    // SaaS chrome (Linear / Vercel / Stripe) doesn't carry one.
+    const { deferredPrompt, installPWA } = useStore();
     const [isInstalled, setIsInstalled] = useState(false);
     const [showInstallModal, setShowInstallModal] = useState(false);
 
@@ -31,120 +37,211 @@ export const PublicLayout: React.FC = () => {
         return () => window.removeEventListener('scroll', onScroll);
     }, []);
 
-    // Close mobile menu on route change
+    // Close mobile menu on route change, restore focus to the hamburger.
     useEffect(() => {
         setMobileMenuOpen(false);
     }, [location.pathname]);
 
+    // Body scroll-lock + ESC dismiss while the mobile overlay is open.
+    useEffect(() => {
+        if (!mobileMenuOpen) return;
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setMobileMenuOpen(false);
+        };
+        window.addEventListener('keydown', onKey);
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            window.removeEventListener('keydown', onKey);
+            // Return focus to the trigger so keyboard users don't get lost.
+            menuTriggerRef.current?.focus();
+        };
+    }, [mobileMenuOpen]);
+
     const navLinks = [
-        { href: '/about', label: 'About' },
         { href: '/product', label: 'Product' },
         { href: '/news', label: 'News' },
         { href: '/support', label: 'Support' },
-        { href: '/contact', label: 'Contact Us' },
+        { href: '/contact', label: 'Contact' },
     ];
 
+    const isActive = (href: string) =>
+        href === '/' ? location.pathname === '/' : location.pathname.startsWith(href);
+
     return (
-        <div className="min-h-screen bg-white text-slate-800 dark:bg-[#030303] dark:text-slate-300 font-sans antialiased selection:bg-indigo-500/30 selection:text-white flex flex-col transition-colors duration-500 relative overflow-hidden">
+        <div className="min-h-screen bg-white text-slate-800 dark:bg-[#030303] dark:text-slate-300 font-sans antialiased selection:bg-indigo-500/30 selection:text-white flex flex-col transition-colors duration-500 relative overflow-x-clip">
             {/* Background Decorative Elements */}
             <div className="fixed inset-0 pointer-events-none z-0">
                 <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-indigo-500/5 dark:bg-cyan-500/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2" />
                 <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-purple-500/5 dark:bg-indigo-500/5 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2" />
             </div>
 
-            {/* ── NAVBAR ── */}
-            <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-700 ${scrolled ? 'py-3' : 'py-5'}`} role="banner">
-                <div className={`max-w-7xl mx-auto px-6 transition-all duration-700 ${scrolled ? 'scale-[0.98]' : 'scale-100'}`}>
-                    <nav className={`flex items-center justify-between px-8 py-4 rounded-[2rem] transition-all duration-700 border ${scrolled ? 'bg-white/70 dark:bg-slate-900/40 backdrop-blur-3xl border-slate-200/60 dark:border-white/10 shadow-2xl dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)]' : 'bg-transparent border-transparent'}`} aria-label="Primary navigation">
-                        <Link to="/" className="flex items-center focus-visible:outline-none group">
-                            <div className="h-14 flex flex-col items-center justify-center transition-transform duration-500 group-hover:scale-110 pl-2">
-                                <img src="/logo.png" alt="Cedar Logo" className="h-[3.25rem] w-auto object-contain dark:invert-0 drop-shadow-sm transition-all duration-500 group-hover:drop-shadow-[0_0_15px_rgba(79,70,229,0.4)]" />
-                            </div>
-                        </Link>
+            {/* ── NAVBAR ──
+                Flat sticky bar, transparent over the hero, gains opacity +
+                subtle blur once the page scrolls past 10px. Mirrors the
+                Linear / Vercel / Stripe chrome pattern: minimal surfaces,
+                ONE primary CTA + one quiet sign-in link, no dark-mode
+                toggle, no APP install button (moved to the footer band).
+            */}
+            <header
+                className={clsx(
+                    'sticky top-0 z-50 transition-colors duration-200',
+                    scrolled
+                        ? 'bg-white/85 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200/60 dark:border-white/10'
+                        : 'bg-transparent border-b border-transparent',
+                )}
+                role="banner"
+            >
+                <div className="max-w-7xl mx-auto px-6 h-18 flex items-center justify-between">
+                    {/* Logo */}
+                    <Link to="/" aria-label="CedarGuard home" className="flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 rounded-md">
+                        <img
+                            src="/logo.png"
+                            alt="CedarGuard"
+                            className="h-10 w-auto object-contain dark:invert-0"
+                        />
+                    </Link>
 
-
-                        <div className="hidden md:flex items-center gap-10">
-                            {navLinks.map((l) => (
-                                <Link 
-                                    key={l.href} 
-                                    to={l.href} 
-                                    className={`text-sm font-bold tracking-widest uppercase transition-all duration-300 focus-visible:outline-none relative group ${location.pathname === l.href ? 'text-indigo-600 dark:text-cyan-400' : 'text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-white'}`}
+                    {/* Desktop nav */}
+                    <nav className="hidden md:flex items-center gap-8" aria-label="Primary navigation">
+                        {navLinks.map((l) => {
+                            const active = isActive(l.href);
+                            return (
+                                <Link
+                                    key={l.href}
+                                    to={l.href}
+                                    aria-current={active ? 'page' : undefined}
+                                    className={clsx(
+                                        'relative text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 rounded-sm',
+                                        active
+                                            ? 'text-slate-900 dark:text-white'
+                                            : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white',
+                                    )}
                                 >
                                     {l.label}
-                                    <span className={`absolute -bottom-2 left-0 w-full h-0.5 bg-indigo-600 dark:bg-cyan-400 transform transition-transform duration-300 ${location.pathname === l.href ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`} />
+                                    {active && (
+                                        <span
+                                            aria-hidden
+                                            className="absolute left-0 right-0 -bottom-6.5 h-0.5 bg-indigo-600 dark:bg-indigo-400"
+                                        />
+                                    )}
                                 </Link>
-                            ))}
-                        </div>
-
-                        <div className="hidden md:flex items-center gap-6">
-                            <button 
-                                onClick={() => setIsMarketingDarkMode(!isMarketingDarkMode)} 
-                                className="p-3 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-cyan-400 transition-all rounded-2xl bg-slate-100 dark:bg-white/5 border border-transparent hover:border-slate-200 dark:hover:border-white/10"
-                                aria-label="Toggle theme"
-                            >
-                                {isMarketingDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                            </button>
-
-                            {!isInstalled && (
-                                <button
-                                    onClick={deferredPrompt ? installPWA : () => setShowInstallModal(true)}
-                                    className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-cyan-400 transition-colors"
-                                >
-                                    <Download className="w-4 h-4" /> App
-                                </button>
-                            )}
-                            
-                            <Link to="/login" className="text-sm font-black uppercase tracking-widest text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-white transition-colors">
-                                Sign In
-                            </Link>
-                            
-                            <Link to="/login" className="text-xs font-black uppercase tracking-[0.2em] bg-slate-900 text-white dark:bg-white dark:text-slate-950 px-8 py-4 rounded-2xl hover:bg-indigo-600 dark:hover:bg-cyan-400 transition-all duration-300 shadow-xl shadow-indigo-500/10 dark:shadow-cyan-500/10 hover:scale-105">
-                                Access Portal
-                            </Link>
-                        </div>
-
-                        <button className="md:hidden p-3 rounded-2xl bg-slate-100 dark:bg-white/5 text-slate-600 hover:text-indigo-600 dark:text-slate-300 dark:hover:text-white transition-colors" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Menu">
-                            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-                        </button>
+                            );
+                        })}
                     </nav>
+
+                    {/* Right cluster — desktop */}
+                    <div className="hidden md:flex items-center gap-5">
+                        <Link
+                            to="/login"
+                            className="text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 rounded-sm"
+                        >
+                            Sign in
+                        </Link>
+                        <Link
+                            to="/login"
+                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-200 dark:text-slate-900 text-white text-sm font-semibold rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                        >
+                            Access portal
+                            <span aria-hidden>→</span>
+                        </Link>
+                    </div>
+
+                    {/* Mobile hamburger */}
+                    <button
+                        ref={menuTriggerRef}
+                        type="button"
+                        className="md:hidden p-2 -mr-2 rounded-lg text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                        onClick={() => setMobileMenuOpen(true)}
+                        aria-label="Open navigation menu"
+                        aria-expanded={mobileMenuOpen}
+                        aria-controls="mobile-nav"
+                    >
+                        <Menu className="w-6 h-6" />
+                    </button>
                 </div>
 
-                {/* Mobile Menu */}
+                {/* Mobile overlay — full-screen, NOT a floating panel */}
                 <AnimatePresence>
                     {mobileMenuOpen && (
                         <motion.div
-                            initial={{ opacity: 0, y: -20, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                            className="md:hidden absolute top-full left-6 right-6 mt-4 bg-white dark:bg-slate-900/90 backdrop-blur-3xl border border-slate-200 dark:border-white/10 rounded-[2.5rem] p-10 flex flex-col gap-8 shadow-[0_32px_64px_rgba(0,0,0,0.2)] dark:shadow-[0_32px_64px_rgba(0,0,0,0.5)] overflow-hidden z-20"
+                            id="mobile-nav"
+                            role="dialog"
+                            aria-modal="true"
+                            aria-label="Navigation"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.15 }}
+                            className="md:hidden fixed inset-0 z-50 bg-white dark:bg-slate-950 flex flex-col"
                         >
-                            <div className="flex flex-col gap-6">
-                                {navLinks.map((l, i) => (
-                                    <motion.div
-                                        key={l.href}
-                                        initial={{ opacity: 0, x: -20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: i * 0.1 }}
-                                    >
-                                        <Link to={l.href} className={`text-3xl font-black tracking-tight font-display transition-colors ${location.pathname === l.href ? 'text-indigo-600 dark:text-cyan-400' : 'text-slate-900 dark:text-white'}`}>
+                            {/* Same-height header strip inside the overlay */}
+                            <div className="max-w-7xl mx-auto w-full px-6 h-16 flex items-center justify-between shrink-0 border-b border-slate-200 dark:border-white/10">
+                                <Link to="/" aria-label="CedarGuard home" className="flex items-center">
+                                    <img
+                                        src="/logo.png"
+                                        alt="CedarGuard"
+                                        className="h-10 w-auto object-contain dark:invert-0"
+                                    />
+                                </Link>
+                                <button
+                                    type="button"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    aria-label="Close navigation menu"
+                                    className="p-2 -mr-2 rounded-lg text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-white/5"
+                                >
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+
+                            {/* Scrolling nav list */}
+                            <nav className="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-1" aria-label="Primary mobile navigation">
+                                {navLinks.map((l) => {
+                                    const active = isActive(l.href);
+                                    return (
+                                        <Link
+                                            key={l.href}
+                                            to={l.href}
+                                            aria-current={active ? 'page' : undefined}
+                                            className={clsx(
+                                                'relative px-4 py-3.5 rounded-lg text-lg font-medium transition-colors',
+                                                active
+                                                    ? 'bg-indigo-50 text-slate-900 dark:bg-indigo-500/10 dark:text-white'
+                                                    : 'text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/5',
+                                            )}
+                                        >
+                                            {active && (
+                                                <span
+                                                    aria-hidden
+                                                    className="absolute left-0 top-2 bottom-2 w-0.75 bg-indigo-600 dark:bg-indigo-400 rounded-r"
+                                                />
+                                            )}
                                             {l.label}
                                         </Link>
-                                    </motion.div>
-                                ))}
-                            </div>
-                            
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.4 }}
-                                className="flex flex-col gap-6 pt-10 border-t border-slate-200 dark:border-white/5"
-                            >
-                                <Link to="/login" className="text-lg font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-600 px-2 transition-colors">Sign In</Link>
-                                <Link to="/login" className="text-lg font-black uppercase tracking-[0.2em] bg-slate-900 text-white dark:bg-white dark:text-slate-950 px-8 py-6 rounded-3xl text-center shadow-2xl shadow-indigo-500/20 dark:shadow-cyan-500/20 transition-all">
-                                    Access Portal
+                                    );
+                                })}
+
+                                <div className="my-4 border-t border-slate-200 dark:border-white/10" />
+
+                                <Link
+                                    to="/login"
+                                    className="px-4 py-3.5 rounded-lg text-lg font-medium text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/5 transition-colors"
+                                >
+                                    Sign in
                                 </Link>
-                            </motion.div>
+                            </nav>
+
+                            {/* Sticky bottom primary CTA */}
+                            <div className="shrink-0 px-6 py-5 border-t border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950">
+                                <Link
+                                    to="/login"
+                                    className="w-full inline-flex items-center justify-center gap-1.5 py-4 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-200 dark:text-slate-900 text-white text-base font-semibold rounded-xl transition-colors"
+                                >
+                                    Access portal
+                                    <span aria-hidden>→</span>
+                                </Link>
+                            </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -212,7 +309,23 @@ export const PublicLayout: React.FC = () => {
             {/* ── FOOTER ── */}
             <footer className="bg-slate-50 dark:bg-[#050505] px-6 py-24 text-slate-500 dark:text-slate-500 text-sm border-t border-slate-200 dark:border-white/5 mt-auto relative overflow-hidden transition-colors duration-500">
                 <div className="absolute top-0 left-1/4 w-1/2 h-[2px] bg-gradient-to-r from-transparent via-indigo-500/20 dark:via-cyan-400/30 to-transparent" />
-                
+
+                {/* Install-app band — preserves the install entry-point that
+                    used to live as a header APP button. Quiet, single line,
+                    only shows when the app isn't already installed. */}
+                {!isInstalled && (
+                    <div className="max-w-7xl mx-auto mb-16 flex items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-500 relative z-10">
+                        <span>Use CedarGuard on the go —</span>
+                        <button
+                            type="button"
+                            onClick={deferredPrompt ? installPWA : () => setShowInstallModal(true)}
+                            className="inline-flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 rounded-sm"
+                        >
+                            <Download className="w-3.5 h-3.5" /> Install the app
+                        </button>
+                    </div>
+                )}
+
                 <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-16 mb-24 relative z-10">
                     <div className="col-span-1 md:col-span-1">
                         <Link to="/" className="inline-block mb-10 transition-transform hover:scale-105 duration-500">

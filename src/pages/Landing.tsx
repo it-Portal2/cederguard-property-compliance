@@ -344,7 +344,13 @@ export const Landing: React.FC = () => {
         <div className="bg-slate-50 dark:bg-[#030303] text-slate-800 dark:text-white/80 font-sans antialiased selection:bg-indigo-500/30 selection:text-indigo-900 dark:selection:text-white min-h-screen transition-colors duration-500">
             
             {/* ── HERO SECTION (2-col split) ── */}
-            <section className="relative min-h-dvh flex items-center px-6 lg:px-12 overflow-hidden pt-32 md:pt-36 pb-16 md:pb-24">
+            {/* min-h-[calc(100dvh-4.5rem)] subtracts the 72px sticky-nav height
+                so the hero fills the visible viewport below the bar without
+                forcing the user to scroll. pt-8/12 replaces the old pt-32/36
+                — the bar is already sitting at the top so the hero needs only
+                breathing room from the nav, not "push content down past a
+                floating pill" spacing. */}
+            <section className="relative min-h-[calc(100dvh-4.5rem)] flex items-center px-6 lg:px-12 overflow-hidden pt-8 md:pt-12 pb-16 md:pb-24">
                 {/* Background ambient lighting */}
                 <div className="absolute top-0 right-0 w-200 h-150 bg-indigo-100/40 dark:bg-indigo-500/10 blur-[120px] rounded-[100%] pointer-events-none" />
                 <div className="absolute bottom-0 left-0 w-150 h-100 bg-purple-100/30 dark:bg-purple-500/10 blur-[120px] rounded-[100%] pointer-events-none" />

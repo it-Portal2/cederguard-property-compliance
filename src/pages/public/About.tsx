@@ -4,7 +4,7 @@ import { motion } from 'motion/react';
 
 export const About: React.FC = () => {
     return (
-        <div className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-300 font-sans min-h-screen pt-40 pb-32 px-6 relative overflow-hidden transition-colors duration-500">
+        <div className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-300 font-sans min-h-screen pt-12 md:pt-16 pb-32 px-6 relative overflow-hidden transition-colors duration-500">
             <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-cyan-900/10 blur-[150px] rounded-full pointer-events-none" />
             <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-teal-900/10 blur-[150px] rounded-full pointer-events-none" />
 
