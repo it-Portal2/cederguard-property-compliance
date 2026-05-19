@@ -93,6 +93,10 @@ export async function runAIOperation(
     const enabledOps = opModels.filter((e) => e.enabled);
     if (enabledOps.length === 0) {
       console.info(`${tag} no enabled operation models in admin config — proceeding directly to safety-net cascade`);
+    } else {
+      console.info(
+        `${tag} cascade order: ${enabledOps.map((e) => `${e.id}[${e.modelString}]`).join(" → ")} → free-autorouter → gemini-direct`,
+      );
     }
     for (const entry of enabledOps) {
       console.info(`${tag} trying admin entry id=${entry.id} model=${entry.modelString}`);
@@ -154,13 +158,15 @@ export async function runAIOperation(
  * "Retryable" here means "try the NEXT step in the cascade", not "retry the
  * same model". Free models 429 frequently and 503s are transient — we move
  * on rather than wait. Empty-content responses are also treated retryable
- * to dodge silent free-model degradations.
+ * to dodge silent free-model degradations. 400s from a specific upstream
+ * mean "this model can't handle the request shape we sent" — the next
+ * entry might accept it, so advance the cascade instead of giving up.
  */
 function isRetryable(err: unknown): boolean {
   if (!err) return false;
   const e = err as any;
   const status = Number(e?.status ?? e?.response?.status ?? 0);
-  if ([429, 502, 503, 504, 529, 404].includes(status)) return true;
+  if ([400, 429, 502, 503, 504, 529, 404].includes(status)) return true;
   const msg = String(e?.message ?? "").toLowerCase();
   if (!msg) return false;
   if (msg.includes("quota") || msg.includes("rate limit")) return true;
@@ -198,16 +204,65 @@ async function callOpenRouterChatCompletion(
   });
 
   const cfg = opts.config ?? {};
+  const isJsonMode = cfg.responseMimeType === "application/json";
+  // Detect whether the caller wants a JSON ARRAY (e.g. analyzeRisks,
+  // analyzeControls) vs a JSON OBJECT (e.g. analyzeCompliance) at the top
+  // level. OpenAI's JSON mode (`response_format: { type: 'json_object' }`)
+  // STRICTLY only supports objects, so for array-shaped schemas we have to:
+  //   1. NOT send response_format
+  //   2. Tell the model in the system message that an array is expected
+  // For object schemas (and schemas not specified) we use JSON mode AND
+  // pair it with a system message — OpenAI's JSON mode contract requires
+  // a system message instructing the model to return JSON, otherwise the
+  // upstream returns `400 Provider returned error`.
+  // Branch by the schema's top-level type. The schema flows through from
+  // routes/ai.ts (verified via the diagnostic log below). Do NOT use the
+  // action name as a fallback — multiple AI service functions reuse the
+  // same `analyzeRisks` action with different schemas (e.g.
+  // `analyzeStrategicRisks` sends an object-shaped schema with nested
+  // arrays via the same API endpoint).
+  const schemaIsArray =
+    isJsonMode && (cfg.responseSchema as any)?.type === "array";
+
+  // `responseSchema` is a Gemini-only API parameter — OpenRouter / OpenAI
+  // silently DROP it from the request body, so the upstream model never
+  // sees the schema and ends up hallucinating a shape (e.g. echoing the
+  // input back). To work around this we serialise the schema and embed
+  // it in the system message as text so OpenRouter models can actually
+  // read it. Limited to ~8000 chars so a giant nested schema can't blow
+  // out the context window — that's enough for every schema we currently
+  // send (the largest is ~3KB JSON).
+  const schemaSerialised = cfg.responseSchema
+    ? JSON.stringify(cfg.responseSchema).slice(0, 8000)
+    : null;
+
+  const systemMessage = isJsonMode
+    ? schemaIsArray
+      ? `You are a structured-output assistant. You MUST respond with a valid JSON ARRAY that strictly matches the schema below. Return ONLY the array — do not wrap it in additional keys or objects. Do not include any prose, markdown fences, or commentary outside the JSON.${schemaSerialised ? `\n\nSCHEMA (JSON Schema):\n${schemaSerialised}` : ""}`
+      : `You are a structured-output assistant. You MUST respond with a single valid JSON OBJECT that strictly matches the schema below. Use EXACTLY the property names and structure shown — do NOT echo the user input back as the output, do NOT invent new top-level keys. Do not include any prose, markdown fences, or commentary outside the JSON.${schemaSerialised ? `\n\nSCHEMA (JSON Schema):\n${schemaSerialised}` : ""}`
+    : null;
+
+  console.info(
+    `[aiOperationRouter] ${modelString} mode=${isJsonMode ? (schemaIsArray ? "json-array" : "json-object") : "text"} systemMessage=${systemMessage ? "yes" : "no"} response_format=${isJsonMode && !schemaIsArray ? "json_object" : "none"} schemaType=${(cfg.responseSchema as any)?.type ?? "<undefined>"} schemaKeys=${cfg.responseSchema ? Object.keys(cfg.responseSchema as any).join(",") : "<none>"}`,
+  );
+
   const requestParams: any = {
     model: modelString,
-    messages: [{ role: "user", content: opts.prompt }],
+    messages: systemMessage
+      ? [
+          { role: "system", content: systemMessage },
+          { role: "user", content: opts.prompt },
+        ]
+      : [{ role: "user", content: opts.prompt }],
     temperature: cfg.temperature ?? 0.7,
     max_tokens: cfg.maxOutputTokens ?? 8192,
   };
   // Best-effort JSON mode mapping. OpenRouter forwards this to upstream
   // providers that support it; ones that don't will ignore it and emit
   // free-form text — parseAIResponse in the caller heals truncated JSON.
-  if (cfg.responseMimeType === "application/json") {
+  // Skip for array-shaped schemas because OpenAI's JSON mode only accepts
+  // objects (would otherwise return 400 or coerce the response to {}).
+  if (isJsonMode && !schemaIsArray) {
     requestParams.response_format = { type: "json_object" };
   }
 
@@ -217,11 +272,73 @@ async function callOpenRouterChatCompletion(
     `OpenRouter[${modelString}] timed out`,
   );
   const text = completion.choices?.[0]?.message?.content ?? "";
+  console.info(
+    `[aiOperationRouter] ${modelString} response length=${text.length} preview=${JSON.stringify(text.slice(0, 200))}`,
+  );
   if (!text) {
     // Surface as retryable so the cascade falls through.
     const empty: any = new Error(`empty response from ${modelString}`);
     empty.status = 502;
     throw empty;
+  }
+  // Content-validation. OpenRouter / OpenAI silently drop the `responseSchema`
+  // parameter (it's a Gemini-only feature), so an upstream model can return a
+  // 200 with JSON that's the wrong shape (e.g. echoing the user's input back
+  // as the output). Without this check the router would happily return that
+  // garbage and the client would surface an error. Treating shape mismatches
+  // as 502s lets the cascade fall through to the next entry — and ultimately
+  // to Gemini direct (which natively enforces the schema).
+  if (isJsonMode && cfg.responseSchema) {
+    const mismatch = (reason: string) => {
+      const e: any = new Error(`${modelString} response shape mismatch: ${reason}`);
+      e.status = 502;
+      return e;
+    };
+    const stripped = text
+      .trim()
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/\s*```$/i, "")
+      .trim();
+    const firstChar = stripped[0];
+    const expectedFirst = schemaIsArray ? "[" : "{";
+    if (firstChar !== expectedFirst) {
+      throw mismatch(
+        `expected first char "${expectedFirst}", got ${JSON.stringify(firstChar)}`,
+      );
+    }
+    // Try a fast structural check on the parsed top-level keys.
+    try {
+      const parsed = JSON.parse(stripped);
+      if (schemaIsArray && !Array.isArray(parsed)) {
+        throw mismatch(`expected array, got ${typeof parsed}`);
+      }
+      if (!schemaIsArray) {
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+          throw mismatch(`expected object, got ${Array.isArray(parsed) ? "array" : typeof parsed}`);
+        }
+        // If the schema declares required top-level keys, at least one of them
+        // must be present — otherwise the model has clearly hallucinated a
+        // different shape (this is what caught the input-echo bug).
+        const required = (cfg.responseSchema as any)?.required;
+        if (Array.isArray(required) && required.length > 0) {
+          const hasAny = required.some((k: string) => k in parsed);
+          if (!hasAny) {
+            throw mismatch(
+              `none of the required keys [${required.join(",")}] present (got keys: ${Object.keys(parsed).join(",") || "<none>"})`,
+            );
+          }
+        }
+      }
+    } catch (parseErr: any) {
+      // If JSON.parse blew up but the first char looked right, let
+      // parseAIResponse downstream heal it — don't trigger fallback for
+      // simple truncation. Only re-throw if we already wrapped it as a 502.
+      if (parseErr?.status === 502) throw parseErr;
+      console.warn(
+        `[aiOperationRouter] ${modelString} response JSON.parse failed, deferring to downstream healer:`,
+        parseErr?.message ?? parseErr,
+      );
+    }
   }
   return text;
 }

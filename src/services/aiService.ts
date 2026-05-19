@@ -10,6 +10,30 @@ import {
 } from "../data/riskTaxonomy";
 import toast from "react-hot-toast";
 
+/**
+ * Coerce a response that should be an array into an array, even if the
+ * model wrapped it in an object (e.g. `{ risks: [...] }` or `{ data: [...] }`).
+ * OpenAI's JSON mode strictly requires object responses, so even when we tell
+ * the model "return only an array" via system message, some upstreams still
+ * wrap. This unwrap is the last line of defence before the client returns
+ * an empty array and the UI shows "AI did not identify any new risks".
+ */
+export function coerceToArray<T = any>(result: unknown): T[] {
+  if (Array.isArray(result)) return result as T[];
+  if (result && typeof result === "object") {
+    // Try common wrapper keys first
+    for (const key of ["risks", "data", "results", "items", "array", "list", "response", "output"]) {
+      const v = (result as any)[key];
+      if (Array.isArray(v)) return v as T[];
+    }
+    // Fall back to the first array-valued property
+    for (const v of Object.values(result as any)) {
+      if (Array.isArray(v)) return v as T[];
+    }
+  }
+  return [];
+}
+
 export function handleAIError(err: any, context = "AI operation") {
   const msg: string = err?.message || String(err);
 
@@ -411,7 +435,7 @@ Generate risks with precise descriptions. For each risk:
   try {
     const res = await api.analyzeRisks(prompt, config);
     if (!res.success) throw new Error(res.error || "Analysis failed");
-    return Array.isArray(res.result) ? res.result : [];
+    return coerceToArray(res.result);
   } catch (err: any) {
     console.error("Risk Analysis Error:", err);
     handleAIError(err, "Risk analysis");
@@ -653,7 +677,7 @@ FORMATTING: NO MARKDOWN. No **bold**, no headers, no bullet points. Plain text o
   try {
     const res = await api.analyzeControls(prompt, config);
     if (!res.success) throw new Error(res.error || "Analysis failed");
-    return Array.isArray(res.result) ? res.result : [];
+    return coerceToArray(res.result);
   } catch (err: any) {
     console.error("Control Analysis Error:", err);
     handleAIError(err, "Control analysis");
@@ -776,7 +800,7 @@ export async function analyzeComplianceProgress(domainStats: any[]) {
   try {
     const res = await api.analyzeCompliance(prompt, config);
     if (!res.success) throw new Error(res.error || "Analysis failed");
-    return Array.isArray(res.result) ? res.result : [];
+    return coerceToArray(res.result);
   } catch (err: any) {
     console.error("Compliance Progress Analysis Error:", err);
     handleAIError(err, "Compliance progress analysis");
@@ -881,7 +905,7 @@ FORMATTING: NO MARKDOWN. No **bold**, no headers, no bullet points. All string f
     try {
       const res = await api.analyzeCompliance(prompt, config);
       if (!res.success) throw new Error(res.error || "Analysis failed");
-      return Array.isArray(res.result) ? res.result : [];
+      return coerceToArray(res.result);
     } catch (err: any) {
       console.error("Compliance Outlook Analysis Error:", err);
       handleAIError(err, "Compliance analysis");
@@ -913,7 +937,7 @@ WHAT: [specific action addressing the concern above] WHO: [named responsible rol
   try {
     const res = await api.analyzeRisks(prompt, config);
     if (!res.success) throw new Error(res.error || "Analysis failed");
-    return Array.isArray(res.result) ? res.result : [];
+    return coerceToArray(res.result);
   } catch (err: any) {
     console.error("Ad-hoc Risk Analysis Error:", err);
     handleAIError(err, "Analysis");

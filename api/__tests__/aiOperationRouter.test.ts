@@ -101,17 +101,21 @@ beforeEach(() => {
 // ── isRetryable predicate ────────────────────────────────────────────────
 
 describe('_internal.isRetryable', () => {
-  it('treats 429/503/529/404 as retryable', () => {
-    for (const status of [429, 502, 503, 504, 529, 404]) {
+  it('treats 400/429/502/503/504/529/404 as retryable', () => {
+    // 400 is in the retryable set because it means "this specific upstream
+    // model can't handle the request shape we sent" — the next cascade
+    // entry might accept the same payload (e.g. a different provider or a
+    // model that supports JSON mode), so we advance instead of giving up.
+    for (const status of [400, 429, 502, 503, 504, 529, 404]) {
       const e: any = new Error('x');
       e.status = status;
       expect(_internal.isRetryable(e)).toBe(true);
     }
   });
 
-  it('treats 400 / 401 as non-retryable (no message keyword)', () => {
-    const e: any = new Error('Bad Request');
-    e.status = 400;
+  it('treats 401 as non-retryable (no message keyword)', () => {
+    const e: any = new Error('Unauthorized');
+    e.status = 401;
     expect(_internal.isRetryable(e)).toBe(false);
   });
 
@@ -183,8 +187,13 @@ describe('runAIOperation cascade', () => {
   });
 
   it('propagates non-retryable errors without trying the rest of the chain', async () => {
-    const fatal: any = new Error('Invalid argument');
-    fatal.status = 400;
+    // 401 is still non-retryable (no auth-error message keyword either),
+    // so it propagates without the cascade trying entry b or the safety
+    // net. 400 used to be non-retryable here but is now reclassified as
+    // retryable to defeat the "first entry rejects JSON mode → whole
+    // pipeline fails" trap.
+    const fatal: any = new Error('Unauthorized');
+    fatal.status = 401;
     openaiCreate.mockRejectedValueOnce(fatal);
 
     await expect(
@@ -193,7 +202,7 @@ describe('runAIOperation cascade', () => {
           operationModelsOverride: [opEntry('a', 'provider/a'), opEntry('b', 'provider/b')],
         }),
       ),
-    ).rejects.toThrow(/Invalid argument/);
+    ).rejects.toThrow(/Unauthorized/);
 
     // Did NOT advance to entry b, and did NOT try the safety net.
     expect(openaiCreate).toHaveBeenCalledTimes(1);
