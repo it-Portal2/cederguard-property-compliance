@@ -220,11 +220,11 @@ export function AIInquiryPopup({ isOpen: controlledIsOpen, onClose: controlledOn
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-end p-4 pointer-events-none">
-      <div className="w-full max-w-lg h-[80vh] bg-white rounded-[32px] shadow-2xl border border-slate-100 flex flex-col pointer-events-auto animate-in slide-in-from-right-8 duration-500 overflow-hidden">
+      <div className="w-full max-w-lg h-[80vh] bg-white rounded-lg shadow-2xl border border-slate-100 flex flex-col pointer-events-auto animate-in slide-in-from-right-8 duration-500 overflow-hidden">
         {/* Header */}
         <div className="p-6 bg-slate-900 border-b border-slate-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-indigo-500 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+            <div className="w-12 h-12 bg-indigo-500 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20">
               <ServerCog className="w-7 h-7 text-white" />
             </div>
             <div>
@@ -238,7 +238,7 @@ export function AIInquiryPopup({ isOpen: controlledIsOpen, onClose: controlledOn
           </div>
           <button 
             onClick={handleClose}
-            className="p-2.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-all"
+            className="p-2.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all"
           >
             <X className="w-5 h-5" />
           </button>
@@ -255,13 +255,13 @@ export function AIInquiryPopup({ isOpen: controlledIsOpen, onClose: controlledOn
               )}
             >
               <div className={clsx(
-                "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-1 shadow-sm",
+                "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-1 shadow-sm",
                 msg.role === 'user' ? "bg-slate-200 text-slate-600" : "bg-indigo-600 text-white"
               )}>
                 {msg.role === 'user' ? <HelpCircle className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
               </div>
               <div className={clsx(
-                "p-4 rounded-2xl text-[13px] leading-relaxed font-medium shadow-sm border whitespace-pre-wrap relative group/msg",
+                "p-4 rounded-lg text-[13px] leading-relaxed font-medium shadow-sm border whitespace-pre-wrap relative group/msg",
                 msg.role === 'user' 
                   ? "bg-white border-slate-200 text-slate-700 rounded-tr-none" 
                   : "bg-gradient-to-br from-white to-indigo-50/30 border-indigo-100 text-slate-800 rounded-tl-none ring-4 ring-indigo-500/5"
@@ -286,10 +286,10 @@ export function AIInquiryPopup({ isOpen: controlledIsOpen, onClose: controlledOn
           ))}
           {isTyping && (
             <div className="flex gap-3 mr-auto max-w-[85%]">
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-1 bg-indigo-600 text-white shadow-sm">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-1 bg-indigo-600 text-white shadow-sm">
                 <ShieldCheck className="w-4 h-4 animate-pulse" />
               </div>
-              <div className="p-4 rounded-2xl bg-white border border-indigo-100 text-slate-400 flex items-center gap-2 rounded-tl-none font-medium text-xs">
+              <div className="p-4 rounded-lg bg-white border border-indigo-100 text-slate-400 flex items-center gap-2 rounded-tl-none font-medium text-xs">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" /> Analyzing requirements...
               </div>
             </div>
@@ -306,12 +306,12 @@ export function AIInquiryPopup({ isOpen: controlledIsOpen, onClose: controlledOn
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSend()}
               placeholder="Ask about your regulatory requirements..."
-              className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl pl-6 pr-14 py-4 text-sm font-semibold placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 transition-all"
+              className="w-full bg-slate-50 border-2 border-slate-100 rounded-lg pl-6 pr-14 py-4 text-sm font-semibold placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 transition-all"
             />
             <button 
               onClick={() => handleSend()}
               disabled={isTyping || !input.trim()}
-              className="absolute right-2 top-2 bottom-2 px-4 bg-slate-900 text-white rounded-xl flex items-center justify-center hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
+              className="absolute right-2 top-2 bottom-2 px-4 bg-slate-900 text-white rounded-lg flex items-center justify-center hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
             >
               <Send className="w-4 h-4" />
             </button>

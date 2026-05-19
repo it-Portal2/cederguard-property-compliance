@@ -138,7 +138,7 @@ export function EditorToolbar({ editor, aiContext }: EditorToolbarProps) {
   ];
 
   return (
-    <div className="sticky top-0 z-10 flex flex-wrap items-center gap-1 rounded-t-xl border-b border-slate-100 bg-white px-2 py-2 dark:border-slate-700 dark:bg-slate-800">
+    <div className="sticky top-0 z-10 flex flex-wrap items-center gap-1 rounded-t-lg border-b border-slate-100 bg-white px-2 py-2 dark:border-slate-700 dark:bg-slate-800">
       {buttons.map((b) => (
         <ToolbarButton key={b.label} button={b} />
       ))}

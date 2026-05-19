@@ -127,9 +127,9 @@ export function ProjectReport() {
     return p.pmId === user?.uid || p.projectManagerId === user?.uid || p.createdBy === user?.uid || p.createdBy === user?.email;  }).filter(p => !activeProgrammeId || p.programmeId === activeProgrammeId);
 
   return (
-    <div className="max-w-6xl mx-auto pb-20 print:p-0">
+    <div className="print:p-0">
       {/* ─── HEADER (Match 16.png) ───*/}
-      <div className="bg-white p-6 md:p-10 flex flex-col lg:flex-row justify-between items-start gap-8 rounded-t-[2rem] md:rounded-t-[3rem] print:rounded-none">
+      <div className="bg-white p-6 md:p-10 flex flex-col lg:flex-row justify-between items-start gap-8 rounded-t-lg md:rounded-t-lg print:rounded-none">
         <div className="space-y-6">
             <button 
                 onClick={() => navigate('/reporting/programme')}
@@ -147,7 +147,7 @@ export function ProjectReport() {
                 {/* Programme Selector for Client Admin/Admin*/}
                 {(userIsSuperAdmin || userRole === 'client_admin') && (
                   <div className="relative group w-full md:max-w-sm">
-                    <div className="flex items-center gap-3 px-4 py-2 bg-indigo-50 border border-indigo-200 rounded-xl hover:border-indigo-400 hover:bg-white transition-all cursor-pointer shadow-sm">
+                    <div className="flex items-center gap-3 px-4 py-2 bg-indigo-50 border border-indigo-200 rounded-lg hover:border-indigo-400 hover:bg-white transition-all cursor-pointer shadow-sm">
                         <Layers className="w-4 h-4 text-indigo-500 shrink-0 group-hover:text-indigo-600 transition-colors" />
                         <div className="relative flex-1 min-w-0">
                             <select
@@ -179,7 +179,7 @@ export function ProjectReport() {
 
                 {/* Project Selector*/}
                 <div className="relative group w-full md:max-w-sm">
-                    <div className="flex items-center gap-3 px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl hover:border-indigo-400 hover:bg-white transition-all cursor-pointer shadow-sm">
+                    <div className="flex items-center gap-3 px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg hover:border-indigo-400 hover:bg-white transition-all cursor-pointer shadow-sm">
                         <Building2 className="w-4 h-4 text-slate-400 shrink-0 group-hover:text-indigo-500 transition-colors" />
                         <div className="relative flex-1 min-w-0">
                             <select
@@ -219,7 +219,7 @@ export function ProjectReport() {
             {canCreateProgramme(userRole) && (
               <Link 
                 to="/programmes/new"
-                className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 transition-all active:scale-95 whitespace-nowrap"
+                className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 transition-all active:scale-95 whitespace-nowrap"
               >
                 <Plus size={14} />
                 New Programme
@@ -229,20 +229,20 @@ export function ProjectReport() {
             {canCreateProject(userRole) && (
               <Link 
                 to="/initiate"
-                className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-slate-200 hover:bg-slate-800 transition-all active:scale-95 whitespace-nowrap"
+                className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-lg font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-slate-200 hover:bg-slate-800 transition-all active:scale-95 whitespace-nowrap"
               >
                 <PlusCircle size={14} />
                 New Project
               </Link>
             )}
 
-            <button onClick={() => window.print()} className="flex items-center justify-center gap-3 px-8 py-3.5 bg-[#111827] text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-slate-200 active:scale-95">
+            <button onClick={() => window.print()} className="flex items-center justify-center gap-3 px-8 py-3.5 bg-[#111827] text-white rounded-lg text-[11px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-slate-200 active:scale-95">
                 <Download className="w-4 h-4" /> Export Report
             </button>
         </div>
       </div>
 
-      <div className="bg-white p-6 md:p-10 pt-0 space-y-12 rounded-b-[2rem] md:rounded-b-[3rem] shadow-sm print:shadow-none italic font-medium">
+      <div className="bg-white p-6 md:p-10 pt-0 space-y-12 rounded-b-lg md:rounded-b-lg shadow-sm print:shadow-none italic font-medium">
         <div className="h-2 bg-[#111827] rounded-full w-full mb-12 opacity-10" />
 
         {!activeProjectId ? (
@@ -259,9 +259,9 @@ export function ProjectReport() {
             <>
                 {/* ─── KEY PERFORMANCE INDICATORS ───*/}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
-                    <div className="bg-rose-50/50 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 border border-rose-100/50 flex flex-col justify-between min-h-[160px] md:min-h-[200px] shadow-sm">
+                    <div className="bg-rose-50/50 rounded-lg md:rounded-lg p-6 md:p-10 border border-rose-100/50 flex flex-col justify-between min-h-[160px] md:min-h-[200px] shadow-sm">
                         <div className="flex justify-between items-start">
-                            <div className="p-3 bg-white rounded-2xl shadow-sm">
+                            <div className="p-3 bg-white rounded-lg shadow-sm">
                                 <AlertCircle className="w-6 h-6 text-rose-500" />
                             </div>
                             <div className="text-3xl md:text-4xl font-black text-[#111827] tracking-tighter tabular-nums">{highRisks.length}</div>
@@ -272,9 +272,9 @@ export function ProjectReport() {
                         </div>
                     </div>
 
-                    <div className="bg-indigo-50/50 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 border border-indigo-100/50 flex flex-col justify-between min-h-[160px] md:min-h-[200px] shadow-sm">
+                    <div className="bg-indigo-50/50 rounded-lg md:rounded-lg p-6 md:p-10 border border-indigo-100/50 flex flex-col justify-between min-h-[160px] md:min-h-[200px] shadow-sm">
                         <div className="flex justify-between items-start">
-                            <div className="p-3 bg-white rounded-2xl shadow-sm">
+                            <div className="p-3 bg-white rounded-lg shadow-sm">
                                 <PoundSterling className="w-6 h-6 text-indigo-500" />
                             </div>
                             <div className="text-3xl md:text-4xl font-black text-[#111827] tracking-tighter tabular-nums">{fGBP(totalALE)}</div>
@@ -285,9 +285,9 @@ export function ProjectReport() {
                         </div>
                     </div>
 
-                    <div className="bg-emerald-50/50 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 border border-emerald-100/50 flex flex-col justify-between min-h-[160px] md:min-h-[200px] shadow-sm">
+                    <div className="bg-emerald-50/50 rounded-lg md:rounded-lg p-6 md:p-10 border border-emerald-100/50 flex flex-col justify-between min-h-[160px] md:min-h-[200px] shadow-sm">
                         <div className="flex justify-between items-start">
-                            <div className="p-3 bg-white rounded-2xl shadow-sm">
+                            <div className="p-3 bg-white rounded-lg shadow-sm">
                                 <ShieldCheck className="w-6 h-6 text-emerald-500" />
                             </div>
                             <div className="text-3xl md:text-4xl font-black text-[#111827] tracking-tighter tabular-nums">{compPct}%</div>
@@ -308,7 +308,7 @@ export function ProjectReport() {
                         <div className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Showing {projectRisks.length} active risks</div>
                     </div>
 
-                    <div className="border border-slate-100 rounded-[1.5rem] md:rounded-[2rem] overflow-hidden shadow-sm">
+                    <div className="border border-slate-100 rounded-lg md:rounded-lg overflow-hidden shadow-sm">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left min-w-[800px] lg:min-w-0">
                             <thead className="bg-[#111827] text-white text-[9px] font-black uppercase tracking-[0.2em]">
@@ -363,7 +363,7 @@ export function ProjectReport() {
                         <h2 className="text-xl font-black text-[#111827] flex items-center gap-3">
                             <ShieldCheck className="w-6 h-6 text-emerald-600" /> Compliance Performance
                         </h2>
-                        <div className="bg-white border border-slate-100 rounded-[1.5rem] md:rounded-[2.5rem] p-6 md:p-10 shadow-sm space-y-8">
+                        <div className="bg-white border border-slate-100 rounded-lg md:rounded-lg p-6 md:p-10 shadow-sm space-y-8">
                             {/* Compliance Items Overview*/}
                             <div className="space-y-4">
                                 {projectCompliance.slice(0, 5).map((item: any, idx) => (
@@ -395,11 +395,11 @@ export function ProjectReport() {
                             </div>
 
                             <div className="pt-8 border-t border-slate-50 flex gap-6">
-                                <div className="flex-1 text-center py-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                <div className="flex-1 text-center py-4 bg-slate-50 rounded-lg border border-slate-100">
                                     <div className="text-2xl font-black text-[#111827]">{projectCompliance.length}</div>
                                     <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Req.</div>
                                 </div>
-                                <div className="flex-1 text-center py-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                <div className="flex-1 text-center py-4 bg-slate-50 rounded-lg border border-slate-100">
                                     <div className="text-2xl font-black text-emerald-600">{compComplete}</div>
                                     <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Complete</div>
                                 </div>
@@ -412,7 +412,7 @@ export function ProjectReport() {
                         <h2 className="text-xl font-black text-[#111827] flex items-center gap-3">
                             <BarChart className="w-6 h-6 text-indigo-500" /> Exposure by Category
                         </h2>
-                        <div className="bg-white border border-slate-100 rounded-[1.5rem] md:rounded-[2.5rem] p-6 md:p-10 shadow-sm h-full max-h-[460px]">
+                        <div className="bg-white border border-slate-100 rounded-lg md:rounded-lg p-6 md:p-10 shadow-sm h-full max-h-[460px]">
                             {categoryData.length > 0 ? (
                                 <ResponsiveContainer width="100%" height={300}>
                                     <RechartsBarChart data={categoryData} layout="vertical">
@@ -434,10 +434,10 @@ export function ProjectReport() {
                 </div>
 
                 {/* ─── AI STRATEGIC INTELLIGENCE (New Tabbed Interface) ───*/}
-                <div className="bg-slate-50/50 rounded-[2rem] md:rounded-[3rem] border border-slate-200/60 p-6 md:p-10 mt-12 transition-all hover:bg-white hover:shadow-xl hover:shadow-indigo-500/5">
+                <div className="bg-slate-50/50 rounded-lg md:rounded-lg border border-slate-200/60 p-6 md:p-10 mt-12 transition-all hover:bg-white hover:shadow-xl hover:shadow-indigo-500/5">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 pb-6 border-b border-slate-100">
                         <div className="flex items-center gap-4">
-                            <div className="p-3 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-200">
+                            <div className="p-3 bg-indigo-600 rounded-lg shadow-lg shadow-indigo-200">
                                 <Target className="w-6 h-6 text-white" />
                             </div>
                             <div>
@@ -446,13 +446,13 @@ export function ProjectReport() {
                             </div>
                         </div>
 
-                        <div className="flex bg-slate-100 p-1 rounded-xl md:rounded-2xl gap-1 self-stretch md:self-auto overflow-x-auto hide-scrollbar whitespace-nowrap">
+                        <div className="flex bg-slate-100 p-1 rounded-lg md:rounded-lg gap-1 self-stretch md:self-auto overflow-x-auto hide-scrollbar whitespace-nowrap">
                             {(['sensitivity', 'lifecycle', 'sentiment'] as const).map((tab) => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveAiTab(tab)}
                                     className={clsx(
-                                        "flex-1 md:flex-none px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                                        "flex-1 md:flex-none px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
                                         activeAiTab === tab 
                                             ? "bg-white text-indigo-600 shadow-sm ring-1 ring-slate-200" 
                                             : "text-slate-500 hover:text-slate-800"
@@ -497,7 +497,7 @@ export function ProjectReport() {
 
 
                                     {projectRisks.length === 0 ? (
-                                        <div className="mt-4 p-4 bg-slate-100 rounded-2xl border border-slate-200">
+                                        <div className="mt-4 p-4 bg-slate-100 rounded-lg border border-slate-200">
                                             <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">
                                                 Insufficient Data: Please log project risks to run sensitivity analysis.
                                             </p>
@@ -516,7 +516,7 @@ export function ProjectReport() {
                                                     setAiError(err instanceof ApiError ? err : (err.message || "An error occurred during analysis."));
                                                 } finally { setIsAnalyzing(false); }
                                             }}
-                                            className="mt-4 px-8 py-3.5 bg-[#111827] text-white text-[11px] font-black uppercase tracking-widest rounded-2xl hover:bg-black shadow-xl active:scale-95 transition-all"
+                                            className="mt-4 px-8 py-3.5 bg-[#111827] text-white text-[11px] font-black uppercase tracking-widest rounded-lg hover:bg-black shadow-xl active:scale-95 transition-all"
                                         >
                                             <Database className="w-4 h-4 inline mr-2" /> Run Sensitivity Analysis
                                         </button>
@@ -525,7 +525,7 @@ export function ProjectReport() {
 
                                 {(isAnalyzing || analysisResults) && (
                                     <div className="grid grid-cols-1 gap-6">
-                                        <div className="bg-white rounded-[1.5rem] md:rounded-[2.5rem] border border-slate-100 p-6 md:p-10 shadow-sm relative overflow-hidden">
+                                        <div className="bg-white rounded-lg md:rounded-lg border border-slate-100 p-6 md:p-10 shadow-sm relative overflow-hidden">
                                             {isAnalyzing && (
                                                 <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10">
                                                     <div className="flex flex-col items-center gap-4">
@@ -541,14 +541,14 @@ export function ProjectReport() {
                                                 </h3>
                                                 
                                                 {analysisResults?.summary && (
-                                                    <p className="text-sm text-slate-600 font-medium italic mb-6 bg-slate-50 p-4 rounded-2xl border-l-4 border-indigo-500">
+                                                    <p className="text-sm text-slate-600 font-medium italic mb-6 bg-slate-50 p-4 rounded-lg border-l-4 border-indigo-500">
                                                         "{stripMarkdown(analysisResults.summary)}"
                                                     </p>
                                                 )}
 
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                                                     {analysisResults?.guardrails?.map((g: any, i: number) => (
-                                                        <div key={i} className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100 hover:bg-white hover:shadow-md transition-all">
+                                                        <div key={i} className="p-4 bg-slate-50/50 rounded-lg border border-slate-100 hover:bg-white hover:shadow-md transition-all">
                                                             <div className="flex items-center gap-2 mb-2">
                                                                 <span className="w-5 h-5 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center text-[10px] font-black">{i + 1}</span>
                                                                 <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-wider">{stripMarkdown(g.title)}</h4>
@@ -562,7 +562,7 @@ export function ProjectReport() {
                                                 {analysisResults?.volatilityAnalysis && (
                                                     <div className="mb-8">
                                                         <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Latent Volatility Analysis</h4>
-                                                        <p className="text-xs text-slate-600 leading-relaxed bg-indigo-50/30 p-4 rounded-2xl border border-indigo-100/50">
+                                                        <p className="text-xs text-slate-600 leading-relaxed bg-indigo-50/30 p-4 rounded-lg border border-indigo-100/50">
                                                             {stripMarkdown(analysisResults.volatilityAnalysis)}
                                                         </p>
                                                     </div>
@@ -620,7 +620,7 @@ export function ProjectReport() {
                                     )}
 
                                     {projectCompliance.length === 0 ? (
-                                        <div className="mt-4 p-4 bg-slate-100 rounded-2xl border border-slate-200">
+                                        <div className="mt-4 p-4 bg-slate-100 rounded-lg border border-slate-200">
                                             <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">
                                                 Insufficient Data: Please log compliance items to run lifecycle analysis.
                                             </p>
@@ -638,7 +638,7 @@ export function ProjectReport() {
                                                     setAiError(err instanceof ApiError ? err : (err.message || "An error occurred during analysis."));
                                                 } finally { setIsAnalyzingLifecycle(false); }
                                             }}
-                                            className="mt-4 px-8 py-3.5 bg-indigo-600 text-white text-[11px] font-black uppercase tracking-widest rounded-2xl hover:bg-indigo-700 shadow-xl active:scale-95 transition-all"
+                                            className="mt-4 px-8 py-3.5 bg-indigo-600 text-white text-[11px] font-black uppercase tracking-widest rounded-lg hover:bg-indigo-700 shadow-xl active:scale-95 transition-all"
                                         >
                                             <Layers className="w-4 h-4 inline mr-2" /> Analyse RIBA Stages
                                         </button>
@@ -648,7 +648,7 @@ export function ProjectReport() {
                                 {(isAnalyzingLifecycle || lifecycleResults) && (
                                     <div className="space-y-10 relative">
                                         {isAnalyzingLifecycle && (
-                                            <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-10 rounded-[2.5rem]">
+                                            <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg">
                                                 <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
                                             </div>
                                         )}
@@ -657,7 +657,7 @@ export function ProjectReport() {
                                             <>
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                     {(Array.isArray(lifecycleResults?.lifecycleRoadmap) ? lifecycleResults.lifecycleRoadmap : []).map((item: any, i: number) => (
-                                                        <div key={i} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col gap-3 group hover:border-indigo-200 transition-colors">
+                                                        <div key={i} className="bg-white p-6 rounded-lg border border-slate-100 shadow-sm flex flex-col gap-3 group hover:border-indigo-200 transition-colors">
                                                             <div className="flex justify-between items-start">
                                                                 <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-2 py-1 rounded-lg">{item.stage}</span>
                                                                 <span className="text-[9px] font-bold text-slate-400">Responsible: {item.responsible}</span>
@@ -667,7 +667,7 @@ export function ProjectReport() {
                                                         </div>
                                                     ))}
                                                 </div>
-                                                <div className="bg-amber-50/50 p-8 rounded-[2.5rem] border border-amber-100/50">
+                                                <div className="bg-amber-50/50 p-8 rounded-lg border border-amber-100/50">
                                                     <h4 className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-4 flex items-center gap-2">
                                                         <AlertTriangle className="w-3.5 h-3.5" /> Predicted Stage-Gate Bottlenecks
                                                     </h4>
@@ -714,7 +714,7 @@ export function ProjectReport() {
                                     )}
 
                                     {projectCompliance.length === 0 ? (
-                                        <div className="mt-4 p-4 bg-slate-100 rounded-2xl border border-slate-200">
+                                        <div className="mt-4 p-4 bg-slate-100 rounded-lg border border-slate-200">
                                             <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">
                                                 Insufficient Data: Please log compliance items to run sentiment analysis.
                                             </p>
@@ -732,7 +732,7 @@ export function ProjectReport() {
                                                     setAiError(err instanceof ApiError ? err : (err.message || "An error occurred during analysis."));
                                                 } finally { setIsAnalyzingSentiment(false); }
                                             }}
-                                            className="mt-4 px-8 py-3.5 bg-emerald-600 text-white text-[11px] font-black uppercase tracking-widest rounded-2xl hover:bg-emerald-700 shadow-xl active:scale-95 transition-all"
+                                            className="mt-4 px-8 py-3.5 bg-emerald-600 text-white text-[11px] font-black uppercase tracking-widest rounded-lg hover:bg-emerald-700 shadow-xl active:scale-95 transition-all"
                                         >
                                             <Shield className="w-4 h-4 inline mr-2" /> Audit Sentiment
                                         </button>
@@ -742,7 +742,7 @@ export function ProjectReport() {
                                 {(isAnalyzingSentiment || sentimentResults) && (
                                     <div className="space-y-8 relative">
                                         {isAnalyzingSentiment && (
-                                            <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-10 rounded-[2.5rem]">
+                                            <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg">
                                                 <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
                                             </div>
                                         )}
@@ -750,7 +750,7 @@ export function ProjectReport() {
                                         {sentimentResults && (
                                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                                                 <div className="lg:col-span-1 space-y-6">
-                                                    <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm text-center space-y-4">
+                                                    <div className="bg-white p-8 rounded-lg border border-slate-100 shadow-sm text-center space-y-4">
                                                         <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Confidence Score</div>
                                                         <div className={clsx(
                                                             "text-6xl font-black tabular-nums",
@@ -763,14 +763,14 @@ export function ProjectReport() {
                                                             Tone: {sentimentResults.sentimentTone}
                                                         </div>
                                                     </div>
-                                                    <div className="bg-[#111827] p-8 rounded-[2.5rem] text-white">
+                                                    <div className="bg-[#111827] p-8 rounded-lg text-white">
                                                         <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-4">Auditor Note</h4>
                                                         <p className="text-xs font-medium leading-[1.8] italic opacity-80">{sentimentResults.auditorNote}</p>
                                                     </div>
                                                 </div>
                                                 
                                                 <div className="lg:col-span-2 space-y-6">
-                                                    <div className="bg-white p-6 md:p-10 rounded-[1.5rem] md:rounded-[2.5rem] border border-slate-100 shadow-sm">
+                                                    <div className="bg-white p-6 md:p-10 rounded-lg md:rounded-lg border border-slate-100 shadow-sm">
                                                         <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-6 pb-4 border-b">Audit Rationale (Executive Findings)</h4>
                                                         <div className="space-y-4">
                                                             {(Array.isArray(sentimentResults?.rationale) ? sentimentResults.rationale : []).map((r: string, i: number) => (
@@ -792,7 +792,7 @@ export function ProjectReport() {
                 </div>
 
                 {/* ─── EXECUTIVE INTERNAL AUDIT ───*/}
-                <div className="bg-[#111827] rounded-[2rem] md:rounded-[3rem] p-8 md:p-12 mt-12 mb-12 text-white flex flex-col md:flex-row justify-between items-center gap-8 shadow-2xl shadow-slate-900/20 print:hidden relative overflow-hidden transition-all hover:bg-black group/audit">
+                <div className="bg-[#111827] rounded-lg md:rounded-lg p-8 md:p-12 mt-12 mb-12 text-white flex flex-col md:flex-row justify-between items-center gap-8 shadow-2xl shadow-slate-900/20 print:hidden relative overflow-hidden transition-all hover:bg-black group/audit">
                     {/* Abstract background glow*/}
                     <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 blur-[80px] -mr-32 -mt-32 rounded-full" />
                     
@@ -814,7 +814,7 @@ export function ProjectReport() {
                                     navigate('/project/initiation');
                                 }
                             }}
-                            className="flex items-center gap-4 px-10 py-5 bg-indigo-600 text-white rounded-[1.5rem] font-black text-[12px] uppercase tracking-[0.2em] shadow-xl shadow-indigo-500/20 hover:bg-indigo-500 hover:shadow-indigo-500/40 transition-all active:scale-95 group/btn"
+                            className="flex items-center gap-4 px-10 py-5 bg-indigo-600 text-white rounded-lg font-black text-[12px] uppercase tracking-[0.2em] shadow-xl shadow-indigo-500/20 hover:bg-indigo-500 hover:shadow-indigo-500/40 transition-all active:scale-95 group/btn"
                         >
                             <span>Open Audit Interface</span>
                             <ArrowRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-2" />

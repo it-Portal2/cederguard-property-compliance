@@ -59,7 +59,7 @@ export function KRIModal({ isOpen, onClose, onSave, initialData }: KRIModalProps
 
     return (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col my-8">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col my-8">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-slate-100 shrink-0">
                     <div>
@@ -196,12 +196,12 @@ export function KRIModal({ isOpen, onClose, onSave, initialData }: KRIModalProps
                     </div>
                 </div>
 
-                <div className="p-6 border-t border-slate-100 bg-slate-50 rounded-b-2xl flex justify-end gap-3 shrink-0">
-                    <button onClick={onClose} disabled={isSubmitting} className="px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                <div className="p-6 border-t border-slate-100 bg-slate-50 rounded-b-lg flex justify-end gap-3 shrink-0">
+                    <button onClick={onClose} disabled={isSubmitting} className="px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                         Cancel
                     </button>
                     <button onClick={handleSave} disabled={!formData.name || isSubmitting}
-                        className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center justify-center min-w-[120px]">
+                        className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center justify-center min-w-[120px]">
                         {isSubmitting ? (
                             <Loader2 className="w-5 h-5 animate-spin" />
                         ) : initialData ? (

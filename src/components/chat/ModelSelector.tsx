@@ -86,7 +86,7 @@ export function ModelSelector({
         aria-expanded={open}
         aria-label={`Model: ${selected.label}`}
         className={clsx(
-          "inline-flex items-center gap-1.5 h-8 px-2.5 rounded-xl text-xs font-medium transition-colors",
+          "inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-xs font-medium transition-colors",
           "min-w-0 max-w-[180px]",
           open
             ? "bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-slate-100"
@@ -117,7 +117,7 @@ export function ModelSelector({
             className={clsx(
               "absolute bottom-full right-0 mb-2 z-50",
               "w-[320px] max-w-[calc(100vw-2rem)] max-h-[60vh] overflow-y-auto",
-              "rounded-2xl border border-slate-200 dark:border-slate-700",
+              "rounded-lg border border-slate-200 dark:border-slate-700",
               "bg-white dark:bg-slate-900 shadow-lg p-1.5 origin-bottom-right",
             )}
           >
@@ -133,7 +133,7 @@ export function ModelSelector({
                   disabled={option.disabled}
                   title={option.disabled ? option.disabledReason : undefined}
                   className={clsx(
-                    "w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-left transition-colors",
+                    "w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-left transition-colors",
                     option.disabled
                       ? "cursor-not-allowed opacity-50"
                       : "hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer",

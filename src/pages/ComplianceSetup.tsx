@@ -39,7 +39,7 @@ function CheckPill({
   return (
     <label
       className={clsx(
-        "flex items-start gap-3 p-3 sm:p-4 rounded-xl border cursor-pointer transition-all select-none text-sm font-semibold min-w-0",
+        "flex items-start gap-3 p-3 sm:p-4 rounded-lg border cursor-pointer transition-all select-none text-sm font-semibold min-w-0",
         checked
           ? "bg-indigo-600 border-indigo-600 text-white shadow-md"
           : "bg-white border-slate-200 text-slate-600 hover:border-indigo-400 hover:bg-slate-50",
@@ -80,7 +80,7 @@ function PhaseHeader({ num, title }: { num: number; title: string }) {
 
 // ─── Form field wrappers
 const inputCls =
-  "w-full border border-slate-200 rounded-2xl px-6 py-4 text-sm font-medium focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white/80 backdrop-blur-sm placeholder:text-slate-400 shadow-sm hover:border-slate-300";
+  "w-full border border-slate-200 rounded-lg px-6 py-4 text-sm font-medium focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white/80 backdrop-blur-sm placeholder:text-slate-400 shadow-sm hover:border-slate-300";
 const labelCls =
   "block text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3 ml-2 opacity-70";
 
@@ -1284,10 +1284,10 @@ export function ComplianceSetup() {
 
   return (
     <>
-      <div className="relative pt-6 sm:pt-10 pb-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-visible">
+      <div className="relative space-y-6 overflow-visible">
         {!!loadingStep && (
           <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-            <div className="bg-white p-12 rounded-[40px] shadow-2xl border border-slate-100 flex flex-col items-center gap-8 max-w-sm w-full mx-4 text-center transform scale-100 animate-in zoom-in-95 duration-300">
+            <div className="bg-white p-12 rounded-lg shadow-2xl border border-slate-100 flex flex-col items-center gap-8 max-w-sm w-full mx-4 text-center transform scale-100 animate-in zoom-in-95 duration-300">
               <div className="relative">
                 <div className="w-24 h-24 border-4 border-indigo-100 rounded-full animate-spin border-t-indigo-600"></div>
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -1314,9 +1314,9 @@ export function ComplianceSetup() {
         {/* Restart Confirmation Dialog*/}
         {showRestartConfirm && (
           <div className="fixed inset-0 z-110 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-md w-full overflow-hidden animate-in zoom-in duration-300">
+            <div className="bg-white rounded-lg shadow-2xl border border-slate-100 max-w-md w-full overflow-hidden animate-in zoom-in duration-300">
               <div className="p-8 text-center">
-                <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-6 ring-4 ring-white shadow-lg shadow-red-100">
+                <div className="w-16 h-16 bg-red-50 rounded-lg flex items-center justify-center mx-auto mb-6 ring-4 ring-white shadow-lg shadow-red-100">
                   <AlertTriangle className="w-8 h-8 text-red-500" />
                 </div>
                 <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-3">
@@ -1328,13 +1328,13 @@ export function ComplianceSetup() {
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => setShowRestartConfirm(false)}
-                    className="w-full px-6 py-4 bg-slate-100 text-slate-700 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all active:scale-95"
+                    className="w-full px-6 py-4 bg-slate-100 text-slate-700 rounded-lg font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all active:scale-95"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleRestartConfirmed}
-                    className="w-full px-6 py-4 bg-red-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-700 transition-all hover:shadow-xl hover:shadow-red-200 active:scale-95"
+                    className="w-full px-6 py-4 bg-red-600 text-white rounded-lg font-black text-xs uppercase tracking-widest hover:bg-red-700 transition-all hover:shadow-xl hover:shadow-red-200 active:scale-95"
                   >
                     Yes, Restart
                   </button>
@@ -1345,7 +1345,7 @@ export function ComplianceSetup() {
         )}
         {isRestarting && (
           <div className="fixed inset-0 z-110 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-4 max-w-xs w-full mx-4">
+            <div className="bg-white rounded-lg shadow-2xl p-8 flex flex-col items-center gap-4 max-w-xs w-full mx-4">
               <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
               <div className="text-center">
                 <p className="text-sm font-black text-slate-800 uppercase tracking-wider">Clearing Analysis Data</p>
@@ -1356,7 +1356,7 @@ export function ComplianceSetup() {
         )}
         {isDataLoading && !loadingStep && !isRestarting && (
           <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white rounded-2xl shadow-xl p-8 flex flex-col items-center gap-4 max-w-xs w-full mx-4">
+            <div className="bg-white rounded-lg shadow-xl p-8 flex flex-col items-center gap-4 max-w-xs w-full mx-4">
               <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
               <p className="text-sm font-bold text-slate-600 uppercase tracking-wider">Loading...</p>
             </div>
@@ -1365,9 +1365,9 @@ export function ComplianceSetup() {
         {/* Existing Analysis Overlay*/}
         {showAnalysisExists && (
           <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md">
-            <div className="bg-white rounded-3xl sm:rounded-[40px] shadow-2xl border border-slate-100 max-w-2xl w-full overflow-hidden animate-in fade-in zoom-in duration-500">
+            <div className="bg-white rounded-lg sm:rounded-lg shadow-2xl border border-slate-100 max-w-2xl w-full overflow-hidden animate-in fade-in zoom-in duration-500">
               <div className="p-6 sm:p-10 text-center">
-                <div className="w-20 h-20 bg-indigo-50 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-xl shadow-indigo-100 ring-4 ring-white">
+                <div className="w-20 h-20 bg-indigo-50 rounded-lg flex items-center justify-center mx-auto mb-8 shadow-xl shadow-indigo-100 ring-4 ring-white">
                   <ShieldCheck className="w-10 h-10 text-indigo-600" />
                 </div>
                 <h3 className="text-3xl font-black text-slate-900 tracking-tight mb-4">
@@ -1388,14 +1388,14 @@ export function ComplianceSetup() {
                           : `/compliance/dashboard?type=project${fromInitiation ? "&from=initiation" : ""}`,
                       )
                     }
-                    className="w-full flex items-center justify-center gap-3 px-8 py-5 bg-emerald-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all hover:bg-emerald-700 hover:shadow-2xl active:scale-95"
+                    className="w-full flex items-center justify-center gap-3 px-8 py-5 bg-emerald-600 text-white rounded-lg font-black text-xs uppercase tracking-[0.2em] transition-all hover:bg-emerald-700 hover:shadow-2xl active:scale-95"
                   >
                     View Compliance Dashboard <ArrowRight className="w-4 h-4" />
                   </button>
                   <button
                     onClick={handleRestart}
                     disabled={loading}
-                    className="w-full flex items-center justify-center gap-3 px-8 py-5 bg-white text-slate-900 border-2 border-slate-100 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all hover:bg-slate-50 hover:border-slate-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                    className="w-full flex items-center justify-center gap-3 px-8 py-5 bg-white text-slate-900 border-2 border-slate-100 rounded-lg font-black text-xs uppercase tracking-[0.2em] transition-all hover:bg-slate-50 hover:border-slate-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
                   >
                     Restart Analysis
                   </button>
@@ -1423,7 +1423,7 @@ export function ComplianceSetup() {
                             : "/initiate",
                         );
                       }}
-                      className="flex items-center gap-2 px-6 py-3 bg-emerald-50 text-emerald-700 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-100 transition-all border border-emerald-100 disabled:opacity-50 disabled:pointer-events-none"
+                      className="flex items-center gap-2 px-6 py-3 bg-emerald-50 text-emerald-700 rounded-lg font-black text-[10px] uppercase tracking-widest hover:bg-emerald-100 transition-all border border-emerald-100 disabled:opacity-50 disabled:pointer-events-none"
                     >
                       <CheckCircle2 className="w-4 h-4" /> Continue to
                       Initiation Step 3
@@ -1448,12 +1448,12 @@ export function ComplianceSetup() {
           </div>
         )}
 
-        <div className="space-y-6 sm:space-y-8 max-w-7xl mx-auto pb-12 overflow-visible">
+        <div className="space-y-6 sm:space-y-8 overflow-visible">
           {fromInitiation && (
             <div className="flex justify-start mb-0 -mt-2">
               <Link
                 to={activeProjectId ? "/initiate" : "/programmes/new"}
-                className="flex items-center gap-2 px-5 py-3 bg-slate-900 text-white rounded-xl sm:rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-slate-200 hover:bg-indigo-600 transition-all active:scale-95 animate-in fade-in slide-in-from-right-4 duration-700"
+                className="flex items-center gap-2 px-5 py-3 bg-slate-900 text-white rounded-lg sm:rounded-lg font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-slate-200 hover:bg-indigo-600 transition-all active:scale-95 animate-in fade-in slide-in-from-right-4 duration-700"
               >
                 <ArrowLeft className="w-4 h-4" />{" "}
                 <span className="hidden sm:inline">
@@ -1508,7 +1508,7 @@ export function ComplianceSetup() {
                         }
                       }}
                       className={clsx(
-                        "flex items-center gap-2 px-4 py-2.5 rounded-2xl transition-all duration-500 group/step",
+                        "flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-500 group/step",
                         isActive
                           ? "bg-slate-900 text-white shadow-xl shadow-slate-200"
                           : isPast
@@ -1589,7 +1589,7 @@ export function ComplianceSetup() {
 
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pt-4 pb-2">
             <div className="flex items-center gap-5">
-              <div className="w-16 h-16 bg-white rounded-3xl shadow-xl shadow-slate-200/60 flex items-center justify-center border border-slate-100 animate-in zoom-in duration-700">
+              <div className="w-16 h-16 bg-white rounded-lg shadow-xl shadow-slate-200/60 flex items-center justify-center border border-slate-100 animate-in zoom-in duration-700">
                 <ClipboardList className="w-8 h-8 text-indigo-600" />
               </div>
               <div>
@@ -1615,7 +1615,7 @@ export function ComplianceSetup() {
             </div>
 
             <div className="hidden lg:block">
-              <div className="bg-white/50 backdrop-blur-sm px-6 py-4 rounded-3xl border border-slate-200/60 shadow-sm max-w-md">
+              <div className="bg-white/50 backdrop-blur-sm px-6 py-4 rounded-lg border border-slate-200/60 shadow-sm max-w-md">
                 <p className="text-xs text-slate-500 font-medium leading-relaxed">
                   {phase === 1
                     ? "Define the scope and core metadata for your compliance assessment."
@@ -1664,7 +1664,7 @@ export function ComplianceSetup() {
           {/* ─── Publication & Completion ───*/}
           {phase === 4 && (
             <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in zoom-in duration-700 pb-20">
-              <div className="bg-slate-900 rounded-[4rem] p-12 text-white relative overflow-hidden shadow-2xl shadow-slate-900/40">
+              <div className="bg-slate-900 rounded-lg p-12 text-white relative overflow-hidden shadow-2xl shadow-slate-900/40">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/20 rounded-full blur-3xl -mr-32 -mt-32"></div>
                 <div className="relative z-10 flex flex-col items-center text-center space-y-8">
                   <div className="w-24 h-24 bg-emerald-500 rounded-4xl flex items-center justify-center shadow-xl shadow-emerald-500/20">
@@ -1682,7 +1682,7 @@ export function ComplianceSetup() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full pt-8">
-                    <div className="bg-white/5 border border-white/10 rounded-3xl p-6">
+                    <div className="bg-white/5 border border-white/10 rounded-lg p-6">
                       <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
                         Requirements
                       </p>
@@ -1690,7 +1690,7 @@ export function ComplianceSetup() {
                         {complianceItems.length}
                       </p>
                     </div>
-                    <div className="bg-white/5 border border-white/10 rounded-3xl p-6">
+                    <div className="bg-white/5 border border-white/10 rounded-lg p-6">
                       <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
                         Authorities
                       </p>
@@ -1699,7 +1699,7 @@ export function ComplianceSetup() {
                           0}
                       </p>
                     </div>
-                    <div className="bg-white/5 border border-white/10 rounded-3xl p-6">
+                    <div className="bg-white/5 border border-white/10 rounded-lg p-6">
                       <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
                         Confidence
                       </p>
@@ -1713,7 +1713,7 @@ export function ComplianceSetup() {
                     <button
                       onClick={publishFramework}
                       disabled={loading}
-                      className="flex items-center gap-3 px-10 py-5 bg-emerald-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-emerald-600 transition-all active:scale-95 shadow-xl shadow-emerald-500/20 disabled:opacity-50"
+                      className="flex items-center gap-3 px-10 py-5 bg-emerald-500 text-white rounded-lg font-black text-xs uppercase tracking-[0.2em] hover:bg-emerald-600 transition-all active:scale-95 shadow-xl shadow-emerald-500/20 disabled:opacity-50"
                     >
                       {loading && !loadingStep ? (
                         <>
@@ -1727,7 +1727,7 @@ export function ComplianceSetup() {
                     </button>
                     <button
                       onClick={() => setPhase(3)}
-                      className="flex items-center gap-3 px-10 py-5 bg-white/10 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-white/20 transition-all active:scale-95 border border-white/10"
+                      className="flex items-center gap-3 px-10 py-5 bg-white/10 text-white rounded-lg font-black text-xs uppercase tracking-[0.2em] hover:bg-white/20 transition-all active:scale-95 border border-white/10"
                     >
                       <ArrowLeft className="w-4 h-4" /> Return to Review
                     </button>
@@ -1736,7 +1736,7 @@ export function ComplianceSetup() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8">
-                <div className="bg-white rounded-[4rem] border border-slate-100 p-10 shadow-sm relative overflow-hidden group">
+                <div className="bg-white rounded-lg border border-slate-100 p-10 shadow-sm relative overflow-hidden group">
                   <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-6 flex items-center gap-2">
                     <Layers className="w-4 h-4 text-indigo-600" /> Key
                     Regulation Domains
@@ -1749,7 +1749,7 @@ export function ComplianceSetup() {
                       .map((domain: any) => (
                         <div
                           key={domain}
-                          className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100"
+                          className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-100"
                         >
                           <span className="font-bold text-slate-700 text-sm">
                             {domain}
@@ -1766,7 +1766,7 @@ export function ComplianceSetup() {
                       ))}
                   </div>
                 </div>
-                <div className="bg-white rounded-[4rem] border border-slate-100 p-10 shadow-sm">
+                <div className="bg-white rounded-lg border border-slate-100 p-10 shadow-sm">
                   <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-6 flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 text-amber-500" /> Key
                     Actions & Milestones
@@ -1777,7 +1777,7 @@ export function ComplianceSetup() {
                       .map((action: any, idx: number) => (
                         <div
                           key={idx}
-                          className="p-4 bg-amber-50/50 rounded-2xl border border-amber-100 flex items-start gap-4"
+                          className="p-4 bg-amber-50/50 rounded-lg border border-amber-100 flex items-start gap-4"
                         >
                           <div className="w-2 h-2 rounded-full bg-amber-500 mt-2"></div>
                           <div>
@@ -1795,7 +1795,7 @@ export function ComplianceSetup() {
                     {(lastAnalysisResults?.criticalActions || []).length ===
                       0 && (
                       <>
-                        <div className="p-4 bg-amber-50/50 rounded-2xl border border-amber-100 flex items-start gap-4">
+                        <div className="p-4 bg-amber-50/50 rounded-lg border border-amber-100 flex items-start gap-4">
                           <div className="w-2 h-2 rounded-full bg-amber-500 mt-2"></div>
                           <div>
                             <p className="font-bold text-slate-900 text-sm">
@@ -1861,7 +1861,7 @@ export function ComplianceSetup() {
                         <div className="flex items-center gap-6">
                           <div
                             className={clsx(
-                              "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-sm border",
+                              "w-12 h-12 rounded-lg flex items-center justify-center transition-all duration-500 shadow-sm border",
                               isExpanded
                                 ? "bg-indigo-600 border-indigo-500 text-white"
                                 : "bg-white border-slate-100 text-slate-400",
@@ -1920,7 +1920,7 @@ export function ComplianceSetup() {
                                   key={q.id}
                                   id={`q-container-${q.id}`}
                                   className={clsx(
-                                    "group/q bg-slate-50/30 p-4 sm:p-8 rounded-[1.5rem] sm:rounded-3xl border transition-all duration-300",
+                                    "group/q bg-slate-50/30 p-4 sm:p-8 rounded-lg sm:rounded-lg border transition-all duration-300",
                                     isActive
                                       ? "border-indigo-500 bg-indigo-50/50 shadow-lg scale-[1.01]"
                                       : "border-dashed border-slate-200",
@@ -1941,7 +1941,7 @@ export function ComplianceSetup() {
                                       <div className="flex items-center gap-3">
                                         <div
                                           className={clsx(
-                                            "w-8 h-8 rounded-xl shadow-sm flex items-center justify-center shrink-0 transition-colors",
+                                            "w-8 h-8 rounded-lg shadow-sm flex items-center justify-center shrink-0 transition-colors",
                                             isAnswered
                                               ? "bg-emerald-500 text-white"
                                               : "bg-white text-indigo-600",
@@ -1966,7 +1966,7 @@ export function ComplianceSetup() {
                                         (projectInfo[q.id] === "Yes" ||
                                           (Array.isArray(projectInfo[q.id]) &&
                                             projectInfo[q.id].length > 0)) && (
-                                          <div className="mt-4 ml-11 p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-start gap-3 animate-in fade-in slide-in-from-left-4">
+                                          <div className="mt-4 ml-11 p-4 bg-emerald-50 rounded-lg border border-emerald-100 flex items-start gap-3 animate-in fade-in slide-in-from-left-4">
                                             <ShieldCheck className="w-5 h-5 text-emerald-500 mt-0.5" />
                                             <p className="text-xs text-emerald-700 font-bold leading-relaxed">
                                               {q.trigger}
@@ -1977,13 +1977,13 @@ export function ComplianceSetup() {
 
                                     <div className="shrink-0 pt-2 pl-4 sm:pl-11 lg:pl-0">
                                       {q.type === "toggle" && (
-                                        <div className="flex bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm w-full sm:w-auto overflow-x-auto">
+                                        <div className="flex bg-white p-1.5 rounded-lg border border-slate-200 shadow-sm w-full sm:w-auto overflow-x-auto">
                                           {["Yes", "No"].map((opt) => (
                                             <button
                                               key={opt}
                                               onClick={() => set(q.id, opt)}
                                               className={clsx(
-                                                "px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all duration-300 shrink-0",
+                                                "px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all duration-300 shrink-0",
                                                 projectInfo[q.id] === opt
                                                   ? opt === "Yes"
                                                     ? "bg-slate-900 text-white shadow-lg shadow-slate-200"
@@ -2000,7 +2000,7 @@ export function ComplianceSetup() {
                                       {q.type === "select" && (
                                         <div className="relative w-full lg:w-64">
                                           <select
-                                            className="w-full h-14 px-6 bg-white border-2 border-slate-200 rounded-2xl text-sm font-bold text-slate-800 focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-600 transition-all appearance-none cursor-pointer shadow-sm"
+                                            className="w-full h-14 px-6 bg-white border-2 border-slate-200 rounded-lg text-sm font-bold text-slate-800 focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-600 transition-all appearance-none cursor-pointer shadow-sm"
                                             value={projectInfo[q.id] || ""}
                                             onChange={(e) =>
                                               set(q.id, e.target.value)
@@ -2044,7 +2044,7 @@ export function ComplianceSetup() {
                                                   set(q.id, next);
                                                 }}
                                                 className={clsx(
-                                                  "px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all text-left flex items-center gap-3",
+                                                  "px-4 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all text-left flex items-center gap-3",
                                                   isSelected
                                                     ? "bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-100"
                                                     : "bg-white text-slate-500 border-slate-200 hover:border-indigo-300",
@@ -2087,13 +2087,13 @@ export function ComplianceSetup() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
               {/* Left Column: Context Selection*/}
               <div className="lg:col-span-4 space-y-6 sm:space-y-8">
-                <div className="bg-white rounded-[2.5rem] sm:rounded-4xl border border-slate-100 p-6 sm:p-8 shadow-xl shadow-slate-200/50">
+                <div className="bg-white rounded-lg sm:rounded-4xl border border-slate-100 p-6 sm:p-8 shadow-xl shadow-slate-200/50">
                   <PhaseHeader num={1} title="Context Selection" />
                   <div className="space-y-6">
                     <div>
                       <label className={labelCls}>Assessment Target</label>
-                      <div className="flex items-center gap-3 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100/50">
-                        <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center border border-indigo-100">
+                      <div className="flex items-center gap-3 p-4 bg-indigo-50/50 rounded-lg border border-indigo-100/50">
+                        <div className="w-10 h-10 bg-white rounded-lg shadow-sm flex items-center justify-center border border-indigo-100">
                           {activeType === "programme" ? (
                             <Layers className="w-5 h-5 text-indigo-600" />
                           ) : (
@@ -2166,7 +2166,7 @@ export function ComplianceSetup() {
                 </div>
 
                 {/* Tips / Info Card*/}
-                <div className="bg-indigo-600 rounded-[2.5rem] sm:rounded-4xl p-6 sm:p-8 text-white shadow-xl shadow-indigo-200 overflow-hidden relative group">
+                <div className="bg-indigo-600 rounded-lg sm:rounded-4xl p-6 sm:p-8 text-white shadow-xl shadow-indigo-200 overflow-hidden relative group">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-150 duration-700"></div>
                   <div className="relative z-10">
                     <h4 className="text-lg font-bold mb-3">AI Context Hint</h4>
@@ -2296,7 +2296,7 @@ export function ComplianceSetup() {
                             setIsQuestionnaireActive(true);
                           }}
                           className={clsx(
-                            "w-full px-10 py-5 bg-indigo-600 text-white rounded-[1.25rem] font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-indigo-200 transition-all hover:bg-indigo-700 active:scale-95 flex items-center justify-center gap-3",
+                            "w-full px-10 py-5 bg-indigo-600 text-white rounded-lg font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-indigo-200 transition-all hover:bg-indigo-700 active:scale-95 flex items-center justify-center gap-3",
                             (!projectInfo.name ||
                               !projectInfo.type ||
                               !projectInfo.loc ||
@@ -2318,9 +2318,9 @@ export function ComplianceSetup() {
           {/* ─── AI Action Footer ───*/}
           {isQuestionnaireActive && phase !== 3 && (
             <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-12 duration-1000">
-              <div className="bg-slate-900/90 text-white px-8 py-5 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/10 flex items-center justify-between gap-8 backdrop-blur-xl">
+              <div className="bg-slate-900/90 text-white px-8 py-5 rounded-lg shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/10 flex items-center justify-between gap-8 backdrop-blur-xl">
                 <div className="hidden sm:flex items-center gap-4 border-r border-white/10 pr-8">
-                  <div className="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center">
+                  <div className="w-10 h-10 bg-indigo-500 rounded-lg flex items-center justify-center">
                     <ScanSearch className="w-5 h-5 text-white" />
                   </div>
                   <div>
@@ -2336,14 +2336,14 @@ export function ComplianceSetup() {
                 <div className="flex items-center gap-4">
                   <button
                     onClick={() => setIsQuestionnaireActive(false)}
-                    className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white rounded-xl font-bold text-xs transition-all"
+                    className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white rounded-lg font-bold text-xs transition-all"
                   >
                     Edit Profile
                   </button>
                   <button
                     onClick={runAnalysis}
                     disabled={loading}
-                    className="flex items-center gap-3 px-8 py-3.5 bg-indigo-500 text-white rounded-xl font-black text-xs uppercase tracking-[0.2em] transition-all hover:bg-indigo-400 hover:shadow-[0_0_30px_rgba(99,102,241,0.4)] active:scale-95 disabled:opacity-50"
+                    className="flex items-center gap-3 px-8 py-3.5 bg-indigo-500 text-white rounded-lg font-black text-xs uppercase tracking-[0.2em] transition-all hover:bg-indigo-400 hover:shadow-[0_0_30px_rgba(99,102,241,0.4)] active:scale-95 disabled:opacity-50"
                   >
                     {!!loadingStep ? (
                       <>

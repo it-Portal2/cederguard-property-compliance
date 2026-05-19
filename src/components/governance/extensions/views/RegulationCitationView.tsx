@@ -46,7 +46,7 @@ export function RegulationCitationView({ node, updateAttributes, editor }: NodeV
       {open && (
         <div
           ref={popoverRef}
-          className="absolute left-0 top-6 z-40 w-72 space-y-2 rounded-xl border border-slate-200 bg-white p-3 shadow-lg"
+          className="absolute left-0 top-6 z-40 w-72 space-y-2 rounded-lg border border-slate-200 bg-white p-3 shadow-lg"
         >
           <label className="block text-[11px] font-semibold uppercase tracking-widest text-slate-500">
             Code

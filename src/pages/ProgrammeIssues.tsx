@@ -134,7 +134,7 @@ export function ProgrammeIssues() {
   return (
     <>
       <ServiceManagementBar />
-      <div className="max-w-[98%] lg:max-w-7xl mx-auto p-2 sm:p-4 lg:p-6 space-y-5 sm:space-y-6">
+      <div className="space-y-5 sm:space-y-6">
 
         {/* month picker for historical view.*/}
         <div className="flex justify-end">
@@ -160,11 +160,11 @@ export function ProgrammeIssues() {
         {/* KPI tiles — derived from effective rows so historical mode
  shows month-end totals, not live ones.*/}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          <div className="bg-white border-t-4 border-t-amber-500 border border-slate-200 rounded-xl p-4 shadow-sm">
+          <div className="bg-white border-t-4 border-t-amber-500 border border-slate-200 rounded-lg p-4 shadow-sm">
             <div className="text-2xl font-bold text-amber-600 mb-1">{loading || historicalView.loading ? '—' : totals.open}</div>
             <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total Open Issues</div>
           </div>
-          <div className="bg-white border-t-4 border-t-red-500 border border-slate-200 rounded-xl p-4 shadow-sm">
+          <div className="bg-white border-t-4 border-t-red-500 border border-slate-200 rounded-lg p-4 shadow-sm">
             <div className="text-2xl font-bold text-red-600 mb-1">{loading || historicalView.loading ? '—' : totals.escalated}</div>
             <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Escalated Issues</div>
           </div>

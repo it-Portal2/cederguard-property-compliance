@@ -540,7 +540,7 @@ export function RiskIssues() {
                   setEditingIssue(null);
                   setIsModalOpen(true);
                 }}
-                className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
+                className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
               >
                 <Plus className="w-4 h-4" />
                 Add Issue
@@ -608,7 +608,7 @@ export function RiskIssues() {
 
         {/* AI Advisory Panel — unchanged*/}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="md:col-span-2 bg-indigo-900 rounded-xl p-5 text-white shadow-xl relative overflow-hidden">
+          <div className="md:col-span-2 bg-indigo-900 rounded-lg p-5 text-white shadow-xl relative overflow-hidden">
             <div className="relative z-10">
               <div className="flex items-center gap-2 mb-3">
                 <div className="p-1.5 bg-indigo-500/30 rounded-lg">
@@ -645,7 +645,7 @@ export function RiskIssues() {
               <TrendingUp className="w-32 h-32" />
             </div>
           </div>
-          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+          <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm">
             <div className="flex items-center gap-2 mb-3">
               <AlertCircle className="w-4 h-4 text-amber-500" />
               <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">

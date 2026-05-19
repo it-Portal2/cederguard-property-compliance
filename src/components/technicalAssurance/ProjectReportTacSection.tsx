@@ -97,7 +97,7 @@ export function ProjectReportTacSection({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
       aria-labelledby="tac-section-title"
-      className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+      className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-2">

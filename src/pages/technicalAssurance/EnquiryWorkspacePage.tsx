@@ -89,7 +89,7 @@ function InsightGeneratingPanel() {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
-      className="relative overflow-hidden rounded-xl border border-indigo-200 bg-white p-6 shadow-sm"
+      className="relative overflow-hidden rounded-lg border border-indigo-200 bg-white p-6 shadow-sm"
       role="status"
       aria-live="polite"
     >
@@ -402,8 +402,8 @@ export function TacEnquiryWorkspacePage() {
       tabBody = <InsightGeneratingPanel />;
     } else if (!summaryContent && enquiry.status === "Draft") {
       tabBody = (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/60 px-6 py-10 text-center">
-          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+        <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50/60 px-6 py-10 text-center">
+          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
             <Compass className="h-5 w-5" />
           </div>
           <h2 className="mt-3 text-sm font-semibold text-slate-900">
@@ -669,7 +669,7 @@ export function TacEnquiryWorkspacePage() {
           while their decision is pending. The owner sees a different banner
           below for outstanding shares they sent. */}
       {myShare ? (
-        <div className="rounded-xl border border-indigo-300 bg-indigo-50/60 p-4">
+        <div className="rounded-lg border border-indigo-300 bg-indigo-50/60 p-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div className="flex items-start gap-2">
               <UserCheck className="mt-0.5 h-4 w-4 shrink-0 text-indigo-600" />

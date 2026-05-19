@@ -24,10 +24,10 @@ export function TabPlaceholder({
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
-      className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:p-10"
+      className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm md:p-10"
     >
       <div className="flex flex-col items-start gap-5 md:flex-row md:items-center md:gap-6">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
           <Icon className="h-6 w-6" strokeWidth={2.25} />
         </div>
         <div className="min-w-0 flex-1">

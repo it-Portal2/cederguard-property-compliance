@@ -50,7 +50,7 @@ export function LinkedRegs() {
   const totalDelayed = linkedProjects.reduce((acc, p) => acc + (p.milestones?.filter(m => m.status === 'Delayed').length || 0), 0);
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-12">
+    <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-black text-slate-900 tracking-tight italic">
@@ -70,7 +70,7 @@ export function LinkedRegs() {
             { label: 'Project Milestones', value: totalProjectMilestones, color: 'text-blue-700', bg: 'bg-blue-50', border: 'border-blue-200' },
             { label: 'Delayed (all)', value: totalDelayed, color: totalDelayed > 0 ? 'text-rose-700' : 'text-emerald-700', bg: totalDelayed > 0 ? 'bg-rose-50' : 'bg-emerald-50', border: totalDelayed > 0 ? 'border-rose-200' : 'border-emerald-200' },
           ].map((s, i) => (
-            <div key={i} className={clsx('rounded-2xl border p-4 shadow-sm', s.bg, s.border)}>
+            <div key={i} className={clsx('rounded-lg border p-4 shadow-sm', s.bg, s.border)}>
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{s.label}</p>
               <p className={clsx('text-2xl font-black', s.color)}>{s.value}</p>
             </div>
@@ -79,7 +79,7 @@ export function LinkedRegs() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
+      <div className="flex gap-1 bg-slate-100 p-1 rounded-lg w-fit">
         {[
           { key: 'timeline', label: 'RIBA Timeline' },
           { key: 'programme', label: 'Programme Milestones' },
@@ -113,7 +113,7 @@ export function LinkedRegs() {
       {activeTab === 'projects' && (
         <div className="space-y-4">
           {linkedProjects.length === 0 ? (
-            <div className="bg-slate-50/50 border-2 border-dashed border-slate-200 rounded-2xl p-12 text-center">
+            <div className="bg-slate-50/50 border-2 border-dashed border-slate-200 rounded-lg p-12 text-center">
               <FolderKanban className="w-10 h-10 text-slate-300 mx-auto mb-4 opacity-50" />
               <h3 className="text-sm font-bold text-slate-600 mb-2 italic">Waiting for Portfolio Data</h3>
               <p className="text-xs text-slate-400 font-medium max-w-xs mx-auto">No projects are currently linked to this programme. Once projects are added, their milestones will automatically aggregate here.</p>
@@ -127,13 +127,13 @@ export function LinkedRegs() {
               const projKey = projMilestones.filter(m => m.isKey);
 
               return (
-                <div key={proj.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                <div key={proj.id} className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
                   <div
                     className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-slate-50 transition"
                     onClick={() => setExpandedProject(isExpanded ? null : proj.id)}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center">
+                      <div className="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center">
                         <FolderKanban className="w-4 h-4 text-indigo-600" />
                       </div>
                       <div>
@@ -172,7 +172,7 @@ export function LinkedRegs() {
                       ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           {projMilestones.map(m => (
-                            <div key={m.id} className={clsx('bg-white rounded-xl border p-4 shadow-sm', m.isKey ? 'border-amber-200' : 'border-slate-100')}>
+                            <div key={m.id} className={clsx('bg-white rounded-lg border p-4 shadow-sm', m.isKey ? 'border-amber-200' : 'border-slate-100')}>
                               <div className="flex items-start justify-between mb-2">
                                 <div className="flex items-center gap-1.5">
                                   {m.isKey && <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />}
@@ -207,7 +207,7 @@ export function LinkedRegs() {
       {/* TAB: RIBA Timeline */}
       {activeTab === 'timeline' && (
         <div className="space-y-4">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
             <h3 className="text-sm font-bold text-slate-900 mb-6 flex items-center gap-2">
               <div className="w-1.5 h-4 bg-indigo-600 rounded-full" />
               RIBA Compliance Timeline
@@ -240,9 +240,9 @@ export function LinkedRegs() {
               const isOpen = openStages[st.id];
               const applicableRegs = st.regs.filter(r => (Array.isArray(complianceItems) ? complianceItems : []).some(i => i.domain === r.domain));
               return (
-                <div key={st.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                <div key={st.id} className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
                   <div className="flex items-center gap-5 p-5 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => toggleStage(st.id)}>
-                    <div className="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center text-xl font-black" style={{ color: st.color, borderColor: `${st.color}30`, backgroundColor: `${st.color}10`, border: '2px solid' }}>
+                    <div className="w-12 h-12 shrink-0 rounded-lg flex items-center justify-center text-xl font-black" style={{ color: st.color, borderColor: `${st.color}30`, backgroundColor: `${st.color}10`, border: '2px solid' }}>
                       {st.num}
                     </div>
                     <div className="flex-1">
@@ -266,7 +266,7 @@ export function LinkedRegs() {
                         const complete = relItems.filter(i => i.stage === "Complete").length;
                         const pct = relItems.length ? Math.round((complete / relItems.length) * 100) : 0;
                         return (
-                          <div key={idx} className="bg-white border border-slate-200 rounded-xl p-5 border-l-[6px] shadow-sm" style={{ borderLeftColor: dom?.color || '#cbd5e1' }}>
+                          <div key={idx} className="bg-white border border-slate-200 rounded-lg p-5 border-l-[6px] shadow-sm" style={{ borderLeftColor: dom?.color || '#cbd5e1' }}>
                             <div className="flex justify-between items-start mb-3">
                               <div>
                                 <span className="px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider mb-2.5 inline-block" style={{ backgroundColor: `${dom?.color}10`, color: dom?.color, border: `1px solid ${dom?.color}30` }}>
@@ -289,7 +289,7 @@ export function LinkedRegs() {
                         );
                       })}
                       {applicableRegs.length === 0 && (
-                        <div className="col-span-full flex flex-col items-center justify-center py-10 text-center bg-white border border-dashed border-slate-300 rounded-xl">
+                        <div className="col-span-full flex flex-col items-center justify-center py-10 text-center bg-white border border-dashed border-slate-300 rounded-lg">
                           <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center mb-3 text-2xl">🍃</div>
                           <h4 className="text-sm font-bold text-slate-800 mb-1">No Regulations</h4>
                           <p className="text-xs text-slate-500 max-w-sm">No applicable compliance regulations identified for this RIBA stage.</p>

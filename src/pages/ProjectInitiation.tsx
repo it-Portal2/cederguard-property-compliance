@@ -588,8 +588,8 @@ export function ProjectInitiation() {
     "block text-[11px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1";
 
   return (
-    <div className="min-h-screen bg-slate-50/50 pb-24 md:pb-12 pt-safe">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
+    <div>
+      <div className="space-y-6">
         {/* ── HEADER SECTION ───────────*/}
         <div className="mb-8 md:mb-12">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -617,7 +617,7 @@ export function ProjectInitiation() {
                     setActiveProject(null);
                     resetForm();
                   }}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 hover:border-indigo-200 hover:text-indigo-600 transition-all text-xs shadow-sm active:scale-95"
+                  className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 font-bold rounded-lg hover:bg-slate-50 hover:border-indigo-200 hover:text-indigo-600 transition-all text-xs shadow-sm active:scale-95"
                 >
                   <Plus className="w-4 h-4" />
                   New Project
@@ -626,7 +626,7 @@ export function ProjectInitiation() {
               <button
                 type="button"
                 onClick={loadDummy}
-                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 hover:border-indigo-200 hover:text-indigo-600 transition-all text-xs shadow-sm active:scale-95"
+                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 font-bold rounded-lg hover:bg-slate-50 hover:border-indigo-200 hover:text-indigo-600 transition-all text-xs shadow-sm active:scale-95"
               >
                 <LayoutTemplate className="w-4 h-4" />
                 Load Demo
@@ -640,7 +640,7 @@ export function ProjectInitiation() {
                     : undefined
                 }
                 className={clsx(
-                  "flex items-center gap-2 px-6 py-2.5 font-black rounded-xl text-xs uppercase tracking-widest transition-all shadow-lg active:scale-95",
+                  "flex items-center gap-2 px-6 py-2.5 font-black rounded-lg text-xs uppercase tracking-widest transition-all shadow-lg active:scale-95",
                   loading || (!!activeProjectId && !isDirty)
                     ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200 shadow-none"
                     : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100 hover:shadow-indigo-200",
@@ -669,7 +669,7 @@ export function ProjectInitiation() {
         {/* ── MAIN CONTENT GRID ───────────*/}
         <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {loading && (
-            <div className="absolute inset-0 z-50 bg-white/60 backdrop-blur-[2px] rounded-3xl flex items-center justify-center">
+            <div className="absolute inset-0 z-50 bg-white/60 backdrop-blur-[2px] rounded-lg flex items-center justify-center">
               <div className="flex flex-col items-center gap-3">
                 <div className="w-10 h-10 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin shadow-md" />
                 <span className="text-sm font-black text-indigo-900 tracking-widest uppercase">Processing</span>
@@ -680,13 +680,13 @@ export function ProjectInitiation() {
           <div className="lg:col-span-8 order-2 lg:order-1 space-y-8">
             <form
               onSubmit={handleSubmit}
-              className="bg-white border border-slate-200 rounded-3xl p-6 md:p-10 shadow-xl shadow-slate-200/50 space-y-10"
+              className="bg-white border border-slate-200 rounded-lg p-6 md:p-10 shadow-xl shadow-slate-200/50 space-y-10"
             >
               {/* Continuing Drafts Overlay-style section*/}
               {(Array.isArray(projects) ? projects : []).filter(
                 (p) => !p.isPublished,
               ).length > 0 && (
-                <div className="bg-indigo-50/50 p-6 rounded-2xl border border-indigo-100/50 mb-8 overflow-hidden relative group">
+                <div className="bg-indigo-50/50 p-6 rounded-lg border border-indigo-100/50 mb-8 overflow-hidden relative group">
                   <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
                     <Save className="w-20 h-20 text-indigo-600 rotate-12" />
                   </div>
@@ -715,7 +715,7 @@ export function ProjectInitiation() {
                     </div>
                     <div className="flex flex-col sm:flex-row gap-3">
                       <select
-                        className="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl text-[13px] font-black text-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all shadow-sm"
+                        className="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-lg text-[13px] font-black text-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all shadow-sm"
                         value={activeProjectId || ""}
                         onChange={(e) => {
                           const id = e.target.value;
@@ -803,7 +803,7 @@ export function ProjectInitiation() {
                           <button
                             type="button"
                             onClick={() => setDraftToDelete(activeProjectId)}
-                            className="px-4 py-3 text-rose-600 hover:bg-rose-50 rounded-xl border border-rose-100 transition-all shadow-sm flex items-center justify-center bg-white"
+                            className="px-4 py-3 text-rose-600 hover:bg-rose-50 rounded-lg border border-rose-100 transition-all shadow-sm flex items-center justify-center bg-white"
                             title="Discard Draft"
                           >
                             <Trash2 className="w-5 h-5" />
@@ -847,7 +847,7 @@ export function ProjectInitiation() {
                   </div>
 
                   {/* ── UX 1: Programme fields elevated to top — high-level classification ──*/}
-                  <div className="p-4 bg-indigo-50/60 border border-indigo-100 rounded-xl space-y-4">
+                  <div className="p-4 bg-indigo-50/60 border border-indigo-100 rounded-lg space-y-4">
                     <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest leading-none">
                       Programme Classification
                     </p>
@@ -1383,7 +1383,7 @@ export function ProjectInitiation() {
                         : undefined
                     }
                     className={clsx(
-                      "flex items-center gap-2 px-8 py-3.5 font-black rounded-xl text-sm uppercase tracking-widest transition-all shadow-lg active:scale-95",
+                      "flex items-center gap-2 px-8 py-3.5 font-black rounded-lg text-sm uppercase tracking-widest transition-all shadow-lg active:scale-95",
                       loading || (!!activeProjectId && !isDirty)
                         ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200 shadow-none"
                         : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200 hover:shadow-indigo-300 transform hover:-translate-y-0.5"
@@ -1418,9 +1418,9 @@ export function ProjectInitiation() {
       {/* No-Programme Warning Modal (UX 3)*/}
       {showNoProgrammeWarning && (
         <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200">
             <div className="flex items-center gap-3 mb-4 text-amber-600">
-              <div className="p-2 bg-amber-50 rounded-xl">
+              <div className="p-2 bg-amber-50 rounded-lg">
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-black tracking-tight text-slate-900">Independent Project?</h3>
@@ -1435,7 +1435,7 @@ export function ProjectInitiation() {
               <button
                 type="button"
                 onClick={() => setShowNoProgrammeWarning(false)}
-                className="px-4 py-2 font-black text-xs uppercase tracking-widest text-slate-500 hover:bg-slate-50 border border-slate-200 rounded-xl transition-all"
+                className="px-4 py-2 font-black text-xs uppercase tracking-widest text-slate-500 hover:bg-slate-50 border border-slate-200 rounded-lg transition-all"
               >
                 Cancel — Add Programme
               </button>
@@ -1445,7 +1445,7 @@ export function ProjectInitiation() {
                   setShowNoProgrammeWarning(false);
                   handleSubmit(undefined, true);
                 }}
-                className="flex items-center gap-2 px-4 py-2 font-black text-xs uppercase tracking-widest text-white bg-amber-500 hover:bg-amber-600 shadow-lg shadow-amber-100 rounded-xl transition-all"
+                className="flex items-center gap-2 px-4 py-2 font-black text-xs uppercase tracking-widest text-white bg-amber-500 hover:bg-amber-600 shadow-lg shadow-amber-100 rounded-lg transition-all"
               >
                 Continue as Independent
               </button>
@@ -1457,9 +1457,9 @@ export function ProjectInitiation() {
       {/* Delete Draft Modal*/}
       {draftToDelete && (
         <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200">
             <div className="flex items-center gap-3 mb-4 text-rose-600">
-              <div className="p-2 bg-rose-50 rounded-xl">
+              <div className="p-2 bg-rose-50 rounded-lg">
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-black tracking-tight">Delete Draft Project</h3>
@@ -1472,7 +1472,7 @@ export function ProjectInitiation() {
                 type="button"
                 disabled={deletingDraft}
                 onClick={() => setDraftToDelete(null)}
-                className="px-4 py-2 font-black text-xs uppercase tracking-widest text-slate-500 hover:bg-slate-50 border border-slate-200 rounded-xl transition-all"
+                className="px-4 py-2 font-black text-xs uppercase tracking-widest text-slate-500 hover:bg-slate-50 border border-slate-200 rounded-lg transition-all"
               >
                 Cancel
               </button>
@@ -1494,7 +1494,7 @@ export function ProjectInitiation() {
                     setDeletingDraft(false);
                   }
                 }}
-                className="flex items-center justify-center gap-2 px-4 py-2 font-black text-xs uppercase tracking-widest text-white bg-rose-600 hover:bg-rose-700 shadow-lg shadow-rose-200/50 rounded-xl transition-all min-w-[100px]"
+                className="flex items-center justify-center gap-2 px-4 py-2 font-black text-xs uppercase tracking-widest text-white bg-rose-600 hover:bg-rose-700 shadow-lg shadow-rose-200/50 rounded-lg transition-all min-w-[100px]"
               >
                 {deletingDraft ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Delete"}
               </button>

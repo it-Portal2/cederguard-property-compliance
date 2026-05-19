@@ -46,9 +46,9 @@ export function AiRecommendationCard({ onSelect, openingId }: AiRecommendationCa
   };
 
   return (
-    <section className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-5 shadow-sm">
+    <section className="rounded-lg border border-indigo-200 bg-indigo-50/40 p-5 shadow-sm">
       <header className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white">
           <Lightbulb className="h-5 w-5" strokeWidth={2.25} />
         </div>
         <div>

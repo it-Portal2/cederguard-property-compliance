@@ -236,7 +236,7 @@ export const PublicLayout: React.FC = () => {
                             <div className="shrink-0 px-6 py-5 border-t border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950">
                                 <Link
                                     to="/login"
-                                    className="w-full inline-flex items-center justify-center gap-1.5 py-4 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-200 dark:text-slate-900 text-white text-base font-semibold rounded-xl transition-colors"
+                                    className="w-full inline-flex items-center justify-center gap-1.5 py-4 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-200 dark:text-slate-900 text-white text-base font-semibold rounded-lg transition-colors"
                                 >
                                     Access portal
                                     <span aria-hidden>→</span>
@@ -260,7 +260,7 @@ export const PublicLayout: React.FC = () => {
                                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                                className="relative bg-white dark:bg-slate-900 rounded-[2rem] p-8 md:p-12 max-w-lg w-full shadow-2xl border border-slate-200 dark:border-white/10"
+                                className="relative bg-white dark:bg-slate-900 rounded-lg p-8 md:p-12 max-w-lg w-full shadow-2xl border border-slate-200 dark:border-white/10"
                             >
                                 <button 
                                     onClick={() => setShowInstallModal(false)}
@@ -270,7 +270,7 @@ export const PublicLayout: React.FC = () => {
                                 </button>
 
                                 <div className="flex flex-col items-center text-center">
-                                    <div className="w-20 h-20 bg-indigo-100 dark:bg-indigo-500/20 rounded-3xl flex items-center justify-center mb-8">
+                                    <div className="w-20 h-20 bg-indigo-100 dark:bg-indigo-500/20 rounded-lg flex items-center justify-center mb-8">
                                         <img src="/pwa-icon.png" alt="App Icon" className="w-12 h-12" />
                                     </div>
                                     <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-4 uppercase tracking-tight">Install Cedar Guard</h3>
@@ -279,11 +279,11 @@ export const PublicLayout: React.FC = () => {
                                     </p>
 
                                     <div className="w-full space-y-4 text-left">
-                                        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10">
+                                        <div className="p-4 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10">
                                             <p className="font-bold text-sm text-slate-900 dark:text-white mb-1">On iOS / Safari:</p>
                                             <p className="text-xs text-slate-500 dark:text-slate-400">Tap the <span className="font-bold text-indigo-600 dark:text-cyan-400">Share</span> button and select <span className="font-bold text-indigo-600 dark:text-cyan-400">"Add to Home Screen"</span>.</p>
                                         </div>
-                                        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10">
+                                        <div className="p-4 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10">
                                             <p className="font-bold text-sm text-slate-900 dark:text-white mb-1">On Android / Chrome:</p>
                                             <p className="text-xs text-slate-500 dark:text-slate-400">Open the menu and select <span className="font-bold text-indigo-600 dark:text-cyan-400">"Install App"</span> or <span className="font-bold text-indigo-600 dark:text-cyan-400">"Add to home screen"</span>.</p>
                                         </div>
@@ -291,7 +291,7 @@ export const PublicLayout: React.FC = () => {
 
                                     <button
                                         onClick={() => setShowInstallModal(false)}
-                                        className="mt-10 w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-2xl font-black uppercase tracking-widest text-sm hover:scale-[1.02] transition-transform"
+                                        className="mt-10 w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-lg font-black uppercase tracking-widest text-sm hover:scale-[1.02] transition-transform"
                                     >
                                         Got it
                                     </button>
@@ -369,10 +369,10 @@ export const PublicLayout: React.FC = () => {
                                 +44 (0) 2031433504
                             </a>
                             <div className="pt-8 flex gap-6">
-                                <div className="group bg-white dark:bg-white/5 p-4 rounded-2xl border border-slate-200 dark:border-white/10 hover:border-indigo-500/20 dark:hover:border-cyan-500/20 transition-all duration-500">
+                                <div className="group bg-white dark:bg-white/5 p-4 rounded-lg border border-slate-200 dark:border-white/10 hover:border-indigo-500/20 dark:hover:border-cyan-500/20 transition-all duration-500">
                                     <img src="https://www.cedarproacademy.com/wp-content/uploads/2021/04/gfg-1.png" alt="Accreditation 1" className="h-10 w-auto object-contain opacity-70 group-hover:opacity-100 transition-opacity mix-blend-multiply dark:mix-blend-normal" />
                                 </div>
-                                <div className="group bg-white dark:bg-white/5 p-4 rounded-2xl border border-slate-200 dark:border-white/10 hover:border-indigo-500/20 dark:hover:border-cyan-500/20 transition-all duration-500">
+                                <div className="group bg-white dark:bg-white/5 p-4 rounded-lg border border-slate-200 dark:border-white/10 hover:border-indigo-500/20 dark:hover:border-cyan-500/20 transition-all duration-500">
                                     <img src="https://www.cedarproacademy.com/wp-content/uploads/2021/04/Accreditations-affiliations-partnership2-1.jpg" alt="Accreditation 2" className="h-10 w-auto object-contain opacity-70 group-hover:opacity-100 transition-opacity rounded mix-blend-multiply dark:mix-blend-normal" />
                                 </div>
                             </div>

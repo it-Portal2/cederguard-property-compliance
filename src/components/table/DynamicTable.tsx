@@ -239,7 +239,7 @@ export default function DynamicTable<T extends Record<string, any>>({
           toolbarActions={toolbarActions}
         />
 
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-x-auto">
+        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm overflow-x-auto">
           {loading ? (
             <TableSkeleton columns={visibleColumns.length + (selectable ? 1 : 0)} headerVariant={headerVariant} />
           ) : error ? (

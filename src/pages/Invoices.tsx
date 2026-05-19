@@ -196,7 +196,7 @@ export function Invoices() {
           <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
         </div>
       ) : error ? (
-        <div className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-xl flex flex-col items-center gap-4 text-center">
+        <div className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-lg flex flex-col items-center gap-4 text-center">
           <AlertCircle className="w-12 h-12" />
           <div>
             <h3 className="font-bold text-lg">Failed to Load Invoices</h3>
@@ -210,7 +210,7 @@ export function Invoices() {
           </button>
         </div>
       ) : invoices.length === 0 ? (
-        <div className="bg-white border border-slate-200 p-12 rounded-2xl flex flex-col items-center gap-6 text-center">
+        <div className="bg-white border border-slate-200 p-12 rounded-lg flex flex-col items-center gap-6 text-center">
           <div className="p-4 bg-slate-50 rounded-full text-slate-300">
             <FileText className="w-16 h-16" />
           </div>
@@ -229,11 +229,11 @@ export function Invoices() {
               placeholder="Search by invoice # or client..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 transition-all shadow-sm"
+              className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 transition-all shadow-sm"
             />
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+          <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
             <table className="w-full text-left">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>

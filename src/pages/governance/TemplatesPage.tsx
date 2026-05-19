@@ -155,11 +155,11 @@ export function GovernanceTemplatesPage() {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
-      className="mx-auto space-y-6"
+      className="space-y-6"
     >
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
             <FileText className="h-5 w-5" strokeWidth={2.25} />
           </div>
           <div>
@@ -258,11 +258,11 @@ export function GovernanceTemplatesPage() {
       {loading || historicalView.loading ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
-            <div key={i} className="h-48 animate-pulse rounded-xl bg-slate-100" />
+            <div key={i} className="h-48 animate-pulse rounded-lg bg-slate-100" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-10 text-center">
+        <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/60 p-10 text-center">
           <FileText className="mx-auto h-8 w-8 text-slate-300" />
           <p className="mt-3 text-sm font-semibold text-slate-700">No templates match</p>
           <p className="mt-1 text-xs text-slate-500">Try another filter or clear the search.</p>

@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useStore } from "../store/useStore";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { InfoTooltip } from "../components/InfoTooltip";
+import { StatsCard } from "../components/common/StatsCard";
 import { api, ApiError } from "../lib/api";
 import { AIErrorAlert } from "../components/AIErrorAlert";
 import {
@@ -17,6 +18,10 @@ import {
   Briefcase,
   AlertTriangle,
   CheckCircle,
+  CheckCircle2,
+  CircleDashed,
+  Clock,
+  Flame,
   PoundSterling,
   BarChart,
   ListFilter,
@@ -432,7 +437,7 @@ export function Dashboard() {
   };
 
   return (
-    <div className="space-y-6 max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="space-y-6">
       {/* OB-1 — first-login Get Started modal. Mounts at the top of the
           tree but only renders when `onboardingOpen` is true. Dismissal
           flips the persistence flag — never shown again. */}
@@ -447,10 +452,10 @@ export function Dashboard() {
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm"
+        className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-lg border border-slate-200 shadow-sm"
       >
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center shrink-0 border border-indigo-100">
+          <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center shrink-0 border border-indigo-100">
             <LayoutTemplate className="w-5 h-5 text-indigo-600" />
           </div>
           <div>
@@ -469,7 +474,7 @@ export function Dashboard() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 bg-slate-50 p-1.5 rounded-xl border border-slate-200/60 w-full md:w-auto">
+        <div className="flex items-center gap-3 bg-slate-50 p-1.5 rounded-lg border border-slate-200/60 w-full md:w-auto">
           <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg shadow-sm w-full md:w-auto">
             <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider shrink-0">
               Context:
@@ -550,9 +555,9 @@ export function Dashboard() {
         (() => {
           const proj = safeProjects.find((p) => p.id === activeProjectId);
           return (
-            <div className="flex items-center justify-between gap-4 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-3 shadow-sm">
+            <div className="flex items-center justify-between gap-4 bg-amber-50 border border-amber-200 rounded-lg px-5 py-3 shadow-sm">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-amber-100 rounded-xl flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center shrink-0">
                   <Eye className="w-4 h-4 text-amber-600" />
                 </div>
                 <div>
@@ -585,7 +590,7 @@ export function Dashboard() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/40 overflow-hidden"
+          className="relative bg-white rounded-lg border border-slate-200 shadow-xl shadow-slate-200/40 overflow-hidden"
         >
           <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-indigo-500 via-purple-500 to-indigo-600" />
 
@@ -603,7 +608,7 @@ export function Dashboard() {
                     : "Overview of your assigned projects and portfolio."}
                 </p>
               </div>
-              <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-xs uppercase tracking-widest border border-indigo-100/50">
+              <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg font-bold text-xs uppercase tracking-widest border border-indigo-100/50">
                 {loadingOverview ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 ) : (
@@ -627,7 +632,7 @@ export function Dashboard() {
                 loadingOverview && "hidden",
               )}
             >
-              <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 transition-all hover:bg-white hover:shadow-lg hover:shadow-indigo-500/5 group">
+              <div className="bg-slate-50 rounded-lg p-5 border border-slate-100 transition-all hover:bg-white hover:shadow-lg hover:shadow-indigo-500/5 group">
                 <div className="text-3xl font-black text-slate-900 group-hover:text-indigo-600 transition-colors">
                   {displayProgrammes.length}
                 </div>
@@ -635,7 +640,7 @@ export function Dashboard() {
                   Total Programmes
                 </div>
               </div>
-              <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 transition-all hover:bg-white hover:shadow-lg hover:shadow-indigo-500/5 group">
+              <div className="bg-slate-50 rounded-lg p-5 border border-slate-100 transition-all hover:bg-white hover:shadow-lg hover:shadow-indigo-500/5 group">
                 <div className="text-3xl font-black text-slate-900 group-hover:text-indigo-600 transition-colors">
                   {displayProjects.length}
                 </div>
@@ -643,7 +648,7 @@ export function Dashboard() {
                   Total Projects
                 </div>
               </div>
-              <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 transition-all hover:bg-white hover:shadow-lg hover:shadow-emerald-500/5 group">
+              <div className="bg-slate-50 rounded-lg p-5 border border-slate-100 transition-all hover:bg-white hover:shadow-lg hover:shadow-emerald-500/5 group">
                 <div className="text-3xl font-black text-emerald-600">
                   {displayProjects.filter((p: any) => p.isPublished).length}
                 </div>
@@ -651,7 +656,7 @@ export function Dashboard() {
                   Published
                 </div>
               </div>
-              <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 transition-all hover:bg-white hover:shadow-lg hover:shadow-amber-500/5 group">
+              <div className="bg-slate-50 rounded-lg p-5 border border-slate-100 transition-all hover:bg-white hover:shadow-lg hover:shadow-amber-500/5 group">
                 <div className="text-3xl font-black text-amber-500">
                   {displayProjects.filter((p: any) => !p.isPublished).length}
                 </div>
@@ -660,7 +665,7 @@ export function Dashboard() {
                 </div>
               </div>
               {isClientAdmin && (
-                <div className="bg-slate-900 rounded-2xl p-5 shadow-lg shadow-slate-900/20 flex flex-col justify-between">
+                <div className="bg-slate-900 rounded-lg p-5 shadow-lg shadow-slate-900/20 flex flex-col justify-between">
                   <Link to="/setup/workspace" className="block">
                     <div className="text-xl font-bold text-white flex items-center gap-2 mb-1">
                       <Plus className="w-5 h-5 text-indigo-400" /> Invite PM
@@ -682,7 +687,7 @@ export function Dashboard() {
                 <div className="space-y-2">
                   <Link
                     to="/monitoring/kri"
-                    className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-indigo-200 hover:shadow-md transition-all group"
+                    className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-lg hover:border-indigo-200 hover:shadow-md transition-all group"
                   >
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-indigo-50 rounded-lg group-hover:bg-indigo-100">
@@ -696,7 +701,7 @@ export function Dashboard() {
                   </Link>
                   <Link
                     to="/monitoring/alerts"
-                    className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-amber-200 hover:shadow-md transition-all group"
+                    className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-lg hover:border-amber-200 hover:shadow-md transition-all group"
                   >
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-amber-50 rounded-lg group-hover:bg-amber-100">
@@ -737,9 +742,9 @@ export function Dashboard() {
                             navigate("/dashboard?viewAs=pm");
                           }
                         }}
-                        className="flex items-center gap-3 bg-slate-50/50 hover:bg-white border border-transparent hover:border-slate-100 hover:shadow-sm transition-all cursor-pointer rounded-2xl px-4 py-3 group"
+                        className="flex items-center gap-3 bg-slate-50/50 hover:bg-white border border-transparent hover:border-slate-100 hover:shadow-sm transition-all cursor-pointer rounded-lg px-4 py-3 group"
                       >
-                        <div className="w-8 h-8 bg-white rounded-xl shadow-sm flex items-center justify-center shrink-0 border border-slate-100 group-hover:scale-110 transition-transform">
+                        <div className="w-8 h-8 bg-white rounded-lg shadow-sm flex items-center justify-center shrink-0 border border-slate-100 group-hover:scale-110 transition-transform">
                           <FolderKanban className="w-4 h-4 text-indigo-500" />
                         </div>
                         <div className="min-w-0 flex-1">
@@ -761,7 +766,7 @@ export function Dashboard() {
                     ))}
                   </div>
                 ) : (
-                  <div className="bg-slate-50 rounded-2xl p-8 text-center border border-dashed border-slate-200">
+                  <div className="bg-slate-50 rounded-lg p-8 text-center border border-dashed border-slate-200">
                     <p className="text-xs text-slate-400 font-medium">
                       No active project records found.
                     </p>
@@ -793,7 +798,7 @@ export function Dashboard() {
                 setActiveProgramme(null);
                 navigate("/initiate");
               }}
-              className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-colors shadow-md"
+              className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors shadow-md"
             >
               <Plus className="w-5 h-5" /> Start Project Initiation
             </button>
@@ -841,7 +846,7 @@ export function Dashboard() {
               {!isProjectManager || isClientAdmin ? (
                 <Link
                   to="/monitoring/aggregation"
-                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 text-xs sm:text-sm font-bold rounded-xl hover:bg-slate-50 transition-all shadow-sm whitespace-nowrap"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 text-xs sm:text-sm font-bold rounded-lg hover:bg-slate-50 transition-all shadow-sm whitespace-nowrap"
                 >
                   <Layers className="w-4 h-4 text-indigo-500" />
                   Aggregation
@@ -849,7 +854,7 @@ export function Dashboard() {
               ) : (
                 <Link
                   to="/setup/regulations"
-                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 text-xs sm:text-sm font-bold rounded-xl hover:bg-slate-50 transition-all shadow-sm whitespace-nowrap"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 text-xs sm:text-sm font-bold rounded-lg hover:bg-slate-50 transition-all shadow-sm whitespace-nowrap"
                 >
                   <BookOpen className="w-4 h-4 text-indigo-500" />
                   Regulations
@@ -859,7 +864,7 @@ export function Dashboard() {
                 to={
                   isClientAdmin ? "/reporting/programme" : "/reporting/project"
                 }
-                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white text-xs sm:text-sm font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-md shadow-indigo-600/20 whitespace-nowrap"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white text-xs sm:text-sm font-bold rounded-lg hover:bg-indigo-700 transition-all shadow-md shadow-indigo-600/20 whitespace-nowrap"
               >
                 <FileBarChart className="w-4 h-4" />
                 {isClientAdmin ? "Prog Report" : "Proj Report"}
@@ -870,7 +875,7 @@ export function Dashboard() {
               <button
                 onClick={handleClearData}
                 disabled={loadingClear || loadingDemo}
-                className={`px-4 py-2 text-xs sm:text-sm font-medium rounded-xl transition-all disabled:opacity-50 whitespace-nowrap border ${
+                className={`px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all disabled:opacity-50 whitespace-nowrap border ${
                   confirmClear
                     ? "bg-rose-600 text-white border-rose-600 shadow-lg shadow-rose-200"
                     : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 shadow-sm"
@@ -887,7 +892,7 @@ export function Dashboard() {
               <button
                 onClick={handleLoadDemo}
                 disabled={loadingDemo || loadingClear}
-                className="px-4 py-2 bg-white border border-indigo-200 text-indigo-600 text-xs sm:text-sm font-bold rounded-xl hover:bg-indigo-50 transition-all shadow-sm disabled:opacity-50 whitespace-nowrap"
+                className="px-4 py-2 bg-white border border-indigo-200 text-indigo-600 text-xs sm:text-sm font-bold rounded-lg hover:bg-indigo-50 transition-all shadow-sm disabled:opacity-50 whitespace-nowrap"
               >
                 {loadingDemo
                   ? "Loading..."
@@ -903,12 +908,12 @@ export function Dashboard() {
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-indigo-600 rounded-2xl p-4 shadow-lg shadow-indigo-200 border border-indigo-500 overflow-hidden relative"
+              className="bg-indigo-600 rounded-lg p-4 shadow-lg shadow-indigo-200 border border-indigo-500 overflow-hidden relative"
             >
               <div className="absolute top-0 right-0 w-32 h-full bg-white/10 -skew-x-12 translate-x-16" />
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 relative z-10">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0 border border-white/20">
+                  <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center shrink-0 border border-white/20">
                     <ScanSearch className="w-5 h-5 text-white animate-pulse" />
                   </div>
                   <div>
@@ -923,7 +928,7 @@ export function Dashboard() {
                 </div>
                 <Link
                   to="/compliance/tracker"
-                  className="w-full sm:w-auto px-4 py-2 bg-white text-indigo-600 text-xs font-black rounded-xl hover:bg-indigo-50 transition-all shadow-sm flex items-center justify-center gap-2 whitespace-nowrap"
+                  className="w-full sm:w-auto px-4 py-2 bg-white text-indigo-600 text-xs font-black rounded-lg hover:bg-indigo-50 transition-all shadow-sm flex items-center justify-center gap-2 whitespace-nowrap"
                 >
                   Go to Verification Queue{" "}
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -934,11 +939,11 @@ export function Dashboard() {
 
           {/* AI Strategic Intelligence - Hidden if no stats available at all */}
           {(isComplianceSetup || isRiskSetup) && (
-            <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl relative">
+            <div className="bg-slate-900 rounded-lg border border-slate-800 overflow-hidden shadow-xl relative">
               <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 blur-[100px] pointer-events-none" />
               <div className="bg-white/5 border-b border-white/10 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
                 <div className="flex items-center gap-3">
-                  <div className="bg-indigo-500/20 p-2 rounded-xl border border-indigo-500/20">
+                  <div className="bg-indigo-500/20 p-2 rounded-lg border border-indigo-500/20">
                     <TrendingUp className="w-5 h-5 text-indigo-400" />
                   </div>
                   <div>
@@ -957,7 +962,7 @@ export function Dashboard() {
                   <button
                     onClick={handleGenerateInsights}
                     disabled={generatingInsights}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-50 active:scale-95"
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-50 active:scale-95"
                   >
                     {generatingInsights ? (
                       <Loader2 className="w-3 h-3 animate-spin" />
@@ -998,7 +1003,7 @@ export function Dashboard() {
                 )}
 
                 {!strategicInsights && !aiError ? (
-                  <div className="flex flex-col items-center justify-center py-10 text-center bg-white/5 rounded-xl border border-dashed border-white/10">
+                  <div className="flex flex-col items-center justify-center py-10 text-center bg-white/5 rounded-lg border border-dashed border-white/10">
                     <Briefcase className="w-12 h-12 text-white/10 mb-4" />
                     <p className="text-sm text-slate-400 font-medium max-w-xs leading-relaxed">
                       Analyze cross-functional compliance, risk, and issue data
@@ -1011,7 +1016,7 @@ export function Dashboard() {
                       <div className="md:col-span-3 space-y-6">
                         <div className="relative pl-6">
                           <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-500 to-indigo-600 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.6)]" />
-                          <p className="text-slate-200 leading-relaxed font-semibold italic text-base bg-white/5 p-4 rounded-xl border border-white/10 backdrop-blur-md">
+                          <p className="text-slate-200 leading-relaxed font-semibold italic text-base bg-white/5 p-4 rounded-lg border border-white/10 backdrop-blur-md">
                             "{stripMarkdown(strategicInsights.outlook)}"
                           </p>
                         </div>
@@ -1028,7 +1033,7 @@ export function Dashboard() {
                                 .map((s: string, i: number) => (
                                   <div
                                     key={i}
-                                    className="flex items-start gap-3 bg-red-500/5 p-4 rounded-xl border border-red-500/10 transition-all hover:bg-red-500/10 hover:translate-x-1 duration-300"
+                                    className="flex items-start gap-3 bg-red-500/5 p-4 rounded-lg border border-red-500/10 transition-all hover:bg-red-500/10 hover:translate-x-1 duration-300"
                                   >
                                     <ShieldAlert className="w-3.5 h-3.5 text-red-500 shrink-0 mt-0.5" />
                                     <p className="text-xs text-slate-300 leading-normal font-medium">
@@ -1049,7 +1054,7 @@ export function Dashboard() {
                                 .map((s: string, i: number) => (
                                   <div
                                     key={i}
-                                    className="flex items-start gap-3 bg-indigo-500/5 p-4 rounded-xl border border-indigo-500/10 transition-all hover:bg-indigo-500/10 hover:translate-x-1 duration-300"
+                                    className="flex items-start gap-3 bg-indigo-500/5 p-4 rounded-lg border border-indigo-500/10 transition-all hover:bg-indigo-500/10 hover:translate-x-1 duration-300"
                                   >
                                     <div className="shrink-0 w-6 h-6 rounded-lg bg-indigo-500/20 flex items-center justify-center border border-indigo-500/20 group-hover:scale-105 transition-transform">
                                       <span className="text-indigo-400 font-black text-[10px]">
@@ -1089,10 +1094,10 @@ export function Dashboard() {
                                       return (
                                         <div
                                           key={i}
-                                          className="flex flex-col gap-4 bg-emerald-500/5 p-5 rounded-2xl border border-emerald-500/10 transition-all hover:bg-emerald-500/10 hover:-translate-y-1 duration-300 shadow-sm hover:shadow-emerald-500/5 group"
+                                          className="flex flex-col gap-4 bg-emerald-500/5 p-5 rounded-lg border border-emerald-500/10 transition-all hover:bg-emerald-500/10 hover:-translate-y-1 duration-300 shadow-sm hover:shadow-emerald-500/5 group"
                                         >
                                           <div className="flex items-start gap-4">
-                                            <div className="shrink-0 w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 group-hover:scale-110 group-hover:bg-emerald-500/20 transition-all duration-500">
+                                            <div className="shrink-0 w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 group-hover:scale-110 group-hover:bg-emerald-500/20 transition-all duration-500">
                                               <ShieldCheck className="w-5 h-5 text-emerald-400" />
                                             </div>
                                             <p className="text-[11px] text-slate-300 font-bold leading-relaxed mt-1">
@@ -1107,7 +1112,7 @@ export function Dashboard() {
                           )}
                       </div>
 
-                      <div className="bg-white/5 rounded-2xl p-6 border border-white/10 flex flex-col items-center justify-center text-center backdrop-blur-sm self-center md:self-start w-full md:w-auto">
+                      <div className="bg-white/5 rounded-lg p-6 border border-white/10 flex flex-col items-center justify-center text-center backdrop-blur-sm self-center md:self-start w-full md:w-auto">
                         <div className="relative mb-6">
                           <svg className="w-24 h-24 transform -rotate-90">
                             <circle
@@ -1196,7 +1201,7 @@ export function Dashboard() {
                       key={project.id}
                       to="/dashboard"
                       onClick={() => setActiveProject(project.id)}
-                      className="bg-white p-4 rounded-xl border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all group"
+                      className="bg-white p-4 rounded-lg border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all group"
                     >
                       <div className="flex justify-between items-start mb-3">
                         <div className="bg-slate-50 p-2 rounded-lg group-hover:bg-indigo-50 transition-colors">
@@ -1240,7 +1245,7 @@ export function Dashboard() {
                     </Link>
                   ))
                 ) : (
-                  <div className="col-span-full py-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                  <div className="col-span-full py-8 text-center bg-slate-50 rounded-lg border border-dashed border-slate-200">
                     <p className="text-sm text-slate-400 font-medium">
                       No projects found. Use Project Initiation to create one.
                     </p>
@@ -1259,10 +1264,10 @@ export function Dashboard() {
                 </div>
               )}
 
-              <div className="bg-indigo-900 rounded-2xl p-4 border border-indigo-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0 shadow-lg relative overflow-hidden group">
+              <div className="bg-indigo-900 rounded-lg p-4 border border-indigo-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0 shadow-lg relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-1000" />
                 <div className="flex items-center gap-4 relative z-10">
-                  <div className="bg-indigo-500/20 p-3 rounded-xl border border-indigo-500/20 group-hover:bg-indigo-500/30 transition-colors">
+                  <div className="bg-indigo-500/20 p-3 rounded-lg border border-indigo-500/20 group-hover:bg-indigo-500/30 transition-colors">
                     <BookOpen className="w-6 h-6 text-indigo-400" />
                   </div>
                   <div>
@@ -1277,7 +1282,7 @@ export function Dashboard() {
                 </div>
                 <Link
                   to="/setup/regulations"
-                  className="relative z-10 w-full sm:w-auto text-center px-4 py-3 sm:py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-500 transition-all border border-indigo-400/20 group-hover:shadow-[0_0_15px_rgba(79,70,229,0.3)] shadow-md"
+                  className="relative z-10 w-full sm:w-auto text-center px-4 py-3 sm:py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-500 transition-all border border-indigo-400/20 group-hover:shadow-[0_0_15px_rgba(79,70,229,0.3)] shadow-md"
                 >
                   Browse Regulations
                 </Link>
@@ -1310,7 +1315,7 @@ export function Dashboard() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                 <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
                   <div className="flex items-center gap-2">
                     <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">
@@ -1374,7 +1379,7 @@ export function Dashboard() {
                         <div className="flex items-center gap-4 min-w-0">
                           <div
                             className={clsx(
-                              "w-10 h-10 rounded-xl flex flex-col items-center justify-center shrink-0 border shadow-sm transition-transform group-hover:scale-105",
+                              "w-10 h-10 rounded-lg flex flex-col items-center justify-center shrink-0 border shadow-sm transition-transform group-hover:scale-105",
                               m.isKey
                                 ? "bg-amber-50 border-amber-100 text-amber-700"
                                 : "bg-indigo-50 border-indigo-100 text-indigo-700",
@@ -1472,11 +1477,11 @@ export function Dashboard() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-                  <div className="xl:col-span-3 bg-white rounded-3xl border border-indigo-100 shadow-sm overflow-hidden relative group">
+                  <div className="xl:col-span-3 bg-white rounded-lg border border-indigo-100 shadow-sm overflow-hidden relative group">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 blur-3xl rounded-full -mr-32 -mt-32 pointer-events-none group-hover:bg-indigo-500/10 transition-colors duration-700" />
                     <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
+                        <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-200">
                           <BarChart className="w-4 h-4 text-white" />
                         </div>
                         <div>
@@ -1564,7 +1569,7 @@ export function Dashboard() {
                                   <td className="px-6 py-4 text-center">
                                     <span
                                       className={clsx(
-                                        "inline-flex items-center justify-center w-8 h-8 rounded-xl font-black text-sm border shadow-sm",
+                                        "inline-flex items-center justify-center w-8 h-8 rounded-lg font-black text-sm border shadow-sm",
                                         scoreColor,
                                       )}
                                     >
@@ -1620,7 +1625,7 @@ export function Dashboard() {
                   </div>
 
                   <div className="flex flex-col gap-4">
-                    <div className="bg-linear-to-br from-indigo-900 to-slate-900 rounded-3xl p-6 border border-indigo-800 shadow-xl relative overflow-hidden group">
+                    <div className="bg-linear-to-br from-indigo-900 to-slate-900 rounded-lg p-6 border border-indigo-800 shadow-xl relative overflow-hidden group">
                       <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 blur-2xl group-hover:scale-150 transition-transform duration-1000" />
                       <div className="relative z-10">
                         <div className="flex items-center gap-3 mb-4">
@@ -1667,7 +1672,7 @@ export function Dashboard() {
                       </div>
                     </div>
 
-                    <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm flex-1 flex flex-col justify-between">
+                    <div className="bg-white rounded-lg p-5 border border-slate-200 shadow-sm flex-1 flex flex-col justify-between">
                       <div>
                         <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
                           Aggregation Logic
@@ -1715,51 +1720,63 @@ export function Dashboard() {
             ) : isComplianceSetup ? (
               <>
                 <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-                  <StatCard
-                    label="Total Scope"
+                  <StatsCard
+                    icon={Layers}
+                    title="Total Scope"
                     value={compTotal}
-                    color="blue"
-                    border="border-l-blue-500"
+                    size="sm"
+                    iconBgClassName="bg-indigo-50 dark:bg-indigo-500/10"
+                    iconClassName="text-indigo-600 dark:text-indigo-400"
                     info={`Total framework scope (${compApplicable} applicable + ${pendingComplianceCount} pending) for this ${isProjectManager && !activeProjectId ? "portfolio" : "project"}.`}
                   />
-                  <StatCard
-                    label="Complete"
+                  <StatsCard
+                    icon={CheckCircle2}
+                    title="Complete"
                     value={compComplete}
-                    color="green"
-                    border="border-l-emerald-500"
+                    size="sm"
+                    iconBgClassName="bg-emerald-50 dark:bg-emerald-500/10"
+                    iconClassName="text-emerald-600 dark:text-emerald-400"
                     info={`Requirements fully satisfied for this ${isProjectManager && !activeProjectId ? "portfolio" : "project"}.`}
                   />
-                  <StatCard
-                    label="In Progress"
+                  <StatsCard
+                    icon={Clock}
+                    title="In Progress"
                     value={compInProgress}
-                    color="amber"
-                    border="border-l-amber-500"
+                    size="sm"
+                    iconBgClassName="bg-amber-50 dark:bg-amber-500/10"
+                    iconClassName="text-amber-600 dark:text-amber-400"
                     info={`Requirements currently being addressed in this ${isProjectManager && !activeProjectId ? "portfolio" : "project"}.`}
                   />
-                  <StatCard
-                    label="Not Started"
+                  <StatsCard
+                    icon={CircleDashed}
+                    title="Not Started"
                     value={compNotStarted}
-                    color="slate"
-                    border="border-l-slate-500"
+                    size="sm"
+                    iconBgClassName="bg-slate-100 dark:bg-slate-500/10"
+                    iconClassName="text-slate-600 dark:text-slate-400"
                     info={`Requirements yet to be reviewed for this ${isProjectManager && !activeProjectId ? "portfolio" : "project"}.`}
                   />
-                  <StatCard
-                    label="Pending Review"
+                  <StatsCard
+                    icon={Eye}
+                    title="Pending Review"
                     value={pendingComplianceCount}
-                    color="indigo"
-                    border="border-l-indigo-500"
+                    size="sm"
+                    iconBgClassName="bg-sky-50 dark:bg-sky-500/10"
+                    iconClassName="text-sky-600 dark:text-sky-400"
                     info={`Conditional items awaiting verification for this ${isProjectManager && !activeProjectId ? "portfolio" : "project"}.`}
                   />
-                  <StatCard
-                    label="High Risk Open"
+                  <StatsCard
+                    icon={AlertTriangle}
+                    title="High Risk Open"
                     value={compHighRisk}
-                    color="red"
-                    border="border-l-red-500"
+                    size="sm"
+                    iconBgClassName="bg-rose-50 dark:bg-rose-500/10"
+                    iconClassName="text-rose-600 dark:text-rose-400"
                     info={`Open compliance items that carry a high risk of regulatory breach or severe penalty for this ${isProjectManager && !activeProjectId ? "portfolio" : "project"}.`}
                   />
                 </div>
 
-                <div className="bg-white rounded-2xl border border-slate-200 p-4 md:p-5 flex flex-col md:flex-row md:items-center gap-4 md:gap-6 shadow-sm">
+                <div className="bg-white rounded-lg border border-slate-200 p-4 md:p-5 flex flex-col md:flex-row md:items-center gap-4 md:gap-6 shadow-sm">
                   <div className="text-xs font-extrabold text-slate-500 uppercase tracking-widest whitespace-nowrap flex items-center gap-1.5">
                     Overall Health
                     <InfoTooltip content="Percentage of compliance requirements that have been marked as Complete." />
@@ -1776,7 +1793,7 @@ export function Dashboard() {
                 </div>
               </>
             ) : (
-              <div className="bg-white rounded-2xl border-2 border-dashed border-slate-200 p-8 flex flex-col items-center justify-center text-center">
+              <div className="bg-white rounded-lg border-2 border-dashed border-slate-200 p-8 flex flex-col items-center justify-center text-center">
                 <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-4">
                   <Shield className="w-6 h-6 text-slate-400" />
                 </div>
@@ -1789,7 +1806,7 @@ export function Dashboard() {
                 </p>
                 <Link
                   to={`/compliance/setup${activeProgrammeId ? "?type=programme" : ""}`}
-                  className="mt-4 flex items-center gap-2 px-5 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm"
+                  className="mt-4 flex items-center gap-2 px-5 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
                 >
                   <ScanSearch className="w-3.5 h-3.5" /> Start AI Setup
                 </Link>
@@ -1819,37 +1836,47 @@ export function Dashboard() {
             ) : isRiskSetup ? (
               <>
                 <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-                  <StatCard
-                    label="Total Risks"
+                  <StatsCard
+                    icon={Shield}
+                    title="Total Risks"
                     value={riskTotal}
-                    color="blue"
-                    border="border-l-blue-500"
+                    size="sm"
+                    iconBgClassName="bg-indigo-50 dark:bg-indigo-500/10"
+                    iconClassName="text-indigo-600 dark:text-indigo-400"
                   />
-                  <StatCard
-                    label="Open Risks"
+                  <StatsCard
+                    icon={AlertCircle}
+                    title="Open Risks"
                     value={riskOpen}
-                    color="red"
-                    border="border-l-red-500"
+                    size="sm"
+                    iconBgClassName="bg-rose-50 dark:bg-rose-500/10"
+                    iconClassName="text-rose-600 dark:text-rose-400"
                   />
-                  <StatCard
-                    label="High/Severe Risks"
+                  <StatsCard
+                    icon={Flame}
+                    title="High/Severe Risks"
                     value={riskHigh}
-                    color="amber"
-                    border="border-l-amber-500"
+                    size="sm"
+                    iconBgClassName="bg-amber-50 dark:bg-amber-500/10"
+                    iconClassName="text-amber-600 dark:text-amber-400"
                     info="Risks with a gross rating of 16 or higher (Major or Severe)."
                   />
-                  <StatCard
-                    label="Escalated Risks"
+                  <StatsCard
+                    icon={TrendingUp}
+                    title="Escalated Risks"
                     value={riskEscalated}
-                    color="purple"
-                    border="border-l-purple-500"
+                    size="sm"
+                    iconBgClassName="bg-violet-50 dark:bg-violet-500/10"
+                    iconClassName="text-violet-600 dark:text-violet-400"
                     info="Risks that have been escalated to the Programme Board for senior attention."
                   />
-                  <StatCard
-                    label="Residual ALE"
+                  <StatsCard
+                    icon={PoundSterling}
+                    title="Residual ALE"
                     value={`£${Math.round(riskResidualALE / 1000)}k`}
-                    color="green"
-                    border="border-l-emerald-500"
+                    size="sm"
+                    iconBgClassName="bg-emerald-50 dark:bg-emerald-500/10"
+                    iconClassName="text-emerald-600 dark:text-emerald-400"
                     info="Residual Annual Loss Expectancy: The estimated financial exposure after all controls are applied."
                   />
                 </div>
@@ -1857,7 +1884,7 @@ export function Dashboard() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
                   {/* Top 5 Risks Table — hidden in aggregate view (portfolio section above already shows it with source context) */}
                   {(activeProjectId || activeProgrammeId) && (
-                    <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="lg:col-span-2 bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                       <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                         <div className="flex items-center gap-2">
                           <BarChart className="w-4 h-4 text-indigo-500" />
@@ -1970,7 +1997,7 @@ export function Dashboard() {
 
                   <div
                     className={clsx(
-                      "bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-shadow",
+                      "bg-white rounded-lg border border-slate-200 p-6 shadow-sm hover:shadow-md transition-shadow",
                       !activeProjectId && !activeProgrammeId && "lg:col-span-3",
                     )}
                   >
@@ -2020,7 +2047,7 @@ export function Dashboard() {
                 </div>
               </>
             ) : (
-              <div className="bg-white rounded-2xl border-2 border-dashed border-slate-200 p-8 flex flex-col items-center justify-center text-center">
+              <div className="bg-white rounded-lg border-2 border-dashed border-slate-200 p-8 flex flex-col items-center justify-center text-center">
                 <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-4">
                   <ShieldAlert className="w-6 h-6 text-slate-400" />
                 </div>
@@ -2033,7 +2060,7 @@ export function Dashboard() {
                 </p>
                 <Link
                   to={`/risk/ai${activeProgrammeId ? "?type=programme" : ""}`}
-                  className="mt-4 flex items-center gap-2 px-5 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm"
+                  className="mt-4 flex items-center gap-2 px-5 py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
                 >
                   <Briefcase className="w-3.5 h-3.5" /> Launch AI Risk ID
                 </Link>
@@ -2056,7 +2083,7 @@ function SkeletonStatCards({ count }: { count: number }) {
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="bg-white rounded-xl border border-slate-200 border-l-4 border-l-slate-200 px-4 py-4 shadow-sm animate-pulse"
+          className="bg-white rounded-lg border border-slate-200 border-l-4 border-l-slate-200 px-4 py-4 shadow-sm animate-pulse"
         >
           <div className="h-3 bg-slate-200 rounded w-3/4 mb-3" />
           <div className="h-7 bg-slate-200 rounded w-1/2" />
@@ -2068,7 +2095,7 @@ function SkeletonStatCards({ count }: { count: number }) {
 
 function SkeletonBar() {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-4 md:p-5 flex flex-col md:flex-row md:items-center gap-4 md:gap-6 shadow-sm animate-pulse">
+    <div className="bg-white rounded-lg border border-slate-200 p-4 md:p-5 flex flex-col md:flex-row md:items-center gap-4 md:gap-6 shadow-sm animate-pulse">
       <div className="h-3 bg-slate-200 rounded w-24 shrink-0" />
       <div className="flex-1 h-3 bg-slate-200 rounded-full" />
       <div className="h-5 bg-slate-200 rounded w-10 shrink-0" />
@@ -2078,7 +2105,7 @@ function SkeletonBar() {
 
 function SkeletonTable({ rows }: { rows: number }) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-pulse">
+    <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden animate-pulse">
       <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
         <div className="h-3 bg-slate-200 rounded w-36" />
         <div className="h-3 bg-slate-200 rounded w-24" />
@@ -2091,7 +2118,7 @@ function SkeletonTable({ rows }: { rows: number }) {
               <div className="h-2.5 bg-slate-100 rounded w-1/2" />
             </div>
             <div className="h-3 bg-slate-200 rounded w-16 shrink-0" />
-            <div className="h-7 w-7 bg-slate-200 rounded-xl shrink-0" />
+            <div className="h-7 w-7 bg-slate-200 rounded-lg shrink-0" />
             <div className="h-3 bg-slate-200 rounded w-14 shrink-0" />
           </div>
         ))}
@@ -2103,17 +2130,17 @@ function SkeletonTable({ rows }: { rows: number }) {
 function SkeletonRiskSummary() {
   return (
     <div className="flex flex-col gap-4 animate-pulse">
-      <div className="bg-linear-to-br from-indigo-900 to-slate-900 rounded-3xl p-6 border border-indigo-800 shadow-xl relative overflow-hidden">
+      <div className="bg-linear-to-br from-indigo-900 to-slate-900 rounded-lg p-6 border border-indigo-800 shadow-xl relative overflow-hidden">
         <div className="h-3 bg-indigo-700/50 rounded w-24 mb-4" />
         <div className="h-8 bg-indigo-700/30 rounded w-16 mb-2" />
         <div className="h-3 bg-indigo-700/50 rounded w-32" />
       </div>
-      <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
+      <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-sm">
         <div className="h-3 bg-slate-200 rounded w-28 mb-4" />
         <div className="space-y-3">
-          <div className="h-12 bg-slate-100 rounded-xl" />
-          <div className="h-12 bg-slate-100 rounded-xl" />
-          <div className="h-12 bg-slate-100 rounded-xl" />
+          <div className="h-12 bg-slate-100 rounded-lg" />
+          <div className="h-12 bg-slate-100 rounded-lg" />
+          <div className="h-12 bg-slate-100 rounded-lg" />
         </div>
       </div>
     </div>
@@ -2122,7 +2149,7 @@ function SkeletonRiskSummary() {
 
 function SkeletonIssueSummary() {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm animate-pulse">
+    <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-sm animate-pulse">
       <div className="h-3 bg-slate-200 rounded w-28 mb-5" />
       <div className="space-y-4">
         {Array.from({ length: 4 }).map((_, i) => (
@@ -2139,44 +2166,5 @@ function SkeletonIssueSummary() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-
-function StatCard({
-  label,
-  value,
-  color,
-  border,
-  info,
-}: {
-  label: string;
-  value: string | number;
-  color: string;
-  border: string;
-  info?: string;
-}) {
-  const colors: Record<string, string> = {
-    blue: "text-indigo-600",
-    green: "text-emerald-600",
-    amber: "text-amber-600",
-    red: "text-red-600",
-    slate: "text-slate-600",
-    purple: "text-purple-600",
-  };
-
-  return (
-    <div
-      className={clsx(
-        "bg-white rounded-xl border border-slate-200 border-l-4 px-4 py-4 shadow-sm hover:shadow-md transition-all",
-        border,
-      )}
-    >
-      <div className={clsx("text-xl font-black mb-1 truncate", colors[color])}>
-        {value}
-      </div>
-      <div className="text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5 opacity-90">
-        {label}
-        {info && <InfoTooltip content={info} />}
-      </div>
-    </div>
-  );
-}
+// Local StatCard removed — replaced by the shared StatsCard component
+// with light-tinted icon backgrounds.

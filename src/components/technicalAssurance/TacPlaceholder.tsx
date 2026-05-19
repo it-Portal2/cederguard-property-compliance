@@ -29,9 +29,9 @@ export function TacPlaceholder({
       transition={{ duration: 0.25, ease: "easeOut" }}
       className="mx-auto max-w-3xl"
     >
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:p-10 dark:border-slate-700 dark:bg-slate-800">
+      <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm md:p-10 dark:border-slate-700 dark:bg-slate-800">
         <div className="flex flex-col items-start gap-5 md:flex-row md:items-center md:gap-6">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300">
             <Icon className="h-6 w-6" strokeWidth={2.25} />
           </div>
           <div className="min-w-0 flex-1">

@@ -204,7 +204,7 @@ function FeedbackDownDialog({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 8 }}
             transition={{ duration: 0.18 }}
-            className="w-full max-w-md rounded-xl bg-white shadow-2xl"
+            className="w-full max-w-md rounded-lg bg-white shadow-2xl"
           >
             <div className="flex items-start justify-between gap-2 px-5 py-4 border-b border-slate-200">
               <div className="flex items-start gap-3">
@@ -278,7 +278,7 @@ function FeedbackDownDialog({
                 </div>
               </div>
             </div>
-            <div className="flex items-center justify-end gap-2 border-t border-slate-200 bg-slate-50/50 px-5 py-3 rounded-b-xl">
+            <div className="flex items-center justify-end gap-2 border-t border-slate-200 bg-slate-50/50 px-5 py-3 rounded-b-lg">
               <button
                 type="button"
                 onClick={onClose}

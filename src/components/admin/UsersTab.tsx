@@ -144,7 +144,7 @@ export function UsersTab({ isAdmin }: { isAdmin: boolean }) {
                 <span className="text-sm text-slate-500">{filtered.length} users</span>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+            <div className="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm">
                 <table className="w-full text-sm">
                     <thead className="bg-slate-50 border-b border-slate-200">
                         <tr>
@@ -350,7 +350,7 @@ function SupervisorPickerModal({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
-            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+            <div className="bg-white rounded-lg shadow-2xl max-w-md w-full">
                 <fieldset disabled={saving} className="contents">
                     <div className="px-6 py-5 border-b border-slate-100">
                         <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
@@ -444,7 +444,7 @@ function RosterPickerModal({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
-            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[85vh] flex flex-col">
+            <div className="bg-white rounded-lg shadow-2xl max-w-lg w-full max-h-[85vh] flex flex-col">
                 <fieldset disabled={saving} className="contents">
                     <div className="px-6 py-5 border-b border-slate-100">
                         <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
@@ -459,7 +459,7 @@ function RosterPickerModal({
                         ) : (
                             <div className="space-y-1.5">
                                 {programmes.map(p => (
-                                    <label key={p.id} className="flex items-start gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-200">
+                                    <label key={p.id} className="flex items-start gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-200">
                                         <input
                                             type="checkbox"
                                             className="w-4 h-4 mt-0.5 accent-indigo-600"
@@ -531,7 +531,7 @@ function PmLevelModal({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
-            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+            <div className="bg-white rounded-lg shadow-2xl max-w-md w-full">
                 <fieldset disabled={saving} className="contents">
                     <div className="px-6 py-5 border-b border-slate-100">
                         <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">

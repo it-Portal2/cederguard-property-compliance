@@ -211,7 +211,7 @@ export function MeetingsImportModal({ isOpen, onClose, onCommitted }: Props) {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 12, scale: 0.98 }}
           transition={{ duration: 0.18, ease: 'easeOut' }}
-          className="relative flex max-h-[92vh] w-[min(960px,96vw)] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl"
+          className="relative flex max-h-[92vh] w-[min(960px,96vw)] flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-2xl"
         >
           <header className="flex items-start gap-3 border-b border-slate-100 px-6 py-4">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700">
@@ -250,7 +250,7 @@ export function MeetingsImportModal({ isOpen, onClose, onCommitted }: Props) {
                 onDrop={onDrop}
                 onClick={() => inputRef.current?.click()}
                 className={clsx(
-                  'flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-12 text-center transition-colors',
+                  'flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-6 py-12 text-center transition-colors',
                   isDragging
                     ? 'border-indigo-400 bg-indigo-50'
                     : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50',

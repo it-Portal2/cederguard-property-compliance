@@ -373,7 +373,7 @@ export function Calendar() {
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-5">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2.5 md:p-3 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-200/50 shrink-0">
+              <div className="p-2.5 md:p-3 bg-indigo-600 rounded-lg shadow-lg shadow-indigo-200/50 shrink-0">
                 <CalendarIcon className="w-6 h-6 md:w-8 md:h-8 text-white" />
               </div>
               <h1 className="text-xl sm:text-2xl lg:text-4xl font-black text-slate-900 tracking-tight">
@@ -395,7 +395,7 @@ export function Calendar() {
                   if (!compareMode) setSplitView(false);
                 }}
                 className={clsx(
-                  "px-4 py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all shrink-0",
+                  "px-4 py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all shrink-0",
                   compareMode 
                     ? "bg-amber-100 text-amber-700 border-2 border-amber-200 shadow-lg shadow-amber-100" 
                     : "bg-white border-2 border-slate-100 text-slate-600 hover:bg-slate-50 shadow-sm"
@@ -408,7 +408,7 @@ export function Calendar() {
                 <button
                   onClick={() => setSplitView(!splitView)}
                   className={clsx(
-                    "px-4 py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all shrink-0",
+                    "px-4 py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all shrink-0",
                     splitView 
                       ? "bg-indigo-100 text-indigo-700 border-2 border-indigo-200" 
                       : "bg-white border-2 border-slate-100 text-slate-600"
@@ -420,7 +420,7 @@ export function Calendar() {
              {canAddEvents && (
                <button
                  onClick={() => setIsAddModalOpen(true)}
-                 className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-2xl text-sm font-bold shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 transition-all shrink-0"
+                 className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-lg text-sm font-bold shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 transition-all shrink-0"
                >
                  <Plus className="w-4 h-4" />
                  Add Event
@@ -441,7 +441,7 @@ export function Calendar() {
                     setActiveProject(val.replace('project-', ''));
                   }
                 }}
-                className="appearance-none w-full bg-white border-2 border-slate-100 text-slate-900 text-sm font-bold rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 block pl-11 pr-10 py-3.5 shadow-sm transition-all hover:bg-slate-50 hover:border-slate-200"
+                className="appearance-none w-full bg-white border-2 border-slate-100 text-slate-900 text-sm font-bold rounded-lg focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 block pl-11 pr-10 py-3.5 shadow-sm transition-all hover:bg-slate-50 hover:border-slate-200"
               >
                 <option value="all">All Programmes (Aggregate View)</option>
                 {safeProgrammes.length > 0 && (
@@ -474,7 +474,7 @@ export function Calendar() {
               <select
                 value={value || ''}
                 onChange={(e) => onChange(e.target.value)}
-                className="appearance-none w-full bg-white border-2 border-slate-100 text-slate-900 text-sm font-bold rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 block pl-11 pr-10 py-3.5 shadow-sm transition-all hover:bg-slate-50 hover:border-slate-200"
+                className="appearance-none w-full bg-white border-2 border-slate-100 text-slate-900 text-sm font-bold rounded-lg focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 block pl-11 pr-10 py-3.5 shadow-sm transition-all hover:bg-slate-50 hover:border-slate-200"
               >
                 <option value="">Select {label}</option>
                 <optgroup label="Programmes">
@@ -501,9 +501,9 @@ export function Calendar() {
 
           if (splitView) {
             return (
-              <div className="p-6 bg-slate-900 rounded-[2rem] border border-slate-800 shadow-2xl animate-in fade-in slide-in-from-top-4 mb-2">
+              <div className="p-6 bg-slate-900 rounded-lg border border-slate-800 shadow-2xl animate-in fade-in slide-in-from-top-4 mb-2">
                 <div className="flex items-center gap-4 text-white mb-6">
-                  <div className="p-2 bg-indigo-500/20 rounded-xl border border-indigo-500/20">
+                  <div className="p-2 bg-indigo-500/20 rounded-lg border border-indigo-500/20">
                     <Layers className="w-5 h-5 text-indigo-400" />
                   </div>
                   <div>
@@ -536,10 +536,10 @@ export function Calendar() {
           }
 
           return (
-            <div className="p-6 bg-indigo-50/50 border-2 border-dashed border-indigo-200 rounded-[2rem] animate-in fade-in slide-in-from-top-4 mb-2">
+            <div className="p-6 bg-indigo-50/50 border-2 border-dashed border-indigo-200 rounded-lg animate-in fade-in slide-in-from-top-4 mb-2">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
                 <div className="flex items-center gap-4">
-                  <div className="p-2 bg-indigo-100 rounded-xl">
+                  <div className="p-2 bg-indigo-100 rounded-lg">
                     <Layers className="w-5 h-5 text-indigo-600" />
                   </div>
                   <div>
@@ -549,7 +549,7 @@ export function Calendar() {
                 </div>
                 <button 
                   onClick={() => setMergedCompareIds([])}
-                  className="px-4 py-2 bg-white border border-indigo-200 text-[10px] font-black text-indigo-600 uppercase tracking-widest rounded-xl hover:bg-indigo-50 transition-colors shadow-sm"
+                  className="px-4 py-2 bg-white border border-indigo-200 text-[10px] font-black text-indigo-600 uppercase tracking-widest rounded-lg hover:bg-indigo-50 transition-colors shadow-sm"
                 >
                   Clear All Selections
                 </button>
@@ -569,7 +569,7 @@ export function Calendar() {
                           );
                         }}
                         className={clsx(
-                          "px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border-2",
+                          "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 border-2",
                           mergedCompareIds.includes(`programme:${prog.id}`)
                             ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-100"
                             : "bg-white border-slate-100 text-slate-600 hover:border-indigo-200 hover:bg-indigo-50/30"
@@ -594,7 +594,7 @@ export function Calendar() {
                           );
                         }}
                         className={clsx(
-                          "px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 border-2",
+                          "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 border-2",
                           mergedCompareIds.includes(`project:${proj.id}`)
                             ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-100"
                             : "bg-white border-slate-100 text-slate-600 hover:border-indigo-200 hover:bg-indigo-100/30"
@@ -612,13 +612,13 @@ export function Calendar() {
         })()}
 
         {/* Global Controls & Filtering Bar */}
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 p-3 sm:p-2 bg-white/50 backdrop-blur-md border border-slate-100 rounded-2xl sm:rounded-[2rem] shadow-xl shadow-slate-200/40">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 p-3 sm:p-2 bg-white/50 backdrop-blur-md border border-slate-100 rounded-lg sm:rounded-lg shadow-xl shadow-slate-200/40">
           <div className="flex flex-nowrap sm:flex-wrap items-center gap-2 px-2 overflow-x-auto sm:overflow-visible scrollbar-none">
              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2 ml-2">Quick Filter:</span>
              <button
                onClick={() => setFilters(f => ({ ...f, milestone: !f.milestone }))}
                className={clsx(
-                 "flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all duration-300",
+                 "flex items-center gap-2 px-4 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-300",
                  filters.milestone ? "bg-emerald-500 text-white shadow-lg shadow-emerald-200" : "bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                )}
              >
@@ -628,7 +628,7 @@ export function Calendar() {
              <button
                onClick={() => setFilters(f => ({ ...f, compliance: !f.compliance }))}
                className={clsx(
-                 "flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all duration-300",
+                 "flex items-center gap-2 px-4 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-300",
                  filters.compliance ? "bg-blue-500 text-white shadow-lg shadow-blue-200" : "bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                )}
              >
@@ -638,7 +638,7 @@ export function Calendar() {
              <button
                onClick={() => setFilters(f => ({ ...f, risk: !f.risk }))}
                className={clsx(
-                 "flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all duration-300",
+                 "flex items-center gap-2 px-4 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-300",
                  filters.risk ? "bg-red-500 text-white shadow-lg shadow-red-200" : "bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                )}
              >
@@ -648,7 +648,7 @@ export function Calendar() {
               <button
                 onClick={() => setFilters(f => ({ ...f, task: !f.task }))}
                 className={clsx(
-                  "flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all duration-300",
+                  "flex items-center gap-2 px-4 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-300",
                   filters.task ? "bg-slate-500 text-white shadow-lg shadow-slate-200" : "bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                 )}
               >
@@ -658,7 +658,7 @@ export function Calendar() {
               <button
                 onClick={() => setFilters(f => ({ ...f, issue: !f.issue }))}
                 className={clsx(
-                  "flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all duration-300",
+                  "flex items-center gap-2 px-4 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-300",
                   filters.issue ? "bg-orange-500 text-white shadow-lg shadow-orange-200" : "bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                 )}
               >
@@ -667,12 +667,12 @@ export function Calendar() {
               </button>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-2 bg-slate-100 p-1.5 rounded-2xl w-full lg:w-auto">
+          <div className="flex flex-wrap items-center justify-center gap-2 bg-slate-100 p-1.5 rounded-lg w-full lg:w-auto">
             <div className="flex gap-1 mr-0 sm:mr-4">
               <button 
                 onClick={() => setViewMode('month')}
                 className={clsx(
-                  "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all",
+                  "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all",
                   viewMode === 'month' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
                 )}
               >
@@ -681,7 +681,7 @@ export function Calendar() {
               <button 
                 onClick={() => setViewMode('week')}
                 className={clsx(
-                  "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all",
+                  "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all",
                   viewMode === 'week' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
                 )}
               >
@@ -690,7 +690,7 @@ export function Calendar() {
               <button 
                 onClick={() => setViewMode('day')}
                 className={clsx(
-                  "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all",
+                  "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all",
                   viewMode === 'day' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
                 )}
               >
@@ -705,12 +705,12 @@ export function Calendar() {
                   else if (viewMode === 'week') setCurrentMonth(addDays(currentMonth, -7));
                   else setCurrentMonth(addDays(currentMonth, -1));
                 }}
-                className="p-2.5 bg-white hover:bg-indigo-50 rounded-xl shadow-sm transition-all text-slate-400 hover:text-indigo-600 border border-slate-200/50"
+                className="p-2.5 bg-white hover:bg-indigo-50 rounded-lg shadow-sm transition-all text-slate-400 hover:text-indigo-600 border border-slate-200/50"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               
-              <div className="bg-white px-3 sm:px-6 py-2 rounded-xl border border-slate-200/50 shadow-sm min-w-[120px] sm:min-w-[180px] text-center">
+              <div className="bg-white px-3 sm:px-6 py-2 rounded-lg border border-slate-200/50 shadow-sm min-w-[120px] sm:min-w-[180px] text-center">
                 <span className="text-[11px] font-black text-slate-900 uppercase tracking-widest whitespace-nowrap">
                   {viewMode === 'month' 
                     ? format(currentMonth, 'MMMM yyyy') 
@@ -727,7 +727,7 @@ export function Calendar() {
                   else if (viewMode === 'week') setCurrentMonth(addDays(currentMonth, 7));
                   else setCurrentMonth(addDays(currentMonth, 1));
                 }}
-                className="p-2.5 bg-white hover:bg-indigo-50 rounded-xl shadow-sm transition-all text-slate-400 hover:text-indigo-600 border border-slate-200/50"
+                className="p-2.5 bg-white hover:bg-indigo-50 rounded-lg shadow-sm transition-all text-slate-400 hover:text-indigo-600 border border-slate-200/50"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -876,7 +876,7 @@ export function Calendar() {
                     onClick={(e) => { e.stopPropagation(); setSelectedEvent(event); }}
                     title={event.title}
                     className={clsx(
-                      "text-[11px] font-black px-3 py-2 rounded-xl text-white shadow-sm flex items-center gap-2 cursor-pointer hover:opacity-90",
+                      "text-[11px] font-black px-3 py-2 rounded-lg text-white shadow-sm flex items-center gap-2 cursor-pointer hover:opacity-90",
                       event.color
                     )}
                   >
@@ -909,7 +909,7 @@ export function Calendar() {
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{format(currentMonth, 'MMMM yyyy')}</span>
               </div>
             </div>
-            <div className="bg-indigo-50 px-4 py-2 rounded-2xl">
+            <div className="bg-indigo-50 px-4 py-2 rounded-lg">
               <span className="text-xs font-black text-indigo-600 uppercase tracking-widest">
                 {dayEvents.length} Events Scheduled
               </span>
@@ -920,7 +920,7 @@ export function Calendar() {
               <div 
                 key={event.id}
                 className={clsx(
-                  "p-6 rounded-3xl text-white shadow-xl shadow-slate-200/50 flex flex-col gap-3 group hover:scale-[1.02] transition-all",
+                  "p-6 rounded-lg text-white shadow-xl shadow-slate-200/50 flex flex-col gap-3 group hover:scale-[1.02] transition-all",
                   event.color
                 )}
               >
@@ -960,11 +960,11 @@ export function Calendar() {
         </div>
       );
     }
-    return <div className="bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-xl shadow-slate-200/50">{rows}</div>;
+    return <div className="bg-white rounded-lg overflow-hidden border border-slate-200 shadow-xl shadow-slate-200/50">{rows}</div>;
   };
 
   return (
-    <div className="max-w-[98%] mx-auto p-4 md:p-6 pb-24 md:pb-6">
+    <div>
       {renderHeader()}
       
       <div className="flex flex-col lg:flex-row gap-8">
@@ -1002,7 +1002,7 @@ export function Calendar() {
 
         {/* Side Panel - Selected Day Details */}
         <div className="w-full lg:w-80 shrink-0">
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-lg p-6 sticky top-6">
+          <div className="bg-white rounded-lg border border-slate-200 shadow-lg p-6 sticky top-6">
             <div className="mb-6">
               <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] mb-1">Schedule for</p>
               <h2 className="text-xl font-black text-slate-900">{format(selectedDate, 'EEEE, do MMMM')}</h2>
@@ -1014,7 +1014,7 @@ export function Calendar() {
                   <div 
                     key={event.id} 
                     onClick={() => setSelectedEvent(event)}
-                    className="cursor-pointer p-4 bg-slate-50/50 rounded-2xl border border-slate-100 group hover:border-indigo-200 transition-all"
+                    className="cursor-pointer p-4 bg-slate-50/50 rounded-lg border border-slate-100 group hover:border-indigo-200 transition-all"
                   >
                     <div className="flex items-center justify-between mb-2">
                        <div className="flex items-center gap-2">
@@ -1059,7 +1059,7 @@ export function Calendar() {
       {/* Modals */}
       {selectedEvent && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={handleCloseEventModal}>
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-lg w-full max-w-md shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
             {/* Header */}
             <div className={`p-6 flex justify-between items-start text-white ${selectedEvent.color}`}>
               <div>
@@ -1081,21 +1081,21 @@ export function Calendar() {
                       type="text"
                       value={editForm.title}
                       onChange={e => { setEditForm(f => ({ ...f, title: e.target.value })); setEditTitleError(''); }}
-                      className={clsx("w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none", editTitleError ? "border-red-400" : "border-slate-200")}
+                      className={clsx("w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none", editTitleError ? "border-red-400" : "border-slate-200")}
                     />
                     {editTitleError && <p className="text-xs text-red-500 mt-1 font-medium">{editTitleError}</p>}
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Description</label>
-                    <textarea rows={3} value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
+                    <textarea rows={3} value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Date</label>
-                    <input type="date" value={editForm.date} onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
+                    <input type="date" value={editForm.date} onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))} className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Project</label>
-                    <select value={editForm.projectId} onChange={e => setEditForm(f => ({ ...f, projectId: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                    <select value={editForm.projectId} onChange={e => setEditForm(f => ({ ...f, projectId: e.target.value }))} className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
                       <option value="">No Project (General)</option>
                       {safeProjects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </select>
@@ -1122,11 +1122,11 @@ export function Calendar() {
                   {selectedEvent.originalItem && (
                     <div>
                       <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Details</label>
-                      <div className="text-sm text-slate-700 bg-slate-50 p-4 rounded-xl border border-slate-100 shadow-inner space-y-3">
+                      <div className="text-sm text-slate-700 bg-slate-50 p-4 rounded-lg border border-slate-100 shadow-inner space-y-3">
                         {selectedEvent.type === 'milestone' && (
                           <div className="space-y-4">
                             {selectedEvent.originalItem.milestoneDetails?.stage && (
-                              <div className="flex items-center gap-2 p-3 bg-indigo-50 rounded-xl border border-indigo-100">
+                              <div className="flex items-center gap-2 p-3 bg-indigo-50 rounded-lg border border-indigo-100">
                                 <Layers className="w-4 h-4 text-indigo-600" />
                                 <div>
                                   <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-0.5">RIBA Stage</p>
@@ -1210,20 +1210,20 @@ export function Calendar() {
             <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-between items-center gap-3">
               {isEditMode ? (
                 <>
-                  <button onClick={() => { setIsEditMode(false); setEditTitleError(''); }} className="px-5 py-2.5 rounded-xl font-bold text-slate-600 hover:bg-slate-200 transition-colors">
+                  <button onClick={() => { setIsEditMode(false); setEditTitleError(''); }} className="px-5 py-2.5 rounded-lg font-bold text-slate-600 hover:bg-slate-200 transition-colors">
                     Cancel
                   </button>
-                  <button onClick={handleEditEvent} disabled={isEditSaving} className="px-5 py-2.5 rounded-xl font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 transition-all flex items-center gap-2 disabled:opacity-60">
+                  <button onClick={handleEditEvent} disabled={isEditSaving} className="px-5 py-2.5 rounded-lg font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 transition-all flex items-center gap-2 disabled:opacity-60">
                     {isEditSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                     {isEditSaving ? 'Saving…' : 'Save Changes'}
                   </button>
                 </>
               ) : showDeleteConfirm ? (
                 <>
-                  <button onClick={() => setShowDeleteConfirm(false)} className="px-5 py-2.5 rounded-xl font-bold text-slate-600 hover:bg-slate-200 transition-colors">
+                  <button onClick={() => setShowDeleteConfirm(false)} className="px-5 py-2.5 rounded-lg font-bold text-slate-600 hover:bg-slate-200 transition-colors">
                     Cancel
                   </button>
-                  <button onClick={handleDeleteEvent} disabled={isDeleting} className="px-5 py-2.5 rounded-xl font-bold bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-200 transition-all flex items-center gap-2 disabled:opacity-60">
+                  <button onClick={handleDeleteEvent} disabled={isDeleting} className="px-5 py-2.5 rounded-lg font-bold bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-200 transition-all flex items-center gap-2 disabled:opacity-60">
                     {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
                     {isDeleting ? 'Deleting…' : 'Yes, Delete'}
                   </button>
@@ -1233,16 +1233,16 @@ export function Calendar() {
                   <div className="flex items-center gap-2">
                     {selectedEvent.type === 'task' && (
                       <>
-                        <button onClick={() => setIsEditMode(true)} className="px-4 py-2.5 rounded-xl font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors text-sm">
+                        <button onClick={() => setIsEditMode(true)} className="px-4 py-2.5 rounded-lg font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors text-sm">
                           Edit
                         </button>
-                        <button onClick={() => setShowDeleteConfirm(true)} className="px-4 py-2.5 rounded-xl font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors text-sm">
+                        <button onClick={() => setShowDeleteConfirm(true)} className="px-4 py-2.5 rounded-lg font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors text-sm">
                           Delete
                         </button>
                       </>
                     )}
                   </div>
-                  <button onClick={handleCloseEventModal} className="px-5 py-2.5 rounded-xl font-bold text-slate-600 hover:bg-slate-200 transition-colors">Close</button>
+                  <button onClick={handleCloseEventModal} className="px-5 py-2.5 rounded-lg font-bold text-slate-600 hover:bg-slate-200 transition-colors">Close</button>
                 </>
               )}
             </div>
@@ -1252,14 +1252,14 @@ export function Calendar() {
 
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setIsAddModalOpen(false)}>
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-lg w-full max-w-md shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="p-6 border-b border-slate-100 flex justify-between items-center">
               <h2 className="text-xl font-bold text-slate-900">Add Calendar Event</h2>
               <button onClick={() => setIsAddModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><X className="w-5 h-5 text-slate-500" /></button>
             </div>
             <div className="p-6 space-y-4">
               {/* Context label — tells user exactly where this event will be saved */}
-              <div className="flex items-center gap-2 px-3 py-2 bg-indigo-50 border border-indigo-100 rounded-xl">
+              <div className="flex items-center gap-2 px-3 py-2 bg-indigo-50 border border-indigo-100 rounded-lg">
                 <Building2 className="w-4 h-4 text-indigo-500 shrink-0" />
                 <p className="text-xs font-semibold text-indigo-700">
                   Saving to:{' '}
@@ -1278,7 +1278,7 @@ export function Calendar() {
                   type="text"
                   value={newEventForm.title}
                   onChange={e => { setNewEventForm(f => ({ ...f, title: e.target.value })); setTitleError(''); }}
-                  className={clsx("w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none", titleError ? "border-red-400" : "border-slate-200")}
+                  className={clsx("w-full px-4 py-3 rounded-lg border focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none", titleError ? "border-red-400" : "border-slate-200")}
                   placeholder="Event title..."
                   autoFocus
                 />
@@ -1290,7 +1290,7 @@ export function Calendar() {
                   rows={3}
                   value={newEventForm.description}
                   onChange={e => setNewEventForm(f => ({ ...f, description: e.target.value }))}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                  className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                   placeholder="Details..."
                 />
               </div>
@@ -1300,16 +1300,16 @@ export function Calendar() {
                   type="date"
                   value={newEventForm.date}
                   onChange={e => setNewEventForm(f => ({ ...f, date: e.target.value }))}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                  className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                 />
               </div>
             </div>
             <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
-              <button onClick={() => setIsAddModalOpen(false)} className="px-6 py-3 rounded-xl font-bold text-slate-600 hover:bg-slate-200 transition-colors">Cancel</button>
+              <button onClick={() => setIsAddModalOpen(false)} className="px-6 py-3 rounded-lg font-bold text-slate-600 hover:bg-slate-200 transition-colors">Cancel</button>
               <button
                 onClick={handleAddEvent}
                 disabled={isSaving}
-                className="px-6 py-3 rounded-xl font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 transition-all flex items-center gap-2 disabled:opacity-60"
+                className="px-6 py-3 rounded-lg font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 transition-all flex items-center gap-2 disabled:opacity-60"
               >
                 {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                 {isSaving ? 'Adding…' : 'Add Event'}

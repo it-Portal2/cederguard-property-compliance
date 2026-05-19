@@ -110,7 +110,7 @@ export function FrameworkExportMenu() {
           />
         </button>
         {menuOpen && (
-          <div className="absolute right-0 top-10 z-30 w-72 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+          <div className="absolute right-0 top-10 z-30 w-72 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
             <ul className="py-1">
               {options.map((opt) => (
                 <li key={opt.kind}>
@@ -137,7 +137,7 @@ export function FrameworkExportMenu() {
           className="fixed inset-0 z-90 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm"
           onClick={(e) => e.target === e.currentTarget && setPreview(null)}
         >
-          <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
+          <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-lg bg-white shadow-2xl">
             <header className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-3">
               <div className="flex items-center gap-3">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">

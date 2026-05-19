@@ -928,13 +928,13 @@ export function GovernanceForwardPlanPage() {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
-      className="mx-auto space-y-6"
+      className="space-y-6"
     >
       {/* Header: heading on the LEFT corner, tabs on the RIGHT corner.
  Flex row justify-between on desktop, stacked col on mobile.*/}
       <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-6">
         <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
             <CalendarIcon className="h-5 w-5" strokeWidth={2.25} />
           </div>
           <div>
@@ -1042,7 +1042,7 @@ export function GovernanceForwardPlanPage() {
  a new meeting on each. Banner sits above the Proposed banner so
  re-routing is the more urgent signal.*/}
       {!loading && counts.needsRerouting > 0 && (
-        <div className="flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+        <div className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
           <div className="flex items-start gap-3">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
             <div>
@@ -1063,7 +1063,7 @@ export function GovernanceForwardPlanPage() {
  which one it is"). Up to 5 listed inline; "+N more" link jumps to
  the list view if there are more.*/}
       {!loading && counts.Proposed > 0 && (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
+        <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3">
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div className="flex items-start gap-3 min-w-0 flex-1">
               <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />

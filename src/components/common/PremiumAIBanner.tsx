@@ -46,7 +46,7 @@ export function PremiumAIBanner({
 
   return (
     <div className={cn(
-      "relative overflow-hidden rounded-3xl p-8 mb-8 border border-white/10 shadow-2xl transition-all duration-500 group",
+      "relative overflow-hidden rounded-lg p-8 mb-8 border border-white/10 shadow-2xl transition-all duration-500 group",
       "bg-gradient-to-br",
       variants[variant],
       className
@@ -82,7 +82,7 @@ export function PremiumAIBanner({
           onClick={onAction}
           disabled={isLoading}
           className={cn(
-            "shrink-0 relative group/btn overflow-hidden px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all active:scale-95 shadow-2xl",
+            "shrink-0 relative group/btn overflow-hidden px-10 py-5 rounded-lg font-black text-xs uppercase tracking-[0.2em] transition-all active:scale-95 shadow-2xl",
             isLoading 
               ? "bg-white/10 text-white/40 cursor-not-allowed" 
               : "bg-white text-indigo-950 hover:bg-slate-900 hover:text-white"

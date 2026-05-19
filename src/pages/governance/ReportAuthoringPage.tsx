@@ -319,7 +319,7 @@ export function ReportAuthoringPage() {
   if (errorMessage) {
     return (
       <div className="mx-auto max-w-2xl py-12">
-        <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+        <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <div className="flex-1">
             <p className="font-semibold">Couldn't load this report</p>
@@ -539,7 +539,7 @@ export function ReportAuthoringPage() {
       {/* Amendment checklist banner — only when status is AmendmentsRequested.
           Renders ABOVE the editor so the author sees the asks immediately. */}
       {status === 'AmendmentsRequested' && amendments.length > 0 && (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4">
+        <div className="rounded-lg border border-rose-200 bg-rose-50 p-4">
           <div className="mb-2 flex items-start justify-between gap-3">
             <div className="flex items-start gap-2">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
@@ -614,7 +614,7 @@ export function ReportAuthoringPage() {
       {/* 3-pane authoring */}
       <div className="grid flex-1 gap-4 lg:grid-cols-[260px_1fr_280px]">
         {/* Left: TOC */}
-        <aside className="rounded-xl border border-slate-200 bg-white p-2.5">
+        <aside className="rounded-lg border border-slate-200 bg-white p-2.5">
           <p className="mb-1.5 px-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
             Sections ({sections.length})
           </p>
@@ -701,7 +701,7 @@ export function ReportAuthoringPage() {
         </aside>
 
         {/* Center: editor*/}
-        <main className="rounded-xl border border-slate-200 bg-white p-4">
+        <main className="rounded-lg border border-slate-200 bg-white p-4">
           {!activeSection ? (
             <div className="flex h-full min-h-[40vh] flex-col items-center justify-center gap-2 text-center text-xs text-slate-500">
               {sections.length === 0 ? (
@@ -772,7 +772,7 @@ export function ReportAuthoringPage() {
         </main>
 
         {/* Right: side panel (minimal in 6b — full review surface in 6c)*/}
-        <aside className="hidden rounded-xl border border-slate-200 bg-white p-3 lg:block">
+        <aside className="hidden rounded-lg border border-slate-200 bg-white p-3 lg:block">
           <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
             Side panel
           </p>

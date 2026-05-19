@@ -314,7 +314,7 @@ export function ChatPage() {
         {isEmpty ? (
           <div className="flex flex-col items-center justify-center h-full gap-6 px-2 pb-4">
             <div className="text-center">
-              <div className="w-14 h-14 rounded-2xl bg-indigo-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-200">
+              <div className="w-14 h-14 rounded-lg bg-indigo-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-200">
                 <MessageSquareDashed className="w-7 h-7 text-white" />
               </div>
               <h2 className="text-base font-black text-slate-900">
@@ -335,7 +335,7 @@ export function ChatPage() {
                   }}
                   disabled={rateLimit.isLimited}
                   className={clsx(
-                    "flex items-start gap-3 p-3.5 rounded-xl border text-left transition-all hover:scale-[1.01] hover:shadow-sm active:scale-[0.99]",
+                    "flex items-start gap-3 p-3.5 rounded-lg border text-left transition-all hover:scale-[1.01] hover:shadow-sm active:scale-[0.99]",
                     p.bg,
                     rateLimit.isLimited && "opacity-50 cursor-not-allowed",
                   )}

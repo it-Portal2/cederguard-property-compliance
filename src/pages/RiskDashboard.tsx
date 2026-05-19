@@ -9,8 +9,9 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
 } from 'recharts';
-import { Shield, Briefcase, ArrowRight, ShieldCheck, CheckCircle2, Target, AlertTriangle, Binoculars, Loader2 } from 'lucide-react';
+import { Shield, Briefcase, ArrowRight, ShieldCheck, CheckCircle2, Target, AlertTriangle, Binoculars, Loader2, AlertCircle, Flame, TrendingUp, TrendingDown, PoundSterling } from 'lucide-react';
 import { clsx } from 'clsx';
+import { StatsCard } from '../components/common/StatsCard';
 import { Link, useSearchParams } from 'react-router';
 import { stripMarkdown } from '../lib/utils';
 import { analyzeStrategicInsights } from '../services/aiService';
@@ -121,12 +122,12 @@ function getAgeBucket(dateAdded?: string): string {
 function StrategicInsightCard({ title, icon: Icon, children, delay = '0' }: { title: string, icon: React.ElementType, children: React.ReactNode, delay?: string }) {
   return (
     <div className={clsx(
-      "bg-white/40 backdrop-blur-md border border-white/40 rounded-2xl p-6 shadow-xl hover:shadow-2xl hover:bg-white/60 transition-all duration-500 group",
+      "bg-white/40 backdrop-blur-md border border-white/40 rounded-lg p-6 shadow-xl hover:shadow-2xl hover:bg-white/60 transition-all duration-500 group",
       `animate-in fade-in slide-in-from-bottom-4 duration-700 ${delay}`
     )}>
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-indigo-600/10 text-indigo-600 rounded-xl group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500">
+          <div className="p-2.5 bg-indigo-600/10 text-indigo-600 rounded-lg group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500">
             <Icon size={20} />
           </div>
           <h3 className="text-xs font-black text-slate-800 uppercase tracking-[0.2em]">{title}</h3>
@@ -535,7 +536,7 @@ export function RiskDashboard() {
           <div className="lg:col-span-3">
             <StrategicInsightCard title="Strategic Outlook & Executive Summary" icon={Briefcase} delay="delay-500">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="bg-indigo-50/50 rounded-xl p-5 border border-indigo-100/50 relative">
+                <div className="bg-indigo-50/50 rounded-lg p-5 border border-indigo-100/50 relative">
                   <div className="absolute -top-3 -left-3 p-2 bg-indigo-600 text-white rounded-lg shadow-lg">
                     <Target size={16} />
                   </div>
@@ -565,7 +566,7 @@ export function RiskDashboard() {
       )}
 
       {aiError && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl flex items-center gap-3 text-red-700 animate-in fade-in zoom-in-95">
+        <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-lg flex items-center gap-3 text-red-700 animate-in fade-in zoom-in-95">
           <AlertTriangle size={20} className="shrink-0" />
           <p className="text-sm font-bold">{aiError}</p>
         </div>
@@ -573,19 +574,54 @@ export function RiskDashboard() {
 
       {/* KPI Strip*/}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
-        {[
-          { label: 'TOTAL RISKS', value: totalRisks, color: 'text-blue-600', border: 'border-t-blue-600' },
-          { label: 'OPEN', value: openRisks, color: 'text-red-600', border: 'border-t-red-600' },
-          { label: 'HIGH/SEVERE', value: highSevere, color: 'text-orange-500', border: 'border-t-orange-500' },
-          { label: 'ESCALATED', value: escalated, color: 'text-purple-600', border: 'border-t-purple-600' },
-          { label: 'RISK REDUCTION', value: `${reduction}%`, color: 'text-emerald-600', border: 'border-t-emerald-500' },
-          { label: 'RESIDUAL ALE', value: fmt(totalResidualALE), color: 'text-blue-700', border: 'border-t-blue-700' },
-        ].map(k => (
-          <div key={k.label} className={clsx("bg-white border-x border-b border-t-4 border-slate-200 rounded-lg px-3 py-2 md:px-4 md:py-3 shadow-sm hover:shadow-md transition-shadow", k.border)}>
-            <div className={clsx('text-xl md:text-3xl font-black mt-1 truncate', k.color)} title={String(k.value)}>{k.value}</div>
-            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 truncate">{k.label}</div>
-          </div>
-        ))}
+        <StatsCard
+          icon={Shield}
+          title="Total Risks"
+          value={totalRisks}
+          size="sm"
+          iconBgClassName="bg-indigo-50 dark:bg-indigo-500/10"
+          iconClassName="text-indigo-600 dark:text-indigo-400"
+        />
+        <StatsCard
+          icon={AlertCircle}
+          title="Open"
+          value={openRisks}
+          size="sm"
+          iconBgClassName="bg-rose-50 dark:bg-rose-500/10"
+          iconClassName="text-rose-600 dark:text-rose-400"
+        />
+        <StatsCard
+          icon={Flame}
+          title="High / Severe"
+          value={highSevere}
+          size="sm"
+          iconBgClassName="bg-amber-50 dark:bg-amber-500/10"
+          iconClassName="text-amber-600 dark:text-amber-400"
+        />
+        <StatsCard
+          icon={TrendingUp}
+          title="Escalated"
+          value={escalated}
+          size="sm"
+          iconBgClassName="bg-violet-50 dark:bg-violet-500/10"
+          iconClassName="text-violet-600 dark:text-violet-400"
+        />
+        <StatsCard
+          icon={TrendingDown}
+          title="Risk Reduction"
+          value={`${reduction}%`}
+          size="sm"
+          iconBgClassName="bg-emerald-50 dark:bg-emerald-500/10"
+          iconClassName="text-emerald-600 dark:text-emerald-400"
+        />
+        <StatsCard
+          icon={PoundSterling}
+          title="Residual ALE"
+          value={fmt(totalResidualALE)}
+          size="sm"
+          iconBgClassName="bg-sky-50 dark:bg-sky-500/10"
+          iconClassName="text-sky-600 dark:text-sky-400"
+        />
       </div>
 
       {/* Row 1: Residual Risk Summary | Register Status | Appetite Alignment*/}

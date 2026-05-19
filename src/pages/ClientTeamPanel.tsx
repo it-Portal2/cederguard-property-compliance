@@ -75,7 +75,7 @@ function InviteForm({ onInvited }: { onInvited: () => void }) {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+    <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6">
       <div className="flex items-center gap-2 mb-5">
         <div className="p-2 bg-indigo-50 rounded-lg">
           <UserPlus className="w-4 h-4 text-indigo-600" />
@@ -248,7 +248,7 @@ export function ClientTeamPanel() {
       {isClientAdminUser && <InviteForm onInvited={load} />}
 
       {/* Active Team */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <div className="flex items-center gap-2">
             <Users className="w-4 h-4 text-slate-400" />
@@ -357,7 +357,7 @@ export function ClientTeamPanel() {
 
       {/* Pending Invitations */}
       {pending.length > 0 && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
           <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
             <Clock className="w-4 h-4 text-amber-500" />
             <h2 className="font-semibold text-slate-800">Pending Invitations</h2>

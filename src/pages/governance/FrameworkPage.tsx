@@ -180,11 +180,10 @@ export function GovernanceFrameworkPage() {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
-      className="mx-auto"
     >
       <header className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
             <Gavel className="h-5 w-5" strokeWidth={2.25} />
           </div>
           <div>
@@ -267,9 +266,9 @@ export function GovernanceFrameworkPage() {
 
       {loading || historicalView.loading ? (
         <div className="space-y-4">
-          <div className="h-40 animate-pulse rounded-xl bg-slate-100" />
-          <div className="h-40 animate-pulse rounded-xl bg-slate-100" />
-          <div className="h-40 animate-pulse rounded-xl bg-slate-100" />
+          <div className="h-40 animate-pulse rounded-lg bg-slate-100" />
+          <div className="h-40 animate-pulse rounded-lg bg-slate-100" />
+          <div className="h-40 animate-pulse rounded-lg bg-slate-100" />
         </div>
       ) : (
         <div className="space-y-6">

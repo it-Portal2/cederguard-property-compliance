@@ -61,7 +61,7 @@ export function NewsArticle() {
           >
             <Link 
               to="/news"
-              className="inline-flex items-center text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-cyan-400 transition-all mb-12 group bg-white dark:bg-slate-800/50 backdrop-blur-md shadow-sm dark:shadow-none px-5 py-2.5 rounded-2xl border border-slate-200 dark:border-white/5 font-bold text-sm"
+              className="inline-flex items-center text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-cyan-400 transition-all mb-12 group bg-white dark:bg-slate-800/50 backdrop-blur-md shadow-sm dark:shadow-none px-5 py-2.5 rounded-lg border border-slate-200 dark:border-white/5 font-bold text-sm"
             >
               <ArrowLeft className="w-4 h-4 mr-2 transform group-hover:-translate-x-1 transition-transform" />
               Back to Insights
@@ -116,8 +116,8 @@ export function NewsArticle() {
             prose-li:text-slate-600 dark:prose-li:text-slate-400 prose-li:text-xl
             prose-strong:text-slate-900 dark:prose-strong:text-white prose-strong:font-bold
             prose-a:text-indigo-600 dark:prose-a:text-cyan-400 prose-a:font-bold prose-a:underline decoration-2 underline-offset-4
-            prose-img:rounded-[2.5rem] prose-img:shadow-2xl prose-img:border prose-img:border-slate-200 dark:prose-img:border-white/10
-            prose-blockquote:border-l-8 prose-blockquote:border-indigo-500 dark:prose-blockquote:border-cyan-500 prose-blockquote:bg-slate-50 dark:bg-slate-900/30 prose-blockquote:py-8 prose-blockquote:px-12 prose-blockquote:rounded-3xl prose-blockquote:not-italic prose-blockquote:text-slate-900 dark:prose-blockquote:text-white"
+            prose-img:rounded-lg prose-img:shadow-2xl prose-img:border prose-img:border-slate-200 dark:prose-img:border-white/10
+            prose-blockquote:border-l-8 prose-blockquote:border-indigo-500 dark:prose-blockquote:border-cyan-500 prose-blockquote:bg-slate-50 dark:bg-slate-900/30 prose-blockquote:py-8 prose-blockquote:px-12 prose-blockquote:rounded-lg prose-blockquote:not-italic prose-blockquote:text-slate-900 dark:prose-blockquote:text-white"
           dangerouslySetInnerHTML={{ __html: article.content }}
         />
 
@@ -129,7 +129,7 @@ export function NewsArticle() {
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-12">
             <div className="flex items-center space-x-6">
-              <div className="w-16 h-16 rounded-[1.5rem] bg-indigo-50 dark:bg-cyan-500/5 border border-indigo-100 dark:border-cyan-500/10 flex items-center justify-center shadow-inner">
+              <div className="w-16 h-16 rounded-lg bg-indigo-50 dark:bg-cyan-500/5 border border-indigo-100 dark:border-cyan-500/10 flex items-center justify-center shadow-inner">
                 <Tag className="w-8 h-8 text-indigo-500 dark:text-cyan-400" />
               </div>
               <div>
@@ -144,7 +144,7 @@ export function NewsArticle() {
                 {['Twitter', 'LinkedIn'].map(platform => (
                   <button 
                     key={platform}
-                    className="px-8 py-3 text-sm font-black text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-2xl hover:bg-white dark:hover:bg-slate-800 hover:border-indigo-300 dark:hover:border-cyan-500/30 hover:shadow-xl hover:shadow-indigo-500/10 dark:hover:shadow-cyan-500/10 transition-all duration-300"
+                    className="px-8 py-3 text-sm font-black text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-lg hover:bg-white dark:hover:bg-slate-800 hover:border-indigo-300 dark:hover:border-cyan-500/30 hover:shadow-xl hover:shadow-indigo-500/10 dark:hover:shadow-cyan-500/10 transition-all duration-300"
                   >
                     {platform}
                   </button>
@@ -179,7 +179,7 @@ export function NewsArticle() {
               >
                 <Link 
                   to={`/news/${item.id}`}
-                  className="group block h-full p-10 bg-white dark:bg-slate-900/40 backdrop-blur-xl rounded-[2.5rem] border border-slate-200 dark:border-white/5 hover:border-indigo-500/30 dark:hover:border-cyan-500/30 hover:shadow-2xl hover:shadow-indigo-500/10 dark:hover:shadow-cyan-500/10 transition-all duration-500"
+                  className="group block h-full p-10 bg-white dark:bg-slate-900/40 backdrop-blur-xl rounded-lg border border-slate-200 dark:border-white/5 hover:border-indigo-500/30 dark:hover:border-cyan-500/30 hover:shadow-2xl hover:shadow-indigo-500/10 dark:hover:shadow-cyan-500/10 transition-all duration-500"
                 >
                   <div className="flex items-center space-x-3 mb-8">
                     <span className="px-4 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-black rounded-full border border-slate-200 dark:border-white/5 uppercase tracking-[0.15em]">

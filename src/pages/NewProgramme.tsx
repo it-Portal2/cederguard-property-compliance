@@ -114,7 +114,7 @@ export function NewProgramme() {
     };
 
     return (
-        <div className="max-w-5xl mx-auto space-y-6">
+        <div className="space-y-6">
             <div className="flex items-center gap-4">
                 <button
                     onClick={() => navigate(-1)}
@@ -131,7 +131,7 @@ export function NewProgramme() {
 
             <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
                 {/* General Info */}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                     <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
                         <LayoutTemplate className="w-4 h-4 text-indigo-600" />
                         <h2 className="font-semibold text-slate-800">Programme Identity</h2>
@@ -163,7 +163,7 @@ export function NewProgramme() {
                 </div>
 
                 {/* Governance & Leadership */}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                     <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
                         <Shield className="w-4 h-4 text-indigo-600" />
                         <h2 className="font-semibold text-slate-800">Governance & Leadership</h2>
@@ -201,7 +201,7 @@ export function NewProgramme() {
                 </div>
 
                 {/* Strategic Objectives */}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                     <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
                         <Target className="w-4 h-4 text-indigo-600" />
                         <h2 className="font-semibold text-slate-800">Strategy & Scale</h2>
@@ -233,7 +233,7 @@ export function NewProgramme() {
                 </div>
 
                 {/* Financials & Risks */}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                     <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
                         <Users className="w-4 h-4 text-indigo-600" />
                         <h2 className="font-semibold text-slate-800">Financials & Risk Context</h2>
@@ -281,14 +281,14 @@ export function NewProgramme() {
                                 handleSubmit({ preventDefault: () => { }, currentTarget: form } as any, true);
                             }
                         }}
-                        className="px-6 py-2.5 text-sm font-semibold text-slate-600 hover:text-slate-800 transition-colors bg-slate-50 rounded-xl border border-slate-200 hover:bg-white"
+                        className="px-6 py-2.5 text-sm font-semibold text-slate-600 hover:text-slate-800 transition-colors bg-slate-50 rounded-lg border border-slate-200 hover:bg-white"
                     >
                         Save Draft
                     </button>
                     <button
                         type="submit"
                         disabled={saving}
-                        className="flex items-center gap-2 px-8 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-sm hover:shadow-md active:scale-95 disabled:opacity-50"
+                        className="flex items-center gap-2 px-8 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 transition-all shadow-sm hover:shadow-md active:scale-95 disabled:opacity-50"
                     >
                         {saving ? <Loader className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                         Create Programme

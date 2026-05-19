@@ -94,11 +94,11 @@ export function GovernanceBoardCalendarPage() {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
-      className="mx-auto max-w-7xl space-y-6"
+      className="space-y-6"
     >
       <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-6">
         <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
             <CalendarDays className="h-5 w-5" strokeWidth={2.25} />
           </div>
           <div>
@@ -174,7 +174,7 @@ export function GovernanceBoardCalendarPage() {
           <div className="h-12 animate-pulse rounded-lg bg-slate-100" />
         </div>
       ) : visibleItems.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-6 py-12 text-center">
+        <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/50 px-6 py-12 text-center">
           <CalendarDays className="mx-auto h-10 w-10 text-slate-300" />
           <p className="mt-3 text-sm font-bold text-slate-900">No board meetings yet</p>
           <p className="mt-1 max-w-md text-xs text-slate-500 mx-auto">
@@ -211,7 +211,7 @@ function PublicMeetingList({
   onOpen: (m: Meeting) => void;
 }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
       <table className="w-full text-left text-xs">
         <thead className="border-b border-slate-100 bg-slate-50">
           <tr>

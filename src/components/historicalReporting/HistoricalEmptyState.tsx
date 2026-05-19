@@ -58,7 +58,7 @@ export function HistoricalEmptyState({
 
   if (reason === "BEFORE_ACTIVATION") {
     return (
-      <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
+      <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
         <CalendarOff className="mx-auto h-8 w-8 text-slate-400" />
         <p className="mt-3 text-sm font-bold text-slate-800">
           No snapshot for {formatted}
@@ -81,7 +81,7 @@ export function HistoricalEmptyState({
 
   if (reason === "SNAPSHOT_MISSING") {
     return (
-      <div className="rounded-xl border border-dashed border-amber-200 bg-amber-50/60 px-6 py-10 text-center">
+      <div className="rounded-lg border border-dashed border-amber-200 bg-amber-50/60 px-6 py-10 text-center">
         <History className="mx-auto h-8 w-8 text-amber-500" />
         <p className="mt-3 text-sm font-bold text-amber-900">
           No snapshot recorded for {formatted}
@@ -96,7 +96,7 @@ export function HistoricalEmptyState({
 
   // EMPTY_DATA — snapshot exists, but {surface} had no data at month-end.
   return (
-    <div className="rounded-xl border border-dashed border-slate-200 bg-white px-6 py-10 text-center">
+    <div className="rounded-lg border border-dashed border-slate-200 bg-white px-6 py-10 text-center">
       <Inbox className="mx-auto h-8 w-8 text-slate-300" />
       <p className="mt-3 text-sm font-bold text-slate-800">
         Empty at month-end

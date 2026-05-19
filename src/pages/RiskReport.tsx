@@ -26,8 +26,8 @@ export function RiskReport() {
   const progRisks = risks.filter(r => r.escalated);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 pb-12">
-      <div className="bg-slate-900 text-white rounded-2xl p-8 flex justify-between items-start">
+    <div className="space-y-8 print:p-0">
+      <div className="bg-slate-900 text-white rounded-lg p-8 flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-bold mb-2">Programme Risk Report</h1>
           <p className="text-slate-400">{projectInfo.name || "Overall Programme"} — Risk & Issues Summary</p>
@@ -39,7 +39,7 @@ export function RiskReport() {
       </div>
 
       {/* Executive Summary */}
-      <section className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+      <section className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
         <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-200 pb-3 mb-6">1. Executive Summary</h2>
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -64,7 +64,7 @@ export function RiskReport() {
       </section>
 
       {/* Top 10 Risks */}
-      <section className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+      <section className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
         <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-200 pb-3 mb-6">2. Top 10 Open Risks by Residual Rating</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
@@ -95,7 +95,7 @@ export function RiskReport() {
       </section>
 
       {/* Escalated Risks */}
-      <section className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+      <section className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
         <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-200 pb-3 mb-6">3. Escalated Risks — Programme Board Actions</h2>
         {progRisks.length === 0 ? (
           <div className="text-center py-8 text-slate-500 text-sm">No risks currently escalated to programme level.</div>
@@ -126,7 +126,7 @@ export function RiskReport() {
       </section>
 
       {/* Lessons Learnt */}
-      <section className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+      <section className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
         <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-200 pb-3 mb-6">4. Lessons Learnt Log</h2>
         {lessons.length === 0 ? (
           <div className="text-center py-8 text-slate-500 text-sm">No lessons learnt flagged yet.</div>

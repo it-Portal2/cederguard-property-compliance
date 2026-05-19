@@ -977,7 +977,7 @@ export function RiskRegister() {
                   setEditingRisk(null);
                   setIsModalOpen(true);
                 }}
-                className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
+                className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
               >
                 <Plus className="w-4 h-4" />
                 Add Risk
@@ -1062,7 +1062,7 @@ export function RiskRegister() {
 
         {/* Source Project filter — programme level only, unchanged logic*/}
         {!activeProjectId && scopedProjects.length > 0 && (
-          <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+          <div className="flex items-center gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
               Source
             </span>

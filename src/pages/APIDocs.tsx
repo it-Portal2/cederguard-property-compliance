@@ -11,7 +11,7 @@ export function APIDocs() {
   };
 
   const CodeBlock = ({ code, language, section }: { code: string, language: string, section: string }) => (
-    <div className="relative mt-4 mb-8 bg-white dark:bg-[#0f1117] rounded-xl overflow-hidden group border border-slate-200 dark:border-slate-800 shadow-2xl transition-colors duration-500">
+    <div className="relative mt-4 mb-8 bg-white dark:bg-[#0f1117] rounded-lg overflow-hidden group border border-slate-200 dark:border-slate-800 shadow-2xl transition-colors duration-500">
       <div className="flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-[#1a1d27] border-b border-slate-200 dark:border-slate-800/80 transition-colors">
         <span className="text-xs font-mono font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{language}</span>
         <button 
@@ -29,7 +29,7 @@ export function APIDocs() {
   );
 
   return (
-    <div className="max-w-7xl mx-auto pb-24 pt-32 px-6">
+    <div>
 
       <div className="mb-12 text-center md:text-left">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase tracking-widest mb-4">
@@ -75,7 +75,7 @@ export function APIDocs() {
           {/* Authentication Section */}
           <section id="authentication" className="scroll-mt-24">
             <div className="flex items-center gap-4 mb-6">
-              <div className="p-3 bg-indigo-100 dark:bg-indigo-500/20 rounded-xl">
+              <div className="p-3 bg-indigo-100 dark:bg-indigo-500/20 rounded-lg">
                 <KeyRound className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
               </div>
               <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Authentication</h2>
@@ -84,7 +84,7 @@ export function APIDocs() {
               All API endpoints require authentication using an API Key. You can generate an API key from the <strong>Developer Settings</strong> page inside the portal. 
               Your API key inherits the exact permissions of your user account.
             </p>
-            <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 p-5 rounded-xl mb-6 text-amber-900 dark:text-amber-200 shadow-inner">
+            <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 p-5 rounded-lg mb-6 text-amber-900 dark:text-amber-200 shadow-inner">
               <strong className="font-bold flex items-center gap-2 mb-1"><ShieldAlert className="w-5 h-5" /> Security Warning</strong> 
               Treat your API key like a password. Do not commit it to public repositories or expose it in client-side code. If compromised, revoke it immediately from the dashboard.
             </div>
@@ -99,7 +99,7 @@ export function APIDocs() {
           {/* Base URL Section */}
           <section id="base-url" className="scroll-mt-24">
             <div className="flex items-center gap-4 mb-6">
-              <div className="p-3 bg-emerald-100 dark:bg-emerald-500/20 rounded-xl">
+              <div className="p-3 bg-emerald-100 dark:bg-emerald-500/20 rounded-lg">
                 <Server className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
               </div>
               <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Base Architecture (RPC)</h2>
@@ -107,7 +107,7 @@ export function APIDocs() {
             <p className="text-lg text-slate-600 dark:text-slate-300 leading-relaxed mb-6">
               The API uses a single RPC-style endpoint. All requests are made as <code className="bg-slate-100 dark:bg-white/10 px-2 py-1 rounded-md text-sm font-mono text-pink-600 dark:text-pink-400 mx-1">POST</code> requests to the base URL, with the desired operation specified in the JSON body via the <code className="bg-slate-100 dark:bg-white/10 px-2 py-1 rounded-md text-sm font-mono text-pink-600 dark:text-pink-400 mx-1">action</code> property.
             </p>
-            <div className="bg-slate-50 dark:bg-[#0f1117] border border-slate-200 dark:border-slate-800 p-6 rounded-xl flex items-center gap-4 font-mono text-base text-slate-800 dark:text-slate-200 shadow-sm">
+            <div className="bg-slate-50 dark:bg-[#0f1117] border border-slate-200 dark:border-slate-800 p-6 rounded-lg flex items-center gap-4 font-mono text-base text-slate-800 dark:text-slate-200 shadow-sm">
               <span className="font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-500/10 px-3 py-1 rounded-md">POST</span>
               <span>https://[your-platform-domain]/api</span>
             </div>
@@ -116,7 +116,7 @@ export function APIDocs() {
           {/* RBAC Section */}
           <section id="rbac" className="scroll-mt-24">
             <div className="flex items-center gap-4 mb-6">
-              <div className="p-3 bg-purple-100 dark:bg-purple-500/20 rounded-xl">
+              <div className="p-3 bg-purple-100 dark:bg-purple-500/20 rounded-lg">
                 <Users className="w-8 h-8 text-purple-600 dark:text-purple-400" />
               </div>
               <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Role-Based Access Control</h2>
@@ -125,21 +125,21 @@ export function APIDocs() {
               Your API key is bound to your user role. Attempting to call an endpoint you lack permissions for will result in a <code className="font-mono text-red-500">403 Forbidden</code> error.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="bg-white dark:bg-[#13151a] p-6 rounded-xl border border-slate-200 dark:border-white/10 shadow-sm">
+              <div className="bg-white dark:bg-[#13151a] p-6 rounded-lg border border-slate-200 dark:border-white/10 shadow-sm">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 bg-blue-100 dark:bg-blue-500/20 rounded-lg"><Briefcase className="w-5 h-5 text-blue-600 dark:text-blue-400"/></div>
                   <h4 className="font-bold text-slate-900 dark:text-white">Client Admin</h4>
                 </div>
                 <p className="text-sm text-slate-600 dark:text-slate-400">Can view all programmes, all projects across the organization, invite PMs, and access aggregated reporting metrics.</p>
               </div>
-              <div className="bg-white dark:bg-[#13151a] p-6 rounded-xl border border-slate-200 dark:border-white/10 shadow-sm">
+              <div className="bg-white dark:bg-[#13151a] p-6 rounded-lg border border-slate-200 dark:border-white/10 shadow-sm">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 bg-emerald-100 dark:bg-emerald-500/20 rounded-lg"><LayoutDashboard className="w-5 h-5 text-emerald-600 dark:text-emerald-400"/></div>
                   <h4 className="font-bold text-slate-900 dark:text-white">Project Manager</h4>
                 </div>
                 <p className="text-sm text-slate-600 dark:text-slate-400">Can only query and modify projects they are explicitly assigned to. Can read/write risks, issues, and compliance evidence.</p>
               </div>
-              <div className="bg-white dark:bg-[#13151a] p-6 rounded-xl border border-slate-200 dark:border-white/10 shadow-sm">
+              <div className="bg-white dark:bg-[#13151a] p-6 rounded-lg border border-slate-200 dark:border-white/10 shadow-sm">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 bg-rose-100 dark:bg-rose-500/20 rounded-lg"><ShieldAlert className="w-5 h-5 text-rose-600 dark:text-rose-400"/></div>
                   <h4 className="font-bold text-slate-900 dark:text-white">Super Admin</h4>
@@ -259,9 +259,9 @@ export function APIDocs() {
           {/* Quickstarts */}
           <section id="use-case-sync" className="scroll-mt-24">
             <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-6 tracking-tight">Use Case: Automated BI Sync</h2>
-            <div className="bg-white dark:bg-[#13151a] p-8 rounded-2xl border border-slate-200 dark:border-white/10 shadow-lg">
+            <div className="bg-white dark:bg-[#13151a] p-8 rounded-lg border border-slate-200 dark:border-white/10 shadow-lg">
               <div className="flex items-start gap-6">
-                <div className="p-4 bg-indigo-100 dark:bg-indigo-500/20 rounded-2xl shrink-0">
+                <div className="p-4 bg-indigo-100 dark:bg-indigo-500/20 rounded-lg shrink-0">
                   <Database className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
                 </div>
                 <div>
@@ -288,7 +288,7 @@ export function APIDocs() {
             </div>
           </section>
 
-          <section id="postman" className="scroll-mt-24 bg-slate-100 dark:bg-slate-900 rounded-3xl p-10 overflow-hidden relative border border-slate-200 dark:border-slate-800 shadow-2xl transition-colors duration-500">
+          <section id="postman" className="scroll-mt-24 bg-slate-100 dark:bg-slate-900 rounded-lg p-10 overflow-hidden relative border border-slate-200 dark:border-slate-800 shadow-2xl transition-colors duration-500">
             <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-[100px] -mr-20 -mt-20"></div>
             <div className="relative z-10">
               <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-4 tracking-tight">Ready for Postman?</h2>

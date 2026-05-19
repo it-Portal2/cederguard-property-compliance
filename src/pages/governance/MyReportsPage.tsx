@@ -565,12 +565,12 @@ export function GovernanceMyReportsPage() {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
-      className="mx-auto space-y-6"
+      className="space-y-6"
     >
       {/* Header*/}
       <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-6">
         <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
             <ClipboardList className="h-5 w-5" strokeWidth={2.25} />
           </div>
           <div>
@@ -606,7 +606,7 @@ export function GovernanceMyReportsPage() {
       )}
 
       {/* Briefing card (PM variant)*/}
-      <section className="rounded-xl border border-indigo-100 bg-linear-to-br from-indigo-50 via-white to-white p-5 shadow-sm">
+      <section className="rounded-lg border border-indigo-100 bg-linear-to-br from-indigo-50 via-white to-white p-5 shadow-sm">
         <div className="flex items-start gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700">
             <Lightbulb className="h-4 w-4" />
@@ -767,7 +767,7 @@ function DeadlinesPanel({
   loading: boolean;
 }) {
   return (
-    <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
+    <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
       <header className="flex items-center gap-2 border-b border-slate-100 px-4 py-3">
         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700">
           <CalendarDays className="h-3.5 w-3.5" />
@@ -843,7 +843,7 @@ function FeedbackPanel({
   loading: boolean;
 }) {
   return (
-    <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
+    <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
       <header className="flex items-center gap-2 border-b border-slate-100 px-4 py-3">
         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-50 text-rose-700">
           <MessageSquareWarning className="h-3.5 w-3.5" />

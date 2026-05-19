@@ -217,7 +217,7 @@ export function AIDraftModal({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 12 }}
           transition={{ duration: 0.15 }}
-          className="relative flex max-h-[min(92vh,800px)] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-white shadow-xl ring-1 ring-slate-200"
+          className="relative flex max-h-[min(92vh,800px)] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-white shadow-xl ring-1 ring-slate-200"
         >
           {/* Header*/}
           <header className="flex items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">

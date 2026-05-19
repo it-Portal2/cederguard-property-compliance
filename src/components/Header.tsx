@@ -268,7 +268,7 @@ export function Header() {
         </button>
 
         {showNotificationDropdown && (
-          <div className="absolute right-0 top-10 mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-200 z-50 overflow-hidden">
+          <div className="absolute right-0 top-10 mt-2 w-80 bg-white rounded-lg shadow-xl border border-slate-200 z-50 overflow-hidden">
             <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
               <span className="text-sm font-semibold text-slate-800">Notifications</span>
               <button 
@@ -334,7 +334,7 @@ export function Header() {
         </button>
 
         {showUserDropdown && (
-          <div className="absolute right-0 top-10 mt-2 w-52 bg-white rounded-xl shadow-xl py-1 border border-slate-200 z-50">
+          <div className="absolute right-0 top-10 mt-2 w-52 bg-white rounded-lg shadow-xl py-1 border border-slate-200 z-50">
             <div className="px-4 py-3 border-b border-slate-100">
               <p className="text-sm font-semibold text-slate-800 truncate">{user?.displayName || 'User'}</p>
               <p className="text-xs text-slate-500 truncate">{user?.email}</p>

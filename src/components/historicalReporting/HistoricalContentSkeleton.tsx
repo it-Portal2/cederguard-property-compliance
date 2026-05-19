@@ -40,9 +40,9 @@ export function HistoricalContentSkeleton({
   if (variant === "canvas") {
     return (
       <div className={clsx("space-y-4", className)}>
-        <div className="h-32 animate-pulse rounded-xl bg-slate-100" />
-        <div className="h-44 animate-pulse rounded-xl bg-slate-100" />
-        <div className="h-32 animate-pulse rounded-xl bg-slate-100" />
+        <div className="h-32 animate-pulse rounded-lg bg-slate-100" />
+        <div className="h-44 animate-pulse rounded-lg bg-slate-100" />
+        <div className="h-32 animate-pulse rounded-lg bg-slate-100" />
       </div>
     );
   }
@@ -54,7 +54,7 @@ export function HistoricalContentSkeleton({
         {[0, 1, 2, 3].map((i) => (
           <div
             key={i}
-            className="h-24 animate-pulse rounded-xl bg-slate-100"
+            className="h-24 animate-pulse rounded-lg bg-slate-100"
           />
         ))}
       </div>

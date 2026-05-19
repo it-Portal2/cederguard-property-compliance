@@ -194,7 +194,7 @@ export function CorrectionModal({
             className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-8"
           >
             <div
-              className="w-full max-w-2xl rounded-xl border border-slate-200 bg-white shadow-2xl"
+              className="w-full max-w-2xl rounded-lg border border-slate-200 bg-white shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <header className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">

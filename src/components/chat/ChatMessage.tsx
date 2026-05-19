@@ -264,7 +264,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
         {/* Message bubble */}
         <div
           className={clsx(
-            "relative group rounded-2xl px-4 py-3 text-sm",
+            "relative group rounded-lg px-4 py-3 text-sm",
             isUser
               ? "bg-indigo-600 text-white rounded-tr-sm shadow-sm"
               : "bg-white border border-slate-200 text-slate-800 rounded-tl-sm shadow-sm",

@@ -873,7 +873,7 @@ export function ProgrammeRiskRegister() {
                 )}
 
                 {/* AI Risk Advisor Banner — unchanged*/}
-                <div className="bg-linear-to-br from-indigo-700 via-indigo-800 to-slate-900 rounded-xl p-8 text-white shadow-2xl shadow-indigo-200/50 relative overflow-hidden group border border-white/10">
+                <div className="bg-linear-to-br from-indigo-700 via-indigo-800 to-slate-900 rounded-lg p-8 text-white shadow-2xl shadow-indigo-200/50 relative overflow-hidden group border border-white/10">
                     <div className="absolute right-0 top-0 w-96 h-96 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl group-hover:bg-white/10 transition-all duration-1000"></div>
                     <div className="absolute left-0 bottom-0 w-64 h-64 bg-indigo-500/20 rounded-full -ml-24 -mb-24 blur-2xl"></div>
 
@@ -914,7 +914,7 @@ export function ProgrammeRiskRegister() {
                             exit={{ opacity: 0, height: 0 }}
                             className="overflow-hidden"
                         >
-                            <div className="bg-indigo-900 rounded-[2rem] p-8 mb-8 text-white relative shadow-2xl shadow-indigo-900/50 overflow-hidden border border-indigo-700">
+                            <div className="bg-indigo-900 rounded-lg p-8 mb-8 text-white relative shadow-2xl shadow-indigo-900/50 overflow-hidden border border-indigo-700">
                                 <div className="absolute right-0 top-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl"></div>
 
                                 <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
@@ -931,7 +931,7 @@ export function ProgrammeRiskRegister() {
                                         </p>
                                     </div>
 
-                                    <div className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 p-6 flex flex-col items-center justify-center text-center min-w-[200px]">
+                                    <div className="bg-white/5 backdrop-blur-md rounded-lg border border-white/10 p-6 flex flex-col items-center justify-center text-center min-w-[200px]">
                                         <div className="text-4xl font-black mb-1">{pendingRisks.length}</div>
                                         <div className="text-[10px] font-black uppercase tracking-widest text-indigo-300">Awaiting Action</div>
                                     </div>
@@ -942,10 +942,10 @@ export function ProgrammeRiskRegister() {
                                         <motion.div
                                             layout
                                             key={risk.id}
-                                            className="bg-white/5 backdrop-blur-md border border-white/10 p-5 rounded-2xl flex items-center justify-between gap-4 group hover:bg-white/10 transition-all"
+                                            className="bg-white/5 backdrop-blur-md border border-white/10 p-5 rounded-lg flex items-center justify-between gap-4 group hover:bg-white/10 transition-all"
                                         >
                                             <div className="flex items-center gap-4 flex-1">
-                                                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0 border border-white/10">
+                                                <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center shrink-0 border border-white/10">
                                                     <TrendingUp className="w-5 h-5 text-indigo-300" />
                                                 </div>
                                                 <div>
@@ -967,7 +967,7 @@ export function ProgrammeRiskRegister() {
                                                 <button
                                                     disabled={isRowPending(risk.id)}
                                                     onClick={() => setDismissingRiskId(risk.id)}
-                                                    className="px-4 py-2 bg-white/5 hover:bg-rose-500/20 hover:text-rose-300 border border-white/10 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                                    className="px-4 py-2 bg-white/5 hover:bg-rose-500/20 hover:text-rose-300 border border-white/10 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                                                 >
                                                     {isRowPending(risk.id) ? 'Working…' : 'Dismiss'}
                                                 </button>
@@ -981,7 +981,7 @@ export function ProgrammeRiskRegister() {
                                                             toast.error(err?.message || 'Failed to approve escalation.');
                                                         }
                                                     }}
-                                                    className="px-6 py-2 bg-indigo-500 hover:bg-indigo-400 text-white rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-indigo-900/20 disabled:opacity-40 disabled:cursor-not-allowed"
+                                                    className="px-6 py-2 bg-indigo-500 hover:bg-indigo-400 text-white rounded-lg font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-indigo-900/20 disabled:opacity-40 disabled:cursor-not-allowed"
                                                 >
                                                     {isRowPending(risk.id) ? 'Working…' : 'Approve'}
                                                 </button>
@@ -992,7 +992,7 @@ export function ProgrammeRiskRegister() {
                                     {pendingRisks.length > 2 && (
                                         <button
                                             onClick={() => setShowFullQueue(!showFullQueue)}
-                                            className="w-full py-3 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] text-indigo-300 hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+                                            className="w-full py-3 bg-white/5 border border-white/10 rounded-lg text-[10px] font-black uppercase tracking-[0.2em] text-indigo-300 hover:bg-white/10 transition-all flex items-center justify-center gap-2"
                                         >
                                             {showFullQueue ? 'Show Less' : `View ${pendingRisks.length - 2} More Escalations`}
                                             <ArrowRight className={clsx("w-3 h-3 transition-transform", showFullQueue && "-rotate-90")} />

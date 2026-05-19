@@ -430,7 +430,7 @@ const roleTabs: RoleTab[] = [
 const TopicCard: React.FC<{ topic: HelpTopic; accentColor: string }> = ({ topic, accentColor }) => {
   const [open, setOpen] = useState(false);
   return (
-    <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
+    <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-slate-50 transition-colors"
@@ -516,7 +516,7 @@ export function HelpCenter() {
   );
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pt-32 pb-20">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8">
         <div>
@@ -568,7 +568,7 @@ export function HelpCenter() {
       </div>
 
       {/* Role Description */}
-      <div className={`px-5 py-4 rounded-xl border ${current.border} ${current.bg} flex items-start gap-3`}>
+      <div className={`px-5 py-4 rounded-lg border ${current.border} ${current.bg} flex items-start gap-3`}>
         <current.icon className={`w-5 h-5 mt-0.5 shrink-0 ${current.color}`} />
         <div>
           <p className={`font-bold text-sm ${current.color}`}>{current.label} Role</p>
@@ -591,8 +591,8 @@ export function HelpCenter() {
       )}
 
       {/* Footer help block */}
-      <div className="mt-8 p-6 rounded-2xl bg-gradient-to-br from-indigo-50 to-slate-50 border border-indigo-100 flex items-start gap-4">
-        <div className="p-3 bg-indigo-100 rounded-xl shrink-0">
+      <div className="mt-8 p-6 rounded-lg bg-gradient-to-br from-indigo-50 to-slate-50 border border-indigo-100 flex items-start gap-4">
+        <div className="p-3 bg-indigo-100 rounded-lg shrink-0">
           <BookOpen className="w-5 h-5 text-indigo-600" />
         </div>
         <div>

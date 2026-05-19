@@ -100,7 +100,7 @@ export function ChatComposer({
       {/* Rate limit banner */}
       {rateLimit.isLimited && (
         <div
-          className="flex items-start gap-2 px-3 py-2.5 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-xl text-xs text-amber-800 dark:text-amber-300"
+          className="flex items-start gap-2 px-3 py-2.5 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-lg text-xs text-amber-800 dark:text-amber-300"
           role="alert"
           aria-live="assertive"
         >
@@ -130,7 +130,7 @@ export function ChatComposer({
       {/* Composer shell */}
       <div
         className={clsx(
-          "flex flex-col mx-2 md:mx-0 rounded-2xl border cursor-text",
+          "flex flex-col mx-2 md:mx-0 rounded-lg border cursor-text",
           "bg-white dark:bg-slate-900",
           "border-slate-200 dark:border-slate-700",
           "shadow-[0_0_15px_rgba(0,0,0,0.06)] hover:shadow-[0_0_20px_rgba(0,0,0,0.1)]",
@@ -215,7 +215,7 @@ export function ChatComposer({
                   type="button"
                   onClick={onStop}
                   className={clsx(
-                    "h-8 w-8 inline-flex items-center justify-center rounded-xl",
+                    "h-8 w-8 inline-flex items-center justify-center rounded-lg",
                     "bg-rose-50 text-rose-500 hover:bg-rose-100 active:scale-95",
                     "dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/20",
                     "focus:outline-none focus:ring-2 focus:ring-rose-300",
@@ -232,7 +232,7 @@ export function ChatComposer({
                   onClick={onSend}
                   disabled={!canSend}
                   className={clsx(
-                    "h-8 w-8 inline-flex items-center justify-center rounded-xl",
+                    "h-8 w-8 inline-flex items-center justify-center rounded-lg",
                     "transition-all duration-150 active:scale-95",
                     "focus:outline-none focus:ring-2",
                     canSend

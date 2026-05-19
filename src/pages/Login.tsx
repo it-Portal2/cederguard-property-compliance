@@ -106,7 +106,7 @@ export const Login: React.FC = () => {
                         </div>
                     ) : requireEmailConfirm ? (
                         <form onSubmit={handleConfirmEmail} className="space-y-4">
-                            <div className="bg-indigo-50 text-indigo-700 p-4 rounded-xl text-sm mb-6 border border-indigo-100 flex items-start gap-3">
+                            <div className="bg-indigo-50 text-indigo-700 p-4 rounded-lg text-sm mb-6 border border-indigo-100 flex items-start gap-3">
                                 <ShieldCheck className="w-5 h-5 mt-0.5 flex-shrink-0" />
                                 <div>
                                     <p className="font-bold mb-1">Secure Sign-In Detected</p>
@@ -149,7 +149,7 @@ export const Login: React.FC = () => {
                     ) : (
                         <div className="space-y-6">
                             {isLinkSent ? (
-                                <div className="text-center py-4 bg-emerald-50 rounded-xl border border-emerald-100 animate-in fade-in slide-in-from-bottom-2">
+                                <div className="text-center py-4 bg-emerald-50 rounded-lg border border-emerald-100 animate-in fade-in slide-in-from-bottom-2">
                                     <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
                                     <h3 className="text-sm font-black text-emerald-800 uppercase tracking-widest">Magic Link Sent!</h3>
                                     <p className="text-sm text-emerald-600 mt-1 max-w-[250px] mx-auto font-medium">

@@ -27,7 +27,7 @@ export const Contact: React.FC = () => {
 
                     <div className="space-y-12">
                         <div className="flex items-center gap-6 group">
-                            <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center shrink-0 border border-white/5 group-hover:scale-110 transition-transform duration-500">
+                            <div className="w-16 h-16 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center shrink-0 border border-white/5 group-hover:scale-110 transition-transform duration-500">
                                 <Mail className="w-7 h-7" />
                             </div>
                             <div>
@@ -36,7 +36,7 @@ export const Contact: React.FC = () => {
                             </div>
                         </div>
                         <div className="flex items-center gap-6 group">
-                            <div className="w-16 h-16 rounded-2xl bg-teal-500/10 text-teal-400 flex items-center justify-center shrink-0 border border-white/5 group-hover:scale-110 transition-transform duration-500">
+                            <div className="w-16 h-16 rounded-lg bg-teal-500/10 text-teal-400 flex items-center justify-center shrink-0 border border-white/5 group-hover:scale-110 transition-transform duration-500">
                                 <Phone className="w-7 h-7" />
                             </div>
                             <div>
@@ -45,7 +45,7 @@ export const Contact: React.FC = () => {
                             </div>
                         </div>
                         <div className="flex items-start gap-6 group">
-                            <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0 border border-white/5 group-hover:scale-110 transition-transform duration-500">
+                            <div className="w-16 h-16 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0 border border-white/5 group-hover:scale-110 transition-transform duration-500">
                                 <MapPin className="w-7 h-7" />
                             </div>
                             <div>
@@ -62,29 +62,29 @@ export const Contact: React.FC = () => {
                     animate={{ opacity: 1, x: 0 }}
                     className="relative"
                 >
-                    <div className="absolute -inset-1 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-[3rem] blur opacity-20" />
-                    <div className="relative bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 rounded-[3rem] p-12 backdrop-blur-2xl shadow-2xl transition-all duration-500">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-lg blur opacity-20" />
+                    <div className="relative bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 rounded-lg p-12 backdrop-blur-2xl shadow-2xl transition-all duration-500">
                         <h3 className="text-3xl font-bold text-slate-900 dark:text-white mb-10 tracking-tight">Send a Message</h3>
                         <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-3">
                                     <label className="text-sm font-bold text-slate-600 dark:text-slate-300 uppercase tracking-widest px-1">First Name</label>
-                                    <input type="text" className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/10 rounded-2xl px-6 py-4 text-slate-900 dark:text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all text-lg" placeholder="John" />
+                                    <input type="text" className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/10 rounded-lg px-6 py-4 text-slate-900 dark:text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all text-lg" placeholder="John" />
                                 </div>
                                 <div className="space-y-3">
                                     <label className="text-sm font-bold text-slate-600 dark:text-slate-300 uppercase tracking-widest px-1">Last Name</label>
-                                    <input type="text" className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/10 rounded-2xl px-6 py-4 text-slate-900 dark:text-white focus:outline-none focus:border-cyan-500 focus:border-transparent focus:ring-2 focus:ring-cyan-500/50 transition-all text-lg shadow-sm" placeholder="Doe" />
+                                    <input type="text" className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/10 rounded-lg px-6 py-4 text-slate-900 dark:text-white focus:outline-none focus:border-cyan-500 focus:border-transparent focus:ring-2 focus:ring-cyan-500/50 transition-all text-lg shadow-sm" placeholder="Doe" />
                                 </div>
                             </div>
                             <div className="space-y-3">
                                 <label className="text-sm font-bold text-slate-600 dark:text-slate-300 uppercase tracking-widest px-1">Work Email</label>
-                                <input type="email" className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/10 rounded-2xl px-6 py-4 text-slate-900 dark:text-white focus:outline-none focus:border-transparent focus:ring-2 focus:ring-cyan-500/50 transition-all text-lg shadow-sm" placeholder="john@council.gov.uk" />
+                                <input type="email" className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/10 rounded-lg px-6 py-4 text-slate-900 dark:text-white focus:outline-none focus:border-transparent focus:ring-2 focus:ring-cyan-500/50 transition-all text-lg shadow-sm" placeholder="john@council.gov.uk" />
                             </div>
                             <div className="space-y-3">
                                 <label className="text-sm font-bold text-slate-600 dark:text-slate-300 uppercase tracking-widest px-1">Message</label>
-                                <textarea rows={5} className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/10 rounded-2xl px-6 py-4 text-slate-900 dark:text-white focus:outline-none focus:border-transparent focus:ring-2 focus:ring-cyan-500/50 transition-all resize-none text-lg shadow-sm" placeholder="How can we help you..."></textarea>
+                                <textarea rows={5} className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/10 rounded-lg px-6 py-4 text-slate-900 dark:text-white focus:outline-none focus:border-transparent focus:ring-2 focus:ring-cyan-500/50 transition-all resize-none text-lg shadow-sm" placeholder="How can we help you..."></textarea>
                             </div>
-                            <button className="w-full bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-slate-950 font-black py-5 rounded-2xl transition-all duration-300 mt-6 shadow-xl shadow-teal-500/20 text-xl transform hover:scale-[1.02]">
+                            <button className="w-full bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-slate-950 font-black py-5 rounded-lg transition-all duration-300 mt-6 shadow-xl shadow-teal-500/20 text-xl transform hover:scale-[1.02]">
                                 Submit Request
                             </button>
                         </form>

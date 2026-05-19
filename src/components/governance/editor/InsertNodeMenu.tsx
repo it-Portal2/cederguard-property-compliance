@@ -124,7 +124,7 @@ export function InsertNodeMenu({ editor }: InsertNodeMenuProps) {
         />
       </button>
       {open && (
-        <div className="absolute left-0 top-9 z-30 w-72 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-800">
+        <div className="absolute left-0 top-9 z-30 w-72 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-800">
           <ul className="max-h-80 overflow-y-auto py-1">
             {options.map((o) => (
               <li key={o.label}>

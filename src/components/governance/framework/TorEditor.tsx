@@ -177,7 +177,7 @@ export function TorEditor({
       </div>
 
       {showHistory && (
-        <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+        <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-4">
           <div className="mb-3 flex items-center justify-between">
             <h4 className="text-xs font-semibold uppercase tracking-widest text-slate-500">
               Version history

@@ -1,6 +1,6 @@
 // Shared Tailwind classes so every NodeView looks consistent inside the
 // editor. Keep palette rules from plan §21: indigo / slate / emerald / amber /
-// rose only; rounded-lg / rounded-xl only; no violet.
+// rose only; rounded-lg / rounded-lg only; no violet.
 
 export const textInputCls =
   'w-full rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900 ' +

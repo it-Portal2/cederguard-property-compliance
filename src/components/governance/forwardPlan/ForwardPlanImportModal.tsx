@@ -206,7 +206,7 @@ export function ForwardPlanImportModal({ isOpen, onClose, onCommitted }: Props) 
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.98, y: 8 }}
           transition={{ duration: 0.15 }}
-          className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+          className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-lg bg-white shadow-2xl"
         >
           {/* Header */}
           <header className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
@@ -245,7 +245,7 @@ export function ForwardPlanImportModal({ isOpen, onClose, onCommitted }: Props) 
                 )}
                 <div
                   className={clsx(
-                    'flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-8 py-12 text-center transition-colors',
+                    'flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed px-8 py-12 text-center transition-colors',
                     isDragging
                       ? 'border-indigo-400 bg-indigo-50/50'
                       : 'border-slate-200 bg-slate-50',

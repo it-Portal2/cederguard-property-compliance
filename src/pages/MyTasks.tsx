@@ -21,6 +21,7 @@ import { useNavigate } from "react-router";
 import { useStore, TaskItem, ComplianceItem } from "../store/useStore";
 import { clsx } from "clsx";
 import toast from "react-hot-toast";
+import { StatsCard } from "../components/common/StatsCard";
 
 const EmptyState = ({ title, onAdd }: { title: string; onAdd?: () => void }) => (
   <div className="flex flex-col items-center justify-center py-12 text-slate-400 space-y-4 opacity-60">
@@ -32,7 +33,7 @@ const EmptyState = ({ title, onAdd }: { title: string; onAdd?: () => void }) => 
       {onAdd && (
         <button
           onClick={onAdd}
-          className="mt-4 flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 mx-auto"
+          className="mt-4 flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 mx-auto"
         >
           <Plus className="w-3.5 h-3.5" />
           Add Your First Task
@@ -412,53 +413,38 @@ export function MyTasks() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6">
       {/* KPI Header */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between group">
-          <div>
-            <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest mb-1">
-              Overdue Actions
-            </p>
-            <h4 className="text-2xl font-black text-slate-800 tracking-tighter">
-              {kpis.overdue}
-            </h4>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center text-rose-500 group-hover:scale-110 transition-transform">
-            <AlertCircle className="w-6 h-6" />
-          </div>
-        </div>
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between group">
-          <div>
-            <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">
-              Due Today
-            </p>
-            <h4 className="text-2xl font-black text-slate-800 tracking-tighter">
-              {kpis.dueToday}
-            </h4>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-500 group-hover:scale-110 transition-transform">
-            <Clock className="w-6 h-6" />
-          </div>
-        </div>
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between group">
-          <div>
-            <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">
-              Closed (Last 7d)
-            </p>
-            <h4 className="text-2xl font-black text-slate-800 tracking-tighter">
-              {kpis.completed}
-            </h4>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform">
-            <CheckCircle2 className="w-6 h-6" />
-          </div>
-        </div>
+        <StatsCard
+          icon={AlertCircle}
+          title="Overdue Actions"
+          value={kpis.overdue}
+          size="sm"
+          iconBgClassName="bg-rose-50 dark:bg-rose-500/10"
+          iconClassName="text-rose-600 dark:text-rose-400"
+        />
+        <StatsCard
+          icon={Clock}
+          title="Due Today"
+          value={kpis.dueToday}
+          size="sm"
+          iconBgClassName="bg-amber-50 dark:bg-amber-500/10"
+          iconClassName="text-amber-600 dark:text-amber-400"
+        />
+        <StatsCard
+          icon={CheckCircle2}
+          title="Closed (Last 7d)"
+          value={kpis.completed}
+          size="sm"
+          iconBgClassName="bg-emerald-50 dark:bg-emerald-500/10"
+          iconClassName="text-emerald-600 dark:text-emerald-400"
+        />
       </div>
 
       {/* Filter Bar */}
-      <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl">
+      <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex flex-wrap items-center gap-4">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg">
           <Filter className="w-3.5 h-3.5 text-slate-400" />
           <select
             value={statusFilter}
@@ -474,7 +460,7 @@ export function MyTasks() {
           </select>
         </div>
 
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg">
           <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
           <select
             value={typeFilter}
@@ -489,7 +475,7 @@ export function MyTasks() {
           </select>
         </div>
 
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg">
           <Plus className="w-3.5 h-3.5 text-slate-400" />
           <select
             value={contextFilter}
@@ -517,7 +503,7 @@ export function MyTasks() {
         <div className="ml-auto flex items-center">
           <button
             onClick={openAddModal}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-all flex items-center gap-2"
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-all flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
             Add Task
@@ -533,13 +519,13 @@ export function MyTasks() {
             placeholder="Search workspace..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+            className="w-full pl-9 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
           />
         </div>
       </div>
 
       {/* Task List */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
           <div className="flex items-center gap-4">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
@@ -687,7 +673,7 @@ export function MyTasks() {
                       <button
                         onClick={(e) => toggleComplete(item, e)}
                         className={clsx(
-                          "p-2 rounded-xl transition-all border shadow-sm",
+                          "p-2 rounded-lg transition-all border shadow-sm",
                           item.status === "Completed"
                             ? "text-emerald-700 bg-emerald-50 border-emerald-200"
                             : "text-slate-400 bg-white border-slate-200 hover:text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200",
@@ -705,7 +691,7 @@ export function MyTasks() {
                               e.stopPropagation();
                               openEditModal(item);
                             }}
-                            className="p-2 text-slate-400 bg-white border border-slate-200 rounded-xl hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 transition-all shadow-sm"
+                            className="p-2 text-slate-400 bg-white border border-slate-200 rounded-lg hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 transition-all shadow-sm"
                             title="Edit task"
                           >
                             <Pencil className="w-4 h-4" />
@@ -716,7 +702,7 @@ export function MyTasks() {
                               deleteTask(item.id);
                               toast.success(`Task "${item.title}" deleted`);
                             }}
-                            className="p-2 text-slate-400 bg-white border border-slate-200 rounded-xl hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all shadow-sm"
+                            className="p-2 text-slate-400 bg-white border border-slate-200 rounded-lg hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all shadow-sm"
                             title="Delete task"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -729,7 +715,7 @@ export function MyTasks() {
                             e.stopPropagation();
                             navigate("/compliance");
                           }}
-                          className="p-2 text-slate-400 bg-white border border-slate-200 rounded-xl hover:text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200 transition-all shadow-sm"
+                          className="p-2 text-slate-400 bg-white border border-slate-200 rounded-lg hover:text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200 transition-all shadow-sm"
                           title="Go to Compliance Tracker"
                         >
                           <ExternalLink className="w-4 h-4" />
@@ -760,7 +746,7 @@ export function MyTasks() {
       {/* Bulk Delete Confirmation Modal */}
       {showBulkDeleteModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-300">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-300">
             <div className="px-6 py-5 border-b border-slate-100 bg-rose-50/50">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-600">
@@ -790,14 +776,14 @@ export function MyTasks() {
                 <button
                   type="button"
                   onClick={() => setShowBulkDeleteModal(false)}
-                  className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-xs font-black uppercase hover:bg-slate-50 transition-colors tracking-widest"
+                  className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-lg text-xs font-black uppercase hover:bg-slate-50 transition-colors tracking-widest"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={confirmBulkDelete}
-                  className="flex-1 px-4 py-2.5 bg-rose-600 text-white rounded-xl text-xs font-black uppercase hover:bg-rose-700 transition-all shadow-lg shadow-rose-200 tracking-widest"
+                  className="flex-1 px-4 py-2.5 bg-rose-600 text-white rounded-lg text-xs font-black uppercase hover:bg-rose-700 transition-all shadow-lg shadow-rose-200 tracking-widest"
                 >
                   Delete All
                 </button>
@@ -810,7 +796,7 @@ export function MyTasks() {
       {/* Add/Edit Task Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-300">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-300">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <h3 className="font-black text-slate-800 uppercase tracking-tighter text-lg">
                 {modalMode === "add" ? "Create Workspace Task" : "Edit Task"}
@@ -836,7 +822,7 @@ export function MyTasks() {
                     setCurrentTask({ ...currentTask, title: e.target.value })
                   }
                   placeholder="What needs to be done?"
-                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all shadow-inner"
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all shadow-inner"
                 />
               </div>
               <div>
@@ -853,7 +839,7 @@ export function MyTasks() {
                   }
                   placeholder="Add context, links, or reminders..."
                   rows={3}
-                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none transition-all shadow-inner"
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none transition-all shadow-inner"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -869,7 +855,7 @@ export function MyTasks() {
                         priority: e.target.value as any,
                       })
                     }
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer"
                   >
                     <option value="Low">Low</option>
                     <option value="Medium">Medium</option>
@@ -890,7 +876,7 @@ export function MyTasks() {
                         dueDate: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
                   />
                 </div>
               </div>
@@ -898,13 +884,13 @@ export function MyTasks() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-xs font-black uppercase hover:bg-slate-50 transition-colors tracking-widest"
+                  className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-lg text-xs font-black uppercase hover:bg-slate-50 transition-colors tracking-widest"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 tracking-widest"
+                  className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-lg text-xs font-black uppercase hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 tracking-widest"
                 >
                   {modalMode === "add" ? "Add To Workspace" : "Update Task"}
                 </button>

@@ -17,13 +17,13 @@ function StatTile({ icon: Icon, label, value, color, trend, trendValue }: {
     icon: any; label: string; value: string | number; color: string; trend?: 'up' | 'down'; trendValue?: string 
 }) {
     return (
-        <div className="group bg-white rounded-2xl md:rounded-3xl border border-slate-200/60 p-4 md:p-5 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-500 relative overflow-hidden flex flex-col justify-between min-h-[120px] md:min-h-[140px]">
+        <div className="group bg-white rounded-lg md:rounded-lg border border-slate-200/60 p-4 md:p-5 shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-500 relative overflow-hidden flex flex-col justify-between min-h-[120px] md:min-h-[140px]">
             {/* Background decoration */}
             <div className={clsx("absolute -top-12 -right-12 w-32 h-32 rounded-full opacity-[0.03] transition-transform duration-700 group-hover:scale-150", color)} />
             
             <div className="relative">
                 <div className="flex items-center justify-between mb-3">
-                    <div className={clsx("p-2.5 rounded-2xl border transition-colors duration-500", 
+                    <div className={clsx("p-2.5 rounded-lg border transition-colors duration-500", 
                         isActiveTile(color) ? "bg-opacity-10 border-opacity-20" : "bg-slate-50 border-slate-100 group-hover:bg-opacity-10 group-hover:border-opacity-20",
                         color.replace('text-', 'bg-').replace('text-', 'border-')
                     )}>
@@ -125,8 +125,8 @@ export function ProgrammeReport() {
 
     if (!isClientAdmin) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8 bg-white rounded-[2.5rem] border border-slate-200 shadow-xl shadow-slate-200/50 mx-auto max-w-2xl mt-12 animate-in fade-in zoom-in duration-700">
-                <div className="w-24 h-24 bg-rose-50 rounded-[2.5rem] flex items-center justify-center mb-8 shadow-inner shadow-rose-200/50 border border-rose-100">
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8 bg-white rounded-lg border border-slate-200 shadow-xl shadow-slate-200/50 mx-auto max-w-2xl mt-12 animate-in fade-in zoom-in duration-700">
+                <div className="w-24 h-24 bg-rose-50 rounded-lg flex items-center justify-center mb-8 shadow-inner shadow-rose-200/50 border border-rose-100">
                     <ShieldAlert className="w-12 h-12 text-rose-500" />
                 </div>
                 <h2 className="text-3xl font-black text-slate-900 mb-3 tracking-tight">Access Restricted</h2>
@@ -135,7 +135,7 @@ export function ProgrammeReport() {
                 </p>
                 <button 
                     onClick={() => navigate('/projects')}
-                    className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-slate-800 transition-all shadow-2xl shadow-slate-900/20 scale-100 hover:scale-[1.05] active:scale-[0.95]"
+                    className="px-8 py-4 bg-slate-900 text-white rounded-lg font-black text-sm uppercase tracking-widest hover:bg-slate-800 transition-all shadow-2xl shadow-slate-900/20 scale-100 hover:scale-[1.05] active:scale-[0.95]"
                 >
                     Back to Projects
                 </button>
@@ -144,9 +144,9 @@ export function ProgrammeReport() {
     }
 
     return (
-        <div className="space-y-8 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000 print:p-0">
             {/* Premium Header */}
-            <div className="group/header relative bg-slate-900 rounded-[1.5rem] md:rounded-[2.5rem] p-6 md:p-10 overflow-hidden shadow-2xl border border-white/5 ring-1 ring-white/10">
+            <div className="group/header relative bg-slate-900 rounded-lg md:rounded-lg p-6 md:p-10 overflow-hidden shadow-2xl border border-white/5 ring-1 ring-white/10">
                 {/* Abstract visual backgrounds */}
                 <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-indigo-600/20 rounded-full blur-[120px] -mr-48 -mt-48 transition-transform duration-1000 group-hover:scale-110" />
                 <div className="absolute bottom-0 left-0 w-80 h-80 bg-blue-500/10 rounded-full blur-[80px] -ml-24 -mb-24" />
@@ -164,7 +164,7 @@ export function ProgrammeReport() {
                             {isClientAdmin && (
                                 <button
                                     onClick={() => { useStore.getState().setActiveProgramme(null); navigate('/programmes/new'); }}
-                                    className="flex items-center gap-2 px-4 py-2 bg-white/10 text-white border border-white/20 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-white/20 transition-all shadow-sm active:scale-95"
+                                    className="flex items-center gap-2 px-4 py-2 bg-white/10 text-white border border-white/20 rounded-lg font-black text-[9px] uppercase tracking-widest hover:bg-white/20 transition-all shadow-sm active:scale-95"
                                 >
                                     <Plus className="w-3 h-3" />
                                     New Programme
@@ -181,7 +181,7 @@ export function ProgrammeReport() {
                         </div>
                         
                         <h1 className="text-2xl md:text-3xl font-black text-white flex items-center gap-3 drop-shadow-md">
-                            <div className="p-2 md:p-2.5 bg-white/10 backdrop-blur-md rounded-xl md:rounded-2xl border border-white/20 ring-1 ring-white/10 shadow-inner group-hover/header:scale-105 transition-transform duration-500">
+                            <div className="p-2 md:p-2.5 bg-white/10 backdrop-blur-md rounded-lg md:rounded-lg border border-white/20 ring-1 ring-white/10 shadow-inner group-hover/header:scale-105 transition-transform duration-500">
                                 <BarChart className="w-6 h-6 md:w-8 md:h-8 text-indigo-300 drop-shadow-[0_0_8px_rgba(165,180,252,0.4)]" />
                             </div>
                             <div className="flex flex-col">
@@ -250,10 +250,10 @@ export function ProgrammeReport() {
             </div>
 
             {/* ─── AI STRATEGIC INTELLIGENCE (Portfolio View) ─── */}
-            <div className="bg-slate-50/50 rounded-[2rem] md:rounded-[3rem] border border-slate-200/60 p-6 md:p-10 transition-all hover:bg-white hover:shadow-xl hover:shadow-indigo-500/5">
+            <div className="bg-slate-50/50 rounded-lg md:rounded-lg border border-slate-200/60 p-6 md:p-10 transition-all hover:bg-white hover:shadow-xl hover:shadow-indigo-500/5">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 pb-6 border-b border-slate-100">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-200">
+                        <div className="p-3 bg-indigo-600 rounded-lg shadow-lg shadow-indigo-200">
                             <Target className="w-6 h-6 text-white" />
                         </div>
                         <div>
@@ -262,13 +262,13 @@ export function ProgrammeReport() {
                         </div>
                     </div>
 
-                    <div className="flex bg-slate-100 p-1 rounded-xl md:rounded-2xl gap-1 self-stretch md:self-auto overflow-x-auto hide-scrollbar whitespace-nowrap">
+                    <div className="flex bg-slate-100 p-1 rounded-lg md:rounded-lg gap-1 self-stretch md:self-auto overflow-x-auto hide-scrollbar whitespace-nowrap">
                         {(['sensitivity', 'lifecycle', 'sentiment'] as const).map((tab) => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveAiTab(tab)}
                                 className={clsx(
-                                    "flex-1 md:flex-none px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                                    "flex-1 md:flex-none px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
                                     activeAiTab === tab 
                                         ? "bg-white text-indigo-600 shadow-sm ring-1 ring-slate-200" 
                                         : "text-slate-500 hover:text-slate-800"
@@ -282,7 +282,7 @@ export function ProgrammeReport() {
 
                 <div className="min-h-[300px]">
                     {aiError && (
-                        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3 animate-in fade-in mb-6">
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3 animate-in fade-in mb-6">
                             <ShieldAlert className="w-5 h-5 text-red-600 mt-0.5 shrink-0" />
                             <div>
                                 <h3 className="text-sm font-bold text-red-900">AI Analysis Error</h3>
@@ -322,7 +322,7 @@ export function ProgrammeReport() {
                                                 setAiError(e.message || 'Failed to generate AI analysis. Please try again.');
                                             } finally { setIsAnalyzing(false); }
                                         }}
-                                        className="mt-4 px-8 py-3.5 bg-[#111827] text-white text-[11px] font-black uppercase tracking-widest rounded-2xl hover:bg-black shadow-xl active:scale-95 transition-all"
+                                        className="mt-4 px-8 py-3.5 bg-[#111827] text-white text-[11px] font-black uppercase tracking-widest rounded-lg hover:bg-black shadow-xl active:scale-95 transition-all"
                                     >
                                         <Database className="w-4 h-4 inline mr-2" /> Run Portfolio Sensitivity
                                     </button>
@@ -330,7 +330,7 @@ export function ProgrammeReport() {
                             </div>
 
                             {(isAnalyzing || analysisResults) && (
-                                <div className="bg-white rounded-[1.5rem] md:rounded-[2.5rem] p-6 md:p-10 border border-slate-100 shadow-sm relative overflow-hidden">
+                                <div className="bg-white rounded-lg md:rounded-lg p-6 md:p-10 border border-slate-100 shadow-sm relative overflow-hidden">
                                     {isAnalyzing && (
                                         <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10">
                                             <div className="flex flex-col items-center gap-4">
@@ -376,7 +376,7 @@ export function ProgrammeReport() {
                                                 setAiError(e.message || 'Failed to generate AI analysis. Please try again.');
                                             } finally { setIsAnalyzingLifecycle(false); }
                                         }}
-                                        className="mt-4 px-8 py-3.5 bg-indigo-600 text-white text-[11px] font-black uppercase tracking-widest rounded-2xl hover:bg-indigo-700 shadow-xl active:scale-95 transition-all"
+                                        className="mt-4 px-8 py-3.5 bg-indigo-600 text-white text-[11px] font-black uppercase tracking-widest rounded-lg hover:bg-indigo-700 shadow-xl active:scale-95 transition-all"
                                     >
                                         <Layers className="w-4 h-4 inline mr-2" /> Analyse Portfolio Stages
                                     </button>
@@ -386,7 +386,7 @@ export function ProgrammeReport() {
                             {(isAnalyzingLifecycle || lifecycleResults) && (
                                 <div className="space-y-10 relative">
                                     {isAnalyzingLifecycle && (
-                                        <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-10 rounded-[1.5rem] md:rounded-[2.5rem]">
+                                        <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg md:rounded-lg">
                                             <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
                                         </div>
                                     )}
@@ -395,7 +395,7 @@ export function ProgrammeReport() {
                                         <>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 {lifecycleResults.lifecycleRoadmap.map((item: any, i: number) => (
-                                                    <div key={i} className="bg-white p-5 md:p-6 rounded-2xl md:rounded-3xl border border-slate-100 shadow-sm flex flex-col gap-3 group hover:border-indigo-200 transition-colors">
+                                                    <div key={i} className="bg-white p-5 md:p-6 rounded-lg md:rounded-lg border border-slate-100 shadow-sm flex flex-col gap-3 group hover:border-indigo-200 transition-colors">
                                                         <div className="flex justify-between items-start">
                                                             <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-2 py-1 rounded-lg">{item.stage}</span>
                                                         </div>
@@ -404,7 +404,7 @@ export function ProgrammeReport() {
                                                     </div>
                                                 ))}
                                             </div>
-                                            <div className="bg-amber-50/50 p-6 md:p-10 rounded-[1.5rem] md:rounded-[2.5rem] border border-amber-100/50">
+                                            <div className="bg-amber-50/50 p-6 md:p-10 rounded-lg md:rounded-lg border border-amber-100/50">
                                                 <h4 className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-4 flex items-center gap-2">
                                                     <AlertTriangle className="w-3.5 h-3.5" /> Aggregate Delivery Bottlenecks
                                                 </h4>
@@ -443,7 +443,7 @@ export function ProgrammeReport() {
                                                 setAiError(e.message || 'Failed to generate AI analysis. Please try again.');
                                             } finally { setIsAnalyzingSentiment(false); }
                                         }}
-                                        className="mt-4 px-8 py-3.5 bg-emerald-600 text-white text-[11px] font-black uppercase tracking-widest rounded-2xl hover:bg-emerald-700 shadow-xl active:scale-95 transition-all"
+                                        className="mt-4 px-8 py-3.5 bg-emerald-600 text-white text-[11px] font-black uppercase tracking-widest rounded-lg hover:bg-emerald-700 shadow-xl active:scale-95 transition-all"
                                     >
                                         <Shield className="w-4 h-4 inline mr-2" /> Portfolio Audit
                                     </button>
@@ -453,7 +453,7 @@ export function ProgrammeReport() {
                             {(isAnalyzingSentiment || sentimentResults) && (
                                 <div className="space-y-8 relative">
                                     {isAnalyzingSentiment && (
-                                        <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-10 rounded-[1.5rem] md:rounded-[2.5rem]">
+                                        <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg md:rounded-lg">
                                             <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
                                         </div>
                                     )}
@@ -461,7 +461,7 @@ export function ProgrammeReport() {
                                     {sentimentResults && (
                                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                                             <div className="lg:col-span-1 space-y-6">
-                                                <div className="bg-white p-6 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] border border-slate-100 shadow-sm text-center space-y-4">
+                                                <div className="bg-white p-6 md:p-8 rounded-lg md:rounded-lg border border-slate-100 shadow-sm text-center space-y-4">
                                                     <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Confidence Score</div>
                                                     <div className={clsx(
                                                         "text-4xl md:text-6xl font-black tabular-nums",
@@ -474,14 +474,14 @@ export function ProgrammeReport() {
                                                         Tone: {sentimentResults.sentimentTone}
                                                     </div>
                                                 </div>
-                                                <div className="bg-[#111827] p-6 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] text-white">
+                                                <div className="bg-[#111827] p-6 md:p-8 rounded-lg md:rounded-lg text-white">
                                                     <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-4">Programme Note</h4>
                                                     <p className="text-xs font-medium leading-[1.8] italic opacity-80">{sentimentResults.auditorNote}</p>
                                                 </div>
                                             </div>
                                             
                                             <div className="lg:col-span-2 space-y-6">
-                                                <div className="bg-white p-6 md:p-10 rounded-[1.5rem] md:rounded-[2.5rem] border border-slate-100 shadow-sm">
+                                                <div className="bg-white p-6 md:p-10 rounded-lg md:rounded-lg border border-slate-100 shadow-sm">
                                                     <h4 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-6 pb-4 border-b">Portfolio Audit Rationale</h4>
                                                     <div className="space-y-4">
                                                         {sentimentResults.rationale.map((r: string, i: number) => (
@@ -504,12 +504,12 @@ export function ProgrammeReport() {
 
             {/* ─── EXECUTIVE INTERNAL AUDIT ─── */}
             {isClientAdmin && (
-                <div className="relative group overflow-hidden rounded-[2rem] md:rounded-[3.5rem] p-8 md:p-16 text-center border border-white/10 bg-slate-900 shadow-2xl mt-12">
+                <div className="relative group overflow-hidden rounded-lg md:rounded-lg p-8 md:p-16 text-center border border-white/10 bg-slate-900 shadow-2xl mt-12">
                     {/* Background glow */}
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-indigo-600/20 blur-[120px] rounded-full" />
                     
                     <div className="relative z-10 max-w-2xl mx-auto space-y-8">
-                        <div className="inline-flex p-4 rounded-3xl bg-white/5 border border-white/10 shadow-2xl backdrop-blur-xl group-hover:scale-110 transition-transform duration-700">
+                        <div className="inline-flex p-4 rounded-lg bg-white/5 border border-white/10 shadow-2xl backdrop-blur-xl group-hover:scale-110 transition-transform duration-700">
                             <ShieldCheck className="w-10 h-10 text-indigo-400 drop-shadow-[0_0_15px_rgba(129,140,248,0.5)]" />
                         </div>
                         
@@ -531,7 +531,7 @@ export function ProgrammeReport() {
                                         navigate(`/dashboard?viewAs=pm`);
                                     }
                                 }}
-                                className="group/btn relative px-10 py-5 bg-white text-slate-900 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-indigo-50 transition-all shadow-[0_20px_50px_rgba(255,255,255,0.1)] hover:shadow-white/20 active:scale-95 overflow-hidden"
+                                className="group/btn relative px-10 py-5 bg-white text-slate-900 rounded-lg font-black text-xs uppercase tracking-[0.2em] hover:bg-indigo-50 transition-all shadow-[0_20px_50px_rgba(255,255,255,0.1)] hover:shadow-white/20 active:scale-95 overflow-hidden"
                             >
                                 <span className="relative z-10 flex items-center gap-2">
                                     Access PM Backdoor <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />

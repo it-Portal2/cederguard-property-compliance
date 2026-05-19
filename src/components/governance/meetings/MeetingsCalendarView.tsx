@@ -84,7 +84,7 @@ export function MeetingsCalendarView({ items, onOpenItem }: Props) {
   return (
     <section className="space-y-4">
       {/* Header bar */}
-      <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-2 shadow-sm">
+      <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-2 shadow-sm">
         <div className="flex items-center gap-1">
           <button
             type="button"
@@ -119,7 +119,7 @@ export function MeetingsCalendarView({ items, onOpenItem }: Props) {
       </div>
 
       {/* Calendar grid */}
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
         {/* Weekday header */}
         <div className="grid grid-cols-7 border-b border-slate-100 bg-slate-50">
           {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => (
@@ -211,7 +211,7 @@ export function MeetingsCalendarView({ items, onOpenItem }: Props) {
 
       {/* Selected day strip */}
       {selectedDay && (
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
             {format(selectedDay, 'EEEE, d MMMM yyyy')}
           </p>

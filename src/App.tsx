@@ -100,7 +100,7 @@ function ContextSwitchingOverlay() {
   if (!isContextSwitching) return null;
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/45 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="flex flex-col items-center gap-4 bg-white rounded-2xl border border-slate-200 shadow-2xl shadow-slate-900/10 px-10 py-8">
+      <div className="flex flex-col items-center gap-4 bg-white rounded-lg border border-slate-200 shadow-2xl shadow-slate-900/10 px-10 py-8">
         <div className="relative">
           <div className="w-12 h-12 rounded-full border-4 border-indigo-100" />
           <div className="absolute inset-0 w-12 h-12 rounded-full border-4 border-indigo-600 border-t-transparent animate-spin" />

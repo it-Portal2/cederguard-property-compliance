@@ -65,8 +65,8 @@ export function CPDTraining() {
         </div>
         
         <div className="flex gap-4">
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-            <div className="p-3 bg-indigo-50 rounded-xl text-indigo-600">
+          <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex items-center gap-4">
+            <div className="p-3 bg-indigo-50 rounded-lg text-indigo-600">
               <Award className="w-6 h-6" />
             </div>
             <div>
@@ -74,8 +74,8 @@ export function CPDTraining() {
               <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">CPD Points</div>
             </div>
           </div>
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-            <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600">
+          <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex items-center gap-4">
+            <div className="p-3 bg-emerald-50 rounded-lg text-emerald-600">
               <CheckCircle2 className="w-6 h-6" />
             </div>
             <div>
@@ -88,7 +88,7 @@ export function CPDTraining() {
 
       {/* Progress Bar */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="lg:col-span-2 bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
           <div className="flex justify-between items-end mb-2">
             <div className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Your Learning Progress</div>
             <div className="text-[13px] font-bold text-indigo-600">{Math.round(totalProgress)}%</div>
@@ -103,7 +103,7 @@ export function CPDTraining() {
         </div>
 
         {suggestedModules.length > 0 && (
-          <div className="bg-indigo-600 p-6 rounded-2xl shadow-xl shadow-indigo-200 relative overflow-hidden group">
+          <div className="bg-indigo-600 p-6 rounded-lg shadow-xl shadow-indigo-200 relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
               <Rocket className="w-24 h-24 text-white" />
             </div>
@@ -115,7 +115,7 @@ export function CPDTraining() {
                   <div 
                     key={m.id} 
                     onClick={() => handleSelectModule(m)}
-                    className="flex items-center gap-2 bg-white/10 hover:bg-white/20 p-2 rounded-xl cursor-pointer transition-colors"
+                    className="flex items-center gap-2 bg-white/10 hover:bg-white/20 p-2 rounded-lg cursor-pointer transition-colors"
                   >
                     <PlayCircle className="w-4 h-4 text-white" />
                     <span className="text-[11px] font-bold text-white truncate">{m.title}</span>
@@ -129,7 +129,7 @@ export function CPDTraining() {
 
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-        <div className="flex p-1 bg-slate-100 rounded-xl w-full md:w-auto overflow-x-auto">
+        <div className="flex p-1 bg-slate-100 rounded-lg w-full md:w-auto overflow-x-auto">
           {categories.map(cat => (
             <button
               key={cat}
@@ -153,7 +153,7 @@ export function CPDTraining() {
             placeholder="Search modules..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm"
+            className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm"
           />
         </div>
       </div>
@@ -168,7 +168,7 @@ export function CPDTraining() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl hover:border-indigo-100 transition-all group cursor-pointer overflow-hidden flex flex-col"
+              className="bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-xl hover:border-indigo-100 transition-all group cursor-pointer overflow-hidden flex flex-col"
               onClick={() => handleSelectModule(module)}
             >
               <div className="aspect-video bg-slate-100 relative overflow-hidden">
@@ -229,7 +229,7 @@ export function CPDTraining() {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-5xl bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row"
+              className="relative w-full max-w-5xl bg-white rounded-lg overflow-hidden shadow-2xl flex flex-col md:flex-row"
             >
               <div className="flex-1 bg-black aspect-[4/3] md:aspect-video flex items-center justify-center relative group overflow-hidden">
                 {selectedModule.videoUrl ? (
@@ -269,11 +269,11 @@ export function CPDTraining() {
                 </div>
 
                 <div className="space-y-4 mb-8">
-                  <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200">
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200">
                     <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Duration</span>
                     <span className="text-sm font-black text-slate-900">{selectedModule.duration}</span>
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200">
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200">
                     <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">CPD Points</span>
                     <span className="text-sm font-black text-indigo-600">{selectedModule.points}</span>
                   </div>
@@ -285,7 +285,7 @@ export function CPDTraining() {
                       onClick={() => handleComplete(selectedModule.id)}
                       disabled={!hasCompletedSlideshow && !selectedModule.videoUrl}
                       className={clsx(
-                        "w-full py-4 text-white font-black rounded-2xl transition-all flex items-center justify-center gap-2",
+                        "w-full py-4 text-white font-black rounded-lg transition-all flex items-center justify-center gap-2",
                         hasCompletedSlideshow || selectedModule.videoUrl
                           ? "bg-emerald-600 shadow-lg shadow-emerald-200 hover:bg-emerald-700 hover:scale-[1.02] active:scale-95"
                           : "bg-slate-300 shadow-none cursor-not-allowed"
@@ -297,7 +297,7 @@ export function CPDTraining() {
                   )}
                   <button
                     onClick={() => setSelectedModule(null)}
-                    className="w-full py-4 bg-white text-slate-600 font-black rounded-2xl border-2 border-slate-200 hover:bg-slate-50 transition-all"
+                    className="w-full py-4 bg-white text-slate-600 font-black rounded-lg border-2 border-slate-200 hover:bg-slate-50 transition-all"
                   >
                     Close & Return
                   </button>

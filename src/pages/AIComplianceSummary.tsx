@@ -66,7 +66,7 @@ export function AIComplianceSummary() {
                 <p className="text-sm text-slate-500 mt-1">Algorithmic overview of regulatory compliance posture across active statutory domains</p>
             </div>
 
-            <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex justify-between items-center gap-3">
+            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 flex justify-between items-center gap-3">
                 <div className="flex items-start gap-3">
                 <ScanSearch className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
                     <div>
@@ -89,7 +89,7 @@ export function AIComplianceSummary() {
             </div>
 
             {aiError && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3 animate-in fade-in">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3 animate-in fade-in">
                     <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 shrink-0" />
                     <div>
                         <h3 className="text-sm font-bold text-red-900">AI Analysis Error</h3>
@@ -104,14 +104,14 @@ export function AIComplianceSummary() {
                     { label: 'Fully Compliant', value: fullyCompliant, color: 'text-emerald-600', border: 'border-l-emerald-500' },
                     { label: 'Action Required', value: actionRequired, color: 'text-red-600', border: 'border-l-red-500' },
                 ].map(s => (
-                    <div key={s.label} className={`bg-white rounded-xl border border-slate-200 border-l-4 ${s.border} p-4 shadow-sm`}>
+                    <div key={s.label} className={`bg-white rounded-lg border border-slate-200 border-l-4 ${s.border} p-4 shadow-sm`}>
                         <div className={`text-3xl font-extrabold ${s.color}`}>{s.value}</div>
                         <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-1">{s.label}</div>
                     </div>
                 ))}
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                 <div className="px-5 py-3 border-b border-slate-100">
                     <span className="font-semibold text-slate-700 text-sm">Compliance Summary by Regulatory Domain</span>
                 </div>

@@ -1,4 +1,5 @@
-import { TrendingUp, Grid3x3, PoundSterling, ArrowUpRight } from 'lucide-react';
+import { TrendingUp, Grid3x3, PoundSterling, ArrowUpRight, Flame, AlertTriangle, Shield } from 'lucide-react';
+import { StatsCard } from '../components/common/StatsCard';
 import { useEffect, useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import {
@@ -237,39 +238,44 @@ export function TrendsHeatmaps() {
   return (
     <div className="space-y-6">
       {/* Header*/}
-      <div className="bg-white p-6 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden relative group">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl -mr-32 -mt-32 opacity-50 group-hover:scale-110 transition-transform duration-1000" />
-        <div className="relative">
-          <h1 className="text-2xl md:text-3xl font-black text-slate-900 flex items-center gap-3 tracking-tight">
-            <div className="p-2 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-200">
-              <TrendingUp className="w-5 h-5 md:w-6 md:h-6 text-white" />
-            </div>
-            Trends &amp; Heatmaps
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold text-slate-900 flex items-center gap-2.5">
+            <TrendingUp className="w-6 h-6 text-indigo-600" /> Trends &amp; Heatmaps
           </h1>
-          <p className="text-sm text-slate-500 mt-2 font-medium leading-relaxed max-w-2xl italic">
-            Enterprise risk intelligence overview across strategic workstreams. Aggregate heatmaps driven by live field data.
+          <p className="text-sm text-slate-500 mt-1 max-w-2xl">
+            Enterprise risk intelligence across strategic workstreams. Aggregate heatmaps driven by live field data.
           </p>
         </div>
       </div>
 
       {/* KPIs*/}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
-        <div className="bg-white border-b-4 md:border-t-4 md:border-b-0 border-red-500 border border-slate-200 rounded-[1.5rem] p-5 md:p-6 shadow-sm hover:shadow-md transition-shadow">
-          <div className="text-3xl md:text-4xl font-black text-red-600 tabular-nums tracking-tighter">{severeRisks}</div>
-          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Severe Risks (≥{SEVERE_SCORE_THRESHOLD})</div>
-        </div>
-        <div className="bg-white border-b-4 md:border-t-4 md:border-b-0 border-amber-500 border border-slate-200 rounded-[1.5rem] p-5 md:p-6 shadow-sm hover:shadow-md transition-shadow">
-          <div className="text-3xl md:text-4xl font-black text-amber-600 tabular-nums tracking-tighter">{openRisks}</div>
-          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Open Risks</div>
-        </div>
-        <div className="bg-white border-b-4 md:border-t-4 md:border-b-0 border-indigo-500 border border-slate-200 rounded-[1.5rem] p-5 md:p-6 shadow-sm hover:shadow-md transition-shadow">
-          <div className="text-3xl md:text-4xl font-black text-indigo-600 tabular-nums tracking-tighter">{totalRisks}</div>
-          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">Total Risks</div>
-        </div>
+        <StatsCard
+          icon={Flame}
+          title={`Severe Risks (≥${SEVERE_SCORE_THRESHOLD})`}
+          value={severeRisks}
+          iconBgClassName="bg-rose-50 dark:bg-rose-500/10"
+          iconClassName="text-rose-600 dark:text-rose-400"
+        />
+        <StatsCard
+          icon={AlertTriangle}
+          title="Open Risks"
+          value={openRisks}
+          iconBgClassName="bg-amber-50 dark:bg-amber-500/10"
+          iconClassName="text-amber-600 dark:text-amber-400"
+        />
+        <StatsCard
+          icon={Shield}
+          title="Total Risks"
+          value={totalRisks}
+          iconBgClassName="bg-indigo-50 dark:bg-indigo-500/10"
+          iconClassName="text-indigo-600 dark:text-indigo-400"
+        />
       </div>
 
       {/* Client Risk Scoring Matrix (5×5 calibrated lookup, per spec )*/}
-      <div className="bg-white rounded-[1.5rem] md:rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-lg md:rounded-lg border border-slate-200 shadow-sm overflow-hidden">
         <div className="px-6 md:px-8 py-4 md:py-5 border-b border-slate-100 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
             <div className="p-1.5 bg-indigo-100 rounded-lg">
@@ -350,7 +356,7 @@ export function TrendsHeatmaps() {
           </table>
 
           {/* Band legend — 4-band scheme matching the matrix's colour distribution*/}
-          <div className="flex flex-wrap items-center justify-center gap-3 mt-6 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+          <div className="flex flex-wrap items-center justify-center gap-3 mt-6 p-4 bg-slate-50 rounded-lg border border-slate-100">
             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Bands:</span>
             {BAND_RANGES.map(({ band, range }) => {
               const styles = BAND_STYLES[band];
@@ -368,7 +374,7 @@ export function TrendsHeatmaps() {
       </div>
 
       {/* Workstream Heatmap*/}
-      <div className="bg-white rounded-[1.5rem] md:rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-lg md:rounded-lg border border-slate-200 shadow-sm overflow-hidden">
         <div className="px-6 md:px-8 py-4 md:py-5 border-b border-slate-100 flex items-center justify-between">
           <span className="font-black text-slate-900 text-xs md:text-sm uppercase tracking-widest">Risk Heatmap — By Workstream</span>
           <span className="hidden md:inline text-[10px] font-bold text-indigo-500 uppercase tracking-tighter bg-indigo-50 px-3 py-1 rounded-full">Live Analytics Layer</span>
@@ -410,7 +416,7 @@ export function TrendsHeatmaps() {
           )}
 
           {/* Score Legend — uses the same 4 bands as the calibrated matrix above*/}
-          <div className="flex flex-wrap items-center gap-3 mt-10 p-5 bg-slate-50 rounded-2xl border border-slate-100">
+          <div className="flex flex-wrap items-center gap-3 mt-10 p-5 bg-slate-50 rounded-lg border border-slate-100">
             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-2">Score Legend:</span>
             {BAND_RANGES.map(({ band, range }) => {
               const styles = BAND_STYLES[band];
@@ -432,7 +438,7 @@ export function TrendsHeatmaps() {
  escalation rule — the calibrated 5-band scheme already encodes
  severity ). Severe (Band 5) Impact = 5 risks
  carry the rose ESCALATE pill.*/}
-      <div className="bg-white rounded-[1.5rem] md:rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-lg md:rounded-lg border border-slate-200 shadow-sm overflow-hidden">
         <div className="px-6 md:px-8 py-4 md:py-5 border-b border-slate-100 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
             <div className="p-1.5 bg-indigo-100 rounded-lg">
@@ -461,7 +467,7 @@ export function TrendsHeatmaps() {
               {financialExposureRows.map(row => (
                 <div
                   key={row.id}
-                  className="flex flex-col gap-2 p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-white hover:ring-2 hover:ring-indigo-500/10 transition-all"
+                  className="flex flex-col gap-2 p-4 bg-slate-50 rounded-lg border border-slate-100 hover:bg-white hover:ring-2 hover:ring-indigo-500/10 transition-all"
                 >
                   <div className="flex items-start justify-between gap-3 flex-wrap">
                     <div className="flex-1 min-w-0">
@@ -494,18 +500,18 @@ export function TrendsHeatmaps() {
                     </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-1">
-                    <div className="bg-white rounded-xl px-3 py-2 border border-slate-100">
+                    <div className="bg-white rounded-lg px-3 py-2 border border-slate-100">
                       <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Linked Value</div>
                       <div className="text-sm font-bold text-slate-900 tabular-nums mt-0.5">{formatGBP(row.linkedValue)}</div>
                     </div>
-                    <div className="bg-white rounded-xl px-3 py-2 border border-slate-100">
+                    <div className="bg-white rounded-lg px-3 py-2 border border-slate-100">
                       <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Gross ALE</div>
                       <div className="flex items-baseline gap-2 mt-0.5 flex-wrap">
                         <span className="text-sm font-bold text-slate-900 tabular-nums">{formatGBP(row.grossALE)}</span>
                         <span className="text-[11px] font-medium text-slate-500 tabular-nums">{formatAlePercent(row.grossPct)}</span>
                       </div>
                     </div>
-                    <div className="bg-white rounded-xl px-3 py-2 border border-slate-100">
+                    <div className="bg-white rounded-lg px-3 py-2 border border-slate-100">
                       <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Residual ALE</div>
                       <div className="flex items-baseline gap-2 mt-0.5 flex-wrap">
                         <span className="text-sm font-bold text-slate-900 tabular-nums">{formatGBP(row.residualALE)}</span>
@@ -527,7 +533,7 @@ export function TrendsHeatmaps() {
 
       {/* Category Density — supplementary, not in spec but non-destructive*/}
       {categoryBreakdown.length > 0 && (
-        <div className="bg-white rounded-[1.5rem] md:rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-lg md:rounded-lg border border-slate-200 shadow-sm overflow-hidden">
           <div className="px-6 md:px-8 py-4 md:py-5 border-b border-slate-100">
             <span className="font-black text-slate-900 text-xs md:text-sm uppercase tracking-widest">Risk Category Density</span>
           </div>
@@ -535,7 +541,7 @@ export function TrendsHeatmaps() {
             {categoryBreakdown.map(([cat, count]) => (
               <div
                 key={cat}
-                className="group flex items-center justify-between bg-slate-50 hover:bg-white hover:ring-2 hover:ring-indigo-500/10 rounded-2xl px-5 py-4 transition-all duration-300 border border-transparent hover:border-slate-100 shadow-sm hover:shadow-indigo-500/5"
+                className="group flex items-center justify-between bg-slate-50 hover:bg-white hover:ring-2 hover:ring-indigo-500/10 rounded-lg px-5 py-4 transition-all duration-300 border border-transparent hover:border-slate-100 shadow-sm hover:shadow-indigo-500/5"
               >
                 <span className="text-[11px] font-black text-slate-600 uppercase tracking-widest group-hover:text-slate-900 truncate mr-4" title={cat}>{cat}</span>
                 <div className="flex items-center gap-3">

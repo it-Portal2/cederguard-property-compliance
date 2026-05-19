@@ -353,7 +353,7 @@ export function MeetingModal({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 12, scale: 0.98 }}
           transition={{ duration: 0.18, ease: 'easeOut' }}
-          className="relative flex max-h-[92vh] w-[min(840px,96vw)] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl"
+          className="relative flex max-h-[92vh] w-[min(840px,96vw)] flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-2xl"
         >
           {/* Header*/}
           <header className="flex items-start gap-3 border-b border-slate-100 px-6 py-4">

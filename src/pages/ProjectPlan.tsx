@@ -76,7 +76,7 @@ export function ProjectPlan() {
     if (!activeProjectId || !activeProject) {
         return (
             <div className="flex flex-col items-center justify-center py-20 text-center max-w-xl mx-auto">
-                <div className="w-16 h-16 rounded-2xl bg-indigo-100 flex items-center justify-center mb-5">
+                <div className="w-16 h-16 rounded-lg bg-indigo-100 flex items-center justify-center mb-5">
                     <FolderKanban className="w-8 h-8 text-indigo-600" />
                 </div>
                 <h2 className="text-xl font-black text-slate-900 mb-2">No Project Selected</h2>
@@ -85,7 +85,7 @@ export function ProjectPlan() {
                 </p>
                 <button
                     onClick={() => navigate('/projects')}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition shadow-lg shadow-indigo-200"
+                    className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-bold text-sm hover:bg-indigo-700 transition shadow-lg shadow-indigo-200"
                 >
                     View All Projects <ArrowRight className="w-4 h-4" />
                 </button>
@@ -94,12 +94,12 @@ export function ProjectPlan() {
     }
 
     return (
-        <div className="space-y-6 max-w-5xl mx-auto pb-12">
+        <div className="space-y-6">
 
             {/* Page Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 bg-indigo-100 text-indigo-700 rounded-xl">
+                    <div className="p-2 bg-indigo-100 text-indigo-700 rounded-lg">
                         <Map className="w-5 h-5" />
                     </div>
                     <div>
@@ -115,13 +115,13 @@ export function ProjectPlan() {
                     <button
                         onClick={() => { exportMilestonesCSV(milestones, activeProject.name || 'project'); toast.success(`Exported ${milestones.length} milestones to CSV`); }}
                         disabled={milestones.length === 0}
-                        className="flex items-center gap-2 text-xs font-bold text-slate-600 border border-slate-200 px-4 py-2 rounded-xl hover:bg-slate-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="flex items-center gap-2 text-xs font-bold text-slate-600 border border-slate-200 px-4 py-2 rounded-lg hover:bg-slate-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                         <Download className="w-3.5 h-3.5" /> Export CSV
                     </button>
                     <button
                         onClick={() => navigate('/initiate')}
-                        className="text-xs font-bold text-indigo-600 border border-indigo-200 px-4 py-2 rounded-xl hover:bg-indigo-50 transition"
+                        className="text-xs font-bold text-indigo-600 border border-indigo-200 px-4 py-2 rounded-lg hover:bg-indigo-50 transition"
                     >
                         Edit Project Details
                     </button>
@@ -137,7 +137,7 @@ export function ProjectPlan() {
                         { label: 'Delayed', value: delayed, color: delayed > 0 ? 'text-rose-700' : 'text-emerald-700', bg: delayed > 0 ? 'bg-rose-50' : 'bg-emerald-50', border: delayed > 0 ? 'border-rose-200' : 'border-emerald-200' },
                         { label: 'Due in 30 Days', value: upcoming.length, color: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200' },
                     ].map((s, i) => (
-                        <div key={i} className={clsx('rounded-2xl border p-4 shadow-sm', s.bg, s.border)}>
+                        <div key={i} className={clsx('rounded-lg border p-4 shadow-sm', s.bg, s.border)}>
                             <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{s.label}</p>
                             <p className={clsx('text-2xl font-black', s.color)}>{s.value}</p>
                         </div>
@@ -147,14 +147,14 @@ export function ProjectPlan() {
 
             {/* Key Milestones banner */}
             {keyMilestones.length > 0 && (
-                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-3">
                         <AlertTriangle className="w-4 h-4 text-amber-600" />
                         <h3 className="text-sm font-black text-amber-800 uppercase tracking-wider">Key Milestones</h3>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                         {keyMilestones.map(km => (
-                            <div key={km.id} className="bg-white rounded-xl border border-amber-200 p-3 shadow-sm">
+                            <div key={km.id} className="bg-white rounded-lg border border-amber-200 p-3 shadow-sm">
                                 <div className="flex items-center justify-between mb-1">
                                     <span className={clsx(
                                         'px-1.5 py-0.5 rounded text-[9px] font-bold uppercase',
@@ -178,7 +178,7 @@ export function ProjectPlan() {
 
             {/* Tabs & Actions */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
+                <div className="flex gap-1 bg-slate-100 p-1 rounded-lg w-fit">
                     {[
                         { key: 'timeline', label: 'RIBA Compliance Timeline' },
                         { key: 'milestones', label: 'Project Milestones' },
@@ -200,7 +200,7 @@ export function ProjectPlan() {
                 </div>
                 <button
                     onClick={() => navigate('/calendar?compare=true' + (activeProjectId ? `&projectId=${activeProjectId}` : ''))}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 text-xs font-bold rounded-xl hover:bg-indigo-100 transition-all border border-indigo-200 shadow-sm"
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 text-xs font-bold rounded-lg hover:bg-indigo-100 transition-all border border-indigo-200 shadow-sm"
                 >
                     <CalendarDays className="w-4 h-4" />
                     Compare in Calendar
@@ -220,7 +220,7 @@ export function ProjectPlan() {
             {activeTab === 'timeline' && (
                 <div className="space-y-4">
                     {/* Timeline visual */}
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
                         <h3 className="text-sm font-bold text-slate-900 mb-6 flex items-center gap-2">
                             <div className="w-1.5 h-4 bg-indigo-600 rounded-full" />
                             RIBA Compliance Timeline
@@ -265,13 +265,13 @@ export function ProjectPlan() {
                             const applicableRegs = st.regs.filter(r => safeComplianceItems.some(i => i.domain === r.domain));
 
                             return (
-                                <div key={st.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm transition-all hover:shadow-md">
+                                <div key={st.id} className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm transition-all hover:shadow-md">
                                     <div
                                         className="flex items-center gap-5 p-5 cursor-pointer hover:bg-slate-50 transition-colors"
                                         onClick={() => toggleStage(st.id)}
                                     >
                                         <div
-                                            className="w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center text-xl font-black border-2"
+                                            className="w-12 h-12 shrink-0 rounded-lg flex items-center justify-center text-xl font-black border-2"
                                             style={{ color: st.color, borderColor: `${st.color}30`, backgroundColor: `${st.color}10` }}
                                         >
                                             {st.num}
@@ -301,7 +301,7 @@ export function ProjectPlan() {
                                                 return (
                                                     <div
                                                         key={idx}
-                                                        className="bg-white border border-slate-200 rounded-xl p-5 border-l-[6px] shadow-sm hover:shadow-md transition-shadow"
+                                                        className="bg-white border border-slate-200 rounded-lg p-5 border-l-[6px] shadow-sm hover:shadow-md transition-shadow"
                                                         style={{ borderLeftColor: dom?.color || '#cbd5e1' }}
                                                     >
                                                         <div className="flex justify-between items-start mb-3">
@@ -330,7 +330,7 @@ export function ProjectPlan() {
                                                 );
                                             })}
                                             {applicableRegs.length === 0 && (
-                                                <div className="col-span-full flex flex-col items-center justify-center py-10 text-center bg-white border border-dashed border-slate-300 rounded-xl">
+                                                <div className="col-span-full flex flex-col items-center justify-center py-10 text-center bg-white border border-dashed border-slate-300 rounded-lg">
                                                     <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center mb-3 text-2xl">🍃</div>
                                                     <h4 className="text-sm font-bold text-slate-800 mb-1">No Regulations</h4>
                                                     <p className="text-xs text-slate-500 max-w-sm">No applicable compliance regulations have been identified for this RIBA stage based on your project profile.</p>
@@ -347,7 +347,7 @@ export function ProjectPlan() {
 
             {/* TAB: Gantt View */}
             {activeTab === 'gantt' && (
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                     <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <BarChart3 className="w-4 h-4 text-indigo-600" />

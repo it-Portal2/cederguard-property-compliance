@@ -139,7 +139,7 @@ export function RiskTracker() {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Risk Tracker & Dashboards</h1>
         <p className="text-sm text-slate-500 mt-1">Programme-wide metrics and visual tracker</p>
@@ -148,7 +148,7 @@ export function RiskTracker() {
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Status Distribution */}
-        <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/40 shadow-xl p-4 sm:p-6 transition-all duration-300 hover:shadow-2xl hover:bg-white/80">
+        <div className="bg-white/70 backdrop-blur-xl rounded-lg border border-white/40 shadow-xl p-4 sm:p-6 transition-all duration-300 hover:shadow-2xl hover:bg-white/80">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
             <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Risk Status Distribution</h2>
             <PieChartIcon className="w-4 h-4 text-indigo-400" />
@@ -175,7 +175,7 @@ export function RiskTracker() {
                     content={({ active, payload }) => {
                       if (active && payload && payload.length) {
                         return (
-                          <div className="bg-white/90 backdrop-blur-md border border-slate-200 p-4 rounded-xl shadow-2xl">
+                          <div className="bg-white/90 backdrop-blur-md border border-slate-200 p-4 rounded-lg shadow-2xl">
                             <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">{payload[0].name}</p>
                             <div className="flex items-baseline gap-2">
                               <span className="text-2xl font-black text-slate-900">{payload[0].value}</span>
@@ -208,7 +208,7 @@ export function RiskTracker() {
         </div>
 
         {/* ALE by Workstream */}
-        <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/40 shadow-xl p-4 sm:p-6 transition-all duration-300 hover:shadow-2xl hover:bg-white/80">
+        <div className="bg-white/70 backdrop-blur-xl rounded-lg border border-white/40 shadow-xl p-4 sm:p-6 transition-all duration-300 hover:shadow-2xl hover:bg-white/80">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
             <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
               Financial Exposure ALE
@@ -231,7 +231,7 @@ export function RiskTracker() {
                     content={({ active, payload, label }) => {
                       if (active && payload && payload.length) {
                         return (
-                          <div className="bg-white/90 backdrop-blur-md border border-slate-200 p-4 rounded-xl shadow-2xl min-w-[180px]">
+                          <div className="bg-white/90 backdrop-blur-md border border-slate-200 p-4 rounded-lg shadow-2xl min-w-[180px]">
                             <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">{label}</p>
                             <div className="space-y-2">
                               {payload.map((p, i) => (
@@ -268,7 +268,7 @@ export function RiskTracker() {
       {/* Trend Detail Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* KRI Composite Trend */}
-        <div className="lg:col-span-2 bg-white/70 backdrop-blur-xl rounded-2xl border border-white/40 shadow-xl p-4 sm:p-6 transition-all duration-300 hover:shadow-2xl hover:bg-white/80">
+        <div className="lg:col-span-2 bg-white/70 backdrop-blur-xl rounded-lg border border-white/40 shadow-xl p-4 sm:p-6 transition-all duration-300 hover:shadow-2xl hover:bg-white/80">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
             <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
               Mitigation Performance Trend (%)
@@ -291,7 +291,7 @@ export function RiskTracker() {
                   content={({ active, payload, label }) => {
                     if (active && payload && payload.length) {
                       return (
-                        <div className="bg-slate-900 border border-slate-700/50 backdrop-blur-xl p-4 rounded-xl shadow-2xl">
+                        <div className="bg-slate-900 border border-slate-700/50 backdrop-blur-xl p-4 rounded-lg shadow-2xl">
                           <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">{label} Review</p>
                           <div className="flex flex-col items-start gap-1">
                             <span className="text-white font-black text-2xl">{payload[0].value}%</span>
@@ -311,7 +311,7 @@ export function RiskTracker() {
 
         {/* KRI Summary Cards */}
         <div className="space-y-4">
-          <div className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 rounded-2xl p-6 text-white shadow-xl shadow-indigo-200 overflow-hidden relative group">
+          <div className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 rounded-lg p-6 text-white shadow-xl shadow-indigo-200 overflow-hidden relative group">
             <div className="absolute top-0 right-0 -m-4 w-24 h-24 bg-white/10 rounded-full blur-2xl transition-all duration-700 group-hover:scale-150" />
             <p className="text-[10px] font-black uppercase tracking-widest opacity-70">Average Risk Reduction</p>
             <h3 className="text-4xl font-black mt-2 tracking-tighter">
@@ -322,7 +322,7 @@ export function RiskTracker() {
               <p className="text-[10px] font-bold text-indigo-100">Exceeding benchmark by 12%</p>
             </div>
           </div>
-          <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/40 p-6 shadow-xl">
+          <div className="bg-white/70 backdrop-blur-xl rounded-lg border border-white/40 p-6 shadow-xl">
             <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-6">KRI Priority Alerts</p>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
@@ -348,7 +348,7 @@ export function RiskTracker() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-200 bg-slate-50">
           <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">KRI Status — Programme Risk Tracker</h2>
         </div>

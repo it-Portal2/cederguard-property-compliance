@@ -144,7 +144,7 @@ export function ProjectsTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
     return (
         <div className="flex gap-8 items-start">
             {/* ─── Sidebar ──────────────────────────────────────────────────────── */}
-            <div className="w-80 shrink-0 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden sticky top-24">
+            <div className="w-80 shrink-0 bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden sticky top-24">
                 <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                     <h3 className="font-bold text-slate-800 flex items-center gap-2">
                         <Filter className="w-4 h-4 text-indigo-500" />
@@ -175,7 +175,7 @@ export function ProjectsTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
                                 placeholder="Search by name or ref..."
-                                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder:text-slate-400 font-medium"
+                                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder:text-slate-400 font-medium"
                             />
                         </div>
                     </div>
@@ -383,7 +383,7 @@ export function ProjectsTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
                 {/* Project Cards */}
                 <div className="space-y-3 pb-10">
                     {filteredProjects.length === 0 ? (
-                        <div className="bg-white rounded-xl border border-slate-200 p-16 text-center">
+                        <div className="bg-white rounded-lg border border-slate-200 p-16 text-center">
                             <FolderKanban className="w-10 h-10 text-slate-200 mx-auto mb-3" />
                             <h3 className="text-base font-semibold text-slate-700">No Projects Found</h3>
                             <p className="text-sm text-slate-400 mt-1">Try adjusting your filters.</p>
@@ -405,7 +405,7 @@ export function ProjectsTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
                                 <div
                                     key={project.id}
                                     className={clsx(
-                                        "bg-white rounded-xl border transition-all duration-200 overflow-hidden",
+                                        "bg-white rounded-lg border transition-all duration-200 overflow-hidden",
                                         isExpanded ? "border-indigo-200 shadow-md" : "border-slate-200 hover:border-slate-300 hover:shadow-sm"
                                     )}
                                 >

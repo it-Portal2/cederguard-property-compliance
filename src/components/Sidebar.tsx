@@ -61,7 +61,7 @@ function NavItem({ to, icon: Icon, label, iconClass }: { to: string; icon: any; 
     <NavLink
       to={finalTo}
       className={({ isActive }) => clsx(
-        "flex items-center gap-2.5 px-3 py-3 md:py-2 rounded-xl text-[13px] font-bold transition-all duration-300 group",
+        "flex items-center gap-2.5 px-3 py-3 md:py-2 rounded-lg text-[13px] font-bold transition-all duration-300 group",
         isActive
           ? "bg-slate-900 text-white shadow-lg shadow-slate-200 scale-[1.02]"
           : "text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 hover:pl-4"

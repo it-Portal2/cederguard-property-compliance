@@ -135,7 +135,7 @@ export default function ConfirmDialog({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 8 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
-            className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+            className="bg-white dark:bg-slate-800 rounded-lg shadow-2xl w-full max-w-sm overflow-hidden"
           >
             <div className="px-6 pt-6 pb-4 flex items-start gap-3">
               <div

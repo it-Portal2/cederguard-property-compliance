@@ -25,7 +25,7 @@ export function MobileHeader() {
       <div className="flex items-center justify-start">
         <button
           onClick={() => setMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-3 -ml-3 text-slate-500 hover:bg-slate-100 rounded-xl transition-colors touch-target"
+          className="p-3 -ml-3 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors touch-target"
         >
           <Menu className="w-5 h-5" />
         </button>
@@ -41,7 +41,7 @@ export function MobileHeader() {
       </div>
 
       <div className="flex items-center justify-end gap-1">
-        <button className="p-3 text-slate-500 hover:bg-slate-50 rounded-xl relative transition-all touch-target">
+        <button className="p-3 text-slate-500 hover:bg-slate-50 rounded-lg relative transition-all touch-target">
           {hasUnread ? (
             <BellDot className="w-5 h-5 text-indigo-500" />
           ) : (

@@ -19,7 +19,7 @@ export const AIErrorAlert: React.FC<AIErrorAlertProps> = ({ error, onRetry, clas
 
   return (
     <div className={clsx(
-      "bg-white border rounded-2xl overflow-hidden shadow-lg animate-in fade-in slide-in-from-top-4 duration-500",
+      "bg-white border rounded-lg overflow-hidden shadow-lg animate-in fade-in slide-in-from-top-4 duration-500",
       isRateLimit ? "border-amber-200" : "border-red-200",
       className
     )}>
@@ -29,7 +29,7 @@ export const AIErrorAlert: React.FC<AIErrorAlertProps> = ({ error, onRetry, clas
       )}>
         <div className="flex items-center gap-3">
           <div className={clsx(
-            "p-2 rounded-xl",
+            "p-2 rounded-lg",
             isRateLimit ? "bg-amber-100 text-amber-600" : "bg-red-100 text-red-600"
           )}>
             {isRateLimit ? <Clock className="w-5 h-5" /> : <ShieldAlert className="w-5 h-5" />}
@@ -54,7 +54,7 @@ export const AIErrorAlert: React.FC<AIErrorAlertProps> = ({ error, onRetry, clas
           <button
             onClick={onRetry}
             className={clsx(
-              "flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs transition-all",
+              "flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs transition-all",
               isRateLimit 
                 ? "bg-amber-600 text-white hover:bg-amber-700 shadow-amber-200" 
                 : "bg-red-600 text-white hover:bg-red-700 shadow-red-200",
@@ -73,7 +73,7 @@ export const AIErrorAlert: React.FC<AIErrorAlertProps> = ({ error, onRetry, clas
         </p>
 
         <div className={clsx(
-          "p-4 rounded-xl border flex gap-4",
+          "p-4 rounded-lg border flex gap-4",
           isRateLimit ? "bg-amber-50/50 border-amber-100" : "bg-slate-50 border-slate-100"
         )}>
           <div className={clsx(

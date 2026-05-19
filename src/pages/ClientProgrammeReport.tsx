@@ -183,15 +183,15 @@ export function ClientProgrammeReport() {
     };
 
     return (
-        <div id="programme-report" className="space-y-6 bg-slate-50/50 p-2 sm:p-4 rounded-xl">
+        <div id="programme-report" className="space-y-6 print:p-0">
             {/* PREMIUM STRATEGIC HEADER */}
-            <div className="bg-[#111827] p-8 md:p-12 mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6 rounded-[2.5rem] relative overflow-hidden shadow-2xl">
+            <div className="bg-[#111827] p-8 md:p-12 mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6 rounded-lg relative overflow-hidden shadow-2xl">
                 {/* Abstract background element */}
                 <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 blur-[100px] -mr-48 -mt-48 rounded-full pointer-events-none" />
                 
                 <div className="relative z-10 space-y-3">
                     <div className="flex items-center gap-4 mb-2">
-                        <div className="p-3 bg-indigo-500 text-white rounded-2xl shadow-lg shadow-indigo-500/20">
+                        <div className="p-3 bg-indigo-500 text-white rounded-lg shadow-lg shadow-indigo-500/20">
                             <Layers className="w-8 h-8" />
                         </div>
                         <div>
@@ -205,28 +205,28 @@ export function ClientProgrammeReport() {
                     <button 
                         onClick={fetchData} 
                         disabled={loading}
-                        className="flex items-center gap-2 px-5 py-3 bg-white/5 text-white border border-white/10 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-white/10 transition-all backdrop-blur-md disabled:opacity-50"
+                        className="flex items-center gap-2 px-5 py-3 bg-white/5 text-white border border-white/10 rounded-lg text-[11px] font-black uppercase tracking-widest hover:bg-white/10 transition-all backdrop-blur-md disabled:opacity-50"
                     >
                         <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Sync
                     </button>
                     <button 
                         onClick={exportCSV} 
                         disabled={loading || filtered.length === 0}
-                        className="flex items-center gap-2 px-5 py-3 bg-white/5 text-white border border-white/10 rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-white/10 transition-all disabled:opacity-50"
+                        className="flex items-center gap-2 px-5 py-3 bg-white/5 text-white border border-white/10 rounded-lg text-[11px] font-black uppercase tracking-widest hover:bg-white/10 transition-all disabled:opacity-50"
                     >
                         <Download className="w-4 h-4" /> CSV
                     </button>
                     <button 
                         onClick={handleExportPDF} 
                         disabled={loading || filtered.length === 0}
-                        className="flex items-center gap-2 px-6 py-3 bg-indigo-500 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-xl shadow-indigo-500/20"
+                        className="flex items-center gap-2 px-6 py-3 bg-indigo-500 text-white rounded-lg text-[11px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-xl shadow-indigo-500/20"
                     >
                         <Download className="w-4 h-4" /> Export PDF
                     </button>
                     {isAtLeastClientAdmin(userRole) && (
                         <button
                             onClick={() => { useStore.getState().setActiveProgramme(null); navigate('/programmes/new'); }}
-                            className="flex items-center gap-2 px-6 py-3 bg-white text-indigo-600 border border-indigo-100 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-indigo-50 transition-all shadow-sm active:scale-95"
+                            className="flex items-center gap-2 px-6 py-3 bg-white text-indigo-600 border border-indigo-100 rounded-lg font-black text-[11px] uppercase tracking-widest hover:bg-indigo-50 transition-all shadow-sm active:scale-95"
                         >
                             <Plus className="w-4 h-4" />
                             New Programme
@@ -239,7 +239,7 @@ export function ClientProgrammeReport() {
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
                 {/* 1. Health State */}
                 <div className={clsx(
-                    "border rounded-xl p-4 text-center transition-all shadow-sm",
+                    "border rounded-lg p-4 text-center transition-all shadow-sm",
                     totals.health === 'Green' ? "bg-emerald-50 border-emerald-100" :
                     totals.health === 'Amber' ? "bg-amber-50 border-amber-100" :
                     totals.health === 'Red' ? "bg-rose-50 border-rose-100" : "bg-slate-50 border-slate-200"
@@ -256,50 +256,50 @@ export function ClientProgrammeReport() {
                 </div>
 
                 {/* 2. Live Projects */}
-                <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm">
+                <div className="bg-white border border-slate-200 rounded-lg p-4 text-center shadow-sm">
                     <div className="text-2xl font-black text-slate-800 leading-none">{loading ? '—' : totals.projects}</div>
                     <div className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">Live Projects</div>
                 </div>
 
                 {/* 3. PMs */}
-                <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm">
+                <div className="bg-white border border-slate-200 rounded-lg p-4 text-center shadow-sm">
                     <div className="text-2xl font-black text-indigo-600 leading-none">{loading ? '—' : totals.pms}</div>
                     <div className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">Active PMs</div>
                 </div>
 
                 {/* 4. Avg Comp */}
-                <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 text-center shadow-sm">
+                <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-4 text-center shadow-sm">
                     <div className="text-2xl font-black text-indigo-700 leading-none">{loading ? '—' : `${totals.avgComp}%`}</div>
                     <div className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">Avg Compliance</div>
                 </div>
 
                 {/* 5. Critical */}
-                <div className="bg-rose-50 border border-rose-100 rounded-xl p-4 text-center shadow-sm">
+                <div className="bg-rose-50 border border-rose-100 rounded-lg p-4 text-center shadow-sm">
                     <div className="text-2xl font-black text-rose-600 leading-none">{loading ? '—' : totals.red}</div>
                     <div className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">Critical (Red)</div>
                 </div>
 
                 {/* 6. Warning */}
-                <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 text-center shadow-sm">
+                <div className="bg-amber-50 border border-amber-100 rounded-lg p-4 text-center shadow-sm">
                     <div className="text-2xl font-black text-amber-600 leading-none">{loading ? '—' : totals.amber}</div>
                     <div className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">Warning (Amber)</div>
                 </div>
 
                 {/* 7. High Risks */}
-                <div className="bg-rose-50 border border-rose-100 rounded-xl p-4 text-center shadow-sm">
+                <div className="bg-rose-50 border border-rose-100 rounded-lg p-4 text-center shadow-sm">
                     <div className="text-2xl font-black text-rose-700 leading-none">{loading ? '—' : totals.riskHigh}</div>
                     <div className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">High Risks</div>
                 </div>
 
                 {/* 8. Open Issues */}
-                <div className="bg-[#111827] border border-slate-800 rounded-xl p-4 text-center shadow-lg">
+                <div className="bg-[#111827] border border-slate-800 rounded-lg p-4 text-center shadow-lg">
                     <div className="text-2xl font-black text-white leading-none">{loading ? '—' : totals.issueOpen}</div>
                     <div className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mt-2 text-white/50">Open Issues</div>
                 </div>
             </div>
 
             {/* Filters */}
-            <div className="flex flex-wrap items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm">
+            <div className="flex flex-wrap items-center gap-3 bg-white border border-slate-200 rounded-lg px-4 py-3 shadow-sm">
                 <div className="flex items-center gap-2 text-slate-400 mr-2">
                     <Filter className="w-4 h-4" />
                     <span className="text-[10px] font-black uppercase tracking-widest">Filters</span>
@@ -346,13 +346,13 @@ export function ClientProgrammeReport() {
 
             {/* Loading / Error */}
             {loading && (
-                <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-100 rounded-2xl shadow-sm">
+                <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-100 rounded-lg shadow-sm">
                     <Loader2 className="w-10 h-10 animate-spin text-indigo-500 mb-4" />
                     <span className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em]">Synchronizing data...</span>
                 </div>
             )}
             {!loading && error && (
-                <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-rose-700 text-sm flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                <div className="bg-rose-50 border border-rose-200 rounded-lg p-4 text-rose-700 text-sm flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
                     <ShieldAlert className="w-5 h-5 shrink-0" />
                     <div className="font-semibold">{error}</div>
                 </div>
@@ -362,7 +362,7 @@ export function ClientProgrammeReport() {
             {!loading && !error && (topRisks.length > 0 || topCompliance.length > 0) && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-2">
                     {/* Top Portfolio Risks */}
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                    <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden flex flex-col">
                         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-rose-50/30">
                             <div className="flex items-center gap-3">
                                 <div className="p-1.5 bg-rose-100 rounded-lg text-rose-600">
@@ -394,7 +394,7 @@ export function ClientProgrammeReport() {
                     </div>
 
                     {/* Critical Compliance Gaps */}
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                    <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden flex flex-col">
                         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-amber-50/30">
                             <div className="flex items-center gap-3">
                                 <div className="p-1.5 bg-amber-100 rounded-lg text-amber-600">
@@ -429,7 +429,7 @@ export function ClientProgrammeReport() {
 
             {/* Table */}
             {!loading && !error && filtered.length > 0 && (
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b border-slate-100 bg-slate-50/50">
@@ -524,7 +524,7 @@ export function ClientProgrammeReport() {
 
             {/* Empty state */}
             {!loading && !error && filtered.length === 0 && (
-                <div className="bg-white border border-slate-100 rounded-2xl py-20 flex flex-col items-center justify-center text-center shadow-sm">
+                <div className="bg-white border border-slate-100 rounded-lg py-20 flex flex-col items-center justify-center text-center shadow-sm">
                     <div className="p-4 bg-slate-50 rounded-full mb-4">
                         <FolderKanban className="w-10 h-10 text-slate-200" />
                     </div>
@@ -541,7 +541,7 @@ export function ClientProgrammeReport() {
 
             {/* PM breakdown section */}
             {!loading && !error && projects.length > 0 && (
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                     <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3 bg-slate-50/30">
                         <Users className="w-4 h-4 text-indigo-600" />
                         <span className="font-black text-slate-800 text-xs uppercase tracking-widest">Resource Performance & Oversight</span>

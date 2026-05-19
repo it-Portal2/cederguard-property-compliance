@@ -272,7 +272,7 @@ export function IssueModal({
 
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[calc(100dvh-2rem)] md:max-h-[90vh] flex flex-col">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[calc(100dvh-2rem)] md:max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-100 shrink-0">
           <div>
@@ -404,7 +404,7 @@ export function IssueModal({
             <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">
               Assessment
             </h3>
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mb-6">
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-5 mb-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">
@@ -491,7 +491,7 @@ export function IssueModal({
               </div>
 
               {/* Resolution Actions */}
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h4 className="text-sm font-bold text-slate-800">
@@ -518,7 +518,7 @@ export function IssueModal({
                 </div>
 
                 {showAddAction && (
-                  <div className="mb-6 p-4 bg-white border border-indigo-100 rounded-xl shadow-sm space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="mb-6 p-4 bg-white border border-indigo-100 rounded-lg shadow-sm space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">
                         {editingActionId
@@ -639,7 +639,7 @@ export function IssueModal({
 
                 <div className="space-y-2">
                   {issueActions.length === 0 ? (
-                    <div className="text-center py-8 bg-white/50 border border-dashed border-slate-200 rounded-xl">
+                    <div className="text-center py-8 bg-white/50 border border-dashed border-slate-200 rounded-lg">
                       <AlertCircle className="w-8 h-8 text-slate-300 mx-auto mb-2" />
                       <p className="text-sm text-slate-400">
                         No resolution actions defined yet
@@ -650,7 +650,7 @@ export function IssueModal({
                       <div
                         key={action.id}
                         className={clsx(
-                          "group flex items-center justify-between p-3 rounded-xl border transition-all",
+                          "group flex items-center justify-between p-3 rounded-lg border transition-all",
                           action.status === "Completed"
                             ? "bg-slate-50/50 border-slate-100 opacity-75"
                             : "bg-white border-slate-200 hover:border-indigo-200 hover:shadow-sm",
@@ -859,18 +859,18 @@ export function IssueModal({
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-slate-100 bg-slate-50 rounded-b-2xl flex justify-end gap-3 shrink-0">
+        <div className="p-6 border-t border-slate-100 bg-slate-50 rounded-b-lg flex justify-end gap-3 shrink-0">
           <button
             onClick={onClose}
             disabled={isSaving}
-            className="px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-xl transition-colors disabled:opacity-50"
+            className="px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={!formData.desc?.trim() || isSaving}
-            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center gap-2"
+            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center gap-2"
           >
             {isSaving ? (
               <>

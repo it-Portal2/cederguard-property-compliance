@@ -152,7 +152,7 @@ export default function TableToolbar<T extends Record<string, any>>({
                 Columns
               </button>
               {showColPicker && (
-                <div className="absolute left-0 top-full mt-1 z-30 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl shadow-lg p-2 min-w-40">
+                <div className="absolute left-0 top-full mt-1 z-30 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg p-2 min-w-40">
                   {columns.map((col) => {
                     const key = String(col.key);
                     return (
@@ -222,7 +222,7 @@ export default function TableToolbar<T extends Record<string, any>>({
 
       {/* Filter row */}
       {showFilters && filterDefs.length > 0 && (
-        <div className="flex flex-wrap items-end gap-4 px-4 py-4 bg-slate-50/80 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700">
+        <div className="flex flex-wrap items-end gap-4 px-4 py-4 bg-slate-50/80 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700">
           {filterDefs.map((def) => {
             const val = filterValues[def.key];
             const isActive = val !== undefined && val !== null && val !== '';

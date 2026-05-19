@@ -59,13 +59,13 @@ export function ActivityTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
             </div>
 
             {filtered.length === 0 ? (
-                <div className="bg-white rounded-xl border border-slate-200 p-16 text-center">
+                <div className="bg-white rounded-lg border border-slate-200 p-16 text-center">
                     <LineChart className="w-10 h-10 text-slate-300 mx-auto mb-3" />
                     <p className="text-slate-500 font-medium">No activity recorded yet</p>
                     <p className="text-xs text-slate-400 mt-1">Activity will appear here as users interact with the platform</p>
                 </div>
             ) : (
-                <div className="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-lg border border-slate-200 divide-y divide-slate-100 shadow-sm overflow-hidden">
                     {filtered.map(log => {
                         const cfg = ACTIVITY_ICONS[log.type] || ACTIVITY_ICONS.default;
                         

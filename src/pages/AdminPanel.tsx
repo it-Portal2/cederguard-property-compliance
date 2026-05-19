@@ -115,7 +115,7 @@ export function AdminPanel() {
     }
 
     return (
-        <div className="max-w-7xl mx-auto space-y-6">
+        <div className="space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
@@ -130,7 +130,7 @@ export function AdminPanel() {
             </div>
 
             {/* Tab Navigation */}
-            <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
+            <div className="flex gap-1 bg-slate-100 p-1 rounded-lg w-fit">
                 {TABS.map(t => {
                     const Icon = t.icon;
                     return (

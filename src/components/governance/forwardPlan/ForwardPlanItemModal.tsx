@@ -307,7 +307,7 @@ export function ForwardPlanItemModal({
       className="fixed inset-0 z-90 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm"
       onClick={(e) => e.target === e.currentTarget && handleClose()}
     >
-      <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
+      <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-lg bg-white shadow-2xl">
         <header className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 px-6 py-4">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">

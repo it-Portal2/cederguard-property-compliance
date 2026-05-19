@@ -32,7 +32,7 @@ export function BillingPanel() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
       {/* Header */}
       <div>
@@ -51,7 +51,7 @@ export function BillingPanel() {
         <div className="lg:col-span-2 space-y-8">
           
           {/* Current Plan Card */}
-          <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm relative overflow-hidden">
+          <div className="bg-white rounded-lg p-8 border border-slate-200 shadow-sm relative overflow-hidden">
             <div className="absolute top-0 right-0 p-8 opacity-5">
               <Target className="w-48 h-48 text-indigo-600" />
             </div>
@@ -68,7 +68,7 @@ export function BillingPanel() {
               </div>
               <div className="text-right">
                 <div className="text-4xl font-black text-slate-900">£350<span className="text-lg text-slate-400 font-medium">/mo</span></div>
-                <button className="mt-4 px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl transition-all shadow-md active:scale-95 text-sm">
+                <button className="mt-4 px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg transition-all shadow-md active:scale-95 text-sm">
                   Upgrade Plan
                 </button>
               </div>
@@ -91,12 +91,12 @@ export function BillingPanel() {
           </div>
 
           {/* Payment Method */}
-          <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm">
+          <div className="bg-white rounded-lg p-8 border border-slate-200 shadow-sm">
             <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
               <CreditCard className="w-5 h-5 text-indigo-500" /> Payment Method
             </h3>
             
-            <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+            <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-lg">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-10 bg-white shadow-sm border border-slate-200 rounded-lg flex items-center justify-center font-black text-slate-900 italic text-xl">
                   VISA
@@ -111,14 +111,14 @@ export function BillingPanel() {
               </button>
             </div>
 
-            <div className="mt-6 flex items-center gap-3 p-4 bg-amber-50 text-amber-800 rounded-2xl border border-amber-200">
+            <div className="mt-6 flex items-center gap-3 p-4 bg-amber-50 text-amber-800 rounded-lg border border-amber-200">
                <AlertCircle className="w-5 h-5 shrink-0" />
                <p className="text-sm font-medium">To change your billing email or viewing additional portal options, please visit the Stripe customer portal.</p>
             </div>
             
             <button 
               onClick={handleCopyLink}
-              className="mt-6 w-full flex items-center justify-center gap-2 py-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold rounded-xl transition-all"
+              className="mt-6 w-full flex items-center justify-center gap-2 py-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold rounded-lg transition-all"
             >
               <Copy className="w-4 h-4" /> 
               {successMsg || 'Copy Customer Portal Link'}
@@ -129,7 +129,7 @@ export function BillingPanel() {
         </div>
 
         {/* Right Column (Invoice History) */}
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col h-full">
+        <div className="bg-white rounded-lg border border-slate-200 shadow-sm flex flex-col h-full">
           <div className="p-6 md:p-8 border-b border-slate-100 flex items-center justify-between">
             <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
               <Receipt className="w-5 h-5 text-indigo-500" /> Invoice History
@@ -154,7 +154,7 @@ export function BillingPanel() {
           </div>
           
           <div className="p-6 border-t border-slate-100">
-             <button className="w-full py-3 flex items-center justify-center gap-2 text-indigo-600 font-bold hover:bg-indigo-50 rounded-xl transition-colors text-sm">
+             <button className="w-full py-3 flex items-center justify-center gap-2 text-indigo-600 font-bold hover:bg-indigo-50 rounded-lg transition-colors text-sm">
                View All Invoices <ArrowUpRight className="w-4 h-4" />
              </button>
           </div>

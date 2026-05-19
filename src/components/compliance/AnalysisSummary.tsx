@@ -57,7 +57,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
   return (
     <div className="space-y-8 animate-in fade-in zoom-in duration-700 pb-20">
       {/* ─── Premium Summary Header ─── */}
-      <div className="bg-slate-900 rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 md:p-12 text-white relative overflow-hidden shadow-2xl shadow-indigo-900/20">
+      <div className="bg-slate-900 rounded-lg sm:rounded-lg p-6 sm:p-10 md:p-12 text-white relative overflow-hidden shadow-2xl shadow-indigo-900/20">
         <div className="absolute top-0 right-0 w-64 sm:w-96 h-64 sm:h-96 bg-indigo-500/10 rounded-full blur-[60px] sm:blur-[100px] -mr-32 sm:-mr-48 -mt-32 sm:-mt-48"></div>
         <div className="absolute bottom-0 left-0 w-48 sm:w-64 h-48 sm:h-64 bg-emerald-500/5 rounded-full blur-[50px] sm:blur-[80px] -ml-24 sm:-ml-32 -mb-24 sm:-mb-32"></div>
         
@@ -65,7 +65,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
             <div className="flex items-start gap-6">
               <div 
-                className="w-20 h-20 rounded-3xl flex items-center justify-center text-4xl font-black shadow-2xl"
+                className="w-20 h-20 rounded-lg flex items-center justify-center text-4xl font-black shadow-2xl"
                 style={{ backgroundColor: categoryData.color }}
               >
                 {categoryData.category}
@@ -84,7 +84,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
             </div>
             
             <div className="flex flex-wrap gap-3">
-              <div className="px-6 py-4 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-sm">
+              <div className="px-6 py-4 bg-white/5 border border-white/10 rounded-lg backdrop-blur-sm">
                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Confidence</p>
                 <div className="flex items-center gap-2">
                   <span className="text-xl font-black text-emerald-400">High</span>
@@ -97,7 +97,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
           <div className="h-px bg-linear-to-r from-transparent via-white/10 to-transparent"></div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-6 bg-white/5 border border-white/10 rounded-3xl">
+            <div className="p-6 bg-white/5 border border-white/10 rounded-lg">
               <div className="flex items-center gap-3 mb-4">
                 <ShieldCheck className="w-5 h-5 text-indigo-400" />
                 <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Governing Bodies</h4>
@@ -105,19 +105,19 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
               <div className="flex flex-wrap gap-2">
                 {lastAnalysisResults.regulatoryAuthorities?.length > 0 ? (
                   lastAnalysisResults.regulatoryAuthorities?.slice(0, 4).map((a: string, i: number) => (
-                    <span key={i} className="px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-[10px] font-bold rounded-xl">
+                    <span key={i} className="px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-[10px] font-bold rounded-lg">
                       {a}
                     </span>
                   ))
                 ) : (
-                  <span className="px-3 py-1.5 bg-slate-500/10 border border-slate-500/20 text-slate-400 text-[10px] font-bold rounded-xl italic">
+                  <span className="px-3 py-1.5 bg-slate-500/10 border border-slate-500/20 text-slate-400 text-[10px] font-bold rounded-lg italic">
                     Internal Governance
                   </span>
                 )}
               </div>
             </div>
 
-            <div className="p-6 bg-white/5 border border-white/10 rounded-3xl">
+            <div className="p-6 bg-white/5 border border-white/10 rounded-lg">
               <div className="flex items-center gap-3 mb-4">
                 <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                 <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Key Consents</h4>
@@ -125,19 +125,19 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
               <div className="flex flex-wrap gap-2">
                 {lastAnalysisResults.requiredApprovals?.length > 0 ? (
                   lastAnalysisResults.requiredApprovals?.slice(0, 4).map((a: string, i: number) => (
-                    <span key={i} className="px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-[10px] font-bold rounded-xl">
+                    <span key={i} className="px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-[10px] font-bold rounded-lg">
                       {a}
                     </span>
                   ))
                 ) : (
-                  <span className="px-3 py-1.5 bg-slate-500/10 border border-slate-500/20 text-slate-400 text-[10px] font-bold rounded-xl italic">
+                  <span className="px-3 py-1.5 bg-slate-500/10 border border-slate-500/20 text-slate-400 text-[10px] font-bold rounded-lg italic">
                     Self-Certification
                   </span>
                 )}
               </div>
             </div>
 
-            <div className="p-6 bg-white/5 border border-white/10 rounded-3xl">
+            <div className="p-6 bg-white/5 border border-white/10 rounded-lg">
               <div className="flex items-center gap-3 mb-4">
                 <AlertCircle className="w-5 h-5 text-amber-400" />
                 <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Analysis Insight</h4>
@@ -153,9 +153,9 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
       {/* ─── Requirements List Container ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-8 space-y-8">
-          <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] border border-slate-200/60 shadow-xl shadow-slate-200/20 overflow-hidden">
+          <div className="bg-white rounded-lg sm:rounded-lg border border-slate-200/60 shadow-xl shadow-slate-200/20 overflow-hidden">
             <div className="px-4 sm:px-8 pt-6 sm:pt-8 pb-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 bg-slate-50/30">
-              <div className="flex p-1 sm:p-1.5 bg-slate-200/50 rounded-2xl w-full sm:w-fit overflow-x-auto scrollbar-hide">
+              <div className="flex p-1 sm:p-1.5 bg-slate-200/50 rounded-lg w-full sm:w-fit overflow-x-auto scrollbar-hide">
                 {[
                   { id: 'review', label: 'AI Applicable', subtitle: 'Automatically selected requirements', count: complianceItems.length },
                   { id: 'additions', label: 'Conditional & Excluded', subtitle: 'AI flagged & non-applicable items', count: addableItems.length }
@@ -164,7 +164,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
                     key={t.id}
                     onClick={() => { setSubPhase(t.id as any); setSelectedIds([]); }}
                     className={clsx(
-                      "px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-wider transition-all shrink-0",
+                      "px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-wider transition-all shrink-0",
                       subPhase === t.id 
                         ? "bg-white text-slate-900 shadow-md border border-slate-100" 
                         : "text-slate-500 hover:text-slate-700"
@@ -184,7 +184,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
               {subPhase === 'additions' && selectedIds.length > 0 && (
                 <button 
                   onClick={() => handleBulkAdd(addableItems)}
-                  className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-200 animate-in zoom-in duration-300"
+                  className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-200 animate-in zoom-in duration-300"
                 >
                   <PlusCircle className="w-4 h-4" /> Add Selected ({selectedIds.length})
                 </button>
@@ -241,7 +241,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
                             <td className="px-4 sm:px-8 py-4 sm:py-6 text-right">
                               <button
                                 onClick={(e) => { e.stopPropagation(); deleteComplianceItem(item.id); }}
-                                className="p-3 rounded-xl text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-all bg-white border border-slate-100 shadow-sm"
+                                className="p-3 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-all bg-white border border-slate-100 shadow-sm"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -284,7 +284,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
                                   <span className="font-black text-slate-900 text-sm tracking-tight">{item.reg}</span>
                                   <span className="text-slate-500 text-xs leading-relaxed max-w-2xl font-medium mb-1">{stripMarkdown(item.req)}</span>
                                   <div className={clsx(
-                                    "flex items-start gap-2 p-3 rounded-xl border mt-2 shadow-xs transition-all",
+                                    "flex items-start gap-2 p-3 rounded-lg border mt-2 shadow-xs transition-all",
                                     type === 'conditional' 
                                       ? "bg-amber-50/80 border-amber-100 text-amber-900" 
                                       : "bg-slate-50 border-slate-200 text-slate-600"
@@ -341,7 +341,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
                                     }
                                   }}
                                   className={clsx(
-                                    'px-5 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all whitespace-nowrap inline-flex items-center gap-2',
+                                    'px-5 py-2.5 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all whitespace-nowrap inline-flex items-center gap-2',
                                     isAdded
                                       ? 'bg-emerald-100 text-emerald-700 hover:bg-rose-50 hover:text-rose-600'
                                       : 'bg-slate-900 text-white hover:bg-indigo-600 shadow-xl shadow-slate-200'
@@ -365,7 +365,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
 
         {/* ─── Sidebar Dashboard ─── */}
         <div className="lg:col-span-4 space-y-6">
-          <div className="bg-white rounded-[2.5rem] border border-slate-200 p-8 shadow-xl shadow-slate-200/20 sticky top-32">
+          <div className="bg-white rounded-lg border border-slate-200 p-8 shadow-xl shadow-slate-200/20 sticky top-32">
             <h3 className="text-xl font-black text-slate-900 mb-6 tracking-tight flex items-center gap-2">
               Regulation Coverage <Target className="w-4 h-4 text-amber-500" />
             </h3>
@@ -439,7 +439,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
               </div>
 
               <div className="pt-6 border-t border-slate-100">
-                <div className="p-5 bg-indigo-50 rounded-3xl border border-indigo-100">
+                <div className="p-5 bg-indigo-50 rounded-lg border border-indigo-100">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="w-6 h-6 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-[10px] font-black">AI</div>
                     <span className="text-[10px] font-black text-indigo-900 uppercase tracking-widest italic">Verification Mode</span>
@@ -455,12 +455,12 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
       </div>
 
       {/* Action Buttons */}
-      <div className="flex flex-col md:flex-row justify-between items-center bg-slate-900 p-6 rounded-2xl gap-4 shadow-xl">
+      <div className="flex flex-col md:flex-row justify-between items-center bg-slate-900 p-6 rounded-lg gap-4 shadow-xl">
         <div className="flex items-center gap-3 w-full md:w-auto">
           <button
             onClick={() => setSubPhase('review')}
             className={clsx(
-              "flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-xs transition-all active:scale-95 w-full md:w-auto justify-center",
+              "flex items-center gap-2 px-6 py-3 rounded-lg font-bold text-xs transition-all active:scale-95 w-full md:w-auto justify-center",
               subPhase === 'review'
                 ? "bg-slate-700 text-slate-300 opacity-50 cursor-not-allowed"
                 : "bg-white/10 text-white hover:bg-white/20"
@@ -474,7 +474,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
           onClick={handleFinalise}
           disabled={loading}
           className={clsx(
-            "flex items-center gap-2 px-8 py-3.5 bg-emerald-500 text-white rounded-xl font-black text-[11px] md:text-xs uppercase tracking-widest hover:bg-emerald-600 transition-all active:scale-95 shadow-xl shadow-emerald-500/20 w-full md:w-auto justify-center",
+            "flex items-center gap-2 px-8 py-3.5 bg-emerald-500 text-white rounded-lg font-black text-[11px] md:text-xs uppercase tracking-widest hover:bg-emerald-600 transition-all active:scale-95 shadow-xl shadow-emerald-500/20 w-full md:w-auto justify-center",
             loading && "opacity-70 cursor-not-allowed"
           )}
         >

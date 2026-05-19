@@ -39,7 +39,7 @@ export function CitationCard({ citation }: CitationCardProps) {
   return (
     <div
       className={clsx(
-        "rounded-xl border bg-white shadow-sm transition-colors duration-150",
+        "rounded-lg border bg-white shadow-sm transition-colors duration-150",
         open
           ? "border-indigo-300 shadow-md"
           : "border-slate-200 hover:border-indigo-300",
@@ -49,7 +49,7 @@ export function CitationCard({ citation }: CitationCardProps) {
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="block w-full p-4 text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-xl"
+        className="block w-full p-4 text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-lg"
       >
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">

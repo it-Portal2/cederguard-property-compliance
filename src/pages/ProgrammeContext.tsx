@@ -41,7 +41,7 @@ export function ProgrammeContext() {
 
     if (!activeProgrammeId || !activeProgramme?.id) {
         return (
-            <div className="bg-white rounded-xl border border-slate-200 p-12 text-center shadow-sm max-w-2xl mx-auto mt-12">
+            <div className="bg-white rounded-lg border border-slate-200 p-12 text-center shadow-sm max-w-2xl mx-auto mt-12">
                 <FolderKanban className="w-16 h-16 text-slate-300 mx-auto mb-4" />
                 <h3 className="text-xl font-bold text-slate-800 mb-2">No Programme Selected</h3>
                 <p className="text-slate-500 mb-8">
@@ -50,13 +50,13 @@ export function ProgrammeContext() {
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                     <button
                         onClick={() => navigate('/programmes/new')}
-                        className="w-full sm:w-auto px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition"
+                        className="w-full sm:w-auto px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition"
                     >
                         Create Your First Programme
                     </button>
                     <button
                         onClick={() => navigate('/projects')}
-                        className="w-full sm:w-auto px-6 py-2.5 border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition"
+                        className="w-full sm:w-auto px-6 py-2.5 border border-slate-200 text-slate-600 rounded-lg font-bold hover:bg-slate-50 transition"
                     >
                         View All Projects
                     </button>
@@ -66,12 +66,12 @@ export function ProgrammeContext() {
     }
 
     return (
-        <div className="space-y-6 max-w-7xl mx-auto pb-12">
+        <div className="space-y-6">
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-indigo-100 text-indigo-700 rounded-xl shadow-sm">
+                        <div className="p-2 bg-indigo-100 text-indigo-700 rounded-lg shadow-sm">
                             <FolderKanban className="w-6 h-6" />
                         </div>
                         <div>
@@ -92,7 +92,7 @@ export function ProgrammeContext() {
                     {isClientAdmin && (
                         <button
                             onClick={() => { useStore.getState().setActiveProgramme(null); navigate('/programmes/new'); }}
-                            className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-sm flex items-center gap-2"
+                            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 transition-all shadow-sm flex items-center gap-2"
                         >
                             <Plus className="w-4 h-4" />
                             New Programme
@@ -100,13 +100,13 @@ export function ProgrammeContext() {
                     )}
                     <button
                         onClick={() => navigate('/setup/programme')}
-                        className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all flex items-center gap-2"
+                        className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-50 transition-all flex items-center gap-2"
                     >
                         Edit Context
                     </button>
                     <button
                         onClick={() => navigate('/projects/new')}
-                        className="px-4 py-2 bg-indigo-600 border border-transparent text-white rounded-xl text-sm font-bold hover:bg-indigo-700 shadow-sm transition-all flex items-center gap-2"
+                        className="px-4 py-2 bg-indigo-600 border border-transparent text-white rounded-lg text-sm font-bold hover:bg-indigo-700 shadow-sm transition-all flex items-center gap-2"
                     >
                         <Plus className="w-4 h-4" />
                         Create Project
@@ -122,7 +122,7 @@ export function ProgrammeContext() {
                     { label: 'Active/Resolved Risks', value: `${activeRisksCount} / ${resolvedRisksCount}`, icon: Shield, color: 'text-emerald-600', bg: 'bg-emerald-50' },
                     { label: 'Severe Issues', value: severeIssuesCount, icon: FileWarning, color: 'text-rose-600', bg: 'bg-rose-50' },
                 ].map((stat, i) => (
-                    <div key={i} className="bg-white px-5 py-4 rounded-2xl border border-slate-200 shadow-sm">
+                    <div key={i} className="bg-white px-5 py-4 rounded-lg border border-slate-200 shadow-sm">
                         <div className="flex items-center justify-between mb-2">
                             <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{stat.label}</p>
                             <div className={`p-1.5 rounded-lg ${stat.bg} ${stat.color}`}>
@@ -138,7 +138,7 @@ export function ProgrammeContext() {
                 {/* Left Column: Context Details */}
                 <div className="lg:col-span-2 space-y-6">
                     {/* Strategic Objectives */}
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                         <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <Target className="w-4 h-4 text-indigo-600" />
@@ -154,7 +154,7 @@ export function ProgrammeContext() {
 
                     {/* Governance & Leadership */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                             <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
                                 <Shield className="w-4 h-4 text-indigo-600" />
                                 <h2 className="font-bold text-slate-800 text-sm">Governance Framework</h2>
@@ -175,7 +175,7 @@ export function ProgrammeContext() {
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                             <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
                                 <Users className="w-4 h-4 text-indigo-600" />
                                 <h2 className="font-bold text-slate-800 text-sm">Board Composition</h2>
@@ -197,7 +197,7 @@ export function ProgrammeContext() {
                     </div>
 
                     {/* Linked Projects */}
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                         <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <Layers className="w-4 h-4 text-indigo-600" />
@@ -256,7 +256,7 @@ export function ProgrammeContext() {
                     <ChecklistGate type="programme" />
 
                     {/* Risk Context */}
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden border-l-4 border-l-amber-500">
+                    <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden border-l-4 border-l-amber-500">
                         <div className="px-5 py-3 border-b border-slate-100 bg-amber-50/30 flex items-center gap-2">
                             <AlertTriangle className="w-4 h-4 text-amber-600" />
                             <h2 className="font-bold text-slate-800 text-sm">Strategic Risk Context</h2>
@@ -284,7 +284,7 @@ export function ProgrammeContext() {
                     </div>
 
                     {/* Programme Timeline */}
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                         <div className="px-5 py-3 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
                             <Calendar className="w-4 h-4 text-indigo-600" />
                             <h2 className="font-bold text-slate-800 text-sm">Programme Schedule</h2>
@@ -301,7 +301,7 @@ export function ProgrammeContext() {
                                     <p className="text-sm font-semibold text-slate-800 whitespace-nowrap truncate">{activeProgramme.programmeEndDate || 'Dec 2027'}</p>
                                 </div>
                             </div>
-                            <div className="p-3 bg-indigo-50 rounded-xl border border-indigo-100">
+                            <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-100">
                                 <div className="flex items-center justify-between mb-1">
                                     <span className="text-[10px] font-bold text-indigo-700 uppercase">Elapsed</span>
                                     <span className="text-[10px] font-bold text-indigo-700">35%</span>
@@ -314,7 +314,7 @@ export function ProgrammeContext() {
                     </div>
 
                     {/* Resources */}
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                         <div className="px-5 py-3 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
                             <Briefcase className="w-4 h-4 text-indigo-600" />
                             <h2 className="font-bold text-slate-800 text-sm">Key Dependencies</h2>

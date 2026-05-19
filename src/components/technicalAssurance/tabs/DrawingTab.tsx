@@ -177,7 +177,7 @@ export function DrawingTab({ enquiry, drawing }: DrawingTabProps) {
   return (
     <div className="space-y-4">
       {/* Header strip*/}
-      <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
         <div className="flex items-start gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
             <ImageIcon className="h-5 w-5" strokeWidth={2.25} />
@@ -226,7 +226,7 @@ export function DrawingTab({ enquiry, drawing }: DrawingTabProps) {
  non-annotated PDF renders it in the bare viewer (no overlay).*/}
       {showMultiPicker ? (
         <div
-          className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
+          className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm"
           aria-label="PDF attachment picker"
         >
           <div className="flex items-center gap-2">
@@ -288,7 +288,7 @@ export function DrawingTab({ enquiry, drawing }: DrawingTabProps) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.2 }}
-              className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
+              className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"
             >
               {hasAnyCoords && isViewingAnnotatedPdf ? (
                 <PdfPageOverlayViewer
@@ -302,7 +302,7 @@ export function DrawingTab({ enquiry, drawing }: DrawingTabProps) {
               )}
             </motion.div>
           ) : (
-            <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-10 text-center">
+            <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-slate-200 bg-slate-50/60 p-10 text-center">
               <FileText className="h-8 w-8 text-slate-300" strokeWidth={1.75} />
               <p className="text-sm font-semibold text-slate-700">
                 Drawing not attached
@@ -316,7 +316,7 @@ export function DrawingTab({ enquiry, drawing }: DrawingTabProps) {
         </div>
 
         <div className="lg:col-span-5">
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
                 Numbered callouts

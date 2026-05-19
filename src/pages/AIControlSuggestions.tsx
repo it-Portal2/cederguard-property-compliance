@@ -111,7 +111,7 @@ export function AIControlSuggestions() {
     };
 
     return (
-        <div className="min-h-screen bg-[#f7f8fa]">
+        <div>
 
             {/* ── Sticky Header ──────────────────────────────────────── */}
             <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200/70 sticky top-0 z-20">
@@ -168,7 +168,7 @@ export function AIControlSuggestions() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
                     {/* Manual Idea Generator */}
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                    <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden flex flex-col">
                         <div className="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
                             <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center ring-1 ring-inset ring-indigo-100">
@@ -232,7 +232,7 @@ export function AIControlSuggestions() {
                                 whileTap={!isManualLoading && !!manualSentence.trim() ? { scale: 0.985 } : {}}
                                 transition={{ type: 'spring', stiffness: 500, damping: 28 }}
                                 className={clsx(
-                                    "mt-auto w-full inline-flex items-center justify-center gap-2.5 px-5 py-3 text-sm font-bold rounded-xl select-none transition-colors duration-200",
+                                    "mt-auto w-full inline-flex items-center justify-center gap-2.5 px-5 py-3 text-sm font-bold rounded-lg select-none transition-colors duration-200",
                                     isManualLoading || !manualSentence.trim()
                                         ? "bg-slate-200 text-slate-400 cursor-not-allowed"
                                         : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20"
@@ -258,7 +258,7 @@ export function AIControlSuggestions() {
                     </div>
 
                     {/* Automated Programme Analysis */}
-                    <div className="bg-slate-900 rounded-2xl border border-slate-800 shadow-sm overflow-hidden flex flex-col">
+                    <div className="bg-slate-900 rounded-lg border border-slate-800 shadow-sm overflow-hidden flex flex-col">
                         <div className="px-5 sm:px-6 py-4 border-b border-slate-700/80 flex items-center justify-between gap-3">
                             <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center ring-1 ring-inset ring-white/10">
@@ -276,7 +276,7 @@ export function AIControlSuggestions() {
 
                         <div className="p-5 sm:p-6 flex flex-col gap-5 flex-1">
                             <div className="grid grid-cols-2 gap-3">
-                                <div className="bg-slate-800 border border-slate-700 rounded-xl p-3.5">
+                                <div className="bg-slate-800 border border-slate-700 rounded-lg p-3.5">
                                     <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1.5">Risks Queued</p>
                                     <motion.p
                                         key={highRisks.length}
@@ -288,7 +288,7 @@ export function AIControlSuggestions() {
                                         {highRisks.length}
                                     </motion.p>
                                 </div>
-                                <div className="bg-slate-800 border border-slate-700 rounded-xl p-3.5">
+                                <div className="bg-slate-800 border border-slate-700 rounded-lg p-3.5">
                                     <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1.5">Score Threshold</p>
                                     <p className="text-2xl font-bold text-amber-400 tabular-nums leading-none">≥ 12</p>
                                 </div>
@@ -307,7 +307,7 @@ export function AIControlSuggestions() {
                                 whileTap={!isAutoLoading && highRisks.length > 0 ? { scale: 0.985 } : {}}
                                 transition={{ type: 'spring', stiffness: 500, damping: 28 }}
                                 className={clsx(
-                                    "mt-auto w-full inline-flex items-center justify-center gap-2.5 px-5 py-3 text-sm font-bold rounded-xl select-none transition-colors duration-200",
+                                    "mt-auto w-full inline-flex items-center justify-center gap-2.5 px-5 py-3 text-sm font-bold rounded-lg select-none transition-colors duration-200",
                                     isAutoLoading || highRisks.length === 0
                                         ? "bg-slate-700 text-slate-500 cursor-not-allowed"
                                         : "bg-indigo-500 hover:bg-indigo-400 text-white shadow-md shadow-indigo-500/20"
@@ -340,7 +340,7 @@ export function AIControlSuggestions() {
                         <motion.div
                             variants={slideUpVariants}
                             initial="hidden" animate="visible" exit="exit"
-                            className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl"
+                            className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg"
                         >
                             <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
                             <div>
@@ -357,7 +357,7 @@ export function AIControlSuggestions() {
                         <motion.div
                             variants={fadeVariants}
                             initial="hidden" animate="visible" exit="exit"
-                            className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
+                            className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden"
                         >
                             <div className="h-[2px] bg-slate-100 overflow-hidden">
                                 <motion.div
@@ -368,12 +368,12 @@ export function AIControlSuggestions() {
                                 />
                             </div>
                             <div className="p-6 flex items-center gap-5">
-                                <div className="relative w-12 h-12 shrink-0 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center">
+                                <div className="relative w-12 h-12 shrink-0 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center">
                                     <Activity className="w-5 h-5 text-indigo-500 relative z-10" />
                                     <motion.div
                                         animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
                                         transition={{ duration: 1.6, repeat: Infinity, ease: 'easeOut' }}
-                                        className="absolute inset-0 rounded-xl border-2 border-indigo-400"
+                                        className="absolute inset-0 rounded-lg border-2 border-indigo-400"
                                     />
                                 </div>
                                 <div className="flex-1 min-w-0 space-y-3">
@@ -404,7 +404,7 @@ export function AIControlSuggestions() {
                         <motion.div
                             variants={fadeVariants}
                             initial="hidden" animate="visible" exit="exit"
-                            className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
+                            className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden"
                         >
                             <div className="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
                                 <div className="flex items-center gap-2.5">
@@ -432,7 +432,7 @@ export function AIControlSuggestions() {
                                             key={idx}
                                             variants={itemVariants}
                                             whileHover={{ borderColor: '#a5b4fc' }}
-                                            className="border border-slate-200 rounded-xl overflow-hidden hover:shadow-sm transition-shadow duration-200"
+                                            className="border border-slate-200 rounded-lg overflow-hidden hover:shadow-sm transition-shadow duration-200"
                                         >
                                             <div className="flex items-stretch">
                                                 <div className="w-10 shrink-0 bg-slate-50 border-r border-slate-100 flex flex-col items-center pt-3.5 gap-1">
@@ -514,7 +514,7 @@ export function AIControlSuggestions() {
                                         <motion.div
                                             key={i}
                                             variants={itemVariants}
-                                            className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
+                                            className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden"
                                         >
                                             <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
                                                 <div className="flex items-center gap-2.5 min-w-0">
@@ -548,7 +548,7 @@ export function AIControlSuggestions() {
                                                             key={j}
                                                             variants={itemVariants}
                                                             whileHover={{ borderColor: '#a5b4fc', backgroundColor: 'rgba(238,242,255,0.4)' }}
-                                                            className="group relative border border-slate-200 rounded-xl p-4 hover:shadow-sm transition-shadow duration-200"
+                                                            className="group relative border border-slate-200 rounded-lg p-4 hover:shadow-sm transition-shadow duration-200"
                                                         >
                                                             <div className="pr-8 divide-y divide-slate-100">
                                                                 {parseAISuggestion(s).map((part, pIdx) => (

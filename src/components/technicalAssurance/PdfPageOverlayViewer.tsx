@@ -194,7 +194,7 @@ export function PdfPageOverlayViewer({
     <div
       ref={containerRef}
       className={clsx(
-        "relative space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3",
+        "relative space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3",
         className,
       )}
     >

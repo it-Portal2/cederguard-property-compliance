@@ -187,7 +187,7 @@ export function RfiTab({ enquiry, rfi, onIssued }: RfiTabProps) {
       className="space-y-4"
     >
       {/* Header*/}
-      <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
         <div className="flex items-start gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
             <ClipboardList className="h-5 w-5" strokeWidth={2.25} />
@@ -220,7 +220,7 @@ export function RfiTab({ enquiry, rfi, onIssued }: RfiTabProps) {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <div className="space-y-4 lg:col-span-8">
           {/* Subject*/}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500">
               Subject
             </label>
@@ -235,7 +235,7 @@ export function RfiTab({ enquiry, rfi, onIssued }: RfiTabProps) {
           </div>
 
           {/* Body*/}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between">
               <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500">
                 Body
@@ -256,7 +256,7 @@ export function RfiTab({ enquiry, rfi, onIssued }: RfiTabProps) {
 
           {/* Walkthrough chapters (text-only — )*/}
           {rfi.walkthroughChapters && rfi.walkthroughChapters.length > 0 && (
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center gap-2">
                 <PlayCircle className="h-4 w-4 text-indigo-600" />
                 <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
@@ -296,7 +296,7 @@ export function RfiTab({ enquiry, rfi, onIssued }: RfiTabProps) {
         {/* Right column — priority + recipients*/}
         <div className="space-y-4 lg:col-span-4">
           {/* Priority*/}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
               Priority
             </p>
@@ -321,7 +321,7 @@ export function RfiTab({ enquiry, rfi, onIssued }: RfiTabProps) {
           </div>
 
           {/* Recipients*/}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between">
               <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
                 {isIssued ? "Sent to" : "Recipients"}
@@ -417,7 +417,7 @@ export function RfiTab({ enquiry, rfi, onIssued }: RfiTabProps) {
 
           {/* Action buttons */}
           {!isIssued && (
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
               <button
                 type="button"
                 onClick={handleSave}

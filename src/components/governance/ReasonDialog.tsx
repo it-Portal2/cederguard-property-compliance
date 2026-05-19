@@ -129,7 +129,7 @@ export function ReasonDialog({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 8 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
-            className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-800"
+            className="w-full max-w-md overflow-hidden rounded-lg bg-white shadow-2xl dark:bg-slate-800"
           >
             <div className="flex items-start gap-3 px-6 pt-6 pb-3">
               <div

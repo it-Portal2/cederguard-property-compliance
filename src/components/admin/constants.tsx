@@ -60,21 +60,7 @@ export function RoleBadge({ role }: { role: string }) {
     );
 }
 
-export function StatCard({ icon: Icon, label, value, color, border, onClick }: { icon: any; label: string; value: number | string; color: string; border: string; onClick?: () => void }) {
-    return (
-        <div 
-            onClick={onClick}
-            className={clsx(
-                "bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex items-start gap-4 transition-all border-l-4", 
-                border,
-                onClick ? "cursor-pointer hover:shadow-md" : ""
-            )}
-        >
-            <div className={`p-3 rounded-xl ${color}`}><Icon className="w-5 h-5" /></div>
-            <div>
-                <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-1">{label}</p>
-                <p className="text-3xl font-black text-slate-900">{value}</p>
-            </div>
-        </div>
-    );
-}
+// Legacy StatCard removed — all consumers now use the richer shared
+// component at src/components/common/StatsCard.tsx, which carries the
+// same data shape plus icon-tint backgrounds, trend, progress, and the
+// new info tooltip prop.

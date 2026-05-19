@@ -93,7 +93,7 @@ function RateInput({ label, value, path, onUpdate, prefix = '$', step = 0.001, h
 function RateSection({ title, icon: Icon, color, children }: { title: string; icon: any; color: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(true);
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
       <button
         onClick={() => setOpen(!open)}
         className={clsx('w-full flex items-center justify-between px-5 py-4 border-b border-slate-100 text-left hover:bg-slate-50 transition-colors', !open && 'border-b-0')}
@@ -306,7 +306,7 @@ export function CostCalculator() {
 
         {/* ─── RIGHT: Real-time Projections ─── */}
         <div className="space-y-4">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+          <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-5">
             <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
               <BarChart className="w-4 h-4 text-indigo-500" /> Live Cost Projection
             </h3>
@@ -400,7 +400,7 @@ export function CostCalculator() {
             const isLoss = grossProfit < 0;
 
             return (
-              <div className={clsx("rounded-xl border shadow-sm p-5", isLoss ? "bg-red-50 border-red-200" : "bg-emerald-50 border-emerald-200")}>
+              <div className={clsx("rounded-lg border shadow-sm p-5", isLoss ? "bg-red-50 border-red-200" : "bg-emerald-50 border-emerald-200")}>
                 <h3 className={clsx("font-bold mb-4 flex items-center gap-2", isLoss ? "text-red-800" : "text-emerald-800")}>
                   <TrendingUp className="w-4 h-4" /> Profitability Analysis
                 </h3>
@@ -433,7 +433,7 @@ export function CostCalculator() {
           })()}
 
           {/* Advisory */}
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-800 space-y-1.5">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-xs text-amber-800 space-y-1.5">
             <p className="font-bold flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5" /> Usage Estimates Only</p>
             <p>Projections use activity assumptions (45 reads/user/day, 4 AI calls/project/month) to estimate costs. Actual costs will vary based on real usage patterns.</p>
             <p className="pt-1 text-slate-500 italic opacity-80">To generate a client-facing invoice using these rates, go to <strong>Platform Admin → Invoice Creator</strong>.</p>

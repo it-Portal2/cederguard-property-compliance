@@ -123,12 +123,12 @@ export function ChecklistGate({ type }: ChecklistGateProps) {
   const hasErrors = items.some(i => i.status === 'error');
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden sticky top-6">
+    <div className="bg-white rounded-lg border border-slate-200 shadow-lg overflow-hidden sticky top-6">
       <div className="bg-slate-50/80 px-6 py-6 border-b border-slate-100">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2.5">
             <div className={clsx(
-              "p-2 rounded-xl border-2 transition-transform hover:scale-105",
+              "p-2 rounded-lg border-2 transition-transform hover:scale-105",
               type === 'programme' ? "bg-indigo-50 border-indigo-100 text-indigo-700" : "bg-emerald-50 border-emerald-100 text-emerald-700"
             )}>
               {type === 'programme' ? <Target className="w-5 h-5" /> : <Shield className="w-5 h-5" />}
@@ -185,7 +185,7 @@ export function ChecklistGate({ type }: ChecklistGateProps) {
           <button 
             disabled={!isComplete}
             className={clsx(
-              "w-full flex items-center justify-center gap-2 px-6 py-4 text-sm font-black uppercase tracking-widest rounded-2xl transition-all shadow-xl active:scale-95",
+              "w-full flex items-center justify-center gap-2 px-6 py-4 text-sm font-black uppercase tracking-widest rounded-lg transition-all shadow-xl active:scale-95",
               isComplete 
                 ? "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-500/30 hover:shadow-indigo-500/40" 
                 : "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none border border-slate-200"
@@ -194,7 +194,7 @@ export function ChecklistGate({ type }: ChecklistGateProps) {
             {type === 'programme' ? 'Finalise Programme Setup' : 'Complete Publication'}
           </button>
           {!isComplete && (
-            <p className="text-[11px] text-center text-slate-500 mt-4 font-bold px-4 leading-relaxed bg-slate-50 py-2.5 rounded-xl border border-dashed border-slate-200">
+            <p className="text-[11px] text-center text-slate-500 mt-4 font-bold px-4 leading-relaxed bg-slate-50 py-2.5 rounded-lg border border-dashed border-slate-200">
               Complete all requirements above to enable {type === 'programme' ? 'operational mode' : 'project publication'}.
             </p>
           )}

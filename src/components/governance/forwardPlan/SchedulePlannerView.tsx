@@ -313,7 +313,7 @@ function EmptyState({
   onImport: () => void;
 }) {
   return (
-    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-6 py-12 text-center">
+    <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/50 px-6 py-12 text-center">
       <CalendarDays className="mx-auto h-10 w-10 text-slate-300" />
       <p className="mt-3 text-sm font-bold text-slate-900">
         No board meetings scheduled yet
@@ -355,13 +355,13 @@ function ScheduleList({
 }) {
   if (items.length === 0) {
     return (
-      <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50/40 px-6 py-8 text-center text-xs italic text-slate-400">
+      <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50/40 px-6 py-8 text-center text-xs italic text-slate-400">
         No meetings match this filter.
       </p>
     );
   }
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
       <table className="w-full text-left text-xs">
         <thead className="border-b border-slate-100 bg-slate-50">
           <tr>

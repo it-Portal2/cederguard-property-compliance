@@ -114,7 +114,7 @@ export function ProgrammeGanttOverlay({ bars }: ProgrammeGanttOverlayProps) {
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
       <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
         <div>
           <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">

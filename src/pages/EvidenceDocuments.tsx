@@ -253,7 +253,7 @@ export function EvidenceDocuments() {
 
         {open && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => setOpen(false)}>
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col border border-gray-200" onClick={e => e.stopPropagation()}>
+            <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col border border-gray-200" onClick={e => e.stopPropagation()}>
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-gray-100">
                 <h4 className="text-sm font-semibold text-gray-900">Select Requirement</h4>
@@ -318,7 +318,7 @@ export function EvidenceDocuments() {
     if (!open) return null;
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={onClose}>
-        <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg border border-gray-200 overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg border border-gray-200 overflow-hidden" onClick={e => e.stopPropagation()}>
           <div className="flex items-center justify-between p-5 border-b border-gray-100">
             <div>
               <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
@@ -353,7 +353,7 @@ export function EvidenceDocuments() {
 
   /* ── RENDER ────────────────────────────────────── */
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 pb-20">
+    <div className="space-y-6">
 
       {/* Header */}
       <div className="flex flex-col gap-4 border-b border-gray-200 pb-4 md:flex-row md:items-end md:justify-between">
@@ -689,7 +689,7 @@ export function EvidenceDocuments() {
       {/* Delete Confirmation Dialog */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => setDeleteTarget(null)}>
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm border border-gray-200 overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-sm border border-gray-200 overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="p-6 text-center">
               <div className="mx-auto h-12 w-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
                 <Trash2 className="h-5 w-5 text-red-600" />

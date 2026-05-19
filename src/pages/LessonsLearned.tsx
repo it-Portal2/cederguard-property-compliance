@@ -86,7 +86,7 @@ export function LessonsLearned() {
         
         <button
           onClick={() => setIsAddingLesson(true)}
-          className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white font-black rounded-2xl hover:bg-slate-800 transition-all shadow-lg active:scale-95"
+          className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white font-black rounded-lg hover:bg-slate-800 transition-all shadow-lg active:scale-95"
         >
           <Plus className="w-5 h-5" />
           Capture Lesson
@@ -95,28 +95,28 @@ export function LessonsLearned() {
 
       {/* Stats/Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-indigo-100 shadow-sm flex flex-col">
+        <div className="bg-white p-5 rounded-lg border border-indigo-100 shadow-sm flex flex-col">
           <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Total Insights</span>
           <span className="text-3xl font-black text-slate-900 leading-none">{lessonsLearned.length}</span>
           <div className="mt-3 text-[11px] font-bold text-emerald-600 bg-emerald-50 self-start px-2 py-0.5 rounded-full">
             {thisMonthCount > 0 ? `+${thisMonthCount} this month` : 'None this month'}
           </div>
         </div>
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
+        <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col">
           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Safety Wins</span>
           <span className="text-3xl font-black text-slate-900 leading-none">
             {lessonsLearned.filter(l => l.category === 'Safety').length}
           </span>
           <div className="mt-3 text-[11px] font-bold text-slate-400">Critical preventing measures</div>
         </div>
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
+        <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col">
           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Cost Avoidance</span>
           <span className="text-3xl font-black text-slate-900 leading-none">
             {costAvoidance > 0 ? formatCostAvoidance(costAvoidance) : '—'}
           </span>
           <div className="mt-3 text-[11px] font-bold text-emerald-600">Documented savings</div>
         </div>
-        <div className="bg-white/50 p-5 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center">
+        <div className="bg-white/50 p-5 rounded-lg border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center">
           <span className="text-[11px] font-bold text-slate-400">Export Knowledge Hub</span>
           <button className="text-[11px] font-black text-indigo-600 hover:underline">Download PDF Report</button>
         </div>
@@ -124,7 +124,7 @@ export function LessonsLearned() {
 
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-        <div className="flex p-1 bg-slate-100 rounded-xl w-full md:w-auto overflow-x-auto">
+        <div className="flex p-1 bg-slate-100 rounded-lg w-full md:w-auto overflow-x-auto">
           {categories.map(cat => (
             <button
               key={cat}
@@ -148,7 +148,7 @@ export function LessonsLearned() {
             placeholder="Search knowledge base..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500 transition-all shadow-sm"
+            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-indigo-500 transition-all shadow-sm"
           />
         </div>
       </div>
@@ -161,7 +161,7 @@ export function LessonsLearned() {
             key={lesson.id}
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
-            className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all overflow-hidden cursor-pointer group"
+            className="bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-all overflow-hidden cursor-pointer group"
             onClick={() => setSelectedLesson(lesson)}
           >
             <div className="flex items-stretch">
@@ -224,7 +224,7 @@ export function LessonsLearned() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden"
+              className="relative w-full max-w-2xl bg-white rounded-lg shadow-2xl overflow-hidden"
             >
               <div className="p-8">
                 <div className="flex justify-between items-center mb-6">
@@ -243,7 +243,7 @@ export function LessonsLearned() {
                         type="text"
                         value={newLesson.title}
                         onChange={e => setNewLesson({...newLesson, title: e.target.value})}
-                        className="w-full px-4 py-2 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-indigo-500"
                         placeholder="e.g., Structural Steel Sourcing Delays"
                       />
                     </div>
@@ -253,7 +253,7 @@ export function LessonsLearned() {
                         required
                         value={newLesson.project}
                         onChange={e => setNewLesson({...newLesson, project: e.target.value})}
-                        className="w-full px-4 py-2 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-indigo-500"
                       >
                         <option value="">— Select project or programme —</option>
                         {safeProgrammes.length > 0 && (
@@ -288,7 +288,7 @@ export function LessonsLearned() {
                       required
                       value={newLesson.problem}
                       onChange={e => setNewLesson({...newLesson, problem: e.target.value})}
-                      className="w-full px-4 py-2 border border-slate-200 rounded-xl text-sm font-medium h-20 focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium h-20 focus:ring-2 focus:ring-indigo-500"
                       placeholder="Describe the situation or error encountered..."
                     />
                   </div>
@@ -308,7 +308,7 @@ export function LessonsLearned() {
                         required
                         value={newLesson.resolution}
                         onChange={e => setNewLesson({...newLesson, resolution: e.target.value})}
-                        className="w-full px-4 py-2 border border-slate-200 rounded-xl text-sm font-medium h-20 focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium h-20 focus:ring-2 focus:ring-indigo-500"
                       />
                     </div>
                     <div className="space-y-1">
@@ -325,14 +325,14 @@ export function LessonsLearned() {
                         required
                         value={newLesson.prevention}
                         onChange={e => setNewLesson({...newLesson, prevention: e.target.value})}
-                        className="w-full px-4 py-2 border border-slate-200 rounded-xl text-sm font-medium h-20 focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium h-20 focus:ring-2 focus:ring-indigo-500"
                       />
                     </div>
                   </div>
 
                   <button
                     type="submit"
-                    className="w-full py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-slate-800 transition-all shadow-xl active:scale-95"
+                    className="w-full py-4 bg-slate-900 text-white font-black rounded-lg hover:bg-slate-800 transition-all shadow-xl active:scale-95"
                   >
                     Save to Repository
                   </button>
@@ -358,7 +358,7 @@ export function LessonsLearned() {
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl overflow-hidden"
+              className="relative w-full max-w-3xl bg-white rounded-lg shadow-2xl overflow-hidden"
             >
               <div className="p-8">
                 <div className="flex justify-between items-start mb-6">
@@ -384,7 +384,7 @@ export function LessonsLearned() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-6">
                     <div className="flex gap-4">
-                      <div className="p-3 bg-red-50 text-red-500 rounded-2xl flex-shrink-0 h-fit">
+                      <div className="p-3 bg-red-50 text-red-500 rounded-lg flex-shrink-0 h-fit">
                         <AlertCircle className="w-6 h-6" />
                       </div>
                       <div>
@@ -393,7 +393,7 @@ export function LessonsLearned() {
                       </div>
                     </div>
                     <div className="flex gap-4">
-                      <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl flex-shrink-0 h-fit">
+                      <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg flex-shrink-0 h-fit">
                         <CheckCircle2 className="w-6 h-6" />
                       </div>
                       <div>
@@ -405,7 +405,7 @@ export function LessonsLearned() {
                   
                   <div className="space-y-6">
                     <div className="flex gap-4">
-                      <div className="p-3 bg-amber-50 text-amber-500 rounded-2xl flex-shrink-0 h-fit">
+                      <div className="p-3 bg-amber-50 text-amber-500 rounded-lg flex-shrink-0 h-fit">
                         <Lightbulb className="w-6 h-6" />
                       </div>
                       <div>
@@ -413,11 +413,11 @@ export function LessonsLearned() {
                         <p className="text-sm font-bold text-slate-700 leading-relaxed">{selectedLesson.prevention}</p>
                       </div>
                     </div>
-                    <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div className="p-6 bg-slate-50 rounded-lg border border-slate-100">
                       <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Linked Context</h4>
                       <div className="flex flex-wrap gap-2">
                         {selectedLesson.tags.map((tag: any) => (
-                          <span key={tag} className="px-3 py-1.5 bg-white text-[11px] font-black text-slate-600 rounded-xl border border-slate-200">
+                          <span key={tag} className="px-3 py-1.5 bg-white text-[11px] font-black text-slate-600 rounded-lg border border-slate-200">
                             #{tag}
                           </span>
                         ))}

@@ -106,7 +106,7 @@ export const DeliveryTeamCRUD: React.FC<DeliveryTeamCRUDProps> = ({
             </div>
 
             {isAdding && (
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-4 animate-in fade-in slide-in-from-top-2">
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-4 animate-in fade-in slide-in-from-top-2">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label className={labelCls}>Full Name *</label>
@@ -167,14 +167,14 @@ export const DeliveryTeamCRUD: React.FC<DeliveryTeamCRUDProps> = ({
 
             <div className="space-y-2">
                 {members.length === 0 ? (
-                    <div className="p-8 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center text-center">
+                    <div className="p-8 border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center text-center">
                         <User className="w-8 h-8 text-slate-300 mb-2" />
                         <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest">No team members assigned</p>
                         <p className="text-[10px] text-slate-400 mt-1">Start by adding the SRO or Project Lead.</p>
                     </div>
                 ) : (
                     members.map(member => (
-                        <div key={member.id} className="group p-4 bg-white border border-slate-200 rounded-xl hover:border-indigo-200 hover:shadow-md transition-all flex items-center justify-between gap-4">
+                        <div key={member.id} className="group p-4 bg-white border border-slate-200 rounded-lg hover:border-indigo-200 hover:shadow-md transition-all flex items-center justify-between gap-4">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
                                     <User className="w-5 h-5" />
@@ -219,9 +219,9 @@ export const DeliveryTeamCRUD: React.FC<DeliveryTeamCRUDProps> = ({
 
             {deleteConfirmId && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200">
+                    <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200">
                         <div className="flex items-center gap-3 mb-4 text-rose-600">
-                            <div className="p-2 bg-rose-50 rounded-xl">
+                            <div className="p-2 bg-rose-50 rounded-lg">
                                 <AlertTriangle className="w-5 h-5" />
                             </div>
                             <h3 className="text-base font-black tracking-tight">Remove Team Member</h3>
@@ -233,14 +233,14 @@ export const DeliveryTeamCRUD: React.FC<DeliveryTeamCRUDProps> = ({
                             <button
                                 type="button"
                                 onClick={() => setDeleteConfirmId(null)}
-                                className="px-4 py-2 font-black text-xs uppercase tracking-widest text-slate-500 hover:bg-slate-50 border border-slate-200 rounded-xl transition-all"
+                                className="px-4 py-2 font-black text-xs uppercase tracking-widest text-slate-500 hover:bg-slate-50 border border-slate-200 rounded-lg transition-all"
                             >
                                 Cancel
                             </button>
                             <button
                                 type="button"
                                 onClick={confirmDelete}
-                                className="px-4 py-2 font-black text-xs uppercase tracking-widest text-white bg-rose-600 hover:bg-rose-700 shadow-lg shadow-rose-200/50 rounded-xl transition-all"
+                                className="px-4 py-2 font-black text-xs uppercase tracking-widest text-white bg-rose-600 hover:bg-rose-700 shadow-lg shadow-rose-200/50 rounded-lg transition-all"
                             >
                                 Remove
                             </button>

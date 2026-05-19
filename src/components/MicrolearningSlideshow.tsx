@@ -157,7 +157,7 @@ export function MicrolearningSlideshow({ moduleId, onComplete }: Props) {
               setReachedEnd(false);
               setIsPlaying(true);
             }}
-            className="mt-8 px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold transition-all"
+            className="mt-8 px-6 py-3 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold transition-all"
           >
             Review Module Again
           </button>
@@ -175,7 +175,7 @@ export function MicrolearningSlideshow({ moduleId, onComplete }: Props) {
               className="flex-1 flex flex-col max-w-4xl mx-auto w-full"
             >
               <div className="mb-8 md:mb-12 flex items-start md:items-center gap-4 border-b border-white/10 pb-6">
-                <div className="p-3 bg-indigo-500/20 rounded-2xl text-indigo-400 shrink-0">
+                <div className="p-3 bg-indigo-500/20 rounded-lg text-indigo-400 shrink-0">
                   <BookOpen className="w-8 h-8 md:w-10 md:h-10" />
                 </div>
                 <h2 className="text-2xl md:text-4xl font-black tracking-tight text-white leading-tight">
@@ -211,7 +211,7 @@ export function MicrolearningSlideshow({ moduleId, onComplete }: Props) {
           <div className="flex items-center gap-4">
             <button 
               onClick={() => setIsPlaying(!isPlaying)}
-              className="w-14 h-14 flex items-center justify-center rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white transition-all backdrop-blur-md"
+              className="w-14 h-14 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white transition-all backdrop-blur-md"
             >
               {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1" />}
             </button>
@@ -229,14 +229,14 @@ export function MicrolearningSlideshow({ moduleId, onComplete }: Props) {
               <button 
                 onClick={handlePrev}
                 disabled={currentIndex === 0}
-                className="px-6 py-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 disabled:opacity-30 disabled:cursor-not-allowed text-white font-bold transition-all backdrop-blur-md flex items-center gap-2"
+                className="px-6 py-4 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 disabled:opacity-30 disabled:cursor-not-allowed text-white font-bold transition-all backdrop-blur-md flex items-center gap-2"
               >
                 <ChevronLeft className="w-5 h-5" />
                 <span className="hidden sm:inline">Prev</span>
               </button>
               <button 
                 onClick={handleNext}
-                className="px-8 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-all shadow-[0_0_20px_rgba(79,70,229,0.4)] hover:shadow-[0_0_25px_rgba(79,70,229,0.6)] hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2"
+                className="px-8 py-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-all shadow-[0_0_20px_rgba(79,70,229,0.4)] hover:shadow-[0_0_25px_rgba(79,70,229,0.6)] hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2"
               >
                 <span className="hidden sm:inline">
                   {currentIndex === slides.length - 1 

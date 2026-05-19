@@ -184,7 +184,7 @@ export function ShareEnquiryModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 8 }}
             transition={{ duration: 0.18 }}
-            className="w-full max-w-lg overflow-hidden rounded-xl bg-white shadow-2xl"
+            className="w-full max-w-lg overflow-hidden rounded-lg bg-white shadow-2xl"
           >
             <div className="flex items-start justify-between gap-2 border-b border-slate-200 px-5 py-4">
               <div className="flex items-start gap-3">

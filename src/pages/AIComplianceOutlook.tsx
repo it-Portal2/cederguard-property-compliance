@@ -151,7 +151,7 @@ export function AIComplianceOutlook() {
   const remainingCount = suggestions.filter((_, i) => !addedIndices.has(i)).length;
 
   return (
-    <div className="min-h-screen bg-[#f7f8fa]">
+    <div>
       {/* ── Sticky Header ──────────────────────────────────────── */}
       <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200/70 sticky top-0 z-20">
         <div className="max-w-full mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
@@ -219,7 +219,7 @@ export function AIComplianceOutlook() {
         </div>
 
         {/* ── Input Card ──────────────────────────────────────── */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
           <div className="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center ring-1 ring-inset ring-indigo-100">
@@ -282,7 +282,7 @@ export function AIComplianceOutlook() {
               whileTap={!loading && !!sentence.trim() ? { scale: 0.985 } : {}}
               transition={{ type: "spring", stiffness: 500, damping: 28 }}
               className={clsx(
-                "w-full inline-flex items-center justify-center gap-2.5 px-5 py-3 text-sm font-bold rounded-xl select-none transition-colors duration-200",
+                "w-full inline-flex items-center justify-center gap-2.5 px-5 py-3 text-sm font-bold rounded-lg select-none transition-colors duration-200",
                 loading || !sentence.trim()
                   ? "bg-slate-200 text-slate-400 cursor-not-allowed"
                   : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20",
@@ -313,7 +313,7 @@ export function AIComplianceOutlook() {
             <motion.div
               variants={slideUpVariants}
               initial="hidden" animate="visible" exit="exit"
-              className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl"
+              className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg"
             >
               <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
               <div>
@@ -330,7 +330,7 @@ export function AIComplianceOutlook() {
             <motion.div
               variants={fadeVariants}
               initial="hidden" animate="visible" exit="exit"
-              className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
+              className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden"
             >
               <div className="h-[2px] bg-slate-100 overflow-hidden">
                 <motion.div
@@ -341,12 +341,12 @@ export function AIComplianceOutlook() {
                 />
               </div>
               <div className="p-6 flex items-center gap-5">
-                <div className="relative w-12 h-12 shrink-0 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center">
+                <div className="relative w-12 h-12 shrink-0 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center">
                   <Activity className="w-5 h-5 text-indigo-500 relative z-10" />
                   <motion.div
                     animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
                     transition={{ duration: 1.6, repeat: Infinity, ease: "easeOut" }}
-                    className="absolute inset-0 rounded-xl border-2 border-indigo-400"
+                    className="absolute inset-0 rounded-lg border-2 border-indigo-400"
                   />
                 </div>
                 <div className="flex-1 min-w-0 space-y-3">
@@ -408,7 +408,7 @@ export function AIComplianceOutlook() {
                       variants={itemVariants}
                       whileHover={!isAdded ? { borderColor: "#6ee7b7" } : {}}
                       className={clsx(
-                        "group bg-white rounded-xl border overflow-hidden transition-shadow duration-300",
+                        "group bg-white rounded-lg border overflow-hidden transition-shadow duration-300",
                         isAdded ? "border-emerald-200 bg-emerald-50/30" : "border-slate-200 hover:shadow-md"
                       )}
                     >
@@ -502,7 +502,7 @@ export function AIComplianceOutlook() {
               {/* ── Bottom CTA strip ──────────────────────────── */}
               <motion.div
                 variants={itemVariants}
-                className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden"
+                className="bg-slate-900 rounded-lg border border-slate-800 overflow-hidden"
                 whileHover={{ borderColor: "#475569" }}
                 transition={{ duration: 0.2 }}
               >

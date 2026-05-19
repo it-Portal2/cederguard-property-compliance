@@ -162,7 +162,7 @@ export const AIWriter: React.FC<AIWriterProps> = ({
 
       {/* ── COMPOSING / GENERATING panel ── */}
       {(state === "COMPOSING" || state === "GENERATING") && (
-        <div className="absolute right-0 top-full mt-1.5 z-50 w-72 sm:w-80 bg-white border border-indigo-200 rounded-xl shadow-xl p-3 space-y-2.5 animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className="absolute right-0 top-full mt-1.5 z-50 w-72 sm:w-80 bg-white border border-indigo-200 rounded-lg shadow-xl p-3 space-y-2.5 animate-in fade-in slide-in-from-top-2 duration-150">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-indigo-700">
               <ScanSearch className="w-3.5 h-3.5" />
@@ -232,7 +232,7 @@ export const AIWriter: React.FC<AIWriterProps> = ({
 
       {/* ── REVIEWING panel ── */}
       {state === "REVIEWING" && result !== null && (
-        <div className="absolute right-0 top-full mt-1.5 z-50 w-72 sm:w-80 bg-linear-to-br from-indigo-50 to-white border border-indigo-200 rounded-xl shadow-xl p-3 space-y-2.5 animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className="absolute right-0 top-full mt-1.5 z-50 w-72 sm:w-80 bg-linear-to-br from-indigo-50 to-white border border-indigo-200 rounded-lg shadow-xl p-3 space-y-2.5 animate-in fade-in slide-in-from-top-2 duration-150">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-indigo-700">
               <ShieldCheck className="w-3.5 h-3.5" />

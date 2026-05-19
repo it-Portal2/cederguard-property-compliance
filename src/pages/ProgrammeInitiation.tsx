@@ -14,7 +14,7 @@ import { calculateProgrammeProgress } from '../lib/progress';
 import { DeliveryTeamCRUD } from '../components/DeliveryTeamCRUD';
 import { PublicationChecklist } from '../components/PublicationChecklist';
 
-const inputCls = "w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white/80 backdrop-blur-sm placeholder:text-slate-400 shadow-sm hover:border-slate-300";
+const inputCls = "w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white/80 backdrop-blur-sm placeholder:text-slate-400 shadow-sm hover:border-slate-300";
 const labelCls = "block text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] mb-2 ml-1";
 const textareaCls = `${inputCls} resize-none min-h-[100px]`;
 
@@ -116,7 +116,7 @@ function CheckGroup({ options, selected, onChange }: {
                     <label
                         key={opt}
                         onClick={() => toggle(opt)}
-                        className={`group flex items-start gap-3 cursor-pointer rounded-xl border p-4 text-[11px] transition-all select-none ${on
+                        className={`group flex items-start gap-3 cursor-pointer rounded-lg border p-4 text-[11px] transition-all select-none ${on
                             ? 'border-indigo-500 bg-indigo-50/50 shadow-sm shadow-indigo-100/50'
                             : 'border-slate-200 bg-white/50 hover:border-indigo-300 hover:bg-white hover:shadow-md'}`}
                     >
@@ -618,12 +618,12 @@ export function ProgrammeInitiation() {
     const requiredDone = form.name && form.type && form.strategicObjectives;
 
     return (
-        <div className="min-h-screen bg-slate-50/50 pb-24 md:pb-12 pt-safe">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
+        <div>
+            <div className="space-y-6">
                 {/* ── HEADER SECTION ──────────────────────────────────────────*/}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 md:mb-12 border-b border-slate-100 pb-8">
                     <div className="flex items-center gap-4">
-                        <button onClick={() => navigate(-1)} className="p-2 hover:bg-slate-50 rounded-xl transition-colors">
+                        <button onClick={() => navigate(-1)} className="p-2 hover:bg-slate-50 rounded-lg transition-colors">
                             <ArrowLeft className="w-5 h-5 text-slate-500" />
                         </button>
                         <div>
@@ -651,7 +651,7 @@ export function ProgrammeInitiation() {
                     <div className="flex items-center gap-3">
                         <button 
                             onClick={loadDemo}
-                            className="flex items-center gap-2 px-4 py-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all text-sm font-bold border border-transparent hover:border-indigo-100"
+                            className="flex items-center gap-2 px-4 py-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all text-sm font-bold border border-transparent hover:border-indigo-100"
                         >
                             <Target className="w-4 h-4" /> Load Demo
                         </button>
@@ -659,7 +659,7 @@ export function ProgrammeInitiation() {
                         <button 
                             onClick={() => handleSave(true)}
                             disabled={loading || success}
-                            className="px-5 py-2 text-slate-600 hover:text-slate-900 bg-white border border-slate-200 rounded-xl transition-all text-sm font-black shadow-sm"
+                            className="px-5 py-2 text-slate-600 hover:text-slate-900 bg-white border border-slate-200 rounded-lg transition-all text-sm font-black shadow-sm"
                         >
                             Save Draft
                         </button>
@@ -668,7 +668,7 @@ export function ProgrammeInitiation() {
                             onClick={() => handleSave(false)}
                             disabled={loading || success}
                             className={clsx(
-                                "flex items-center gap-2 px-6 py-2.5 rounded-xl transition-all text-sm font-black shadow-lg shadow-indigo-200",
+                                "flex items-center gap-2 px-6 py-2.5 rounded-lg transition-all text-sm font-black shadow-lg shadow-indigo-200",
                                 (loading || success)
                                     ? "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none"
                                     : "bg-indigo-600 text-white hover:bg-indigo-700 hover:-translate-y-0.5"
@@ -684,7 +684,7 @@ export function ProgrammeInitiation() {
                 <div className="relative flex flex-col lg:flex-row gap-8">
                     {/* Full-section loader overlay during create / update*/}
                     {loading && (
-                        <div className="absolute inset-0 z-30 bg-white/70 backdrop-blur-[3px] rounded-2xl flex flex-col items-center justify-center gap-4 min-h-[200px]">
+                        <div className="absolute inset-0 z-30 bg-white/70 backdrop-blur-[3px] rounded-lg flex flex-col items-center justify-center gap-4 min-h-[200px]">
                             <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin shadow-md" />
                             <span className="text-sm font-black text-indigo-900 tracking-widest uppercase">
                                 {existing ? 'Updating Programme…' : 'Creating Programme…'}
@@ -695,10 +695,10 @@ export function ProgrammeInitiation() {
                     <div className="flex-1 min-w-0 space-y-8">
                         {/* Continue Setup Section*/}
                         {unfinishedProgrammes.length > 0 && !activeProgrammeId && (
-                            <div className="p-6 bg-indigo-50 border border-indigo-100 rounded-2xl">
+                            <div className="p-6 bg-indigo-50 border border-indigo-100 rounded-lg">
                                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                                     <div className="flex items-center gap-4">
-                                        <div className="p-3 bg-white rounded-xl shadow-sm border border-indigo-100">
+                                        <div className="p-3 bg-white rounded-lg shadow-sm border border-indigo-100">
                                             <Rocket className="w-5 h-5 text-indigo-600" />
                                         </div>
                                         <div>
@@ -708,7 +708,7 @@ export function ProgrammeInitiation() {
                                     </div>
                                     <div className="flex items-center gap-3 w-full sm:w-auto">
                                         <select 
-                                            className="flex-1 bg-white border border-indigo-200 rounded-xl px-4 py-2 text-xs font-bold text-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm min-w-[180px]"
+                                            className="flex-1 bg-white border border-indigo-200 rounded-lg px-4 py-2 text-xs font-bold text-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm min-w-[180px]"
                                             onChange={(e) => handleContinue(e.target.value)}
                                             value={activeProgrammeId || ""}
                                         >
@@ -724,9 +724,9 @@ export function ProgrammeInitiation() {
 
                         <div className="space-y-6 md:space-y-8">
                             {/* Section 1: Identity & Governance*/}
-                            <div id="programme-identity" className="p-5 md:p-8 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-6">
+                            <div id="programme-identity" className="p-5 md:p-8 bg-white border border-slate-200 rounded-lg shadow-sm space-y-6">
                                 <div className="flex items-center gap-3 pb-6 border-b border-slate-50">
-                                    <div className="p-2.5 bg-indigo-50 rounded-xl"><Target className="w-5 h-5 text-indigo-600" /></div>
+                                    <div className="p-2.5 bg-indigo-50 rounded-lg"><Target className="w-5 h-5 text-indigo-600" /></div>
                                     <div>
                                         <h2 className="text-lg font-black text-slate-900 tracking-tight">Identity & Governance</h2>
                                         <p className="text-xs text-slate-500 font-medium mt-0.5">Define core identifiers and leadership structure.</p>
@@ -801,9 +801,9 @@ export function ProgrammeInitiation() {
 
 
                             {/* Section 3: Scale & Financials*/}
-                            <div id="programme-finance" className="p-5 md:p-8 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-6">
+                            <div id="programme-finance" className="p-5 md:p-8 bg-white border border-slate-200 rounded-lg shadow-sm space-y-6">
                                 <div className="flex items-center gap-3 pb-6 border-b border-slate-50">
-                                    <div className="p-2.5 bg-emerald-50 rounded-xl"><DollarSign className="w-5 h-5 text-emerald-600" /></div>
+                                    <div className="p-2.5 bg-emerald-50 rounded-lg"><DollarSign className="w-5 h-5 text-emerald-600" /></div>
                                     <div>
                                         <h2 className="text-lg font-black text-slate-900 tracking-tight">Scale & Portfolio Financials</h2>
                                         <p className="text-xs text-slate-500 font-medium mt-0.5">Budget targets and unit volume.</p>
@@ -845,9 +845,9 @@ export function ProgrammeInitiation() {
                             </div>
 
                             {/* Section 4: Regulatory & Compliance*/}
-                            <div id="programme-compliance" className="p-5 md:p-8 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-6">
+                            <div id="programme-compliance" className="p-5 md:p-8 bg-white border border-slate-200 rounded-lg shadow-sm space-y-6">
                                 <div className="flex items-center gap-3 pb-6 border-b border-slate-50">
-                                    <div className="p-2.5 bg-violet-50 rounded-xl"><Shield className="w-5 h-5 text-violet-600" /></div>
+                                    <div className="p-2.5 bg-violet-50 rounded-lg"><Shield className="w-5 h-5 text-violet-600" /></div>
                                     <div>
                                         <h2 className="text-lg font-black text-slate-900 tracking-tight">Regulatory Compliance</h2>
                                         <p className="text-xs text-slate-500 font-medium mt-0.5">Cross-cutting standards and standards alignment.</p>
@@ -897,16 +897,16 @@ export function ProgrammeInitiation() {
                             </div>
 
                             {/* Section 5: Strategic Risk Identification*/}
-                            <div id="programme-risk" className="p-5 md:p-8 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-6">
+                            <div id="programme-risk" className="p-5 md:p-8 bg-white border border-slate-200 rounded-lg shadow-sm space-y-6">
                                 <div className="flex items-center gap-3 pb-6 border-b border-slate-50">
-                                    <div className="p-2.5 bg-rose-50 rounded-xl"><AlertTriangle className="w-5 h-5 text-rose-600" /></div>
+                                    <div className="p-2.5 bg-rose-50 rounded-lg"><AlertTriangle className="w-5 h-5 text-rose-600" /></div>
                                     <div>
                                         <h2 className="text-lg font-black text-slate-900 tracking-tight">Strategic Risk Identification</h2>
                                         <p className="text-xs text-slate-500 font-medium mt-0.5">High-level risk discovery and AI insights.</p>
                                     </div>
                                 </div>
 
-                                <div className="bg-indigo-600 rounded-2xl p-6 text-white shadow-xl shadow-indigo-200 overflow-hidden relative group">
+                                <div className="bg-indigo-600 rounded-lg p-6 text-white shadow-xl shadow-indigo-200 overflow-hidden relative group">
                                     <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-3xl rounded-full translate-x-32 -translate-y-32" />
                                     <div className="relative flex flex-col sm:flex-row items-center justify-between gap-6">
                                         <div className="flex-1 text-center sm:text-left">
@@ -921,7 +921,7 @@ export function ProgrammeInitiation() {
                                         <button
                                             onClick={runAiAnalysis}
                                             disabled={aiAnalyzing || !form.strategicObjectives}
-                                            className="w-full sm:w-auto px-6 py-3 bg-white text-indigo-600 text-xs font-black rounded-xl hover:bg-slate-50 transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg"
+                                            className="w-full sm:w-auto px-6 py-3 bg-white text-indigo-600 text-xs font-black rounded-lg hover:bg-slate-50 transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg"
                                         >
                                             {aiAnalyzing
                                                 ? <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing...</>
@@ -931,7 +931,7 @@ export function ProgrammeInitiation() {
                                     </div>
                                 </div>
 
-                                {aiError && <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-xs text-red-600 font-bold">{aiError}</div>}
+                                {aiError && <div className="p-4 bg-red-50 border border-red-100 rounded-lg text-xs text-red-600 font-bold">{aiError}</div>}
 
                                 <div>
                                     <label className={labelCls}>Strategic Risks</label>

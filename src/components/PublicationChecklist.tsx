@@ -188,7 +188,7 @@ export function PublicationChecklist({
   const isComplete = activeEntity?.isPublished;
 
   return (
-    <div className="relative overflow-hidden bg-white rounded-2xl border border-slate-200 shadow-lg">
+    <div className="relative overflow-hidden bg-white rounded-lg border border-slate-200 shadow-lg">
       {loading && (
         <div className="absolute inset-0 z-50 bg-white/60 backdrop-blur-[2px] flex items-center justify-center">
           <div className="flex flex-col items-center gap-3">
@@ -201,7 +201,7 @@ export function PublicationChecklist({
       <div className="bg-slate-50/80 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl border-2 bg-emerald-50 border-emerald-100 text-emerald-700">
+            <div className="p-2 rounded-lg border-2 bg-emerald-50 border-emerald-100 text-emerald-700">
               <Shield className="w-5 h-5" />
             </div>
             <div>
@@ -373,7 +373,7 @@ export function PublicationChecklist({
             else if (onPublish) onPublish();
           }}
           className={clsx(
-            "w-full flex items-center justify-center gap-2 px-6 py-4 text-xs font-black uppercase tracking-[0.2em] rounded-2xl transition-all shadow-xl active:scale-95 mt-4",
+            "w-full flex items-center justify-center gap-2 px-6 py-4 text-xs font-black uppercase tracking-[0.2em] rounded-lg transition-all shadow-xl active:scale-95 mt-4",
             canPublish && !loading
               ? isComplete
                 ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-200"
@@ -396,7 +396,7 @@ export function PublicationChecklist({
           )}
         </button>
         {!isComplete && (
-          <p className="text-[11px] text-center text-slate-500 mt-3 font-bold px-4 leading-relaxed bg-slate-50 py-2.5 rounded-xl border border-dashed border-slate-200">
+          <p className="text-[11px] text-center text-slate-500 mt-3 font-bold px-4 leading-relaxed bg-slate-50 py-2.5 rounded-lg border border-dashed border-slate-200">
             Complete all requirements above to enable {activeType} publication.
           </p>
         )}

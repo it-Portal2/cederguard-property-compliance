@@ -22,7 +22,7 @@ export function GovernancePDFViewer({
     return (
       <div
         className={
-          'flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 text-center p-10 dark:border-slate-700 dark:bg-slate-800/50 ' +
+          'flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 text-center p-10 dark:border-slate-700 dark:bg-slate-800/50 ' +
           (className ?? '')
         }
         style={{ minHeight: height }}
@@ -42,7 +42,7 @@ export function GovernancePDFViewer({
     return (
       <div
         className={
-          'flex flex-col items-center justify-center rounded-xl border border-rose-200 bg-rose-50 text-center p-10 dark:border-rose-900 dark:bg-rose-950/30 ' +
+          'flex flex-col items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-center p-10 dark:border-rose-900 dark:bg-rose-950/30 ' +
           (className ?? '')
         }
         style={{ minHeight: height }}
@@ -59,7 +59,7 @@ export function GovernancePDFViewer({
   return (
     <div
       className={
-        'overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800 ' +
+        'overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800 ' +
         (className ?? '')
       }
       style={{ height }}

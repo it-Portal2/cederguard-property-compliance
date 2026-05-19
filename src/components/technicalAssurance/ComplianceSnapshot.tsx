@@ -32,7 +32,7 @@ interface ComplianceSnapshotProps {
 export function ComplianceSnapshot({ checks }: ComplianceSnapshotProps) {
   if (!checks?.length) return null;
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex items-center justify-between">
         <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
           Compliance snapshot

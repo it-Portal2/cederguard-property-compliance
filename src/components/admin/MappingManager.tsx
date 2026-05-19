@@ -87,7 +87,7 @@ export function MappingManager() {
 
     return (
         <div className="space-y-8">
-            <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-start gap-3">
+            <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg flex items-start gap-3">
                 <Briefcase className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                 <div>
                     <h3 className="text-sm font-bold text-amber-900">Expert Instruction Mappings</h3>
@@ -115,7 +115,7 @@ export function MappingManager() {
 
                     <div className="space-y-3">
                         {newMapping && (
-                            <div className="bg-white border-2 border-indigo-200 p-4 rounded-xl shadow-md space-y-3">
+                            <div className="bg-white border-2 border-indigo-200 p-4 rounded-lg shadow-md space-y-3">
                                 <input
                                     className="w-full text-sm font-bold border-b border-indigo-100 pb-2 focus:outline-none"
                                     placeholder="Brief Description (e.g. Social Rent Directive)"
@@ -143,7 +143,7 @@ export function MappingManager() {
                         )}
 
                         {mappings.map(m => (
-                            <div key={m.id} className="bg-white border border-slate-200 p-4 rounded-xl shadow-sm group hover:border-indigo-300 transition-colors">
+                            <div key={m.id} className="bg-white border border-slate-200 p-4 rounded-lg shadow-sm group hover:border-indigo-300 transition-colors">
                                 {editingId === m.id ? (
                                     <div className="space-y-3">
                                         <input
@@ -189,7 +189,7 @@ export function MappingManager() {
                         ))}
 
                         {mappings.length === 0 && !newMapping && (
-                            <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-2xl">
+                            <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-lg">
                                 <ScanSearch className="w-5 h-5 text-indigo-400 mx-auto mb-2" />
                                 <p className="text-sm text-slate-400">No directives defined yet.</p>
                             </div>
@@ -202,11 +202,11 @@ export function MappingManager() {
                     <h3 className="font-bold text-slate-800 flex items-center gap-2">
                         <ScanSearch className="w-4 h-4" /> AI Mapping Sandbox
                     </h3>
-                    <div className="bg-slate-900 rounded-2xl p-6 text-white space-y-4 shadow-xl">
+                    <div className="bg-slate-900 rounded-lg p-6 text-white space-y-4 shadow-xl">
                         <div className="space-y-2">
                             <label className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Simulation Prompt</label>
                             <textarea
-                                className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 min-h-[80px]"
+                                className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 min-h-[80px]"
                                 value={testPrompt}
                                 onChange={e => setTestPrompt(e.target.value)}
                             />
@@ -214,7 +214,7 @@ export function MappingManager() {
                         <button
                             onClick={runTest}
                             disabled={testing || mappings.length === 0}
-                            className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-900/40"
+                            className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-900/40"
                         >
                             {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 fill-current" />}
                             Run Simulation with Directives
@@ -222,7 +222,7 @@ export function MappingManager() {
 
                         <div className="space-y-2">
                             <label className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">AI Response</label>
-                            <div className="bg-slate-800 border border-slate-700 rounded-xl p-4 min-h-[150px] text-xs font-mono whitespace-pre-wrap text-slate-300 leading-relaxed overflow-y-auto max-h-[300px]">
+                            <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 min-h-[150px] text-xs font-mono whitespace-pre-wrap text-slate-300 leading-relaxed overflow-y-auto max-h-[300px]">
                                 {testing ? 'Analyzing...' : (testResult || 'Results will appear here. The AI will consider your mapping directives during this generation.')}
                             </div>
                         </div>

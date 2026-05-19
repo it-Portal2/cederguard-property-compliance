@@ -10,7 +10,7 @@ import { PublicationChecklist } from '../components/PublicationChecklist';
 import { stripMarkdown } from '../lib/utils';
 import { isAtLeastClientAdmin, UserRole, isSuperAdmin, isAtLeastPM } from '../lib/roles';
 
-const inputCls = "w-full border border-slate-200 rounded-2xl px-6 py-4 text-sm font-medium focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 focus-visible:ring-offset-2 transition-all bg-white/80 backdrop-blur-sm placeholder:text-slate-400 shadow-sm hover:border-slate-300";
+const inputCls = "w-full border border-slate-200 rounded-lg px-6 py-4 text-sm font-medium focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 focus-visible:ring-offset-2 transition-all bg-white/80 backdrop-blur-sm placeholder:text-slate-400 shadow-sm hover:border-slate-300";
 const labelCls = "block text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3 ml-1 opacity-80 cursor-pointer hover:text-indigo-600 transition-colors";
 
 interface Question {
@@ -601,13 +601,13 @@ export function RiskSetup() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50/50 pb-24 md:pb-12 pt-safe">
+        <div>
             {/* Restart Confirmation Dialog*/}
             {showRestartConfirm && (
                 <div className="fixed inset-0 z-110 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-md w-full overflow-hidden animate-in zoom-in duration-300">
+                    <div className="bg-white rounded-lg shadow-2xl border border-slate-100 max-w-md w-full overflow-hidden animate-in zoom-in duration-300">
                         <div className="p-8 text-center">
-                            <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-6 ring-4 ring-white shadow-lg shadow-red-100">
+                            <div className="w-16 h-16 bg-red-50 rounded-lg flex items-center justify-center mx-auto mb-6 ring-4 ring-white shadow-lg shadow-red-100">
                                 <AlertTriangle className="w-8 h-8 text-red-500" />
                             </div>
                             <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-3">
@@ -619,13 +619,13 @@ export function RiskSetup() {
                             <div className="grid grid-cols-2 gap-3">
                                 <button
                                     onClick={() => setShowRestartConfirm(false)}
-                                    className="w-full px-6 py-4 bg-slate-100 text-slate-700 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all active:scale-95"
+                                    className="w-full px-6 py-4 bg-slate-100 text-slate-700 rounded-lg font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all active:scale-95"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleRestartConfirmed}
-                                    className="w-full px-6 py-4 bg-red-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-700 transition-all hover:shadow-xl hover:shadow-red-200 active:scale-95"
+                                    className="w-full px-6 py-4 bg-red-600 text-white rounded-lg font-black text-xs uppercase tracking-widest hover:bg-red-700 transition-all hover:shadow-xl hover:shadow-red-200 active:scale-95"
                                 >
                                     Yes, Restart
                                 </button>
@@ -638,7 +638,7 @@ export function RiskSetup() {
             {/* Restart Loading Overlay*/}
             {isRestarting && (
                 <div className="fixed inset-0 z-110 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-4 max-w-xs w-full mx-4">
+                    <div className="bg-white rounded-lg shadow-2xl p-8 flex flex-col items-center gap-4 max-w-xs w-full mx-4">
                         <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
                         <div className="text-center">
                             <p className="text-sm font-black text-slate-800 uppercase tracking-wider">Clearing Risk Data</p>
@@ -651,9 +651,9 @@ export function RiskSetup() {
             {/* Existing Analysis Overlay*/}
             {showAnalysisExists && (
                 <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md">
-                    <div className="bg-white rounded-[40px] shadow-2xl border border-slate-100 max-w-2xl w-full overflow-hidden animate-in fade-in zoom-in duration-500">
+                    <div className="bg-white rounded-lg shadow-2xl border border-slate-100 max-w-2xl w-full overflow-hidden animate-in fade-in zoom-in duration-500">
                         <div className="p-10 text-center">
-                            <div className="w-20 h-20 bg-indigo-50 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-xl shadow-indigo-100 ring-4 ring-white">
+                            <div className="w-20 h-20 bg-indigo-50 rounded-lg flex items-center justify-center mx-auto mb-8 shadow-xl shadow-indigo-100 ring-4 ring-white">
                                 <ShieldAlert className="w-10 h-10 text-indigo-600" />
                             </div>
                             <h3 className="text-3xl font-black text-slate-900 tracking-tight mb-4">Risk Analysis Complete</h3>
@@ -670,13 +670,13 @@ export function RiskSetup() {
                                             navigate(contextType === 'project' ? `/risk/register${fromParam}` : `/risk/programme-register${fromParam}`);
                                         }
                                     }}
-                                    className="w-full flex items-center justify-center gap-3 px-8 py-5 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all hover:bg-slate-800 hover:shadow-2xl active:scale-95"
+                                    className="w-full flex items-center justify-center gap-3 px-8 py-5 bg-slate-900 text-white rounded-lg font-black text-xs uppercase tracking-[0.2em] transition-all hover:bg-slate-800 hover:shadow-2xl active:scale-95"
                                 >
                                     {suggestedRisks.length > 0 ? "Review AI Suggestions" : "View Risk Register"} <ArrowRight className="w-4 h-4" />
                                 </button>
                                 <button
                                     onClick={handleRestart}
-                                    className="w-full flex items-center justify-center gap-3 px-8 py-5 bg-white text-slate-900 border-2 border-slate-100 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all hover:bg-slate-50 hover:border-slate-200 active:scale-95"
+                                    className="w-full flex items-center justify-center gap-3 px-8 py-5 bg-white text-slate-900 border-2 border-slate-100 rounded-lg font-black text-xs uppercase tracking-[0.2em] transition-all hover:bg-slate-50 hover:border-slate-200 active:scale-95"
                                 >
                                     Restart Analysis
                                 </button>
@@ -693,7 +693,7 @@ export function RiskSetup() {
                                             }
                                             navigate(contextType === 'programme' ? '/programmes/new' : '/initiate');
                                         }}
-                                        className="flex items-center gap-2 px-6 py-3 bg-emerald-50 text-emerald-700 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-100 transition-all border border-emerald-100"
+                                        className="flex items-center gap-2 px-6 py-3 bg-emerald-50 text-emerald-700 rounded-lg font-black text-[10px] uppercase tracking-widest hover:bg-emerald-100 transition-all border border-emerald-100"
                                     >
                                         <CheckCircle2 className="w-4 h-4" /> Continue to Initiation Step 4
                                     </button>
@@ -746,7 +746,7 @@ export function RiskSetup() {
                                         role="region"
                                         aria-label={phase.phase}
                                         className={clsx(
-                                            "bg-white/60 backdrop-blur-xl rounded-[40px] border border-white/60 overflow-hidden shadow-2xl shadow-indigo-900/5 transition-all duration-700 group",
+                                            "bg-white/60 backdrop-blur-xl rounded-lg border border-white/60 overflow-hidden shadow-2xl shadow-indigo-900/5 transition-all duration-700 group",
                                             activePhase === idx ? "ring-2 ring-indigo-500/20 bg-white/90 scale-[1.01]" : "hover:bg-white/80"
                                         )}
                                     >
@@ -781,7 +781,7 @@ export function RiskSetup() {
                                                                             type="button"
                                                                             aria-pressed={isChecked}
                                                                             className={clsx(
-                                                                                "group flex flex-col gap-4 p-5 rounded-2xl border cursor-pointer transition-all duration-500 select-none items-center text-center outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/50",
+                                                                                "group flex flex-col gap-4 p-5 rounded-lg border cursor-pointer transition-all duration-500 select-none items-center text-center outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/50",
                                                                                 isChecked
                                                                                     ? 'bg-slate-900 border-slate-900 shadow-2xl shadow-indigo-900/20 scale-[1.02]'
                                                                                     : 'bg-white/50 border-white shadow-sm hover:border-indigo-300 hover:bg-white'
@@ -850,7 +850,7 @@ export function RiskSetup() {
 
                                                         {/* AI Risk Insights (Trigger logic)*/}
                                                         {q.trigger && val && val !== "None identified" && val !== "Low" && val !== "No" && !val.includes("Not yet") && !val.includes("N/A") && (
-                                                            <div className="mt-3 bg-indigo-600/5 border border-indigo-100/50 rounded-2xl p-4 flex gap-4 animate-in fade-in slide-in-from-top-2 duration-500">
+                                                            <div className="mt-3 bg-indigo-600/5 border border-indigo-100/50 rounded-lg p-4 flex gap-4 animate-in fade-in slide-in-from-top-2 duration-500">
                                                                 <div className="shrink-0 w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
                                                                     <ScanSearch className="w-4 h-4 text-indigo-600" />
                                                                 </div>
@@ -873,7 +873,7 @@ export function RiskSetup() {
                                     <button
                                         onClick={runAnalysis}
                                         disabled={loading}
-                                        className="group relative flex items-center gap-4 px-12 py-6 bg-slate-900 text-white rounded-[24px] font-black text-xs uppercase tracking-[0.3em] overflow-hidden transition-all hover:bg-indigo-600 hover:scale-[1.05] hover:shadow-2xl hover:shadow-indigo-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                                        className="group relative flex items-center gap-4 px-12 py-6 bg-slate-900 text-white rounded-lg font-black text-xs uppercase tracking-[0.3em] overflow-hidden transition-all hover:bg-indigo-600 hover:scale-[1.05] hover:shadow-2xl hover:shadow-indigo-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
                                     >
                                         <div className="absolute inset-0 bg-linear-to-r from-indigo-600 via-indigo-500 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                                         <span className="relative z-10 flex items-center gap-4">
@@ -889,10 +889,10 @@ export function RiskSetup() {
                         {/* Suggested Risks Result*/}
                         {done && (
                             <div className="space-y-10 px-2 animate-in fade-in slide-in-from-bottom-8 duration-700">
-                                <div className="bg-white/60 backdrop-blur-3xl border border-white/60 rounded-[40px] p-16 text-center shadow-2xl shadow-indigo-900/10 relative overflow-hidden group">
+                                <div className="bg-white/60 backdrop-blur-3xl border border-white/60 rounded-lg p-16 text-center shadow-2xl shadow-indigo-900/10 relative overflow-hidden group">
                                     <div className="absolute top-0 left-0 w-full h-2 bg-linear-to-r from-emerald-400 via-teal-400 to-emerald-400"></div>
                                     <div className="relative z-10">
-                                        <div className="w-24 h-24 bg-emerald-500 text-white rounded-[32px] flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-emerald-200 rotate-12 group-hover:rotate-0 transition-transform duration-500">
+                                        <div className="w-24 h-24 bg-emerald-500 text-white rounded-lg flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-emerald-200 rotate-12 group-hover:rotate-0 transition-transform duration-500">
                                             <Check className="w-12 h-12 stroke-[3px]" />
                                         </div>
                                         <div className="space-y-4 mb-10">
@@ -904,13 +904,13 @@ export function RiskSetup() {
                                         <div className="flex flex-col sm:flex-row justify-center gap-4">
                                             <button
                                                 onClick={() => navigate('/risk/register' + fromParam)}
-                                                className="px-10 py-5 bg-slate-900 text-white font-black rounded-[24px] hover:bg-slate-800 transition-all hover:scale-[1.05] active:scale-95 shadow-2xl shadow-slate-200 flex items-center gap-4 uppercase text-xs tracking-widest"
+                                                className="px-10 py-5 bg-slate-900 text-white font-black rounded-lg hover:bg-slate-800 transition-all hover:scale-[1.05] active:scale-95 shadow-2xl shadow-slate-200 flex items-center gap-4 uppercase text-xs tracking-widest"
                                             >
                                                 Access Full Risk Register <ArrowRight className="w-4 h-4" />
                                             </button>
                                             <button
                                                 onClick={reset}
-                                                className="px-10 py-5 bg-white border border-slate-200 text-slate-500 font-black rounded-[24px] hover:bg-slate-50 transition-all active:scale-95 uppercase text-xs tracking-widest"
+                                                className="px-10 py-5 bg-white border border-slate-200 text-slate-500 font-black rounded-lg hover:bg-slate-50 transition-all active:scale-95 uppercase text-xs tracking-widest"
                                             >
                                                 Modify Setup
                                             </button>
@@ -942,7 +942,7 @@ export function RiskSetup() {
                         {/* Sticky Phase Navigation (Specific to Risk Setup)*/}
                         {!done && (
                             <aside className="hidden xl:block space-y-4 animate-in slide-in-from-right-8 duration-700">
-                                <div className="p-6 bg-white/40 backdrop-blur-xl rounded-[32px] border border-white/60 shadow-2xl shadow-slate-200/40">
+                                <div className="p-6 bg-white/40 backdrop-blur-xl rounded-lg border border-white/60 shadow-2xl shadow-slate-200/40">
                                     <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 px-2">Setup Progress</h3>
                                     <nav className="space-y-1">
                                         {currentQuestions.map((p, i) => {
@@ -952,7 +952,7 @@ export function RiskSetup() {
                                                     key={i}
                                                     onClick={() => scrollToPhase(i)}
                                                     className={clsx(
-                                                        "w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-left transition-all group",
+                                                        "w-full flex items-center gap-4 px-4 py-3.5 rounded-lg text-left transition-all group",
                                                         activePhase === i 
                                                             ? "bg-slate-900 text-white shadow-xl shadow-slate-200 translate-x-1" 
                                                             : "text-slate-500 hover:bg-white hover:text-slate-900"
@@ -973,7 +973,7 @@ export function RiskSetup() {
                                     </nav>
                                 </div>
                                 
-                                <div className="p-6 bg-indigo-600/5 rounded-[32px] border border-indigo-100/30">
+                                <div className="p-6 bg-indigo-600/5 rounded-lg border border-indigo-100/30">
                                     <div className="flex items-center gap-3 mb-3">
                                         <ScanSearch className="w-4 h-4 text-indigo-500" />
                                         <h4 className="text-[10px] font-black text-indigo-900 uppercase tracking-widest">AI Readiness</h4>
@@ -989,12 +989,12 @@ export function RiskSetup() {
                         )}
                         
                         {/* Selector Controls (Moved from header for cleaner mobile flow)*/}
-                        <div className="space-y-4 p-6 bg-white/40 backdrop-blur-xl rounded-[32px] border border-white/60 shadow-xl shadow-slate-200/40">
+                        <div className="space-y-4 p-6 bg-white/40 backdrop-blur-xl rounded-lg border border-white/60 shadow-xl shadow-slate-200/40">
                             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-2 px-2">Project Context</h3>
                             <div className="space-y-3">
                                 {!isClientAdmin && (
                                     <select
-                                        className="w-full bg-white border border-slate-200 rounded-xl px-5 py-3 text-xs font-black text-slate-900 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all hover:border-indigo-400 shadow-sm"
+                                        className="w-full bg-white border border-slate-200 rounded-lg px-5 py-3 text-xs font-black text-slate-900 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all hover:border-indigo-400 shadow-sm"
                                         value={selectedProjectId}
                                         onChange={async (e) => {
                                             const pid = e.target.value;
@@ -1014,7 +1014,7 @@ export function RiskSetup() {
                                 {isClientAdmin && (
                                     <>
                                         <select
-                                            className="w-full bg-white border border-slate-200 rounded-xl px-5 py-3 text-xs font-black text-slate-900 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all hover:border-indigo-400 shadow-sm"
+                                            className="w-full bg-white border border-slate-200 rounded-lg px-5 py-3 text-xs font-black text-slate-900 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all hover:border-indigo-400 shadow-sm"
                                             value={selectedProgrammeId}
                                             onChange={async (e) => {
                                                 const pid = e.target.value;
@@ -1033,7 +1033,7 @@ export function RiskSetup() {
                                         </select>
                                         {contextType === 'project' && projectsInProgramme.length > 0 && (
                                             <select
-                                                className="w-full bg-white border border-slate-200 rounded-xl px-5 py-3 text-xs font-black text-slate-900 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all hover:border-indigo-400 shadow-sm"
+                                                className="w-full bg-white border border-slate-200 rounded-lg px-5 py-3 text-xs font-black text-slate-900 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all hover:border-indigo-400 shadow-sm"
                                                 value={selectedProjectId}
                                                 onChange={async (e) => {
                                                     const pid = e.target.value;

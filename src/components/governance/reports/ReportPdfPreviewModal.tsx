@@ -150,7 +150,7 @@ export function ReportPdfPreviewModal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.98, y: 8 }}
           transition={{ duration: 0.15 }}
-          className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+          className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-lg bg-white shadow-2xl"
         >
           <header className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-3">
             <div className="flex items-start gap-2.5">

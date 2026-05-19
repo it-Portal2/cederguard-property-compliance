@@ -184,7 +184,7 @@ export function ForwardPlanTimelineView({ items, bodies, onOpenItem }: Props) {
   };
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white">
+    <section className="rounded-lg border border-slate-200 bg-white">
       {/* Toolbar */}
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
         <div className="flex items-center gap-2">

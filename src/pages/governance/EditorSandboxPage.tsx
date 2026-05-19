@@ -189,11 +189,11 @@ export function GovernanceEditorSandboxPage() {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
-      className="mx-auto max-w-7xl"
+      className="space-y-6"
     >
       <header className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300">
             <FlaskConical className="h-5 w-5" strokeWidth={2.25} />
           </div>
           <div>
@@ -239,7 +239,7 @@ export function GovernanceEditorSandboxPage() {
       <div className="grid gap-5 lg:grid-cols-2">
         <section aria-label="Editor">
           {assetsLoading ? (
-            <div className="flex h-100 animate-pulse items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-400 dark:border-slate-700 dark:bg-slate-800">
+            <div className="flex h-100 animate-pulse items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-xs text-slate-400 dark:border-slate-700 dark:bg-slate-800">
               Loading branding assets…
             </div>
           ) : (

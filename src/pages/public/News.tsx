@@ -39,7 +39,7 @@ export function News() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
           >
-            <button className="flex items-center space-x-3 px-8 py-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl font-bold text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-xl dark:shadow-[0_0_30px_rgba(0,0,0,0.4)] group">
+            <button className="flex items-center space-x-3 px-8 py-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-lg font-bold text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-xl dark:shadow-[0_0_30px_rgba(0,0,0,0.4)] group">
               <Bell className="w-5 h-5 text-cyan-500 group-hover:rotate-12 transition-transform" />
               <span>Subscribe to Updates</span>
             </button>
@@ -61,7 +61,7 @@ export function News() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.05 * idx }}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-6 py-2.5 rounded-xl font-bold transition-all duration-300 border ${
+                  className={`px-6 py-2.5 rounded-lg font-bold transition-all duration-300 border ${
                     selectedCategory === cat 
                       ? 'bg-cyan-500 border-cyan-500 text-white shadow-lg shadow-cyan-500/30' 
                       : 'bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/5 text-slate-600 dark:text-slate-400 hover:border-cyan-500/40 hover:text-cyan-600 dark:hover:text-cyan-400'
@@ -88,7 +88,7 @@ export function News() {
               >
                 <Link 
                   to={`/news/${article.id}`}
-                  className="group block h-full bg-white dark:bg-slate-900/60 backdrop-blur-md rounded-[2.5rem] border border-slate-200 dark:border-white/10 overflow-hidden hover:border-cyan-500/50 hover:shadow-2xl dark:hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.6)] transition-all duration-500 relative"
+                  className="group block h-full bg-white dark:bg-slate-900/60 backdrop-blur-md rounded-lg border border-slate-200 dark:border-white/10 overflow-hidden hover:border-cyan-500/50 hover:shadow-2xl dark:hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.6)] transition-all duration-500 relative"
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                   

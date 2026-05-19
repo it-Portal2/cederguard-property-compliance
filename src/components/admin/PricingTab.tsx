@@ -97,7 +97,7 @@ export function PricingTab() {
                 </button>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-8 shadow-sm">
+            <div className="bg-white rounded-lg border border-slate-200 p-6 space-y-8 shadow-sm">
                 
                 {/* Infrastructure & SaaS Sections */}
                 {['firestore', 'gemini', 'vercel', 'firebaseStorage', 'support', 'training', 'devOps'].map(sectionKey => (

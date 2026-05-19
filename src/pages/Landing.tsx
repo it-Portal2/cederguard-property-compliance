@@ -273,7 +273,7 @@ function ComparisonSection() {
                 </motion.div>
 
                 <div className="overflow-x-auto pb-8 -mx-6 px-6 md:mx-0 md:px-0">
-                    <div className="min-w-[900px] border border-slate-200 dark:border-white/5 bg-white/50 dark:bg-white/[0.01] backdrop-blur-3xl rounded-[3rem] overflow-hidden shadow-2xl">
+                    <div className="min-w-[900px] border border-slate-200 dark:border-white/5 bg-white/50 dark:bg-white/[0.01] backdrop-blur-3xl rounded-lg overflow-hidden shadow-2xl">
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="border-b border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02]">
@@ -401,7 +401,7 @@ export const Landing: React.FC = () => {
                         >
                             <Link
                                 to="/contact"
-                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-200 dark:shadow-indigo-900/40 transition-all duration-300 hover:bg-indigo-700 hover:scale-[1.02]"
+                                className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-200 dark:shadow-indigo-900/40 transition-all duration-300 hover:bg-indigo-700 hover:scale-[1.02]"
                             >
                                 Book a demo
                             </Link>
@@ -455,7 +455,7 @@ export const Landing: React.FC = () => {
                         <img
                             src="/dashboard_showcase.png"
                             alt="CedarGuard dashboard preview"
-                            className="w-full h-auto rounded-2xl shadow-xl border border-slate-200 dark:border-white/10"
+                            className="w-full h-auto rounded-lg shadow-xl border border-slate-200 dark:border-white/10"
                         />
                     </motion.div>
                 </div>
@@ -624,12 +624,12 @@ export const Landing: React.FC = () => {
                         transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
                         className="w-full mt-24 relative z-20 group hidden md:block"
                     >
-                        <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 via-teal-400 to-indigo-500 rounded-[2.5rem] blur-lg opacity-20 group-hover:opacity-30 transition-opacity duration-1000" />
+                        <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 via-teal-400 to-indigo-500 rounded-lg blur-lg opacity-20 group-hover:opacity-30 transition-opacity duration-1000" />
                         <img 
                             src="/compliance_showcase.png" 
                             alt="Cedar Guard Regulatory Reference - UK Social Housing and Construction Framework" 
                             title="Automated Regulatory Compliance Audit Interface" 
-                            className="relative w-full h-auto rounded-[2.5rem] shadow-2xl border-4 border-white/40 dark:border-white/5 object-cover object-top transition-transform duration-1000 group-hover:scale-[1.01]"
+                            className="relative w-full h-auto rounded-lg shadow-2xl border-4 border-white/40 dark:border-white/5 object-cover object-top transition-transform duration-1000 group-hover:scale-[1.01]"
                         />
                     </motion.div>
                 </div>
@@ -763,7 +763,7 @@ export const Landing: React.FC = () => {
                         ))}
                     </div>
 
-                    <motion.div {...fadeIn} className="text-center max-w-3xl mx-auto py-12 px-6 border border-slate-200 dark:border-white/10 rounded-2xl">
+                    <motion.div {...fadeIn} className="text-center max-w-3xl mx-auto py-12 px-6 border border-slate-200 dark:border-white/10 rounded-lg">
                         <h3 className="text-2xl font-medium text-slate-900 dark:text-white mb-6">Delivering Smarter Decisions</h3>
                         <p className="text-slate-500 dark:text-white/50 font-light leading-relaxed">
                             Together, this solution enables organisations to move from reactive compliance to proactive, insight-led risk management, delivering smarter decisions, improved regulatory confidence, and stronger protection for residents and stakeholders.
@@ -822,14 +822,14 @@ export const Landing: React.FC = () => {
                             ))}
                         </div>
 
-                        <motion.div {...fadeIn} className="mt-12 bg-white dark:bg-[#0f1117] border border-slate-200 dark:border-white/10 rounded-2xl p-8 lg:p-12 flex flex-col md:flex-row md:items-center justify-between gap-8 shadow-sm">
+                        <motion.div {...fadeIn} className="mt-12 bg-white dark:bg-[#0f1117] border border-slate-200 dark:border-white/10 rounded-lg p-8 lg:p-12 flex flex-col md:flex-row md:items-center justify-between gap-8 shadow-sm">
                             <div>
                                 <h3 className="text-2xl font-medium text-slate-900 dark:text-white mb-4">Developer API</h3>
                                 <p className="text-slate-500 dark:text-slate-400 max-w-2xl leading-relaxed font-light text-lg">
                                     Build custom integrations, sync project RAG statuses directly to your corporate PowerBI or Tableau dashboards, and programmatically manage risk registers. Full role-based access control (RBAC) enforced at the API level.
                                 </p>
                             </div>
-                            <Link to="/api-docs" className="shrink-0 inline-flex items-center justify-center px-6 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl hover:bg-slate-800 dark:hover:bg-slate-100 font-medium transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
+                            <Link to="/api-docs" className="shrink-0 inline-flex items-center justify-center px-6 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-lg hover:bg-slate-800 dark:hover:bg-slate-100 font-medium transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
                                 View API Documentation <ChevronRight className="w-5 h-5 ml-2" />
                             </Link>
                         </motion.div>

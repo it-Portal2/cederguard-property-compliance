@@ -8,7 +8,7 @@ import type { Programme } from '../store/useStore';
 import { Plus } from 'lucide-react';
 import { isAtLeastClientAdmin } from '../lib/roles';
 
-const inputCls = "w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white/80 backdrop-blur-sm placeholder:text-slate-400 shadow-sm hover:border-slate-300";
+const inputCls = "w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white/80 backdrop-blur-sm placeholder:text-slate-400 shadow-sm hover:border-slate-300";
 const labelCls = "block text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] mb-2 ml-1";
 const textareaCls = `${inputCls} resize-none min-h-[100px]`;
 
@@ -108,7 +108,7 @@ function CheckGroup({ options, selected, onChange }: {
                     <label
                         key={opt}
                         onClick={() => toggle(opt)}
-                        className={`group flex items-start gap-3 cursor-pointer rounded-xl border p-4 text-[11px] transition-all select-none ${on
+                        className={`group flex items-start gap-3 cursor-pointer rounded-lg border p-4 text-[11px] transition-all select-none ${on
                             ? 'border-indigo-500 bg-indigo-50/50 shadow-sm shadow-indigo-100/50'
                             : 'border-slate-200 bg-white/50 hover:border-indigo-300 hover:bg-white hover:shadow-md'}`}
                     >
@@ -290,7 +290,7 @@ Use precise, formal language appropriate for a board-level risk register. Focus 
         <div className="max-w-5xl mx-auto pb-24">
             {/* Page header*/}
             <div className="flex items-center gap-4 mb-8">
-                <button onClick={() => navigate(-1)} className="p-2 hover:bg-white rounded-xl border border-transparent hover:border-slate-200 transition-colors">
+                <button onClick={() => navigate(-1)} className="p-2 hover:bg-white rounded-lg border border-transparent hover:border-slate-200 transition-colors">
                     <ArrowLeft className="w-5 h-5 text-slate-500" />
                 </button>
                 <div>
@@ -314,7 +314,7 @@ Use precise, formal language appropriate for a board-level risk register. Focus 
             </div>
 
             {/* Step indicator*/}
-            <div className="flex flex-col md:flex-row md:items-center gap-2 mb-10 bg-white/40 backdrop-blur-md p-2 rounded-[24px] border border-white/40 shadow-xl shadow-indigo-900/5 overflow-x-auto hide-scrollbar">
+            <div className="flex flex-col md:flex-row md:items-center gap-2 mb-10 bg-white/40 backdrop-blur-md p-2 rounded-lg border border-white/40 shadow-xl shadow-indigo-900/5 overflow-x-auto hide-scrollbar">
                 {STEPS.map((s) => {
                     const done = step > s.id;
                     const active = step === s.id;
@@ -323,7 +323,7 @@ Use precise, formal language appropriate for a board-level risk register. Focus 
                         <button
                             key={s.id}
                             onClick={() => setStep(s.id)}
-                            className={`flex flex-1 items-center gap-3 px-6 py-4 rounded-[18px] transition-all relative overflow-hidden group min-w-[200px] md:min-w-0 ${active
+                            className={`flex flex-1 items-center gap-3 px-6 py-4 rounded-lg transition-all relative overflow-hidden group min-w-[200px] md:min-w-0 ${active
                                     ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200 scale-[1.02] z-10'
                                     : done
                                         ? 'bg-white/60 text-indigo-600 border border-indigo-100 hover:bg-white'
@@ -333,7 +333,7 @@ Use precise, formal language appropriate for a board-level risk register. Focus 
                             {active && (
                                 <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 blur-2xl rounded-full translate-x-12 -translate-y-12" />
                             )}
-                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black flex-shrink-0 transition-all ${active
+                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm font-black flex-shrink-0 transition-all ${active
                                     ? 'bg-white text-indigo-600 shadow-inner'
                                     : done
                                         ? 'bg-indigo-600 text-white'
@@ -351,13 +351,13 @@ Use precise, formal language appropriate for a board-level risk register. Focus 
             </div>
 
             {/* Form card*/}
-            <div className="bg-white/80 backdrop-blur-xl rounded-[32px] border border-white/40 shadow-2xl shadow-indigo-900/10 overflow-hidden min-h-[500px] flex flex-col">
+            <div className="bg-white/80 backdrop-blur-xl rounded-lg border border-white/40 shadow-2xl shadow-indigo-900/10 overflow-hidden min-h-[500px] flex flex-col">
 
                 {/* ── PHASE 1: Identity & Governance ──*/}
                 {step === 1 && (
                     <div className="p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
                         <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-                            <div className="p-2 bg-indigo-50 rounded-xl"><LayoutTemplate className="w-5 h-5 text-indigo-600" /></div>
+                            <div className="p-2 bg-indigo-50 rounded-lg"><LayoutTemplate className="w-5 h-5 text-indigo-600" /></div>
                             <div>
                                 <h2 className="text-lg font-bold text-slate-800">Programme Identity & Governance</h2>
                                 <p className="text-xs text-slate-500">Core identity, leadership structure, governance and timeline.</p>
@@ -463,7 +463,7 @@ Use precise, formal language appropriate for a board-level risk register. Focus 
                 {step === 2 && (
                     <div className="p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
                         <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-                            <div className="p-2 bg-emerald-50 rounded-xl"><DollarSign className="w-5 h-5 text-emerald-600" /></div>
+                            <div className="p-2 bg-emerald-50 rounded-lg"><DollarSign className="w-5 h-5 text-emerald-600" /></div>
                             <div>
                                 <h2 className="text-lg font-bold text-slate-800">Scale, Portfolio & Financials</h2>
                                 <p className="text-xs text-slate-500">Portfolio size, budget, funding sources and resource constraints.</p>
@@ -529,14 +529,14 @@ Use precise, formal language appropriate for a board-level risk register. Focus 
                 {step === 3 && (
                     <div className="p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
                         <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-                            <div className="p-2 bg-violet-50 rounded-xl"><Shield className="w-5 h-5 text-violet-600" /></div>
+                            <div className="p-2 bg-violet-50 rounded-lg"><Shield className="w-5 h-5 text-violet-600" /></div>
                             <div>
                                 <h2 className="text-lg font-bold text-slate-800">Regulatory & Compliance Obligations</h2>
                                 <p className="text-xs text-slate-500">Programme-level cross-cutting regulatory obligations that apply across all projects.</p>
                             </div>
                         </div>
 
-                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs text-slate-500 leading-relaxed">
+                        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 text-xs text-slate-500 leading-relaxed">
                             These are programme-level regulatory obligations — cross-cutting requirements that apply to the whole programme, not individual projects. They determine programme-level compliance tracking, board reporting, and regulatory return obligations.
                         </div>
 
@@ -573,14 +573,14 @@ Use precise, formal language appropriate for a board-level risk register. Focus 
                 {step === 4 && (
                     <div className="p-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
                         <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-                            <div className="p-2 bg-rose-50 rounded-xl"><AlertTriangle className="w-5 h-5 text-rose-600" /></div>
+                            <div className="p-2 bg-rose-50 rounded-lg"><AlertTriangle className="w-5 h-5 text-rose-600" /></div>
                             <div>
                                 <h2 className="text-lg font-bold text-slate-800">Strategic Risk Context</h2>
                                 <p className="text-xs text-slate-500">Document known programme-level risks and any additional context.</p>
                             </div>
                         </div>
 
-                        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center items-start justify-between gap-4">
+                        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center items-start justify-between gap-4">
                             <div className="flex items-center gap-2.5">
                                 <ScanSearch className="w-5 h-5 text-indigo-600 flex-shrink-0" />
                                 <div>
@@ -604,7 +604,7 @@ Use precise, formal language appropriate for a board-level risk register. Focus 
                         </div>
 
                         {aiError && (
-                            <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700">
+                            <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-red-700">
                                 <AlertTriangle className="w-4 h-4 flex-shrink-0 text-red-500 mt-0.5" />
                                 {aiError}
                             </div>
@@ -646,7 +646,7 @@ Use precise, formal language appropriate for a board-level risk register. Focus 
                     <button
                         onClick={() => setStep(s => Math.max(1, s - 1))}
                         disabled={step === 1}
-                        className="flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-indigo-600 disabled:opacity-0 transition-all px-4 py-2 rounded-xl hover:bg-white"
+                        className="flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-indigo-600 disabled:opacity-0 transition-all px-4 py-2 rounded-lg hover:bg-white"
                     >
                         <ChevronLeft className="w-4 h-4" /> Back
                     </button>
@@ -658,13 +658,13 @@ Use precise, formal language appropriate for a board-level risk register. Focus 
                     </div>
 
                     <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
-                        <button onClick={() => handleSave(true)} className="w-full sm:w-auto px-6 py-2.5 text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors rounded-xl hover:bg-white border sm:border-transparent border-slate-200">
+                        <button onClick={() => handleSave(true)} className="w-full sm:w-auto px-6 py-2.5 text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors rounded-lg hover:bg-white border sm:border-transparent border-slate-200">
                             Save Draft
                         </button>
                         {step < 4 ? (
                             <button
                                 onClick={() => setStep(s => s + 1)}
-                                className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all hover:-translate-y-1 active:scale-95"
+                                className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all hover:-translate-y-1 active:scale-95"
                             >
                                 Continue <ChevronRight className="w-4 h-4 stroke-[3px]" />
                             </button>
@@ -672,7 +672,7 @@ Use precise, formal language appropriate for a board-level risk register. Focus 
                             <button
                                 onClick={() => handleSave(false)}
                                 disabled={saving}
-                                className="w-full sm:w-auto flex items-center justify-center gap-2 px-10 py-3 bg-indigo-600 text-white text-sm font-black rounded-xl hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-all hover:scale-[1.05] active:scale-95 disabled:opacity-50"
+                                className="w-full sm:w-auto flex items-center justify-center gap-2 px-10 py-3 bg-indigo-600 text-white text-sm font-black rounded-lg hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-all hover:scale-[1.05] active:scale-95 disabled:opacity-50"
                             >
                                 {saving ? (
                                     <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving…</>

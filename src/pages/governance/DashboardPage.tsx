@@ -117,11 +117,11 @@ export function GovernanceDashboardPage() {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
-      className="mx-auto space-y-6"
+      className="space-y-6"
     >
       <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-6">
         <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
             <LayoutDashboard className="h-5 w-5" strokeWidth={2.25} />
           </div>
           <div>
@@ -194,7 +194,7 @@ function BriefingCard({
   source: string;
 }) {
   return (
-    <section className="rounded-xl border border-indigo-200 bg-linear-to-br from-indigo-50 via-white to-white p-5 shadow-sm">
+    <section className="rounded-lg border border-indigo-200 bg-linear-to-br from-indigo-50 via-white to-white p-5 shadow-sm">
       <div className="flex items-start gap-3">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm">
           <Lightbulb className="h-4.5 w-4.5" />
@@ -297,7 +297,7 @@ function PgmDashboard({ payload }: { payload: PgmDashboardPayload }) {
             <span className="text-[11px] text-slate-500">{inbox.length} item{inbox.length === 1 ? '' : 's'}</span>
           </header>
           {inbox.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-xs text-slate-500">
+            <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-xs text-slate-500">
               Nothing to review. Your queue is clear.
             </div>
           ) : (
@@ -307,7 +307,7 @@ function PgmDashboard({ payload }: { payload: PgmDashboardPayload }) {
                 return (
                   <li
                     key={`${it.kind}-${it.id}`}
-                    className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md"
+                    className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
@@ -381,7 +381,7 @@ function PgmDashboard({ payload }: { payload: PgmDashboardPayload }) {
             </Link>
           </header>
           {upcomingBoards.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-xs text-slate-500">
+            <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-xs text-slate-500">
               No boards scheduled in the next 14 days.
             </div>
           ) : (
@@ -389,7 +389,7 @@ function PgmDashboard({ payload }: { payload: PgmDashboardPayload }) {
               {upcomingBoards.map((b) => (
                 <li
                   key={b.id}
-                  className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
+                  className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm"
                 >
                   <p className="truncate text-sm font-semibold text-slate-900">
                     {b.title}
@@ -467,7 +467,7 @@ function PmDashboard({ payload }: { payload: PmDashboardPayload }) {
             </Link>
           </header>
           {upcomingDeadlines.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-xs text-slate-500">
+            <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-xs text-slate-500">
               No deadlines in the next 30 days.
             </div>
           ) : (
@@ -475,7 +475,7 @@ function PmDashboard({ payload }: { payload: PmDashboardPayload }) {
               {upcomingDeadlines.map((d) => (
                 <li
                   key={d.reportId}
-                  className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md"
+                  className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md"
                 >
                   <Link
                     to={`/governance/reports-list/${d.reportId}`}
@@ -517,7 +517,7 @@ function PmDashboard({ payload }: { payload: PmDashboardPayload }) {
             </span>
           </header>
           {myOpenAmendments.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-xs text-slate-500">
+            <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-xs text-slate-500">
               No outstanding feedback. Nice work.
             </div>
           ) : (
@@ -525,7 +525,7 @@ function PmDashboard({ payload }: { payload: PmDashboardPayload }) {
               {myOpenAmendments.map((a) => (
                 <li
                   key={a.amendmentId}
-                  className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md"
+                  className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md"
                 >
                   <Link to={`/governance/reports-list/${a.reportId}`} className="block">
                     <p className="text-[11px] font-semibold text-indigo-700">
@@ -555,15 +555,15 @@ function PmDashboard({ payload }: { payload: PmDashboardPayload }) {
 function DashboardSkeleton() {
   return (
     <div className="space-y-6">
-      <div className="h-24 animate-pulse rounded-xl bg-slate-100" />
+      <div className="h-24 animate-pulse rounded-lg bg-slate-100" />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-24 animate-pulse rounded-xl bg-slate-100" />
+          <div key={i} className="h-24 animate-pulse rounded-lg bg-slate-100" />
         ))}
       </div>
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="h-64 animate-pulse rounded-xl bg-slate-100 lg:col-span-2" />
-        <div className="h-64 animate-pulse rounded-xl bg-slate-100" />
+        <div className="h-64 animate-pulse rounded-lg bg-slate-100 lg:col-span-2" />
+        <div className="h-64 animate-pulse rounded-lg bg-slate-100" />
       </div>
     </div>
   );

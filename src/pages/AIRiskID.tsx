@@ -469,13 +469,13 @@ export function AIRiskID() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
-    <div className="max-w-[98%] lg:max-w-6xl mx-auto p-2 sm:p-4 lg:p-6 space-y-4 sm:space-y-6 pb-40">
+    <div className="space-y-4 sm:space-y-6">
       {/* Restart Confirmation Dialog*/}
       {showRestartConfirm && (
         <div className="fixed inset-0 z-120 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 border border-slate-100 animate-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-lg shadow-2xl max-w-md w-full p-8 border border-slate-100 animate-in zoom-in-95 duration-200">
             <div className="flex items-start gap-4 mb-6">
-              <div className="w-12 h-12 bg-rose-100 rounded-2xl flex items-center justify-center shrink-0">
+              <div className="w-12 h-12 bg-rose-100 rounded-lg flex items-center justify-center shrink-0">
                 <AlertTriangle className="w-6 h-6 text-rose-600" />
               </div>
               <div>
@@ -488,13 +488,13 @@ export function AIRiskID() {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowRestartConfirm(false)}
-                className="flex-1 px-4 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-200 transition-all"
+                className="flex-1 px-4 py-3 bg-slate-100 text-slate-700 rounded-lg font-bold text-sm hover:bg-slate-200 transition-all"
               >
                 Cancel
               </button>
               <button
                 onClick={handleRestartConfirmed}
-                className="flex-1 px-4 py-3 bg-rose-600 text-white rounded-xl font-bold text-sm hover:bg-rose-700 transition-all"
+                className="flex-1 px-4 py-3 bg-rose-600 text-white rounded-lg font-bold text-sm hover:bg-rose-700 transition-all"
               >
                 Yes, Restart
               </button>
@@ -514,9 +514,9 @@ export function AIRiskID() {
       {/* Empty Accept Confirmation Dialog*/}
       {showEmptyConfirm && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 border border-slate-100 animate-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-lg shadow-2xl max-w-md w-full p-8 border border-slate-100 animate-in zoom-in-95 duration-200">
             <div className="flex items-start gap-4 mb-6">
-              <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center flex-shrink-0">
+              <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
                 <AlertTriangle className="w-6 h-6 text-amber-600" />
               </div>
               <div>
@@ -529,7 +529,7 @@ export function AIRiskID() {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowEmptyConfirm(false)}
-                className="flex-1 px-4 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-200 transition-all"
+                className="flex-1 px-4 py-3 bg-slate-100 text-slate-700 rounded-lg font-bold text-sm hover:bg-slate-200 transition-all"
               >
                 Go Back
               </button>
@@ -538,7 +538,7 @@ export function AIRiskID() {
                   setShowEmptyConfirm(false);
                   finalize(true);
                 }}
-                className="flex-1 px-4 py-3 bg-amber-600 text-white rounded-xl font-bold text-sm hover:bg-amber-700 transition-all"
+                className="flex-1 px-4 py-3 bg-amber-600 text-white rounded-lg font-bold text-sm hover:bg-amber-700 transition-all"
               >
                 Proceed Anyway
               </button>
@@ -550,7 +550,7 @@ export function AIRiskID() {
       {/* Existing Analysis Overlay */}
       {showAnalysisExists && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-100 animate-in zoom-in-95 slide-in-from-bottom-8 duration-500">
+          <div className="bg-white rounded-lg shadow-2xl max-w-lg w-full overflow-hidden border border-slate-100 animate-in zoom-in-95 slide-in-from-bottom-8 duration-500">
             <div className="bg-slate-900 p-8 text-white relative">
               <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -mr-16 -mt-16 blur-3xl" />
               <ShieldAlert className="w-12 h-12 text-emerald-400 mb-4" />
@@ -571,7 +571,7 @@ export function AIRiskID() {
                       `/risk/dashboard?from=initiation&type=${activeProjectId ? "project" : "programme"}${activeProjectId ? `&projectId=${activeProjectId}` : `&programmeId=${activeProgrammeId}`}`,
                     )
                   }
-                  className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-emerald-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-100 active:scale-[0.98]"
+                  className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-emerald-600 text-white rounded-lg font-black text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-100 active:scale-[0.98]"
                 >
                   <Eye className="w-4 h-4" /> View Risk Dashboard
                 </button>
@@ -584,7 +584,7 @@ export function AIRiskID() {
                 </div>
                 <button
                   onClick={() => setShowRestartConfirm(true)}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-white text-rose-600 border-2 border-rose-50 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-rose-50 hover:border-rose-100 transition-all active:scale-[0.98]"
+                  className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-white text-rose-600 border-2 border-rose-50 rounded-lg font-black text-xs uppercase tracking-widest hover:bg-rose-50 hover:border-rose-100 transition-all active:scale-[0.98]"
                 >
                   <RefreshCw className="w-4 h-4" /> Restart Analysis
                 </button>
@@ -608,7 +608,7 @@ export function AIRiskID() {
                     }
                     navigate(activeProjectId ? "/initiate" : "/programmes/new");
                   }}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-emerald-50 text-emerald-700 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-100 transition-all border border-emerald-100 mt-4"
+                  className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-emerald-50 text-emerald-700 rounded-lg font-black text-[10px] uppercase tracking-widest hover:bg-emerald-100 transition-all border border-emerald-100 mt-4"
                 >
                   <CheckCircle2 className="w-4 h-4" /> Continue to Initiation
                   Step 4
@@ -630,7 +630,7 @@ export function AIRiskID() {
         <div className="flex justify-start mb-6 -mt-2">
           <Link
             to={activeProjectId ? "/initiate" : "/programmes/new"}
-            className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-slate-200 hover:bg-emerald-600 transition-all active:scale-95 animate-in fade-in slide-in-from-right-4 duration-700"
+            className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-lg font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-slate-200 hover:bg-emerald-600 transition-all active:scale-95 animate-in fade-in slide-in-from-right-4 duration-700"
           >
             <ArrowLeft className="w-4 h-4 mr-1" /> Back to Initiation Flow
           </Link>
@@ -638,11 +638,11 @@ export function AIRiskID() {
       )}
 
       {/* ─── NEW HIGH-FIDELITY HEADER (Match 11.png) ─── */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-emerald-900 to-emerald-800 rounded-2xl shadow-xl border border-emerald-700/50">
+      <div className="relative overflow-hidden bg-gradient-to-r from-emerald-900 to-emerald-800 rounded-lg shadow-xl border border-emerald-700/50">
         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 blur-[100px] pointer-events-none" />
         <div className="p-4 sm:px-8 sm:py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
           <div className="flex items-start sm:items-center gap-4 sm:gap-5">
-            <div className="w-10 h-10 sm:w-14 sm:h-14 shrink-0 bg-emerald-500/20 rounded-xl sm:rounded-2xl flex items-center justify-center border border-emerald-400/30 shadow-inner">
+            <div className="w-10 h-10 sm:w-14 sm:h-14 shrink-0 bg-emerald-500/20 rounded-lg sm:rounded-lg flex items-center justify-center border border-emerald-400/30 shadow-inner">
               <CheckCircle2 className="w-6 h-6 sm:w-8 sm:h-8 text-emerald-400" />
             </div>
             <div>
@@ -669,7 +669,7 @@ export function AIRiskID() {
           </div>
           <button
             onClick={runAnalysis}
-            className="w-full sm:w-auto justify-center px-4 sm:px-5 py-2.5 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-bold rounded-xl border border-white/10 transition-all flex items-center gap-2"
+            className="w-full sm:w-auto justify-center px-4 sm:px-5 py-2.5 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-bold rounded-lg border border-white/10 transition-all flex items-center gap-2"
           >
             <ScanSearch className="w-3.5 h-3.5" /> Run again
           </button>
@@ -683,7 +683,7 @@ export function AIRiskID() {
           {strategicRiskAnalysis && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-4 duration-700">
               {/* Overall Summary Card */}
-              <div className="bg-white rounded-[32px] border border-slate-200 p-8 shadow-xl shadow-slate-200/50 relative overflow-hidden group">
+              <div className="bg-white rounded-lg border border-slate-200 p-8 shadow-xl shadow-slate-200/50 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-indigo-500/10 transition-all" />
                 <div className="flex items-start justify-between mb-6">
                   <div>
@@ -719,14 +719,14 @@ export function AIRiskID() {
                     <Target className="w-3 h-3 text-indigo-500" /> Critical
                     Success Factors
                   </h5>
-                  <p className="text-xs text-slate-500 font-medium leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <p className="text-xs text-slate-500 font-medium leading-relaxed bg-slate-50 p-4 rounded-lg border border-slate-100">
                     {strategicRiskAnalysis?.summary?.criticalSuccessFactors}
                   </p>
                 </div>
               </div>
 
               {/* Heat Overview / Concentration Card */}
-              <div className="bg-white rounded-[32px] border border-slate-200 p-8 shadow-xl shadow-slate-200/50 relative overflow-hidden group">
+              <div className="bg-white rounded-lg border border-slate-200 p-8 shadow-xl shadow-slate-200/50 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-emerald-500/10 transition-all" />
                 <div className="flex items-start justify-between mb-6">
                   <div>
@@ -737,7 +737,7 @@ export function AIRiskID() {
                       Risk Concentration
                     </h3>
                   </div>
-                  <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center border border-emerald-100">
+                  <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center border border-emerald-100">
                     <AlertTriangle className="w-5 h-5 text-emerald-600" />
                   </div>
                 </div>
@@ -757,7 +757,7 @@ export function AIRiskID() {
                         (item: any, i: number) => (
                           <div
                             key={i}
-                            className="flex flex-col gap-1.5 p-3 bg-slate-50 rounded-xl border border-slate-100 hover:border-indigo-200 transition-all group/item"
+                            className="flex flex-col gap-1.5 p-3 bg-slate-50 rounded-lg border border-slate-100 hover:border-indigo-200 transition-all group/item"
                           >
                             <div className="flex items-center justify-between">
                               <span className="text-[10px] font-bold text-slate-500 truncate">
@@ -798,7 +798,7 @@ export function AIRiskID() {
             </div>
           )}
 
-          <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="bg-white rounded-lg border border-slate-200 p-4 sm:p-6 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-6 sm:gap-8 justify-center w-full sm:w-auto">
               <div className="flex flex-col items-center sm:items-start shrink-0">
                 <span className="text-xl sm:text-2xl font-black text-slate-900">
@@ -838,7 +838,7 @@ export function AIRiskID() {
           </div>
 
           {safeSuggestedRisks.some((r) => r.exists) && (
-            <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-100 rounded-xl text-amber-700 text-xs font-medium">
+            <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-100 rounded-lg text-amber-700 text-xs font-medium">
               <AlertTriangle className="w-4 h-4" />
               <span>
                 Some suggested risks are already in your register for this{" "}
@@ -855,8 +855,8 @@ export function AIRiskID() {
       )}
 
       {safeSuggestedRisks.length === 0 && !loading && (
-        <div className="bg-white border border-slate-200 rounded-2xl p-16 text-center shadow-sm">
-          <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-6 transform -rotate-6">
+        <div className="bg-white border border-slate-200 rounded-lg p-16 text-center shadow-sm">
+          <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center mx-auto mb-6 transform -rotate-6">
             <ScanSearch className="w-10 h-10" />
           </div>
           <h2 className="text-2xl font-black text-slate-900 mb-2">
@@ -868,7 +868,7 @@ export function AIRiskID() {
           </p>
           <button
             onClick={runAnalysis}
-            className="px-8 py-4 bg-indigo-600 text-white font-bold rounded-xl shadow-xl hover:bg-indigo-700 transition-all transform hover:-translate-y-1 active:scale-95"
+            className="px-8 py-4 bg-indigo-600 text-white font-bold rounded-lg shadow-xl hover:bg-indigo-700 transition-all transform hover:-translate-y-1 active:scale-95"
           >
             Run AI Risk Inquiry
           </button>
@@ -876,7 +876,7 @@ export function AIRiskID() {
       )}
 
       {loading && (
-        <div className="bg-white border border-slate-200 rounded-2xl p-16 flex flex-col items-center justify-center shadow-sm">
+        <div className="bg-white border border-slate-200 rounded-lg p-16 flex flex-col items-center justify-center shadow-sm">
           <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-6" />
           <h3 className="text-lg font-black text-slate-900">
             Identifying potential threats...
@@ -908,7 +908,7 @@ export function AIRiskID() {
               <div
                 key={r.id}
                 className={clsx(
-                  "group relative bg-white border rounded-2xl transition-all duration-300",
+                  "group relative bg-white border rounded-lg transition-all duration-300",
                   isAccepted
                     ? "border-emerald-500 bg-emerald-50/20"
                     : isRejected
@@ -918,15 +918,15 @@ export function AIRiskID() {
               >
                 {/* Status Indicator Bar */}
                 {isAccepted && (
-                  <div className="absolute top-0 bottom-0 left-0 w-1.5 bg-emerald-500 rounded-l-2xl" />
+                  <div className="absolute top-0 bottom-0 left-0 w-1.5 bg-emerald-500 rounded-l-lg" />
                 )}
                 {isRejected && (
-                  <div className="absolute top-0 bottom-0 left-0 w-1.5 bg-rose-500 rounded-l-2xl" />
+                  <div className="absolute top-0 bottom-0 left-0 w-1.5 bg-rose-500 rounded-l-lg" />
                 )}
                 {!isAccepted && !isRejected && (
                   <div
                     className={clsx(
-                      "absolute top-0 bottom-0 left-0 w-1.5 rounded-l-2xl",
+                      "absolute top-0 bottom-0 left-0 w-1.5 rounded-l-lg",
                       r.grossRating >= 16 ? "bg-rose-500" : "bg-orange-500",
                     )}
                   />
@@ -1027,7 +1027,7 @@ export function AIRiskID() {
                             onClick={() =>
                               setAcceptedIds([...acceptedIds, r.id])
                             }
-                            className="p-2.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl transition-all border border-emerald-200/50 shadow-sm flex items-center gap-2 group/btn"
+                            className="p-2.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg transition-all border border-emerald-200/50 shadow-sm flex items-center gap-2 group/btn"
                           >
                             <Check className="w-5 h-5" />
                           </button>
@@ -1035,7 +1035,7 @@ export function AIRiskID() {
                             onClick={() =>
                               setRejectedIds([...rejectedIds, r.id])
                             }
-                            className="p-2.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-all border border-rose-200/50 shadow-sm flex items-center gap-2 group/btn"
+                            className="p-2.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition-all border border-rose-200/50 shadow-sm flex items-center gap-2 group/btn"
                           >
                             <X className="w-5 h-5" />
                           </button>
@@ -1051,7 +1051,7 @@ export function AIRiskID() {
                               rejectedIds.filter((id) => id !== r.id),
                             );
                           }}
-                          className="px-6 py-2.5 bg-white border border-slate-200 text-slate-600 text-sm font-black rounded-xl hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm"
+                          className="px-6 py-2.5 bg-white border border-slate-200 text-slate-600 text-sm font-black rounded-lg hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm"
                         >
                           <X className="w-4 h-4 text-slate-400" /> Reset
                           Selection
@@ -1059,7 +1059,7 @@ export function AIRiskID() {
                       )}
                       <button
                         onClick={toggleExpanded}
-                        className="p-2.5 hover:bg-slate-100 text-slate-400 hover:text-indigo-600 rounded-xl transition-all"
+                        className="p-2.5 hover:bg-slate-100 text-slate-400 hover:text-indigo-600 rounded-lg transition-all"
                       >
                         {isExpanded ? (
                           <ChevronUp className="w-5 h-5" />
@@ -1074,7 +1074,7 @@ export function AIRiskID() {
                   {isExpanded && (
                     <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-slate-100 animate-in fade-in slide-in-from-top-2 duration-300">
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-                        <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
+                        <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
                             Likelihood
                           </p>
@@ -1082,7 +1082,7 @@ export function AIRiskID() {
                             {r.grossL} — {getProbLabel(r.grossL)}
                           </p>
                         </div>
-                        <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
+                        <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
                             Impact
                           </p>
@@ -1090,7 +1090,7 @@ export function AIRiskID() {
                             {r.grossI} — {getImpactLabel(r.grossI)}
                           </p>
                         </div>
-                        <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
+                        <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
                             Gross Score
                           </p>
@@ -1103,7 +1103,7 @@ export function AIRiskID() {
                             {r.grossRating} — {ratingLabel}
                           </p>
                         </div>
-                        <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
+                        <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
                             Risk Response
                           </p>
@@ -1111,7 +1111,7 @@ export function AIRiskID() {
                             {stripMarkdown(r.response || "Reduce")}
                           </p>
                         </div>
-                        <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
+                        <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
                             Owner
                           </p>
@@ -1119,7 +1119,7 @@ export function AIRiskID() {
                             {stripMarkdown(r.owner || "Project Manager")}
                           </p>
                         </div>
-                        <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
+                        <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
                             Workstream
                           </p>
@@ -1127,7 +1127,7 @@ export function AIRiskID() {
                             {stripMarkdown(r.workstream || "General Safety")}
                           </p>
                         </div>
-                        <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
+                        <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
                             Net Score (Est.)
                           </p>
@@ -1136,7 +1136,7 @@ export function AIRiskID() {
                             {getRatingLabel(r.residualRating)}
                           </p>
                         </div>
-                        <div className="bg-slate-50 border border-slate-100 rounded-xl p-3">
+                        <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
                             Review Freq.
                           </p>
@@ -1152,7 +1152,7 @@ export function AIRiskID() {
                             onClick={() =>
                               setAcceptedIds([...acceptedIds, r.id])
                             }
-                            className="w-full sm:w-auto justify-center px-4 sm:px-8 py-2.5 sm:py-3 bg-white border-2 border-slate-200 text-slate-900 text-sm font-black rounded-xl hover:bg-slate-50 transition-all flex items-center gap-2.5"
+                            className="w-full sm:w-auto justify-center px-4 sm:px-8 py-2.5 sm:py-3 bg-white border-2 border-slate-200 text-slate-900 text-sm font-black rounded-lg hover:bg-slate-50 transition-all flex items-center gap-2.5"
                           >
                             <Check className="w-5 h-5 text-emerald-500" />{" "}
                             Accept
@@ -1161,7 +1161,7 @@ export function AIRiskID() {
                             onClick={() =>
                               setRejectedIds([...rejectedIds, r.id])
                             }
-                            className="w-full sm:w-auto justify-center px-4 sm:px-8 py-2.5 sm:py-3 bg-white border-2 border-slate-200 text-slate-900 text-sm font-black rounded-xl hover:bg-slate-50 transition-all flex items-center gap-2.5"
+                            className="w-full sm:w-auto justify-center px-4 sm:px-8 py-2.5 sm:py-3 bg-white border-2 border-slate-200 text-slate-900 text-sm font-black rounded-lg hover:bg-slate-50 transition-all flex items-center gap-2.5"
                           >
                             <X className="w-5 h-5 text-rose-500" /> Reject
                           </button>
@@ -1170,7 +1170,7 @@ export function AIRiskID() {
                               setEditingRisk(r);
                               setIsModalOpen(true);
                             }}
-                            className="w-full sm:w-auto justify-center px-4 sm:px-8 py-2.5 sm:py-3 bg-white border-2 border-slate-200 text-slate-900 text-sm font-black rounded-xl hover:bg-slate-50 transition-all flex items-center gap-2.5"
+                            className="w-full sm:w-auto justify-center px-4 sm:px-8 py-2.5 sm:py-3 bg-white border-2 border-slate-200 text-slate-900 text-sm font-black rounded-lg hover:bg-slate-50 transition-all flex items-center gap-2.5"
                           >
                             <Edit3 className="w-5 h-5 text-indigo-500" /> Edit
                             before accepting
@@ -1198,7 +1198,7 @@ export function AIRiskID() {
                       (fromInitiation ? "?from=initiation" : ""),
                   )
                 }
-                className="shrink-0 flex items-center gap-1 sm:gap-2 px-3 py-2 sm:px-4 hover:bg-slate-100 rounded-xl text-slate-600 text-[10px] sm:text-sm font-bold transition-all"
+                className="shrink-0 flex items-center gap-1 sm:gap-2 px-3 py-2 sm:px-4 hover:bg-slate-100 rounded-lg text-slate-600 text-[10px] sm:text-sm font-bold transition-all"
               >
                 <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />{" "}
                 <span className="hidden sm:inline">Back</span>
@@ -1240,7 +1240,7 @@ export function AIRiskID() {
                   isAcceptingAll ||
                   isFinalizing
                 }
-                className="flex-1 sm:flex-none justify-center px-2 sm:px-6 py-2.5 sm:py-3 bg-white border-2 border-slate-200 text-slate-900 text-[10px] sm:text-sm font-black rounded-xl hover:bg-slate-50 transition-all flex items-center gap-1 sm:gap-2 disabled:opacity-50 disabled:cursor-not-allowed break-words text-center"
+                className="flex-1 sm:flex-none justify-center px-2 sm:px-6 py-2.5 sm:py-3 bg-white border-2 border-slate-200 text-slate-900 text-[10px] sm:text-sm font-black rounded-lg hover:bg-slate-50 transition-all flex items-center gap-1 sm:gap-2 disabled:opacity-50 disabled:cursor-not-allowed break-words text-center"
               >
                 {isAcceptingAll ? (
                   <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-500 shrink-0 animate-spin" />
@@ -1255,7 +1255,7 @@ export function AIRiskID() {
               <button
                 onClick={() => finalize()}
                 disabled={isFinalizing || isAcceptingAll}
-                className="flex-1 sm:flex-none justify-center px-2 sm:px-8 py-2.5 sm:py-3 bg-slate-900 text-white text-[10px] sm:text-sm font-black rounded-xl hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/40 active:scale-95 flex items-center gap-1.5 sm:gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed break-words text-center leading-tight"
+                className="flex-1 sm:flex-none justify-center px-2 sm:px-8 py-2.5 sm:py-3 bg-slate-900 text-white text-[10px] sm:text-sm font-black rounded-lg hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/40 active:scale-95 flex items-center gap-1.5 sm:gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed break-words text-center leading-tight"
               >
                 {isFinalizing ? (
                   <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-400 shrink-0 animate-spin" />

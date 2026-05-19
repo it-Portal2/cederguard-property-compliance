@@ -292,7 +292,7 @@ export function GovernanceArchivePage() {
     >
       <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-6">
         <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
             <ScrollText className="h-5 w-5" strokeWidth={2.25} />
           </div>
           <div>

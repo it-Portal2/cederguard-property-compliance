@@ -380,7 +380,7 @@ export function Projects() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto min-h-screen pt-4 pb-24 md:pb-6 px-4 md:px-6">
+    <div>
       <div className="flex flex-col md:flex-row gap-8">
         {/* ── MOBILE FILTERS BUTTON ── */}
         {/* ── MOBILE STICKY HEADER ── */}
@@ -402,14 +402,14 @@ export function Projects() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => { exportProjectsCSV(filtered, programmes); toast.success(`Exported ${filtered.length} projects to CSV`); }}
-                className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-700 shadow-sm transition-transform active:scale-95"
+                className="p-2.5 bg-white border border-slate-200 rounded-lg text-slate-700 shadow-sm transition-transform active:scale-95"
                 title="Export CSV"
               >
                 <Download className="w-4 h-4 text-slate-400" />
               </button>
               <button
                 onClick={() => setShowFilters(true)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-700 shadow-sm transition-transform active:scale-95"
+                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-xs font-black text-slate-700 shadow-sm transition-transform active:scale-95"
               >
                 <Filter className="w-3.5 h-3.5 text-indigo-500" />
                 Filters
@@ -460,7 +460,7 @@ export function Projects() {
                 <div className="p-4 border-t border-slate-100 bg-slate-50">
                   <button
                     onClick={() => setShowFilters(false)}
-                    className="w-full py-3 bg-slate-900 text-white font-bold rounded-xl shadow-lg shadow-slate-200 text-sm active:scale-95 transition-transform"
+                    className="w-full py-3 bg-slate-900 text-white font-bold rounded-lg shadow-lg shadow-slate-200 text-sm active:scale-95 transition-transform"
                   >
                     Show {total} Projects
                   </button>
@@ -519,7 +519,7 @@ export function Projects() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => { exportProjectsCSV(filtered, programmes); toast.success(`Exported ${filtered.length} projects to CSV`); }}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
+                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
               >
                 <Download className="w-4 h-4 text-slate-400" /> Export CSV
               </button>
@@ -530,7 +530,7 @@ export function Projects() {
                     setActiveProgramme(null);
                     navigate("/projects/new");
                   }}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white text-xs font-bold rounded-xl hover:bg-slate-800 transition-all shadow-lg shadow-slate-200"
+                  className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800 transition-all shadow-lg shadow-slate-200"
                 >
                   <Plus className="w-4 h-4" /> Create Project
                 </button>
@@ -560,7 +560,7 @@ export function Projects() {
             ].map(({ label, value, color }) => (
               <div
                 key={label}
-                className="bg-white border border-slate-200 rounded-xl p-4 text-center md:text-left"
+                className="bg-white border border-slate-200 rounded-lg p-4 text-center md:text-left"
               >
                 <p className={clsx("text-xl font-black truncate", color)}>
                   {value}
@@ -575,8 +575,8 @@ export function Projects() {
           {/* Project Cards */}
           <div className="space-y-3">
             {filtered.length === 0 ? (
-              <div className="bg-white border border-slate-200 rounded-2xl p-16 flex flex-col items-center text-center">
-                <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center mb-4">
+              <div className="bg-white border border-slate-200 rounded-lg p-16 flex flex-col items-center text-center">
+                <div className="w-14 h-14 bg-slate-50 rounded-lg flex items-center justify-center mb-4">
                   <Building2 className="w-7 h-7 text-slate-300" />
                 </div>
                 <h3 className="text-base font-bold text-slate-800">
@@ -604,7 +604,7 @@ export function Projects() {
                   <div
                     key={project.id}
                     className={clsx(
-                      "bg-white border rounded-2xl shadow-sm transition-all duration-200 hover:shadow-md hover:border-indigo-200 overflow-hidden",
+                      "bg-white border rounded-lg shadow-sm transition-all duration-200 hover:shadow-md hover:border-indigo-200 overflow-hidden",
                       isActive
                         ? "border-indigo-300 ring-1 ring-indigo-200"
                         : "border-slate-200",
@@ -773,7 +773,7 @@ export function Projects() {
       {/* Delete Confirmation Modal */}
       {deleteModal?.open && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-300">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-300">
             <div className="px-6 py-5 border-b border-slate-100 bg-rose-50/50">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-600">
@@ -801,14 +801,14 @@ export function Projects() {
                 <button
                   onClick={() => setDeleteModal(null)}
                   disabled={isDeleting}
-                  className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-xs font-black uppercase hover:bg-slate-50 transition-colors tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-lg text-xs font-black uppercase hover:bg-slate-50 transition-colors tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={confirmDeleteProject}
                   disabled={isDeleting}
-                  className="flex-1 px-4 py-2.5 bg-rose-600 text-white rounded-xl text-xs font-black uppercase hover:bg-rose-700 transition-all shadow-lg shadow-rose-200 tracking-widest disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2.5 bg-rose-600 text-white rounded-lg text-xs font-black uppercase hover:bg-rose-700 transition-all shadow-lg shadow-rose-200 tracking-widest disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isDeleting && (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -824,7 +824,7 @@ export function Projects() {
       {/* Archive/Unarchive Confirmation Modal */}
       {archiveModal?.open && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-300">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-300">
             <div
               className={clsx(
                 "px-6 py-5 border-b border-slate-100",
@@ -881,7 +881,7 @@ export function Projects() {
                 <button
                   onClick={() => setArchiveModal(null)}
                   disabled={isArchiving}
-                  className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-xs font-black uppercase hover:bg-slate-50 transition-colors tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-lg text-xs font-black uppercase hover:bg-slate-50 transition-colors tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
@@ -889,7 +889,7 @@ export function Projects() {
                   onClick={confirmArchiveProject}
                   disabled={isArchiving}
                   className={clsx(
-                    "flex-1 px-4 py-2.5 text-white rounded-xl text-xs font-black uppercase transition-all shadow-lg tracking-widest disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2",
+                    "flex-1 px-4 py-2.5 text-white rounded-lg text-xs font-black uppercase transition-all shadow-lg tracking-widest disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2",
                     archiveModal.isArchived
                       ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200"
                       : "bg-amber-600 hover:bg-amber-700 shadow-amber-200",
@@ -923,7 +923,7 @@ export function Projects() {
             placeholder="Search projects..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-8 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all shadow-sm"
+            className="w-full pl-8 pr-3 py-2.5 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all shadow-sm"
           />
         </div>
 
@@ -1044,7 +1044,7 @@ export function Projects() {
                 key={r}
                 onClick={() => setRagFilter(r)}
                 className={clsx(
-                  "flex items-center gap-2 px-2.5 py-2 rounded-xl text-[11px] font-bold border transition-all duration-300",
+                  "flex items-center gap-2 px-2.5 py-2 rounded-lg text-[11px] font-bold border transition-all duration-300",
                   ragFilter === r
                     ? "bg-white border-slate-900 text-slate-900 shadow-sm scale-[1.02]"
                     : "bg-slate-50/50 border-transparent text-slate-400 hover:bg-white hover:border-slate-200 hover:text-slate-600 hover:shadow-md hover:-translate-y-0.5 active:scale-95",

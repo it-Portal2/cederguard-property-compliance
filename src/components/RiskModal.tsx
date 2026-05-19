@@ -446,7 +446,7 @@ h-full + max-h cap so it never exceeds viewport
 flex-col with min-h-0 on children → header/footer fixed, middle scrolls
 overflow-hidden on the shell prevents any internal element bleeding out
       */}
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl h-full max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2rem)] md:max-h-[90vh] flex flex-col overflow-hidden">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl h-full max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2rem)] md:max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header — fixed, never scrolls*/}
         <div className="flex items-start justify-between gap-3 p-4 sm:p-6 border-b border-slate-100 shrink-0">
           <div className="min-w-0 flex-1">
@@ -496,7 +496,7 @@ We removed the disabled <fieldset> wrapping (it killed scrolling while saving)
             {(formData.escalated || formData.convertedToIssue) && (
               <div className="space-y-2">
                 {formData.escalated && (
-                  <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800">
+                  <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800">
                     <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5" />
                     <div className="text-xs font-bold leading-tight min-w-0">
                       <span className="uppercase tracking-widest block mb-0.5">
@@ -511,7 +511,7 @@ We removed the disabled <fieldset> wrapping (it killed scrolling while saving)
                   </div>
                 )}
                 {formData.convertedToIssue && (
-                  <div className="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-xl text-red-800">
+                  <div className="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-lg text-red-800">
                     <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
                     <div className="text-xs font-bold leading-tight min-w-0">
                       <span className="uppercase tracking-widest block mb-0.5">
@@ -731,7 +731,7 @@ We removed the disabled <fieldset> wrapping (it killed scrolling while saving)
                 )}
               </div>
 
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 sm:p-5 mb-6">
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 sm:p-5 mb-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                   {/* Gross*/}
                   <div className="min-w-0">
@@ -1060,7 +1060,7 @@ We removed the disabled <fieldset> wrapping (it killed scrolling while saving)
 
                   <div className="space-y-2 mb-4">
                     {riskActions.length === 0 ? (
-                      <div className="text-center py-6 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                      <div className="text-center py-6 bg-slate-50 rounded-lg border border-dashed border-slate-200">
                         <p className="text-xs text-slate-400">
                           No actions defined for this risk yet.
                         </p>
@@ -1069,7 +1069,7 @@ We removed the disabled <fieldset> wrapping (it killed scrolling while saving)
                       riskActions.map((action) => (
                         <div
                           key={action.id}
-                          className="group flex items-start justify-between gap-3 bg-white border border-slate-200 p-3 rounded-xl hover:border-indigo-200 transition-all shadow-sm"
+                          className="group flex items-start justify-between gap-3 bg-white border border-slate-200 p-3 rounded-lg hover:border-indigo-200 transition-all shadow-sm"
                         >
                           <div className="flex items-start gap-3 min-w-0 flex-1">
                             <button
@@ -1130,7 +1130,7 @@ We removed the disabled <fieldset> wrapping (it killed scrolling while saving)
                     )}
 
                     {isAddingAction && (
-                      <div className="bg-white border-2 border-indigo-100 p-4 rounded-xl shadow-md animate-in slide-in-from-top-2 duration-200">
+                      <div className="bg-white border-2 border-indigo-100 p-4 rounded-lg shadow-md animate-in slide-in-from-top-2 duration-200">
                         <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
                           <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">
                             New Action
@@ -1316,11 +1316,11 @@ We removed the disabled <fieldset> wrapping (it killed scrolling while saving)
         </div>
 
         {/* Footer — fixed, never scrolls*/}
-        <div className="p-4 sm:p-6 border-t border-slate-100 bg-slate-50 rounded-b-2xl flex justify-end gap-3 shrink-0">
+        <div className="p-4 sm:p-6 border-t border-slate-100 bg-slate-50 rounded-b-lg flex justify-end gap-3 shrink-0">
           <button
             onClick={onClose}
             disabled={isSaving}
-            className="px-4 sm:px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 sm:px-5 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel
           </button>
@@ -1331,7 +1331,7 @@ We removed the disabled <fieldset> wrapping (it killed scrolling while saving)
               isSaving ||
               (!!formData.escalated && !formData.programmeId)
             }
-            className="px-4 sm:px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center gap-2"
+            className="px-4 sm:px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center gap-2"
           >
             {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
             {isSaving ? "Saving..." : "Save Risk"}

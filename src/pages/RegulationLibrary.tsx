@@ -81,7 +81,7 @@ function RegulationCard({ item, catIdx, regIdx }: { item: any; catIdx: number; r
 
   return (
     <div className={clsx(
-      "bg-white border rounded-xl overflow-hidden transition-all",
+      "bg-white border rounded-lg overflow-hidden transition-all",
       isExpanded ? "border-indigo-500 md:ring-4 md:ring-indigo-500/10 shadow-lg" : "border-slate-200 hover:bg-slate-50/50 shadow-sm"
     )}>
       <div 
@@ -199,7 +199,7 @@ function RegulationCard({ item, catIdx, regIdx }: { item: any; catIdx: number; r
                       ))}
                     </div>
                   </div>
-                  <div className="bg-slate-100/50 rounded-xl p-4 border border-slate-200/50">
+                  <div className="bg-slate-100/50 rounded-lg p-4 border border-slate-200/50">
                     <div className="flex items-center gap-2 mb-2">
                        <ShieldCheck className="w-3.5 h-3.5 text-indigo-500" />
                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Contextual AI Insight</div>
@@ -229,7 +229,7 @@ function RegulationCard({ item, catIdx, regIdx }: { item: any; catIdx: number; r
                 </div>
 
                 {isAddingUpdate && (
-                  <div className="mb-6 bg-white border border-indigo-200 rounded-xl p-4 shadow-sm">
+                  <div className="mb-6 bg-white border border-indigo-200 rounded-lg p-4 shadow-sm">
                     <textarea
                       placeholder="Describe the regulatory update or change..."
                       className="w-full h-24 p-3 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all resize-none mb-3"
@@ -417,11 +417,11 @@ export function RegulationLibrary() {
         {/* AI Quick Inquiry */}
         <button 
           onClick={() => setIsAIInquiryOpen(true)}
-          className="w-full group relative overflow-hidden bg-gradient-to-br from-indigo-600 to-violet-700 p-[1px] rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-indigo-500/20"
+          className="w-full group relative overflow-hidden bg-gradient-to-br from-indigo-600 to-violet-700 p-[1px] rounded-lg transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-indigo-500/20"
         >
-          <div className="bg-white/10 backdrop-blur-xl px-4 py-4 rounded-[15px] flex items-center justify-between">
+          <div className="bg-white/10 backdrop-blur-xl px-4 py-4 rounded-lg flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shadow-inner">
+              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center shadow-inner">
                 <ShieldCheck className="w-5 h-5 text-white animate-pulse" />
               </div>
               <div className="text-left">
@@ -441,7 +441,7 @@ export function RegulationLibrary() {
           <input 
             type="search" 
             placeholder="Search regulations..." 
-            className="w-full pl-8 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all shadow-sm"
+            className="w-full pl-8 pr-3 py-2.5 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all shadow-sm"
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
@@ -491,7 +491,7 @@ export function RegulationLibrary() {
         </div>
 
         {/* Legend / Info Block */}
-        <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+        <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Compliance Key</p>
           <div className="space-y-2.5">
             {[
@@ -514,7 +514,7 @@ export function RegulationLibrary() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto min-h-screen pt-4 pb-24 lg:pb-6 px-4 lg:px-6">
+    <div>
       <div className="flex flex-col lg:flex-row gap-8">
         
         {/* MOBILE STICKY HEADER */}
@@ -532,7 +532,7 @@ export function RegulationLibrary() {
               {isPM && (
                 <button
                   onClick={() => setIsAddModalOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-black shadow-sm transition-transform active:scale-95"
+                  className="flex items-center gap-1.5 px-3 py-2.5 bg-indigo-600 text-white rounded-lg text-xs font-black shadow-sm transition-transform active:scale-95"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   Add
@@ -540,7 +540,7 @@ export function RegulationLibrary() {
               )}
               <button
                 onClick={() => setShowFilters(true)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-700 shadow-sm transition-transform active:scale-95"
+                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-xs font-black text-slate-700 shadow-sm transition-transform active:scale-95"
               >
                 <Filter className="w-3.5 h-3.5 text-indigo-500" />
                 Filters
@@ -589,7 +589,7 @@ export function RegulationLibrary() {
                 <div className="p-4 border-t border-slate-100 bg-slate-50">
                   <button
                     onClick={() => setShowFilters(false)}
-                    className="w-full py-3 bg-slate-900 text-white font-bold rounded-xl shadow-lg shadow-slate-200 text-sm active:scale-95 transition-transform"
+                    className="w-full py-3 bg-slate-900 text-white font-bold rounded-lg shadow-lg shadow-slate-200 text-sm active:scale-95 transition-transform"
                   >
                     Show {filteredItems.length} Regulations
                   </button>
@@ -644,14 +644,14 @@ export function RegulationLibrary() {
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
+              <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-2 rounded-lg border border-slate-100">
                 <Clock className="w-3.5 h-3.5" />
                 Last Updated: {stats.lastUpdate ? format(stats.lastUpdate, 'dd/MM/yy') : format(new Date(), 'dd/MM/yy')}
               </div>
               {isPM && (
                  <button 
                    onClick={() => setIsAddModalOpen(true)}
-                   className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-[11px] font-black uppercase tracking-widest rounded-xl hover:bg-indigo-700 transition-all shadow-md active:scale-95"
+                   className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-[11px] font-black uppercase tracking-widest rounded-lg hover:bg-indigo-700 transition-all shadow-md active:scale-95"
                  >
                    <Plus className="w-3.5 h-3.5" />
                    Manual Entry
@@ -695,8 +695,8 @@ export function RegulationLibrary() {
           {/* List */}
           <div className="space-y-3">
             {filteredItems.length === 0 ? (
-              <div className="bg-white border border-slate-200 rounded-2xl p-16 flex flex-col items-center text-center">
-                <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center mb-4">
+              <div className="bg-white border border-slate-200 rounded-lg p-16 flex flex-col items-center text-center">
+                <div className="w-14 h-14 bg-slate-50 rounded-lg flex items-center justify-center mb-4">
                   <AlertCircle className="w-7 h-7 text-slate-300" />
                 </div>
                 <h3 className="text-base font-bold text-slate-800">No regulations found</h3>
@@ -738,7 +738,7 @@ export function RegulationLibrary() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh] mx-2 md:mx-0"
+              className="relative w-full max-w-xl bg-white rounded-lg shadow-2xl flex flex-col overflow-hidden max-h-[90vh] mx-2 md:mx-0"
             >
               <div className="px-4 md:px-6 py-3 md:py-4 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
                 <div>
@@ -755,7 +755,7 @@ export function RegulationLibrary() {
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Category</label>
                     <select 
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all"
                       value={newReg.cat}
                       onChange={e => setNewReg({ ...newReg, cat: e.target.value })}
                     >
@@ -766,7 +766,7 @@ export function RegulationLibrary() {
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Risk Level</label>
                     <select 
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all"
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all"
                       value={newReg.risk}
                       onChange={e => setNewReg({ ...newReg, risk: e.target.value })}
                     >
@@ -783,7 +783,7 @@ export function RegulationLibrary() {
                   <input 
                     type="text"
                     placeholder="e.g. Building Safety Act 2022 Section 1"
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all"
                     value={newReg.name}
                     onChange={e => setNewReg({ ...newReg, name: e.target.value })}
                   />
@@ -794,7 +794,7 @@ export function RegulationLibrary() {
                   <input 
                     type="text"
                     placeholder="e.g. BSA2022"
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all"
                     value={newReg.reg}
                     onChange={e => setNewReg({ ...newReg, reg: e.target.value })}
                   />
@@ -820,7 +820,7 @@ export function RegulationLibrary() {
                   </div>
                   <textarea 
                     placeholder="Detail exactly what is required for compliance..."
-                    className="w-full h-24 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all resize-none"
+                    className="w-full h-24 px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all resize-none"
                     value={newReg.req}
                     onChange={e => setNewReg({ ...newReg, req: e.target.value })}
                   />
@@ -831,7 +831,7 @@ export function RegulationLibrary() {
                   <input 
                     type="text"
                     placeholder="e.g. Fines up to £10m, stop notices"
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all"
                     value={newReg.penalty}
                     onChange={e => setNewReg({ ...newReg, penalty: e.target.value })}
                   />
@@ -841,7 +841,7 @@ export function RegulationLibrary() {
               <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 px-6 sticky bottom-0">
                 <button 
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-5 py-2.5 text-xs font-bold text-slate-500 hover:bg-white rounded-xl transition-all"
+                  className="px-5 py-2.5 text-xs font-bold text-slate-500 hover:bg-white rounded-lg transition-all"
                 >
                   Cancel
                 </button>
@@ -878,7 +878,7 @@ export function RegulationLibrary() {
                     }
                   }}
                   disabled={isSavingEntry || !newReg.name || !newReg.req}
-                  className="px-6 py-2.5 bg-indigo-600 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-6 py-2.5 bg-indigo-600 text-white text-xs font-black uppercase tracking-widest rounded-lg hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {isSavingEntry && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   {isSavingEntry ? 'Saving...' : 'Confirm Entry'}

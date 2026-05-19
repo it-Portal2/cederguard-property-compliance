@@ -23,7 +23,7 @@ export function ComplianceAlerts() {
 
     if (!complianceAnalysis) {
         return (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center max-w-2xl mx-auto mt-12">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 text-center max-w-2xl mx-auto mt-12">
                 <AlertTriangle className="w-12 h-12 text-amber-400 mx-auto mb-3" />
                 <h3 className="text-lg font-bold text-amber-800 mb-2">Setup Required</h3>
                 <p className="text-sm text-amber-700 mb-4">
@@ -107,14 +107,14 @@ export function ComplianceAlerts() {
     };
 
     return (
-        <div className="space-y-6 max-w-[1200px] mx-auto pb-12">
+        <div className="space-y-6">
             <div>
                 <h1 className="text-2xl font-bold text-slate-900">Compliance Alerts & Breaches</h1>
                 <p className="text-sm text-slate-500 mt-1">Smart categorization of open compliance tasks requiring attention.</p>
             </div>
 
             {groups.length === 0 ? (
-                <div className="flex flex-col items-center justify-center p-16 bg-white border border-slate-200 rounded-2xl shadow-sm">
+                <div className="flex flex-col items-center justify-center p-16 bg-white border border-slate-200 rounded-lg shadow-sm">
                     <CheckCircle2 className="w-16 h-16 text-emerald-400 mb-4" />
                     <h2 className="text-xl font-bold text-slate-800">All Clear!</h2>
                     <p className="text-slate-500 mt-2">No active compliance alerts found.</p>
@@ -122,7 +122,7 @@ export function ComplianceAlerts() {
             ) : (
                 <div className="space-y-8">
                     {groups.map(group => (
-                        <div key={group.id} className="bg-white border text-sm rounded-2xl shadow-sm overflow-hidden">
+                        <div key={group.id} className="bg-white border text-sm rounded-lg shadow-sm overflow-hidden">
                             <div className={clsx("px-5 py-4 border-b flex items-center justify-between", colors[group.color as keyof typeof colors])}>
                                 <div className="flex items-center gap-3">
                                     <span className={clsx("w-2 h-2 rounded-full", badgeColors[group.color as keyof typeof badgeColors])} />
@@ -139,7 +139,7 @@ export function ComplianceAlerts() {
                                 {group.items.map(item => {
                                     const dom = DOMAINS.find(d => d.id === item.domain);
                                     return (
-                                        <div key={item.id} className="p-4 hover:bg-slate-50 transition-colors flex flex-col md:flex-row gap-4 border border-transparent hover:border-slate-100 rounded-xl m-1">
+                                        <div key={item.id} className="p-4 hover:bg-slate-50 transition-colors flex flex-col md:flex-row gap-4 border border-transparent hover:border-slate-100 rounded-lg m-1">
                                             <div className="flex-1 space-y-3">
                                                 <div className="flex items-center gap-3">
                                                     <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-widest uppercase" style={{ backgroundColor: `${dom?.color}15`, color: dom?.color, border: `1px solid ${dom?.color}30` }}>

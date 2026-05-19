@@ -133,7 +133,7 @@ export function TextInputDialog({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.98 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="w-[min(440px,94vw)] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-800"
+            className="w-[min(440px,94vw)] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-800"
           >
             <div className="flex items-start gap-3 px-5 py-4">
               <span

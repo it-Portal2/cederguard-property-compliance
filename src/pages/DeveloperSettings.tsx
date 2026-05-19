@@ -85,7 +85,7 @@ export function DeveloperSettings() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto pb-12">
+    <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-slate-900">Developer Settings</h1>
         <p className="text-slate-500 mt-1">Manage API keys to securely access the platform's API</p>

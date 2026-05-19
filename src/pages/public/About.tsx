@@ -37,9 +37,9 @@ export const About: React.FC = () => {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: idx * 0.1 }}
-                            className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-white/5 rounded-[2rem] p-10 backdrop-blur-xl hover:bg-slate-100 dark:hover:bg-slate-900/60 hover:border-cyan-500/30 transition-all duration-500 group shadow-sm hover:shadow-xl dark:shadow-none"
+                            className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-white/5 rounded-lg p-10 backdrop-blur-xl hover:bg-slate-100 dark:hover:bg-slate-900/60 hover:border-cyan-500/30 transition-all duration-500 group shadow-sm hover:shadow-xl dark:shadow-none"
                         >
-                            <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center mb-8 border border-slate-200 dark:border-white/5 group-hover:scale-110 transition-transform duration-500">
+                            <div className="w-16 h-16 rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center mb-8 border border-slate-200 dark:border-white/5 group-hover:scale-110 transition-transform duration-500">
                                 <item.icon className="w-8 h-8" />
                             </div>
                             <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-6 tracking-tight">{item.title}</h3>
@@ -52,7 +52,7 @@ export const About: React.FC = () => {
                     initial={{ opacity: 0, scale: 0.95 }}
                     whileInView={{ opacity: 1, scale: 1 }}
                     viewport={{ once: true }}
-                    className="mt-40 p-16 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 rounded-[3rem] backdrop-blur-sm relative overflow-hidden text-center transition-all duration-500 shadow-sm"
+                    className="mt-40 p-16 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 rounded-lg backdrop-blur-sm relative overflow-hidden text-center transition-all duration-500 shadow-sm"
                 >
                     <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-transparent pointer-events-none" />
                     <h2 className="text-4xl font-bold text-slate-900 dark:text-white mb-8 tracking-tight">Our Values</h2>

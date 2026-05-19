@@ -112,7 +112,7 @@ export function ReviewerPickerModal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.98, y: 8 }}
           transition={{ duration: 0.15 }}
-          className="flex max-h-[80vh] w-full max-w-md flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+          className="flex max-h-[80vh] w-full max-w-md flex-col overflow-hidden rounded-lg bg-white shadow-2xl"
         >
           <header className="flex items-center justify-between gap-3 border-b border-slate-200 px-5 py-3">
             <div className="flex items-center gap-2.5">

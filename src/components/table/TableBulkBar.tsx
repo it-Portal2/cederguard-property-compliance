@@ -24,7 +24,7 @@ export default function TableBulkBar<T>({
       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50"
     >
-      <div className="bg-slate-900 dark:bg-slate-800 text-white px-8 py-4 rounded-[2rem] shadow-2xl flex items-center gap-6 border border-white/10 backdrop-blur-xl">
+      <div className="bg-slate-900 dark:bg-slate-800 text-white px-8 py-4 rounded-lg shadow-2xl flex items-center gap-6 border border-white/10 backdrop-blur-xl">
         <span className="text-[11px] font-semibold text-slate-300">
           {selectedCount} selected
         </span>
@@ -39,7 +39,7 @@ export default function TableBulkBar<T>({
                 key={action.key}
                 onClick={() => onAction(action)}
                 className={clsx(
-                  'flex items-center gap-2 px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-150 active:scale-95',
+                  'flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-150 active:scale-95',
                   action.isDanger
                     ? 'bg-rose-600/80 hover:bg-rose-600 text-white'
                     : 'bg-white/10 hover:bg-white/20 text-white'

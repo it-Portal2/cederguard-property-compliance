@@ -137,7 +137,7 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
             </div>
 
             {isAdding && (
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 animate-in fade-in slide-in-from-top-2">
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 animate-in fade-in slide-in-from-top-2">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div className="col-span-2 md:col-span-1">
                             <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Milestone Name</label>
@@ -221,7 +221,7 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
             )}
 
             {sortedMilestones.length === 0 && !isAdding ? (
-                <div className="text-center py-8 bg-slate-50 border border-slate-200 border-dashed rounded-xl">
+                <div className="text-center py-8 bg-slate-50 border border-slate-200 border-dashed rounded-lg">
                     <Calendar className="w-8 h-8 text-slate-300 mx-auto mb-2" />
                     <p className="text-xs font-bold text-slate-500 text-center">No milestones mapped yet.</p>
                 </div>
@@ -234,7 +234,7 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
 
                         if (isEditing) {
                             return (
-                                <div key={m.id} className="bg-white border-2 border-indigo-500 rounded-xl p-4 shadow-sm relative">
+                                <div key={m.id} className="bg-white border-2 border-indigo-500 rounded-lg p-4 shadow-sm relative">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                         <div className="col-span-2 md:col-span-1">
                                             <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Name</label>
@@ -315,7 +315,7 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
 
                         return (
                             <div key={m.id} className="flex flex-col gap-0.5 animate-in fade-in slide-in-from-left-2 transition-all">
-                                <div className="bg-white border border-slate-200 rounded-xl p-3 sm:px-4 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 hover:border-slate-300 transition-colors group relative overflow-hidden">
+                                <div className="bg-white border border-slate-200 rounded-lg p-3 sm:px-4 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 hover:border-slate-300 transition-colors group relative overflow-hidden">
                                     {m.isKey && (
                                         <div className="absolute top-0 right-0 w-8 h-8 flex items-center justify-center translate-x-1 -translate-y-1">
                                             <div className="w-full h-full bg-amber-100 rotate-45 flex items-center justify-center">
@@ -324,7 +324,7 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                                         </div>
                                     )}
                                     <div className="flex items-center gap-3">
-                                        <div className={clsx("w-9 h-9 rounded-xl flex flex-col items-center justify-center shrink-0 border border-black/5", statusConfig.bg, statusConfig.text)}>
+                                        <div className={clsx("w-9 h-9 rounded-lg flex flex-col items-center justify-center shrink-0 border border-black/5", statusConfig.bg, statusConfig.text)}>
                                             <span className="text-[10px] font-black uppercase leading-none">{m.stage || 'S?'}</span>
                                             <Calendar className="w-3 h-3 mt-0.5" />
                                         </div>
@@ -396,7 +396,7 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                                 </div>
                                 {isExpanded && m.history && (
                                     <div className="mx-4 sm:mx-12 overflow-hidden animate-in slide-in-from-top-2 duration-300">
-                                        <div className="bg-slate-50 border-x border-b border-slate-200 rounded-b-xl p-3 space-y-2 mt-[-1px]">
+                                        <div className="bg-slate-50 border-x border-b border-slate-200 rounded-b-lg p-3 space-y-2 mt-[-1px]">
                                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-2">Timeline History</p>
                                             <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
                                                 {m.history.map(entry => (
@@ -428,7 +428,7 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
             {/* Delete Confirmation Modal */}
             {deleteConfirmId && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-300">
+                    <div className="bg-white rounded-lg shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-300">
                         <div className="px-6 py-5 border-b border-slate-100 bg-rose-50/50">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-600">
@@ -447,13 +447,13 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                             <div className="pt-5 flex gap-3">
                                 <button
                                     onClick={() => setDeleteConfirmId(null)}
-                                    className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-xs font-black uppercase hover:bg-slate-50 transition-colors tracking-widest"
+                                    className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-lg text-xs font-black uppercase hover:bg-slate-50 transition-colors tracking-widest"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={confirmDelete}
-                                    className="flex-1 px-4 py-2.5 bg-rose-600 text-white rounded-xl text-xs font-black uppercase hover:bg-rose-700 transition-all shadow-lg shadow-rose-200 tracking-widest"
+                                    className="flex-1 px-4 py-2.5 bg-rose-600 text-white rounded-lg text-xs font-black uppercase hover:bg-rose-700 transition-all shadow-lg shadow-rose-200 tracking-widest"
                                 >
                                     Delete
                                 </button>
@@ -466,7 +466,7 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
             {/* Mandatory Comment Modal */}
             {pendingUpdate && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 z-[9999] animate-in fade-in transition-all">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-white/20 overflow-hidden scale-in-center">
+                    <div className="bg-white rounded-lg shadow-2xl w-full max-w-md border border-white/20 overflow-hidden scale-in-center">
                         <div className="p-6 bg-gradient-to-br from-indigo-600 to-indigo-700 text-white relative">
                             <div className="absolute top-0 right-0 p-4 opacity-10">
                                 <History className="w-24 h-24" />
@@ -475,7 +475,7 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                             <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Documentation for Audit Trail</p>
                         </div>
                         <div className="p-6 space-y-6">
-                            <div className="flex items-center justify-between gap-4 p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+                            <div className="flex items-center justify-between gap-4 p-4 bg-indigo-50 rounded-lg border border-indigo-100">
                                 <div className="text-center flex-1">
                                     <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Original Date</p>
                                     <p className="text-sm font-bold text-slate-600">
@@ -503,7 +503,7 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                                     value={comment}
                                     onChange={e => setComment(e.target.value)}
                                     placeholder="Explain why the date was changed (e.g., Planning delays, Material shortage...)"
-                                    className="w-full h-32 p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all resize-none"
+                                    className="w-full h-32 p-4 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all resize-none"
                                 />
                                 <p className="text-[9px] text-slate-400 font-medium mt-2 leading-normal">
                                     This comment is mandatory and will be logged in the permanent milestone history for stakeholder accountability.
@@ -512,14 +512,14 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                             <div className="flex gap-3">
                                 <button
                                     onClick={() => setPendingUpdate(null)}
-                                    className="flex-1 py-3 text-[11px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-100 rounded-xl transition-all"
+                                    className="flex-1 py-3 text-[11px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-100 rounded-lg transition-all"
                                 >
                                     Revert Change
                                 </button>
                                 <button
                                     onClick={() => performUpdate(pendingUpdate.id, pendingUpdate.updates, comment)}
                                     disabled={!comment.trim()}
-                                    className="flex-1 py-3 bg-indigo-600 disabled:bg-slate-300 text-white text-[11px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-indigo-200"
+                                    className="flex-1 py-3 bg-indigo-600 disabled:bg-slate-300 text-white text-[11px] font-black uppercase tracking-widest rounded-lg transition-all shadow-lg shadow-indigo-200"
                                 >
                                     Log & Save
                                 </button>

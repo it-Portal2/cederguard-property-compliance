@@ -279,7 +279,7 @@ export function AttachmentDropzone({
         onDragOver={onDragOver}
         onDragLeave={() => setDragOver(false)}
         className={clsx(
-          "flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed px-4 py-8 text-center transition-colors",
+          "flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-4 py-8 text-center transition-colors",
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40",
           isBusy
             ? "cursor-wait border-slate-200 bg-slate-50 text-slate-400"

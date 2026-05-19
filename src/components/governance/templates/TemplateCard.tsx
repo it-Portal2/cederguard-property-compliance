@@ -32,7 +32,7 @@ export function TemplateCard({
   return (
     <article
       className={clsx(
-        'group flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all',
+        'group flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition-all',
         'hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md',
       )}
     >

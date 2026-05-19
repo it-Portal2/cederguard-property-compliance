@@ -207,7 +207,7 @@ export function GetStartedModal({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.97, y: 16 }}
               transition={{ type: "spring", stiffness: 240, damping: 26 }}
-              className="relative w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-[0_25px_70px_-15px_rgba(15,23,42,0.5)] ring-1 ring-slate-900/5 sm:max-w-xl"
+              className="relative w-full max-w-lg overflow-hidden rounded-lg bg-white shadow-[0_25px_70px_-15px_rgba(15,23,42,0.5)] ring-1 ring-slate-900/5 sm:max-w-xl"
             >
               {/* Close button (treats as Later) */}
               <button
@@ -311,7 +311,7 @@ export function GetStartedModal({
                         duration: 0.25,
                       }}
                       className={clsx(
-                        "group relative flex items-center gap-3 overflow-hidden rounded-xl border bg-white p-3 transition-all duration-200",
+                        "group relative flex items-center gap-3 overflow-hidden rounded-lg border bg-white p-3 transition-all duration-200",
                         index === 0
                           ? "border-indigo-200 bg-linear-to-r from-indigo-50/80 to-white shadow-sm shadow-indigo-100/60"
                           : "border-slate-200/60 hover:border-indigo-200 hover:shadow-sm",

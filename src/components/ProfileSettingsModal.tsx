@@ -109,7 +109,7 @@ export function ProfileSettingsModal({ isOpen, onClose }: ProfileSettingsModalPr
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-            <div className="bg-white rounded-3xl shadow-2xl w-full md:max-w-2xl lg:max-w-3xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 self-center">
+            <div className="bg-white rounded-lg shadow-2xl w-full md:max-w-2xl lg:max-w-3xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 self-center">
                 <div className="flex items-center justify-between p-6 border-b border-slate-100">
                     <div>
                         <h2 className="text-xl font-bold text-slate-900">Profile Settings</h2>
@@ -138,7 +138,7 @@ export function ProfileSettingsModal({ isOpen, onClose }: ProfileSettingsModalPr
                                         value={profile.companyName}
                                         onChange={(e) => setProfile(p => ({ ...p, companyName: e.target.value }))}
                                         placeholder="Cedar Group Ltd"
-                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
+                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
                                     />
                                 </div>
                                 <div className="space-y-1.5">
@@ -148,7 +148,7 @@ export function ProfileSettingsModal({ isOpen, onClose }: ProfileSettingsModalPr
                                         value={profile.jobTitle}
                                         onChange={(e) => setProfile(p => ({ ...p, jobTitle: e.target.value }))}
                                         placeholder="Principal Developer"
-                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
+                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
                                     />
                                 </div>
                                 <div className="md:col-span-2 space-y-1.5">
@@ -158,7 +158,7 @@ export function ProfileSettingsModal({ isOpen, onClose }: ProfileSettingsModalPr
                                         value={profile.contactPhone}
                                         onChange={(e) => setProfile(p => ({ ...p, contactPhone: e.target.value }))}
                                         placeholder="+44 20 7123 4567"
-                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
+                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
                                     />
                                 </div>
                             </div>
@@ -179,7 +179,7 @@ export function ProfileSettingsModal({ isOpen, onClose }: ProfileSettingsModalPr
                                         value={profile.geminiBackupKey}
                                         onChange={(e) => setProfile(p => ({ ...p, geminiBackupKey: e.target.value }))}
                                         placeholder="AIzaSy..."
-                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm font-mono tracking-wider pr-10"
+                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm font-mono tracking-wider pr-10"
                                     />
                                     <button
                                         type="button"
@@ -283,7 +283,7 @@ export function ProfileSettingsModal({ isOpen, onClose }: ProfileSettingsModalPr
                     <button
                         onClick={handleSave}
                         disabled={isLoading || isSaving}
-                        className="px-8 py-2.5 bg-indigo-600 text-white text-sm font-black rounded-xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 flex items-center gap-2"
+                        className="px-8 py-2.5 bg-indigo-600 text-white text-sm font-black rounded-lg shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 flex items-center gap-2"
                     >
                         {isSaving ? (
                             <Loader2 className="w-4 h-4 animate-spin" />

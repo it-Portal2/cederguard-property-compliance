@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { AlertCircle, Users, Building2 as Building, Briefcase, Layers, FolderKanban, Server, DollarSign, Download, Loader2 } from 'lucide-react';
-import { StatCard, RoleBadge } from './constants';
+import { RoleBadge } from './constants';
+import { StatsCard } from '../common/StatsCard';
 import { DEFAULT_PRICING, calculatePlatformCosts } from '../../pages/InvoiceManager';
 import { useStore } from '../../store/useStore';
 import { isClientAdmin } from '../../lib/roles';
@@ -133,35 +134,41 @@ export function OverviewTab({
                 </div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <StatCard icon={Users} label="Total Users" value={loadingUsers ? '…' : allUsers.length} color="bg-blue-50 text-blue-600" border="border-l-blue-500" />
-                <StatCard 
-                    icon={Building} 
-                    label="Client Admins (Orgs)" 
-                    value={loadingUsers ? '…' : (Array.isArray(allUsers) ? allUsers : []).filter(u => ['client_admin', 'enterprise'].includes(u.role)).length} 
-                    color="bg-indigo-50 text-indigo-600" 
-                    border="border-l-indigo-500" 
+                <StatsCard
+                    icon={Users}
+                    title="Total Users"
+                    value={loadingUsers ? '…' : allUsers.length}
+                    iconBgClassName="bg-blue-50 dark:bg-blue-500/10"
+                    iconClassName="text-blue-600 dark:text-blue-400"
                 />
-                <StatCard 
-                    icon={Briefcase} 
-                    label="Project Managers" 
-                    value={loadingUsers ? '…' : (Array.isArray(allUsers) ? allUsers : []).filter(u => ['project_manager', 'senior_project_manager', 'assistant_project_manager', 'project_coordinator'].includes(u.role)).length} 
-                    color="bg-emerald-50 text-emerald-600" 
-                    border="border-l-emerald-500" 
+                <StatsCard
+                    icon={Building}
+                    title="Client Admins (Orgs)"
+                    value={loadingUsers ? '…' : (Array.isArray(allUsers) ? allUsers : []).filter(u => ['client_admin', 'enterprise'].includes(u.role)).length}
+                    iconBgClassName="bg-indigo-50 dark:bg-indigo-500/10"
+                    iconClassName="text-indigo-600 dark:text-indigo-400"
                 />
-                <StatCard 
-                    icon={Layers} 
-                    label="Total Programmes" 
-                    value={loadingProgrammes ? '…' : allProgrammes.length} 
-                    color="bg-purple-50 text-purple-600" 
-                    border="border-l-purple-500" 
+                <StatsCard
+                    icon={Briefcase}
+                    title="Project Managers"
+                    value={loadingUsers ? '…' : (Array.isArray(allUsers) ? allUsers : []).filter(u => ['project_manager', 'senior_project_manager', 'assistant_project_manager', 'project_coordinator'].includes(u.role)).length}
+                    iconBgClassName="bg-emerald-50 dark:bg-emerald-500/10"
+                    iconClassName="text-emerald-600 dark:text-emerald-400"
+                />
+                <StatsCard
+                    icon={Layers}
+                    title="Total Programmes"
+                    value={loadingProgrammes ? '…' : allProgrammes.length}
+                    iconBgClassName="bg-violet-50 dark:bg-violet-500/10"
+                    iconClassName="text-violet-600 dark:text-violet-400"
                     onClick={() => setDetailsModal({ isOpen: true, type: 'programmes' })}
                 />
-                <StatCard 
-                    icon={FolderKanban} 
-                    label="Total Projects" 
-                    value={loadingProjects ? '…' : (Array.isArray(allProjects) ? allProjects : []).length} 
-                    color="bg-amber-50 text-amber-600" 
-                    border="border-l-amber-500" 
+                <StatsCard
+                    icon={FolderKanban}
+                    title="Total Projects"
+                    value={loadingProjects ? '…' : (Array.isArray(allProjects) ? allProjects : []).length}
+                    iconBgClassName="bg-amber-50 dark:bg-amber-500/10"
+                    iconClassName="text-amber-600 dark:text-amber-400"
                     onClick={() => setDetailsModal({ isOpen: true, type: 'projects' })}
                 />
                 {(() => {
@@ -188,26 +195,26 @@ export function OverviewTab({
 
                     return (
                         <>
-                            <StatCard 
-                                icon={Briefcase} 
-                                label="AI Cognitive Cost" 
-                                value={loadingUsers || loadingProjects || loadingProgrammes ? '…' : `£${costs.geminiGBP.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} 
-                                color="bg-violet-50 text-violet-600" 
-                                border="border-l-violet-500" 
+                            <StatsCard
+                                icon={Briefcase}
+                                title="AI Cognitive Cost"
+                                value={loadingUsers || loadingProjects || loadingProgrammes ? '…' : `£${costs.geminiGBP.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+                                iconBgClassName="bg-violet-50 dark:bg-violet-500/10"
+                                iconClassName="text-violet-600 dark:text-violet-400"
                             />
-                            <StatCard 
-                                icon={Server} 
-                                label="Infra & Storage" 
-                                value={loadingUsers || loadingProjects || loadingProgrammes ? '…' : `£${(costs.firestoreGBP + costs.vercelGBP + costs.storageGBP).toLocaleString(undefined, { maximumFractionDigits: 0 })}`} 
-                                color="bg-slate-50 text-slate-600" 
-                                border="border-l-slate-500" 
+                            <StatsCard
+                                icon={Server}
+                                title="Infra & Storage"
+                                value={loadingUsers || loadingProjects || loadingProgrammes ? '…' : `£${(costs.firestoreGBP + costs.vercelGBP + costs.storageGBP).toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+                                iconBgClassName="bg-slate-100 dark:bg-slate-700"
+                                iconClassName="text-slate-700 dark:text-slate-200"
                             />
-                            <StatCard 
-                                icon={DollarSign} 
-                                label="Est. Monthly Cost" 
-                                value={loadingUsers || loadingProjects || loadingProgrammes ? '…' : `£${costs.infraCostGBP.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} 
-                                color="bg-rose-50 text-rose-600" 
-                                border="border-l-rose-500" 
+                            <StatsCard
+                                icon={DollarSign}
+                                title="Est. Monthly Cost"
+                                value={loadingUsers || loadingProjects || loadingProgrammes ? '…' : `£${costs.infraCostGBP.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+                                iconBgClassName="bg-rose-50 dark:bg-rose-500/10"
+                                iconClassName="text-rose-600 dark:text-rose-400"
                             />
                         </>
                     );
@@ -215,7 +222,7 @@ export function OverviewTab({
             </div>
 
             {/* Detailed Client Administration Breakdown */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-slate-100 flex items-center justify-between">
                     <div>
                         <h3 className="font-semibold text-slate-800 flex items-center gap-2">
@@ -302,7 +309,7 @@ export function OverviewTab({
             </div>
 
             {/* Quick user summary */}
-            <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+            <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-sm">
                 <h3 className="font-semibold text-slate-800 mb-4 flex items-center gap-2"><Users className="w-4 h-4 text-indigo-500" /> Recent Users</h3>
                 {loadingUsers ? <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-indigo-400" /></div> : (
                     <div className="divide-y divide-slate-100">

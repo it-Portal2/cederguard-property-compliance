@@ -222,7 +222,7 @@ export function ComplianceTab({
       {hasSoftFlag ? (
         <div
           className={clsx(
-            "rounded-xl border p-4",
+            "rounded-lg border p-4",
             failCount > 0
               ? "border-rose-200 bg-rose-50/60"
               : "border-amber-200 bg-amber-50/60",
@@ -258,7 +258,7 @@ export function ComplianceTab({
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <section
           aria-labelledby="dim-checks-title"
-          className="rounded-xl border border-slate-200 bg-slate-50/40 p-4"
+          className="rounded-lg border border-slate-200 bg-slate-50/40 p-4"
         >
           <header className="mb-3 flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
@@ -291,7 +291,7 @@ export function ComplianceTab({
 
         <section
           aria-labelledby="sys-checks-title"
-          className="rounded-xl border border-slate-200 bg-slate-50/40 p-4"
+          className="rounded-lg border border-slate-200 bg-slate-50/40 p-4"
         >
           <header className="mb-3 flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
@@ -355,7 +355,7 @@ export function ComplianceTab({
       </section>
 
       {/* Action footer*/}
-      <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-2">
           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-indigo-600" />
           <div className="text-[12px] leading-5 text-slate-600">

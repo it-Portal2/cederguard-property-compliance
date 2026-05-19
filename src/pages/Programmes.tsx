@@ -102,11 +102,11 @@ export function Programmes() {
     };
 
     return (
-        <div className="space-y-6 max-w-7xl mx-auto">
+        <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                        <div className="p-2 bg-indigo-50 rounded-xl">
+                        <div className="p-2 bg-indigo-50 rounded-lg">
                             <LayoutTemplate className="w-6 h-6 text-indigo-600" />
                         </div>
                         Programmes
@@ -116,7 +116,7 @@ export function Programmes() {
                 {canManage && (
                     <button
                         onClick={() => { setActiveProgramme(null); setActiveProject(null); navigate('/programmes/new'); }}
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-sm hover:shadow-md"
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 transition-all shadow-sm hover:shadow-md"
                     >
                         <Plus className="w-4 h-4" />
                         New Programme
@@ -125,13 +125,13 @@ export function Programmes() {
             </div>
 
             {/* Filters */}
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
                         type="text"
                         placeholder="Search programmes by name or reference..."
-                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -162,7 +162,7 @@ export function Programmes() {
             {/* Programme Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredProgrammes.length === 0 ? (
-                    <div className="col-span-full bg-white rounded-2xl border border-dotted border-slate-300 p-12 text-center">
+                    <div className="col-span-full bg-white rounded-lg border border-dotted border-slate-300 p-12 text-center">
                         <div className="flex flex-col items-center justify-center max-w-sm mx-auto">
                             <div className="p-4 bg-slate-50 rounded-full mb-4">
                                 <LayoutTemplate className="w-10 h-10 text-slate-300" />
@@ -186,14 +186,14 @@ export function Programmes() {
                     filteredProgrammes.map(programme => (
                         <div
                             key={programme.id}
-                            className={`group bg-white rounded-2xl border transition-all duration-300 hover:shadow-lg overflow-hidden ${activeProgrammeId === programme.id
+                            className={`group bg-white rounded-lg border transition-all duration-300 hover:shadow-lg overflow-hidden ${activeProgrammeId === programme.id
                                 ? 'border-indigo-500 ring-1 ring-indigo-500/20'
                                 : 'border-slate-200 hover:border-indigo-200'
                                 }`}
                         >
                             <div className="p-6">
                                 <div className="flex items-start justify-between mb-4">
-                                    <div className="p-2 bg-slate-50 rounded-xl text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
+                                    <div className="p-2 bg-slate-50 rounded-lg text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
                                         <LayoutTemplate className="w-5 h-5" />
                                     </div>
                                     <div className="flex items-center gap-2">

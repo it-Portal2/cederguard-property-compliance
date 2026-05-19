@@ -184,7 +184,7 @@ export function AIModelsTab({ isAdmin }: Props) {
 
     if (!isAdmin) {
         return (
-            <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center">
+            <div className="bg-white rounded-lg border border-slate-200 p-8 text-center">
                 <Lock className="w-10 h-10 text-slate-300 mx-auto mb-3" />
                 <p className="text-slate-500 text-sm">
                     AI Models configuration is restricted to platform super-admins.
@@ -335,7 +335,7 @@ export function AIModelsTab({ isAdmin }: Props) {
     return (
         <div className="flex flex-col gap-6">
             {seedReturned && (
-                <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3 text-sm text-indigo-700 flex items-start gap-2">
+                <div className="bg-indigo-50 border border-indigo-200 rounded-lg px-4 py-3 text-sm text-indigo-700 flex items-start gap-2">
                     <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                     <span>
                         No saved config yet — showing the built-in seed. Make any edit and Save to persist your curated lists to Firestore.
@@ -343,14 +343,14 @@ export function AIModelsTab({ isAdmin }: Props) {
                 </div>
             )}
             {error && (
-                <div className="bg-rose-50 border border-rose-200 rounded-xl px-4 py-3 text-sm text-rose-700 flex items-start gap-2">
+                <div className="bg-rose-50 border border-rose-200 rounded-lg px-4 py-3 text-sm text-rose-700 flex items-start gap-2">
                     <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" /> {error}
                 </div>
             )}
             {/* Save success now surfaces via toast — no inline banner. */}
 
             {/* ── Chat models table ──────────────────────────────── */}
-            <section className="bg-white rounded-2xl border border-slate-200 shadow-sm">
+            <section className="bg-white rounded-lg border border-slate-200 shadow-sm">
                 <div className="flex items-center justify-between p-4 border-b border-slate-100">
                     <div>
                         <h3 className="font-bold text-slate-800">Chat dropdown models</h3>
@@ -437,7 +437,7 @@ export function AIModelsTab({ isAdmin }: Props) {
             </section>
 
             {/* ── Operation models table ─────────────────────────── */}
-            <section className="bg-white rounded-2xl border border-slate-200 shadow-sm">
+            <section className="bg-white rounded-lg border border-slate-200 shadow-sm">
                 <div className="flex items-center justify-between p-4 border-b border-slate-100">
                     <div>
                         <h3 className="font-bold text-slate-800">Operation models (priority order)</h3>
@@ -504,7 +504,7 @@ export function AIModelsTab({ isAdmin }: Props) {
             </section>
 
             {/* ── Footer ────────────────────────────────────────── */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-4 flex items-center justify-between gap-3">
+            <div className="bg-white rounded-lg border border-slate-200 p-4 flex items-center justify-between gap-3">
                 <div className="text-xs text-slate-500">
                     {config.updatedBy && config.updatedAt
                         ? <>Last updated by <span className="font-medium text-slate-700">{config.updatedByEmail ?? config.updatedBy}</span>{formatUpdatedAt(config.updatedAt) && <> · {formatUpdatedAt(config.updatedAt)}</>}</>
@@ -551,7 +551,7 @@ export function AIModelsTab({ isAdmin }: Props) {
                     className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
                     onClick={(e) => e.target === e.currentTarget && setConfirmReset(false)}
                 >
-                    <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl">
+                    <div className="bg-white rounded-lg w-full max-w-md p-6 shadow-2xl">
                         <h3 className="font-bold text-slate-800 mb-2">Discard unsaved changes?</h3>
                         <p className="text-sm text-slate-600 mb-5">
                             This reloads the saved Firestore config. Any edits you've made in this tab since the last Save will be lost.
@@ -569,7 +569,7 @@ export function AIModelsTab({ isAdmin }: Props) {
                     className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
                     onClick={(e) => e.target === e.currentTarget && setConfirmDelete(null)}
                 >
-                    <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl">
+                    <div className="bg-white rounded-lg w-full max-w-md p-6 shadow-2xl">
                         <h3 className="font-bold text-slate-800 mb-2">
                             Remove "{confirmDelete.label}"?
                         </h3>

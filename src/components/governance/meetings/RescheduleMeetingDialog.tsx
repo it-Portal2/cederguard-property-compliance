@@ -91,7 +91,7 @@ export function RescheduleMeetingDialog({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.98 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="w-[min(520px,94vw)] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl"
+            className="w-[min(520px,94vw)] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-2xl"
           >
             <header className="flex items-start gap-3 px-5 py-4">
               <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
