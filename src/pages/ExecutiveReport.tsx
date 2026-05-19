@@ -5,7 +5,6 @@ import { AIErrorAlert } from '../components/AIErrorAlert';
 import { EmptyState } from '../components/common/EmptyState';
 import { StatsCard } from '../components/common/StatsCard';
 import {
-  Download,
   Building2,
   TrendingUp,
   AlertTriangle,
@@ -15,7 +14,6 @@ import {
   Layers,
   ChevronDown,
   Calendar,
-  Loader2,
   AlertCircle,
   PoundSterling,
   Inbox,
@@ -28,8 +26,6 @@ import { stripMarkdown, parseAISuggestion } from '../lib/utils';
 import { useNavigate } from 'react-router';
 import { useEffect, useRef, useState } from 'react';
 import { analyzeStrategicInsights } from '../services/aiService';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
 
 
 function fGBP(v: number) {
@@ -133,46 +129,6 @@ export function ExecutiveReport() {
     getInsight();
   }, [activeProgrammeId, filteredRisks.length]);
 
-  const handleExportPDF = async () => {
-    const element = document.getElementById('executive-report-container');
-    if (!element) return;
-
-    try {
-      setLoading(true);
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff'
-      });
-
-      const imgWidth = 210; // A4 width in mm
-      const pageHeight = 297; // A4 height in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      const pdf = new jsPDF('p', 'mm', 'a4');
-
-      // Calculate how many pages we need
-      let position = 0;
-      let heightLeft = imgHeight;
-
-      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-
-      pdf.save(`Executive_Report_${activeProgrammeId || 'Portfolio'}.pdf`);
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="print:p-0 print:bg-white" id="executive-report-container">
@@ -277,14 +233,7 @@ export function ExecutiveReport() {
               onClick={() => window.print()}
               className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 text-white border border-white/15 rounded-lg text-sm font-medium hover:bg-white/10 transition-colors"
             >
-              <Printer className="w-4 h-4" /> Print
-            </button>
-            <button
-              onClick={handleExportPDF}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-white text-slate-900 rounded-lg text-sm font-semibold hover:bg-slate-100 transition-colors"
-            >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-              Export PDF
+              <Printer className="w-4 h-4" /> Export PDF
             </button>
           </div>
         </div>
