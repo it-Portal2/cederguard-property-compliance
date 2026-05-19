@@ -225,10 +225,10 @@ export function Sidebar() {
         )}
 
         {/* COMPLIANCE */}
-        <NavGroup 
-          label="Compliance" 
-          isAdmin={hasCoreAccess} 
-          isOpen={openGroup === 'Compliance'} 
+        <NavGroup
+          label="Compliance"
+          isAdmin={hasCoreAccess}
+          isOpen={openGroup === 'Compliance'}
           onToggle={() => toggleGroup('Compliance')}
         >
           <NavItem to={`/compliance/setup${activeProjectId ? '?type=project' : activeProgrammeId ? '?type=programme' : ''}`} icon={Brain} label="Setup" />
@@ -238,15 +238,19 @@ export function Sidebar() {
           <NavItem to={`/compliance/evidence${activeProjectId ? '?type=project' : activeProgrammeId ? '?type=programme' : ''}`} icon={Files} label="Evidence & Documents" />
         </NavGroup>
 
-        {/* REGULATIONS LIBRARY */}
-        <NavGroup 
-          label="Regulations Library" 
-          isAdmin={hasCoreAccess} 
-          isOpen={openGroup === 'Regulations Library'} 
-          onToggle={() => toggleGroup('Regulations Library')}
+        {/* RISK MANAGEMENT */}
+        <NavGroup
+          label="Risk Management"
+          isAdmin={hasCoreAccess}
+          isOpen={openGroup === 'Risk Management'}
+          onToggle={() => toggleGroup('Risk Management')}
         >
-          <NavItem to="/regulations" icon={BookOpen} label="Regulations Library" />
-          <NavItem to="/regulations/cpd" icon={Activity} label="CPD Training - Beta" iconClass="text-indigo-500" />
+          <NavItem to={`/risk/setup${activeProjectId ? '?type=project' : activeProgrammeId ? '?type=programme' : ''}`} icon={Brain} label="Risk Setup" />
+          <NavItem to={`/risk/dashboard${activeProjectId ? '?type=project' : activeProgrammeId ? '?type=programme' : ''}`} icon={LayoutDashboard} label="Dashboard" />
+          <NavItem to={`${activeProjectId ? '/risk/register?type=project' : activeProgrammeId ? '/risk/programme-register?type=programme' : '/risk/register'}`} icon={Layers} label="Risk Register" />
+          <NavItem to={`/risk/issues?type=${activeProgrammeId ? 'programme' : 'project'}`} icon={FileWarning} label="Issues Log" />
+          <NavItem to={`/risk/alerts${activeProjectId ? '?type=project' : activeProgrammeId ? '?type=programme' : ''}`} icon={ShieldAlert} label="Risk Alerts" />
+          <NavItem to="/lessons-learned" icon={FileBarChart} label="Lessons Learned" />
         </NavGroup>
 
         {/* TECHNICAL ASSURANCE — sibling of Compliance / Risk; PM-owned query surface */}
@@ -267,64 +271,6 @@ export function Sidebar() {
             )}
           </NavGroup>
         )}
-
-        {/* RISK MANAGEMENT */}
-        <NavGroup
-          label="Risk Management"
-          isAdmin={hasCoreAccess} 
-          isOpen={openGroup === 'Risk Management'} 
-          onToggle={() => toggleGroup('Risk Management')}
-        >
-          <NavItem to={`/risk/setup${activeProjectId ? '?type=project' : activeProgrammeId ? '?type=programme' : ''}`} icon={Brain} label="Risk Setup" />
-          <NavItem to={`/risk/dashboard${activeProjectId ? '?type=project' : activeProgrammeId ? '?type=programme' : ''}`} icon={LayoutDashboard} label="Dashboard" />
-          <NavItem to={`${activeProjectId ? '/risk/register?type=project' : activeProgrammeId ? '/risk/programme-register?type=programme' : '/risk/register'}`} icon={Layers} label="Risk Register" />
-          <NavItem to={`/risk/issues?type=${activeProgrammeId ? 'programme' : 'project'}`} icon={FileWarning} label="Issues Log" />
-          <NavItem to={`/risk/alerts${activeProjectId ? '?type=project' : activeProgrammeId ? '?type=programme' : ''}`} icon={ShieldAlert} label="Risk Alerts" />
-          <NavItem to="/lessons-learned" icon={FileBarChart} label="Lessons Learned" />
-        </NavGroup>
-
-        {/* AUTOMATED INTELLIGENCE */}
-        <NavGroup 
-          label="Automated Intelligence" 
-          isAdmin={hasCoreAccess} 
-          isOpen={openGroup === 'Automated Intelligence'} 
-          onToggle={() => toggleGroup('Automated Intelligence')}
-        >
-          <NavItem to="/risk/ai" icon={Wand2} label="AI Risk Inquiry" iconClass="text-indigo-600" />
-          <NavItem to="/ai/controls" icon={ShieldAlert} label="Mitigation & Control Strategy" iconClass="text-indigo-600" />
-          <NavItem to="/ai/compliance" icon={Brain} label="Compliance Posture Outlook" iconClass="text-indigo-600" />
-        </NavGroup>
-
-        {/* MONITORING & REPORTING — Client Admin only */}
-        {isClientAdmin && (
-          <NavGroup 
-            label="Monitoring & Reporting" 
-            isAdmin={true} 
-            isOpen={openGroup === 'Monitoring & Reporting'} 
-            onToggle={() => toggleGroup('Monitoring & Reporting')}
-          >
-            <NavItem to="/monitoring/kri" icon={BarChart} label="KRI Tracker" />
-            <NavItem to="/monitoring/alerts" icon={BellRing} label="Alerts & Thresholds" />
-            <NavItem to="/monitoring/aggregation" icon={Layers} label="Risk Aggregation Data" />
-            <NavItem to="/monitoring/heatmaps" icon={TrendingUp} label="Trends & Heatmaps" />
-          </NavGroup>
-        )}
-
-        {/* REPORTS */}
-        <NavGroup
-          label="Reports"
-          isAdmin={hasCoreAccess}
-          isOpen={openGroup === 'Reports'}
-          onToggle={() => toggleGroup('Reports')}
-        >
-          {isClientAdmin && (
-            <>
-              <NavItem to="/reporting/executive" icon={PieChart} label="Executive Reports" />
-              <NavItem to="/reporting/programme-report" icon={BarChart} label="Programme Report" />
-            </>
-          )}
-          <NavItem to="/reporting/project" icon={ClipboardList} label="Project Reports" />
-        </NavGroup>
 
         {/* PROGRAMME GOVERNANCE */}
         {hasCoreAccess && (
@@ -358,6 +304,60 @@ export function Sidebar() {
             <NavItem to="/governance/archive" icon={ScrollText} label="Archive & Audit" />
           </NavGroup>
         )}
+
+        {/* AUTOMATED INTELLIGENCE */}
+        <NavGroup
+          label="Automated Intelligence"
+          isAdmin={hasCoreAccess}
+          isOpen={openGroup === 'Automated Intelligence'}
+          onToggle={() => toggleGroup('Automated Intelligence')}
+        >
+          <NavItem to="/risk/ai" icon={Wand2} label="AI Risk Inquiry" iconClass="text-indigo-600" />
+          <NavItem to="/ai/controls" icon={ShieldAlert} label="Mitigation & Control Strategy" iconClass="text-indigo-600" />
+          <NavItem to="/ai/compliance" icon={Brain} label="Compliance Posture Outlook" iconClass="text-indigo-600" />
+        </NavGroup>
+
+        {/* MONITORING & REPORTING — Client Admin only */}
+        {isClientAdmin && (
+          <NavGroup
+            label="Monitoring & Reporting"
+            isAdmin={true}
+            isOpen={openGroup === 'Monitoring & Reporting'}
+            onToggle={() => toggleGroup('Monitoring & Reporting')}
+          >
+            <NavItem to="/monitoring/kri" icon={BarChart} label="KRI Tracker" />
+            <NavItem to="/monitoring/alerts" icon={BellRing} label="Alerts & Thresholds" />
+            <NavItem to="/monitoring/aggregation" icon={Layers} label="Risk Aggregation Data" />
+            <NavItem to="/monitoring/heatmaps" icon={TrendingUp} label="Trends & Heatmaps" />
+          </NavGroup>
+        )}
+
+        {/* REPORTS */}
+        <NavGroup
+          label="Reports"
+          isAdmin={hasCoreAccess}
+          isOpen={openGroup === 'Reports'}
+          onToggle={() => toggleGroup('Reports')}
+        >
+          {isClientAdmin && (
+            <>
+              <NavItem to="/reporting/executive" icon={PieChart} label="Executive Reports" />
+              <NavItem to="/reporting/programme-report" icon={BarChart} label="Programme Report" />
+            </>
+          )}
+          <NavItem to="/reporting/project" icon={ClipboardList} label="Project Reports" />
+        </NavGroup>
+
+        {/* REGULATIONS LIBRARY — reference / training, not part of the daily operational flow */}
+        <NavGroup
+          label="Regulations Library"
+          isAdmin={hasCoreAccess}
+          isOpen={openGroup === 'Regulations Library'}
+          onToggle={() => toggleGroup('Regulations Library')}
+        >
+          <NavItem to="/regulations" icon={BookOpen} label="Regulations Library" />
+          <NavItem to="/regulations/cpd" icon={Activity} label="CPD Training - Beta" iconClass="text-indigo-500" />
+        </NavGroup>
 
         {/* ACCOUNT */}
         {(isClientAdmin || isAdmin) && (
