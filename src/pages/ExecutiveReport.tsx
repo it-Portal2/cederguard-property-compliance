@@ -1,9 +1,27 @@
 import { useStore } from '../store/useStore';
 import { isAtLeastClientAdmin } from '../lib/roles';
-import { api, ApiError } from '../lib/api';
+import { ApiError } from '../lib/api';
 import { AIErrorAlert } from '../components/AIErrorAlert';
 import { EmptyState } from '../components/common/EmptyState';
-import { FileText, Download, Building2, TrendingUp, AlertTriangle, ShieldCheck, Mail, Phone, ExternalLink, Printer, BarChart, ShieldAlert, Target, Layers, ChevronDown, Calendar, Loader2, AlertCircle, PoundSterling, Briefcase, Inbox, LayoutGrid, Plus, PlusCircle } from 'lucide-react';
+import { StatsCard } from '../components/common/StatsCard';
+import {
+  Download,
+  Building2,
+  TrendingUp,
+  AlertTriangle,
+  ShieldCheck,
+  Printer,
+  BarChart,
+  Layers,
+  ChevronDown,
+  Calendar,
+  Loader2,
+  AlertCircle,
+  PoundSterling,
+  Inbox,
+  Plus,
+  PlusCircle,
+} from 'lucide-react';
 import { clsx } from 'clsx';
 import { Link } from 'react-router';
 import { stripMarkdown, parseAISuggestion } from '../lib/utils';
@@ -12,7 +30,6 @@ import { useEffect, useRef, useState } from 'react';
 import { analyzeStrategicInsights } from '../services/aiService';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
-import { motion } from 'motion/react';
 
 
 function fGBP(v: number) {
@@ -158,435 +175,404 @@ export function ExecutiveReport() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto pb-20 print:p-0" id="executive-report-container">
-      {/* ─── PREMIUM EXECUTIVE HEADER ─── */}
-      <div className="bg-[#111827] p-6 md:p-12 flex flex-col md:flex-row justify-between items-start md:items-end rounded-t-3xl md:rounded-t-[3rem] print:rounded-none relative overflow-hidden gap-8">
-        {/* Abstract background element */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 blur-[100px] -mr-48 -mt-48 rounded-full" />
-
-        <div className="relative z-10 space-y-4">
-          <div className="flex items-center gap-4 mb-2">
-            <div className="p-3 bg-indigo-500 text-white rounded-2xl shadow-lg shadow-indigo-500/20">
-                <ShieldCheck className="w-8 h-8" />
+    <div className="print:p-0 print:bg-white" id="executive-report-container">
+      {/* ─── HEADER BAND ─── */}
+      <section className="bg-slate-900 px-6 py-8 md:px-10 md:py-10 rounded-t-lg print:rounded-none print:break-inside-avoid">
+        <div className="flex flex-col gap-6">
+          {/* Title row */}
+          <div className="flex items-start gap-4">
+            <div className="p-2.5 bg-indigo-500/15 text-indigo-300 rounded-lg shrink-0">
+              <ShieldCheck className="w-6 h-6" />
             </div>
-            <div>
-                <h1 className="text-2xl md:text-4xl font-black text-white tracking-tight uppercase leading-tight">Programme Risk & Compliance: Executive One-Pager</h1>
-                <p className="text-indigo-400 font-black uppercase tracking-[0.2em] text-[10px] mt-2">Strategic Oversight Summary — Confidentially Issued</p>
+            <div className="min-w-0">
+              <h1 className="text-2xl md:text-3xl font-semibold text-white tracking-tight">
+                Programme Risk &amp; Compliance — Executive one-pager
+              </h1>
+              <p className="text-sm text-slate-400 mt-1">
+                Strategic oversight summary · {currentProgramme?.name ?? 'All programmes'} · Confidential
+              </p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-8 items-center text-slate-400 font-bold uppercase tracking-widest text-[11px]">
-            <div className="flex items-center gap-2 relative group cursor-pointer">
-                <Layers className="w-4 h-4 text-indigo-400" />
-                <select
-                    value={activeProgrammeId || ''}
-                    onChange={(e) => setActiveProgramme(e.target.value)}
-                    className="bg-transparent border-none text-white text-[11px] font-black uppercase tracking-widest focus:ring-0 appearance-none pr-6 cursor-pointer"
-                >
-                    <option value="" className="text-slate-900">All Programmes</option>
-                    {safeProgrammes.map(p => (
-                        <option key={p.id} value={p.id} className="text-slate-900">{p.name}</option>
-                    ))}
-                </select>
-                <ChevronDown className="w-3 h-3 text-slate-500 absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none group-hover:text-white transition-all" />
+
+          {/* Meta row */}
+          <div className="flex flex-wrap gap-x-6 gap-y-2 items-center text-sm text-slate-300">
+            <div className="relative flex items-center gap-2 group">
+              <Layers className="w-4 h-4 text-indigo-300" />
+              <select
+                value={activeProgrammeId || ''}
+                onChange={(e) => setActiveProgramme(e.target.value)}
+                className="bg-transparent border-none text-white text-sm font-medium focus:ring-0 appearance-none pr-5 cursor-pointer"
+              >
+                <option value="" className="text-slate-900">All programmes</option>
+                {safeProgrammes.map(p => (
+                  <option key={p.id} value={p.id} className="text-slate-900">{p.name}</option>
+                ))}
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none group-hover:text-white transition-colors" />
             </div>
 
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-700 hidden md:block" />
+            <span className="hidden sm:inline text-slate-700">·</span>
 
-            <div className="flex items-center gap-2 relative group cursor-pointer">
-                <Building2 className="w-4 h-4 text-indigo-400" />
-                <select
-                    value=""
-                    onChange={(e) => {
-                        setActiveProject(e.target.value);
-                        navigate('/reporting/project');
-                    }}
-                    className="bg-transparent border-none text-white text-[11px] font-black uppercase tracking-widest focus:ring-0 appearance-none pr-6 cursor-pointer"
-                >
-                    <option value="" className="text-slate-900">Drill into Project...</option>
-                    {safeProjects.filter(p => !activeProgrammeId || p.programmeId === activeProgrammeId).map(p => (
-                        <option key={p.id} value={p.id} className="text-slate-900">{p.name}</option>
-                    ))}
-                </select>
-                <ChevronDown className="w-3 h-3 text-slate-500 absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none group-hover:text-white transition-all" />
+            <div className="relative flex items-center gap-2 group">
+              <Building2 className="w-4 h-4 text-indigo-300" />
+              <select
+                value=""
+                onChange={(e) => {
+                  setActiveProject(e.target.value);
+                  navigate('/reporting/project');
+                }}
+                className="bg-transparent border-none text-white text-sm font-medium focus:ring-0 appearance-none pr-5 cursor-pointer"
+              >
+                <option value="" className="text-slate-900">Drill into project…</option>
+                {safeProjects.filter(p => !activeProgrammeId || p.programmeId === activeProgrammeId).map(p => (
+                  <option key={p.id} value={p.id} className="text-slate-900">{p.name}</option>
+                ))}
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none group-hover:text-white transition-colors" />
             </div>
 
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-700 hidden md:block" />
+            <span className="hidden sm:inline text-slate-700">·</span>
 
-            <span className="flex items-center gap-2">
-                <Calendar className="w-3.5 h-3.5 text-indigo-400" />
-                Ref: EXE-{new Date().getFullYear()}-{Math.floor(Math.random() * 9000 + 1000)}
+            <span className="flex items-center gap-2 text-slate-400">
+              <Calendar className="w-4 h-4 text-indigo-300" />
+              Ref: EXE-{new Date().getFullYear()}-{Math.floor(Math.random() * 9000 + 1000)}
             </span>
           </div>
-        </div>
 
-        <div className="flex flex-row md:flex-row gap-3 relative z-10 print:hidden pb-1 w-full md:w-auto items-center">
-            {/* Super Admin sees both */}
+          {/* CTA cluster */}
+          <div className="flex flex-wrap gap-2 print:hidden">
             {userRole === 'admin' && (
               <>
-                <Link 
+                <Link
                   to="/programmes/new"
-                  className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 transition-all active:scale-95 whitespace-nowrap"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors"
                 >
-                  <Plus size={14} />
-                  New Programme
+                  <Plus className="w-4 h-4" /> New programme
                 </Link>
-                <Link 
+                <Link
                   to="/project/initiation"
-                  className="flex items-center gap-2 px-6 py-3 bg-white/10 text-white border border-white/20 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-white/20 transition-all active:scale-95 whitespace-nowrap backdrop-blur-md"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 text-white border border-white/15 rounded-lg text-sm font-medium hover:bg-white/15 transition-colors"
                 >
-                  <PlusCircle size={14} />
-                  New Project
+                  <PlusCircle className="w-4 h-4" /> New project
                 </Link>
               </>
             )}
-
-            {/* Client Admin sees only New Programme */}
             {userRole === 'client_admin' && (
-              <Link 
+              <Link
                 to="/programmes/new"
-                className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 transition-all active:scale-95 whitespace-nowrap"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors"
               >
-                <Plus size={14} />
-                New Programme
+                <Plus className="w-4 h-4" /> New programme
               </Link>
             )}
-
-            {/* PM / Program Manager sees only New Project */}
             {userRole !== 'client_admin' && userRole !== 'admin' && (
-              <Link 
+              <Link
                 to="/project/initiation"
-                className="flex items-center gap-2 px-6 py-3 bg-white/10 text-white border border-white/20 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-white/20 transition-all active:scale-95 whitespace-nowrap backdrop-blur-md"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 text-white border border-white/15 rounded-lg text-sm font-medium hover:bg-white/15 transition-colors"
               >
-                <PlusCircle size={14} />
-                New Project
+                <PlusCircle className="w-4 h-4" /> New project
               </Link>
             )}
-
             <button
-                onClick={() => window.print()}
-                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-white/5 text-white border border-white/10 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-white/10 transition-all backdrop-blur-md"
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 text-white border border-white/15 rounded-lg text-sm font-medium hover:bg-white/10 transition-colors"
             >
-                <Printer className="w-4 h-4" /> Print
+              <Printer className="w-4 h-4" /> Print
             </button>
             <button
-                onClick={handleExportPDF}
-                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-3 bg-indigo-500 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-xl shadow-indigo-500/20 active:scale-95">
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                {loading ? 'Export PDF' : 'Export PDF'}
+              onClick={handleExportPDF}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white text-slate-900 rounded-lg text-sm font-semibold hover:bg-slate-100 transition-colors"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              Export PDF
             </button>
+          </div>
         </div>
-      </div>
+      </section>
 
-      <div className="bg-white p-6 md:p-12 space-y-12 rounded-b-3xl md:rounded-b-[3rem] shadow-2xl shadow-slate-200/50 print:shadow-none italic font-medium">
+      {/* ─── BODY ─── */}
+      <div className="bg-white px-6 py-8 md:px-10 md:py-10 space-y-10 rounded-b-lg shadow-sm print:shadow-none">
 
-        {/* ─── STRATEGIC KPI GRID ─── */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="p-8 bg-slate-50/50 rounded-[2.5rem] border border-slate-100 flex flex-col justify-between shadow-sm min-h-[160px]">
-                <div className="flex justify-between items-start">
-                    <div className="text-2xl font-black text-[#111827] tabular-nums leading-none">{filteredRisks.length}</div>
-                    <div className="p-2 bg-white rounded-xl shadow-sm"><BarChart className="w-5 h-5 text-slate-400" /></div>
-                </div>
-                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Risk Inventory</div>
-            </div>
-            <div className="p-8 bg-indigo-50/50 rounded-[2.5rem] border border-indigo-100 flex flex-col justify-between shadow-sm min-h-[160px]">
-                <div className="flex justify-between items-start">
-                    <div className="text-2xl font-black text-indigo-600 tabular-nums leading-none">{openCount}</div>
-                    <div className="p-2 bg-white rounded-xl shadow-sm"><ShieldCheck className="w-5 h-5 text-indigo-400" /></div>
-                </div>
-                <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Active mitigations</div>
-            </div>
-            <div className="p-8 bg-rose-50/50 rounded-[2.5rem] border border-rose-100 flex flex-col justify-between shadow-sm min-h-[160px]">
-                <div className="flex justify-between items-start">
-                    <div className="text-2xl font-black text-rose-600 tabular-nums leading-none">{criticalCount}</div>
-                    <div className="p-2 bg-white rounded-xl shadow-sm"><AlertCircle className="w-5 h-5 text-rose-400" /></div>
-                </div>
-                <div className="text-[10px] font-black text-rose-400 uppercase tracking-widest">Terminal priority items</div>
-            </div>
-            <div className="p-8 bg-[#111827] rounded-[2.5rem] border border-slate-800 flex flex-col justify-between shadow-xl min-h-[160px]">
-                <div className="flex justify-between items-start">
-                    <div className="text-lg font-black text-white truncate max-w-[160px] tabular-nums leading-none">{fGBP(totalALE)}</div>
-                    <div className="p-2 bg-white/10 rounded-xl"><PoundSterling className="w-5 h-5 text-emerald-400" /></div>
-                </div>
-                <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Total Portfolio Exposure</div>
-            </div>
-        </div>
+        {/* ─── KPI STRIP ─── */}
+        <section className="print:break-inside-avoid">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatsCard
+              icon={BarChart}
+              title="Total risk inventory"
+              value={filteredRisks.length}
+              size="lg"
+              iconBgClassName="bg-slate-100 dark:bg-slate-500/10"
+              iconClassName="text-slate-600 dark:text-slate-400"
+            />
+            <StatsCard
+              icon={ShieldCheck}
+              title="Active mitigations"
+              value={openCount}
+              size="lg"
+              iconBgClassName="bg-indigo-50 dark:bg-indigo-500/10"
+              iconClassName="text-indigo-600 dark:text-indigo-400"
+            />
+            <StatsCard
+              icon={AlertCircle}
+              title="Critical items"
+              value={criticalCount}
+              size="lg"
+              iconBgClassName="bg-rose-50 dark:bg-rose-500/10"
+              iconClassName="text-rose-600 dark:text-rose-400"
+            />
+            <StatsCard
+              icon={PoundSterling}
+              title="Portfolio exposure"
+              value={fGBP(totalALE)}
+              size="lg"
+              highlighted
+              accentClassName="bg-slate-900"
+              titleClassName="text-slate-300"
+              valueClassName="text-white"
+              iconBgClassName="bg-white/10"
+              iconClassName="text-emerald-300"
+            />
+          </div>
+        </section>
 
-        {/* ─── AI STRATEGIC OUTLOOK (Match Premium UI) ─── */}
-        <div className="bg-[#111827] rounded-[3rem] p-12 text-white relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-16 opacity-5 rotate-12 group-hover:rotate-0 transition-transform duration-1000">
-                <Briefcase className="w-80 h-80 text-white" />
-            </div>
-            <div className="relative z-10 flex flex-col lg:flex-row gap-12 items-center">
-                <div className="flex-1 space-y-8">
-                    <div>
-                        <div className="flex items-center gap-3 mb-6">
-                            <span className="px-3 py-1 bg-indigo-500 text-[9px] font-black uppercase tracking-[0.2em] rounded-full">AI Analysis</span>
-                            <div className="h-px bg-white/10 flex-1" />
-                        </div>
-                        <h2 className="text-2xl font-black text-indigo-400 mb-4 flex items-center gap-3">
-                             Cognitive Programme Health
-                        </h2>
-                        {aiError && (
-                          <div className="mb-6">
-                            <AIErrorAlert 
-                              error={aiError} 
-                              onRetry={getInsight}
-                            />
+        {/* ─── AI STRATEGIC OUTLOOK ─── */}
+        <section className="bg-slate-900 rounded-lg p-6 md:p-10 text-white print:break-inside-avoid">
+          <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
+            <div className="flex-1 space-y-8 min-w-0">
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="px-2.5 py-0.5 bg-indigo-500/20 text-indigo-300 text-xs font-medium uppercase tracking-wide rounded">
+                    AI analysis
+                  </span>
+                  <div className="h-px bg-white/10 flex-1" />
+                </div>
+                <h2 className="text-xl font-semibold text-white mb-3">
+                  Programme health outlook
+                </h2>
+                {aiError && (
+                  <div className="mb-4">
+                    <AIErrorAlert error={aiError} onRetry={getInsight} />
+                  </div>
+                )}
+                {loading ? (
+                  <div className="space-y-3 animate-pulse">
+                    <div className="h-5 bg-white/10 rounded w-full" />
+                    <div className="h-5 bg-white/10 rounded w-5/6" />
+                  </div>
+                ) : aiInsight ? (
+                  <p className="text-base md:text-lg leading-relaxed text-slate-100">
+                    {stripMarkdown(aiInsight?.outlook || 'Analyzing cross-functional dependencies and volatility peaks across active workstreams…')}
+                  </p>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-slate-400">
+                    <Inbox className="w-10 h-10 mb-2 opacity-30" />
+                    <p className="text-sm font-medium">Awaiting analysis parameters</p>
+                    <p className="text-xs text-slate-500 mt-1">Add risks or projects to generate strategic insights.</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <h3 className="text-emerald-300 text-xs font-medium uppercase tracking-wide flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4" /> Priority directives
+                  </h3>
+                  <ul className="space-y-3">
+                    {(aiInsight?.strategicPriorities || ['Review critical financial exposures', 'Validate compliance evidence gaps']).map((p: string, i: number) => (
+                      <li key={i} className="space-y-1">
+                        {parseAISuggestion(p).map((part, pIdx) => (
+                          <div key={pIdx} className="flex gap-3 text-sm text-slate-300 items-start">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-2 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              {part.label && (
+                                <span className="font-semibold text-slate-100">{part.label}: </span>
+                              )}
+                              <span>{stripMarkdown(part.content)}</span>
+                            </div>
                           </div>
-                        )}
-                        {loading ? (
-                            <div className="space-y-4 animate-pulse">
-                                <div className="h-6 bg-white/10 rounded w-full" />
-                                <div className="h-6 bg-white/10 rounded w-5/6" />
-                            </div>
-                        ) : aiInsight ? (
-                            <p className="text-xl font-bold leading-relaxed text-slate-100 italic">
-                                "{stripMarkdown(aiInsight?.outlook || 'Analyzing cross-functional dependencies and volatility peaks across active workstreams...')}"
-                            </p>
-                        ) : (
-                            <div className="flex flex-col items-center justify-center py-6 text-slate-400">
-                                <Inbox className="w-12 h-12 mb-2 opacity-20" />
-                                <p className="text-sm font-bold uppercase tracking-widest">Awaiting Analysis Parameters</p>
-                                <p className="text-[10px] opacity-60">Add risks or projects to generate strategic insights</p>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                        <div className="space-y-4">
-                            <h3 className="text-emerald-400 font-black uppercase tracking-widest text-[10px] flex items-center gap-2">
-                                <TrendingUp className="w-4 h-4" /> Priority Directives
-                            </h3>
-                            <div className="space-y-4">
-                                {(aiInsight?.strategicPriorities || ['Review Critical Financial Exposures', 'Validate Compliance Evidence Gaps']).map((p: string, i: number) => (
-                                    <div key={i} className="space-y-2">
-                                        {parseAISuggestion(p).map((part, pIdx) => (
-                                            <div key={pIdx} className="flex gap-3 text-xs font-bold text-slate-300 items-start group/item">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-                                                <div className="flex-1">
-                                                    {part.label && (
-                                                        <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest block mb-1">
-                                                            {part.label}
-                                                        </span>
-                                                    )}
-                                                    <span>{stripMarkdown(part.content)}</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="space-y-4">
-                            <h3 className="text-rose-400 font-black uppercase tracking-widest text-[10px] flex items-center gap-2">
-                                <AlertCircle className="w-4 h-4" /> Volatility Indicators
-                            </h3>
-                            <div className="space-y-4">
-                                {(aiInsight?.criticalBlindspots || ['Project Review Velocity Lag', 'Escalation Response Times']).map((p: string, i: number) => (
-                                    <div key={i} className="space-y-2">
-                                        {parseAISuggestion(p).map((part, pIdx) => (
-                                            <div key={pIdx} className="flex gap-3 text-xs font-bold text-slate-300 items-start group/item">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-rose-500 mt-1.5 shrink-0" />
-                                                <div className="flex-1">
-                                                    {part.label && (
-                                                        <span className="text-[9px] font-black text-rose-400 uppercase tracking-widest block mb-1">
-                                                            {part.label}
-                                                        </span>
-                                                    )}
-                                                    <span>{stripMarkdown(part.content)}</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
+                        ))}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-
-                <div className="w-full lg:w-72 flex flex-col items-center justify-center p-10 bg-white/5 border border-white/10 rounded-[2.5rem] text-center backdrop-blur-sm self-stretch">
-                    <div className="relative mb-6">
-                        <svg className="w-40 h-40 transform -rotate-90">
-                            <circle cx="80" cy="80" r="72" stroke="currentColor" strokeWidth="14" fill="transparent" className="text-white/5" />
-                            <circle
-                                cx="80" cy="80" r="72" stroke="currentColor" strokeWidth="14" fill="transparent"
-                                className="text-indigo-500 drop-shadow-[0_0_12px_rgba(99,102,241,0.5)]"
-                                strokeDasharray={452.39}
-                                strokeDashoffset={452.39 * (1 - (aiInsight?.healthScore || 75) / 100)}
-                                strokeLinecap="round"
-                            />
-                        </svg>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <span className="text-2xl font-black leading-none">{aiInsight?.healthScore || 75}%</span>
-                        </div>
-                    </div>
-                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Health Velocity</div>
-                    <p className="text-[10px] text-slate-500 leading-relaxed max-w-[150px]">{stripMarkdown(aiInsight?.healthRationale || 'Optimized for aggregate risk reduction against target baseline.')}</p>
+                <div className="space-y-3">
+                  <h3 className="text-rose-300 text-xs font-medium uppercase tracking-wide flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4" /> Volatility indicators
+                  </h3>
+                  <ul className="space-y-3">
+                    {(aiInsight?.criticalBlindspots || ['Project review velocity lag', 'Escalation response times']).map((p: string, i: number) => (
+                      <li key={i} className="space-y-1">
+                        {parseAISuggestion(p).map((part, pIdx) => (
+                          <div key={pIdx} className="flex gap-3 text-sm text-slate-300 items-start">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-400 mt-2 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              {part.label && (
+                                <span className="font-semibold text-slate-100">{part.label}: </span>
+                              )}
+                              <span>{stripMarkdown(part.content)}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-            </div>
-        </div>
-
-        {/* ─── CRITICAL RISK & COMPLIANCE DETAIL ─── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            {/* Top Critical Risks Table */}
-            <div className="space-y-6">
-                <div className="flex justify-between items-end border-b pb-4">
-                    <h2 className="text-lg font-black text-[#111827] flex items-center gap-3 uppercase tracking-tighter">
-                        <AlertCircle className="w-6 h-6 text-rose-500" /> Critical Risk Profile
-                    </h2>
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Top 5 Portfolio Items</span>
-                </div>
-
-                <div className="bg-white border rounded-[2rem] overflow-hidden shadow-sm">
-                    <table className="w-full text-xs">
-                        <thead className="bg-slate-50 text-slate-400 text-[9px] font-black uppercase tracking-widest border-b">
-                            <tr>
-                                <th className="px-6 py-4 text-left">Ref</th>
-                                <th className="px-6 py-4 text-left">Description</th>
-                                <th className="px-6 py-4 text-center">Impact</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {highRisks.sort((a, b) => (b.residualRating || 0) - (a.residualRating || 0)).slice(0, 5).map(r => (
-                                <tr key={r.id} className="hover:bg-slate-50 transition-colors">
-                                    <td className="px-6 py-5 font-black text-indigo-600">#{r.id}</td>
-                                    <td className="px-6 py-5">
-                                        <div className="font-black text-slate-800 leading-snug mb-0.5">{stripMarkdown(r.title)}</div>
-                                        <div className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{safeProjects.find(p => p.id === r.projectId)?.name || 'Portfolio'}</div>
-                                    </td>
-                                    <td className="px-6 py-5 text-center">
-                                        <span className={clsx(
-                                            "inline-flex items-center justify-center w-8 h-8 rounded-xl font-black text-[11px]",
-                                            (r.residualRating || 0) >= 16 ? "bg-rose-100 text-rose-700" : "bg-orange-100 text-orange-700"
-                                        )}>
-                                            {r.residualRating}
-                                        </span>
-                                    </td>
-                                </tr>
-                            ))}
-                            {highRisks.length === 0 && (
-                                <tr>
-                                    <td colSpan={3} className="px-1 py-1">
-                                        <EmptyState 
-                                            title="No Critical Risks" 
-                                            description="Portfolio risk profiles are currently below the critical escalation threshold."
-                                            icon={ShieldCheck}
-                                            className="bg-transparent py-14"
-                                            compact
-                                        />
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+              </div>
             </div>
 
-            {/* Compliance Posture Details */}
-            <div className="space-y-6">
-                <div className="flex justify-between items-end border-b pb-4">
-                    <h2 className="text-lg font-black text-[#111827] flex items-center gap-3 uppercase tracking-tighter">
-                        <ShieldCheck className="w-6 h-6 text-emerald-500" /> Compliance Posture
-                    </h2>
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Aggregate Achievement</span>
+            {/* Health gauge sidebar */}
+            <div className="w-full md:w-64 lg:w-72 flex flex-col items-center justify-center p-6 bg-white/5 border border-white/10 rounded-lg text-center shrink-0">
+              <div className="relative mb-4">
+                <svg className="w-36 h-36 transform -rotate-90">
+                  <circle cx="72" cy="72" r="64" stroke="currentColor" strokeWidth="12" fill="transparent" className="text-white/10" />
+                  <circle
+                    cx="72" cy="72" r="64" stroke="currentColor" strokeWidth="12" fill="transparent"
+                    className="text-indigo-400"
+                    strokeDasharray={402.12}
+                    strokeDashoffset={402.12 * (1 - (aiInsight?.healthScore || 75) / 100)}
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-3xl font-semibold leading-none">{aiInsight?.healthScore || 75}%</span>
                 </div>
-                
-                <div className="grid grid-cols-2 gap-6">
-                    <div className="p-8 bg-slate-50/50 rounded-[2rem] border border-slate-100 flex flex-col justify-between min-h-[160px]">
-                        <div className="flex justify-between items-start mb-4">
-                            <Layers className="w-7 h-7 text-indigo-400" />
-                            <div className="text-2xl font-black text-[#111827] tabular-nums">{compPct}%</div>
-                        </div>
-                        <div>
-                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Portfolio Completion</div>
-                            <div className="w-full bg-white h-2 rounded-full overflow-hidden shadow-inner">
-                                <div className="bg-emerald-500 h-full rounded-full transition-all duration-1000" style={{ width: `${compPct}%` }} />
-                            </div>
-                        </div>
-                    </div>
-                    <div className="p-8 bg-slate-50/50 rounded-[2rem] border border-slate-100 flex flex-col justify-between min-h-[160px]">
-                        <div className="flex justify-between items-start mb-4">
-                            <Calendar className="w-7 h-7 text-indigo-400" />
-                            <div className="text-2xl font-black text-[#111827] tabular-nums">98%</div>
-                        </div>
-                        <div>
-                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Audit Readiness</div>
-                            <div className="w-full bg-white h-2 rounded-full overflow-hidden shadow-inner">
-                                <div className="bg-indigo-500 h-full rounded-full w-[98%]" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="p-6 bg-slate-900 rounded-[2rem] flex items-center gap-6 group">
-                    <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 shrink-0 group-hover:scale-110 transition-transform">
-                        <TrendingUp className="w-7 h-7 text-indigo-400" />
-                    </div>
-                    <div>
-                        <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Regulatory Trajectory</div>
-                        <div className="text-sm font-black text-white italic">Full Alignment with UK-GDPR & PCR 2024 Frameworks achieved across all projects.</div>
-                    </div>
-                </div>
+              </div>
+              <div className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-2">
+                Health velocity
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                {stripMarkdown(aiInsight?.healthRationale || 'Optimised for aggregate risk reduction against target baseline.')}
+              </p>
             </div>
-        </div>
+          </div>
+        </section>
+
+        {/* ─── CRITICAL RISK + COMPLIANCE GRID ─── */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-6 print:break-inside-avoid">
+          {/* Critical risk profile */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2.5">
+                <AlertCircle className="w-5 h-5 text-rose-500" /> Critical risk profile
+              </h2>
+              <span className="text-xs font-medium text-slate-500">Top 5</span>
+            </div>
+
+            {highRisks.length === 0 ? (
+              <EmptyState
+                title="No critical risks"
+                description="Portfolio risk profiles are currently below the critical escalation threshold."
+                icon={ShieldCheck}
+                className="bg-slate-50 rounded-lg py-10"
+                compact
+              />
+            ) : (
+              <ul className="divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white overflow-hidden">
+                {highRisks
+                  .sort((a, b) => (b.residualRating || 0) - (a.residualRating || 0))
+                  .slice(0, 5)
+                  .map(r => {
+                    const score = r.residualRating || 0;
+                    const projectName = safeProjects.find(p => p.id === r.projectId)?.name || 'Portfolio';
+                    return (
+                      <li key={r.id} className="flex items-center gap-4 px-4 py-3 hover:bg-slate-50 transition-colors">
+                        <span className="text-xs font-semibold text-indigo-600 tabular-nums shrink-0 min-w-12">
+                          #{r.id}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-slate-900 truncate">
+                            {stripMarkdown(r.title)}
+                          </p>
+                          <p className="text-xs text-slate-500 truncate">{projectName}</p>
+                        </div>
+                        <span
+                          className={clsx(
+                            'inline-flex items-center justify-center w-9 h-9 rounded-lg text-sm font-semibold shrink-0 tabular-nums',
+                            score >= 16
+                              ? 'bg-rose-100 text-rose-700'
+                              : 'bg-amber-100 text-amber-700',
+                          )}
+                        >
+                          {score}
+                        </span>
+                      </li>
+                    );
+                  })}
+              </ul>
+            )}
+          </div>
+
+          {/* Compliance posture */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2.5">
+                <ShieldCheck className="w-5 h-5 text-emerald-500" /> Compliance posture
+              </h2>
+              <span className="text-xs font-medium text-slate-500">Aggregate</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <StatsCard
+                icon={Layers}
+                title="Portfolio completion"
+                value={`${compPct}%`}
+                size="sm"
+                iconBgClassName="bg-indigo-50 dark:bg-indigo-500/10"
+                iconClassName="text-indigo-600 dark:text-indigo-400"
+                progress
+                progressValue={compPct}
+                progressClassName="bg-emerald-500"
+                progressLabel="Complete"
+              />
+              <StatsCard
+                icon={Calendar}
+                title="Audit readiness"
+                value="98%"
+                size="sm"
+                iconBgClassName="bg-indigo-50 dark:bg-indigo-500/10"
+                iconClassName="text-indigo-600 dark:text-indigo-400"
+                progress
+                progressValue={98}
+                progressClassName="bg-indigo-500"
+                progressLabel="Ready"
+              />
+            </div>
+
+            <div className="p-4 bg-slate-900 rounded-lg flex items-center gap-4">
+              <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center shrink-0">
+                <TrendingUp className="w-5 h-5 text-indigo-300" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-0.5">
+                  Regulatory trajectory
+                </div>
+                <div className="text-sm font-medium text-white">
+                  Full alignment with UK-GDPR &amp; PCR 2024 frameworks achieved across all projects.
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* ─── FOOTER ─── */}
-        <div className="pt-12 border-t border-slate-100 flex justify-between items-end">
-            <div className="flex items-center gap-10">
-                <div className="space-y-1">
-                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Master Auditor</div>
-                    <div className="text-[11px] font-black text-[#111827] uppercase tracking-tighter">Cehpoint Ai Engine</div>
-                </div>
-                <div className="space-y-1">
-                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Time of Issue</div>
-                    <div className="text-[11px] font-black text-[#111827] uppercase tracking-tighter tabular-nums">
-                        {new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} • {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </div>
-                </div>
+        <footer className="pt-6 border-t border-slate-200 flex flex-col md:flex-row md:items-end md:justify-between gap-4 print:break-inside-avoid">
+          <div className="flex flex-wrap gap-x-8 gap-y-3">
+            <div>
+              <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Master auditor</div>
+              <div className="text-sm font-semibold text-slate-900 mt-0.5">CedarGuard AI Engine</div>
             </div>
-            <div className="text-right">
-                <div className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em] italic">Internal Strategic Assessment — Confidential</div>
+            <div>
+              <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Issued</div>
+              <div className="text-sm font-semibold text-slate-900 mt-0.5 tabular-nums">
+                {new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} ·{' '}
+                {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </div>
             </div>
-        </div>
-
-        {/* ─── EXECUTIVE INTERNAL AUDIT ─── */}
-        <div className="relative group overflow-hidden rounded-[2rem] md:rounded-[3.5rem] p-8 md:p-16 text-center border border-white/10 bg-slate-900 shadow-2xl mt-12 mb-12">
-            {/* Background glow */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-indigo-600/20 blur-[120px] rounded-full" />
-            
-            <div className="relative z-10 max-w-2xl mx-auto space-y-8">
-                <div className="inline-flex p-4 rounded-3xl bg-white/5 border border-white/10 shadow-2xl backdrop-blur-xl group-hover:scale-110 transition-transform duration-700">
-                    <ShieldCheck className="w-10 h-10 text-indigo-400 drop-shadow-[0_0_15px_rgba(129,140,248,0.5)]" />
-                </div>
-                
-                <div className="space-y-4">
-                    <h2 className="text-3xl md:text-5xl font-black text-white tracking-tight italic">
-                        Executive Internal Audit
-                    </h2>
-                    <p className="text-slate-400 font-bold text-sm md:text-base leading-relaxed tracking-wide uppercase opacity-80 decoration-indigo-500/30 underline underline-offset-8">
-                        Initiate deep-dive administrative oversight into the active portfolio context.
-                    </p>
-                </div>
-
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-4">
-                    <button
-                        id="executive-audit-portfolio"
-                        onClick={() => {
-                            if (activeProgrammeId) {
-                                navigate(`/dashboard?viewAs=pm&programmeId=${activeProgrammeId}`);
-                            } else {
-                                navigate(`/dashboard?viewAs=pm`);
-                            }
-                        }}
-                        className="group/btn relative px-10 py-5 bg-white text-slate-900 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-indigo-50 transition-all shadow-[0_20px_50px_rgba(255,255,255,0.1)] hover:shadow-white/20 active:scale-95 overflow-hidden"
-                    >
-                        <span className="relative z-10 flex items-center gap-2">
-                            Access PM Backdoor <TrendingUp className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-                        </span>
-                    </button>
-                </div>
-            </div>
-        </div>
+          </div>
+          <p className="text-xs font-medium text-slate-400 uppercase tracking-wide md:text-right">
+            Internal strategic assessment — Confidential
+          </p>
+        </footer>
       </div>
     </div>
   );
