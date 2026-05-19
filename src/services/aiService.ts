@@ -1055,7 +1055,25 @@ export async function analyzeSensitivity(
           },
         },
         volatilityAnalysis: { type: "string" },
-        contingencyStrategies: { type: "array", items: { type: "string" } },
+        // Contingencies follow the prompt's WHAT/WHO/WHEN/HOW/WHERE/WHY
+        // pattern — declared as structured objects so OpenRouter models
+        // produce a parseable shape rather than an opaque blob that the
+        // UI then tries (and fails) to stringify.
+        contingencyStrategies: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              what: { type: "string" },
+              who: { type: "string" },
+              when: { type: "string" },
+              how: { type: "string" },
+              where: { type: "string" },
+              why: { type: "string" },
+            },
+            required: ["what", "who", "when", "how", "where", "why"],
+          },
+        },
         summary: { type: "string" },
       },
       required: [

@@ -313,13 +313,21 @@ Provide at least 10 detailed points.`;
                                 )}
                             </div>
 
-                            {(isAnalyzing || analysisResults) && (
+                            {isAnalyzing && !analysisResults && (
+                                <div className="bg-slate-50 rounded-lg p-10 border border-slate-200 min-h-[320px] flex flex-col items-center justify-center gap-3">
+                                    <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+                                    <span className="text-sm font-medium text-slate-700">Aggregating portfolio data…</span>
+                                    <span className="text-xs text-slate-500">This usually takes 10–30 seconds.</span>
+                                </div>
+                            )}
+
+                            {analysisResults && (
                                 <div className="bg-slate-50 rounded-lg p-6 border border-slate-200 relative">
                                     {isAnalyzing && (
                                         <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg">
                                             <div className="flex flex-col items-center gap-3">
                                                 <Loader2 className="w-7 h-7 text-indigo-600 animate-spin" />
-                                                <span className="text-sm font-medium text-slate-700">Aggregating portfolio data…</span>
+                                                <span className="text-sm font-medium text-slate-700">Re-running analysis…</span>
                                             </div>
                                         </div>
                                     )}
@@ -362,7 +370,15 @@ Provide at least 10 detailed points.`;
                                 )}
                             </div>
 
-                            {(isAnalyzingLifecycle || lifecycleResults) && (
+                            {isAnalyzingLifecycle && !lifecycleResults && (
+                                <div className="bg-slate-50 rounded-lg p-10 border border-slate-200 min-h-[320px] flex flex-col items-center justify-center gap-3">
+                                    <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+                                    <span className="text-sm font-medium text-slate-700">Mapping RIBA stage-gates…</span>
+                                    <span className="text-xs text-slate-500">This usually takes 10–30 seconds.</span>
+                                </div>
+                            )}
+
+                            {lifecycleResults && (
                                 <div className="space-y-6 relative">
                                     {isAnalyzingLifecycle && (
                                         <div className="absolute inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg">
@@ -370,34 +386,30 @@ Provide at least 10 detailed points.`;
                                         </div>
                                     )}
 
-                                    {lifecycleResults && (
-                                        <>
-                                            <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                {lifecycleResults.lifecycleRoadmap.map((item: any, i: number) => (
-                                                    <li key={i} className="bg-white p-4 rounded-lg border border-slate-200 space-y-2 hover:border-indigo-200 transition-colors">
-                                                        <span className="inline-flex text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
-                                                            {item.stage}
-                                                        </span>
-                                                        <p className="text-sm font-semibold text-slate-900">{item.requirement}</p>
-                                                        <p className="text-sm text-slate-500 leading-relaxed">{item.actionableInsight}</p>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-5">
-                                                <h4 className="text-sm font-semibold text-amber-700 flex items-center gap-2 mb-3">
-                                                    <AlertTriangle className="w-4 h-4" /> Aggregate delivery bottlenecks
-                                                </h4>
-                                                <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                                    {lifecycleResults.bottlenecks.map((b: string, i: number) => (
-                                                        <li key={i} className="flex gap-2 text-sm text-slate-700">
-                                                            <span className="text-amber-500 shrink-0">•</span>
-                                                            <span>{b}</span>
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        </>
-                                    )}
+                                    <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {lifecycleResults.lifecycleRoadmap.map((item: any, i: number) => (
+                                            <li key={i} className="bg-white p-4 rounded-lg border border-slate-200 space-y-2 hover:border-indigo-200 transition-colors">
+                                                <span className="inline-flex text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
+                                                    {item.stage}
+                                                </span>
+                                                <p className="text-sm font-semibold text-slate-900">{item.requirement}</p>
+                                                <p className="text-sm text-slate-500 leading-relaxed">{item.actionableInsight}</p>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-5">
+                                        <h4 className="text-sm font-semibold text-amber-700 flex items-center gap-2 mb-3">
+                                            <AlertTriangle className="w-4 h-4" /> Aggregate delivery bottlenecks
+                                        </h4>
+                                        <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                            {lifecycleResults.bottlenecks.map((b: string, i: number) => (
+                                                <li key={i} className="flex gap-2 text-sm text-slate-700">
+                                                    <span className="text-amber-500 shrink-0">•</span>
+                                                    <span>{b}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -430,7 +442,15 @@ Provide at least 10 detailed points.`;
                                 )}
                             </div>
 
-                            {(isAnalyzingSentiment || sentimentResults) && (
+                            {isAnalyzingSentiment && !sentimentResults && (
+                                <div className="bg-slate-50 rounded-lg p-10 border border-slate-200 min-h-[320px] flex flex-col items-center justify-center gap-3">
+                                    <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
+                                    <span className="text-sm font-medium text-slate-700">Auditing portfolio sentiment…</span>
+                                    <span className="text-xs text-slate-500">This usually takes 10–30 seconds.</span>
+                                </div>
+                            )}
+
+                            {sentimentResults && (
                                 <div className="space-y-6 relative">
                                     {isAnalyzingSentiment && (
                                         <div className="absolute inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg">
