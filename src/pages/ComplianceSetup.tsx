@@ -1593,14 +1593,9 @@ export function ComplianceSetup() {
                 <ClipboardList className="w-8 h-8 text-indigo-600" />
               </div>
               <div>
-                <div className="flex items-center gap-2 sm:gap-3 mb-1">
-                  <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight leading-none">
-                    Compliance Setup
-                  </h1>
-                  <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 text-[10px] font-black rounded-full uppercase tracking-widest border border-indigo-100/50">
-                    v4.0
-                  </span>
-                </div>
+                <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight leading-none mb-1">
+                  Compliance Setup
+                </h1>
                 <div className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
