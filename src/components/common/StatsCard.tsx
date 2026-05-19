@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { ArrowUpRight, type LucideIcon } from 'lucide-react';
 import { motion } from 'motion/react';
 import { clsx } from 'clsx';
+import { InfoTooltip } from '../InfoTooltip';
 
 export type StatsCardRounded = 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
 export type StatsCardSize = 'sm' | 'md' | 'lg';
@@ -16,6 +17,8 @@ export interface StatsCardProps {
   value: string | number;
   unit?: string;
   description?: string;
+  /** Tooltip content shown via an info icon next to the title. */
+  info?: ReactNode;
   icon?: LucideIcon;
   highlighted?: boolean;
   accentClassName?: string;
@@ -39,14 +42,19 @@ export interface StatsCardProps {
   animate?: boolean;
 }
 
+// Updated to align with the design-system pass: the semantic 'lg' now
+// emits Tailwind's rounded-lg (8px) — the standard radius across every
+// card / button / modal / input in the app. Larger semantic values are
+// kept in the map for the rare case a caller wants explicit opt-in,
+// but the default (lg) matches the global rule.
 const roundedMap: Record<StatsCardRounded, string> = {
   none: 'rounded-none',
-  sm: 'rounded-md',
-  md: 'rounded-lg',
-  lg: 'rounded-xl',
-  xl: 'rounded-2xl',
-  '2xl': 'rounded-3xl',
-  '3xl': 'rounded-[2rem]',
+  sm: 'rounded',
+  md: 'rounded-md',
+  lg: 'rounded-lg',
+  xl: 'rounded-lg',
+  '2xl': 'rounded-lg',
+  '3xl': 'rounded-lg',
 };
 
 const sizeMap: Record<StatsCardSize, { padding: string; minH: string; value: string; iconBtn: string; iconSize: number }> = {
@@ -60,6 +68,7 @@ export function StatsCard({
   value,
   unit,
   description,
+  info,
   icon: Icon = ArrowUpRight,
   highlighted = false,
   accentClassName,
@@ -116,14 +125,17 @@ export function StatsCard({
     >
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p
-            className={clsx(
-              'text-[14px] font-medium tracking-tight leading-snug line-clamp-2',
-              titleClassName ?? (highlighted ? 'text-slate-800' : 'text-slate-600 dark:text-slate-300')
-            )}
-          >
-            {title}
-          </p>
+          <div className="flex items-center gap-1.5">
+            <p
+              className={clsx(
+                'text-[14px] font-medium tracking-tight leading-snug line-clamp-2',
+                titleClassName ?? (highlighted ? 'text-slate-800' : 'text-slate-600 dark:text-slate-300')
+              )}
+            >
+              {title}
+            </p>
+            {info && <InfoTooltip content={info} />}
+          </div>
           {description && (
             <p
               className={clsx(
