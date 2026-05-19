@@ -1,4 +1,4 @@
-import { TrendingUp, Grid3x3, PoundSterling, ArrowUpRight, Flame, AlertTriangle, Shield } from 'lucide-react';
+import { TrendingUp, PoundSterling, ArrowUpRight, Flame, AlertTriangle, Shield } from 'lucide-react';
 import { StatsCard } from '../components/common/StatsCard';
 import { useEffect, useMemo } from 'react';
 import { useStore } from '../store/useStore';
@@ -8,8 +8,6 @@ import {
   getWorkstreamName,
 } from '../data/riskTaxonomy';
 import {
-  LIKELIHOOD_LABELS,
-  IMPACT_LABELS,
   calculateMatrixScore,
   bandForScore,
   BAND_STYLES,
@@ -272,105 +270,6 @@ export function TrendsHeatmaps() {
           iconBgClassName="bg-indigo-50 dark:bg-indigo-500/10"
           iconClassName="text-indigo-600 dark:text-indigo-400"
         />
-      </div>
-
-      {/* Client Risk Scoring Matrix (5×5 calibrated lookup, per spec )*/}
-      <div className="bg-white rounded-lg md:rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-6 md:px-8 py-4 md:py-5 border-b border-slate-100 flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-3">
-            <div className="p-1.5 bg-indigo-100 rounded-lg">
-              <Grid3x3 className="w-4 h-4 text-indigo-600" />
-            </div>
-            <div>
-              <span className="block font-black text-slate-900 text-xs md:text-sm uppercase tracking-widest">Risk Scoring Matrix</span>
-              <span className="block text-[10px] text-slate-400 mt-0.5">Calibrated 5×5 lookup · Likelihood × Impact → Score (1–25)</span>
-            </div>
-          </div>
-          <span className="hidden md:inline text-[10px] font-bold text-indigo-500 uppercase tracking-tighter bg-indigo-50 px-3 py-1 rounded-full">Client spec</span>
-        </div>
-        <div className="p-4 md:p-8 overflow-x-auto">
-          <table className="border-collapse mx-auto select-none">
-            <thead>
-              <tr>
-                <th className="p-2"></th>
-                <th className="p-2"></th>
-                <th
-                  colSpan={5}
-                  className="text-center text-[10px] font-black text-slate-500 uppercase tracking-widest pb-2"
-                >
-                  Likelihood →
-                </th>
-              </tr>
-              <tr>
-                <th className="p-2"></th>
-                <th className="p-2"></th>
-                {LIKELIHOOD_LABELS.map((label, idx) => (
-                  <th
-                    key={label}
-                    className="px-2 py-2 text-center text-[10px] font-bold text-slate-600 uppercase tracking-wider align-bottom"
-                    style={{ minWidth: '4.5rem' }}
-                  >
-                    <div>{label}</div>
-                    <div className="text-slate-400 text-[10px] font-bold">{idx + 1}</div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {/* Render rows top-down with Severe (I=5) at the top, matching the client's matrix orientation*/}
-              {[5, 4, 3, 2, 1].map((impact, rowIdx) => (
-                <tr key={impact}>
-                  {rowIdx === 0 && (
-                    <td
-                      rowSpan={5}
-                      className="text-center text-[10px] font-black text-slate-500 uppercase tracking-widest align-middle pr-2"
-                      style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', whiteSpace: 'nowrap' }}
-                    >
-                      ↑ Impact
-                    </td>
-                  )}
-                  <td className="px-2 py-2 text-right align-middle">
-                    <div className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
-                      {IMPACT_LABELS[impact - 1]}
-                    </div>
-                    <div className="text-[10px] font-bold text-slate-400">{impact}</div>
-                  </td>
-                  {[1, 2, 3, 4, 5].map(likelihood => {
-                    const score = calculateMatrixScore(likelihood, impact);
-                    const band = bandForScore(score);
-                    const styles = BAND_STYLES[band];
-                    return (
-                      <td
-                        key={likelihood}
-                        className={`text-center font-black tabular-nums border border-white transition-transform hover:scale-105 cursor-default ${styles.cell}`}
-                        style={{ width: '4.5rem', height: '3rem', fontSize: '0.95rem' }}
-                        title={`${LIKELIHOOD_LABELS[likelihood - 1]} × ${IMPACT_LABELS[impact - 1]} = ${score} (${styles.label})`}
-                      >
-                        {score}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {/* Band legend — 4-band scheme matching the matrix's colour distribution*/}
-          <div className="flex flex-wrap items-center justify-center gap-3 mt-6 p-4 bg-slate-50 rounded-lg border border-slate-100">
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Bands:</span>
-            {BAND_RANGES.map(({ band, range }) => {
-              const styles = BAND_STYLES[band];
-              return (
-                <span
-                  key={band}
-                  className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border ${styles.pill}`}
-                >
-                  {range} {styles.label}
-                </span>
-              );
-            })}
-          </div>
-        </div>
       </div>
 
       {/* Workstream Heatmap*/}
