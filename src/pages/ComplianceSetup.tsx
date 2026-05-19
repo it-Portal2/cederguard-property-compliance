@@ -1465,7 +1465,7 @@ export function ComplianceSetup() {
           )}
 
           {/* ─── Premium Breadcrumb Nav ───*/}
-          <div className="flex items-center justify-between bg-white/60 backdrop-blur-md p-2 sm:p-3 rounded-4xl sm:rounded-4xl border border-slate-200/50 shadow-sm mb-4 overflow-x-auto scrollbar-hide">
+          <div className="flex items-center justify-between bg-white/60 backdrop-blur-md p-2 sm:p-3 rounded-lg sm:rounded-lg border border-slate-200/50 shadow-sm mb-4 overflow-x-auto scrollbar-hide">
             <div className="flex items-center gap-1 sm:gap-2 shrink-0 min-w-max px-1">
               {[
                 { n: 1, label: "Metadata", p: 1 },
@@ -1667,7 +1667,7 @@ export function ComplianceSetup() {
               <div className="bg-slate-900 rounded-lg p-12 text-white relative overflow-hidden shadow-2xl shadow-slate-900/40">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/20 rounded-full blur-3xl -mr-32 -mt-32"></div>
                 <div className="relative z-10 flex flex-col items-center text-center space-y-8">
-                  <div className="w-24 h-24 bg-emerald-500 rounded-4xl flex items-center justify-center shadow-xl shadow-emerald-500/20">
+                  <div className="w-24 h-24 bg-emerald-500 rounded-lg flex items-center justify-center shadow-xl shadow-emerald-500/20">
                     <ShieldCheck className="w-12 h-12 text-white" />
                   </div>
                   <div className="space-y-4">
@@ -1806,7 +1806,7 @@ export function ComplianceSetup() {
                             </p>
                           </div>
                         </div>
-                        <div className="bg-slate-50 rounded-4xl border border-slate-100 p-6 flex items-center gap-4 group transition-all hover:bg-white hover:shadow-lg">
+                        <div className="bg-slate-50 rounded-lg border border-slate-100 p-6 flex items-center gap-4 group transition-all hover:bg-white hover:shadow-lg">
                           <div className="w-2 h-2 rounded-full bg-slate-300 mt-2"></div>
                           <div>
                             <p className="font-bold text-slate-900 text-sm">
@@ -1843,7 +1843,7 @@ export function ComplianceSetup() {
                       key={qPhase.id}
                       id={`phase-container-${qPhase.id}`}
                       className={clsx(
-                        "bg-white rounded-4xl border-2 transition-all duration-500 overflow-hidden scroll-mt-32",
+                        "bg-white rounded-lg border-2 transition-all duration-500 overflow-hidden scroll-mt-32",
                         isExpanded
                           ? "border-indigo-100 shadow-xl shadow-indigo-50/50 mb-8"
                           : "border-slate-50 mb-4 hover:border-slate-200",
@@ -2087,7 +2087,7 @@ export function ComplianceSetup() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
               {/* Left Column: Context Selection*/}
               <div className="lg:col-span-4 space-y-6 sm:space-y-8">
-                <div className="bg-white rounded-lg sm:rounded-4xl border border-slate-100 p-6 sm:p-8 shadow-xl shadow-slate-200/50">
+                <div className="bg-white rounded-lg sm:rounded-lg border border-slate-100 p-6 sm:p-8 shadow-xl shadow-slate-200/50">
                   <PhaseHeader num={1} title="Context Selection" />
                   <div className="space-y-6">
                     <div>
@@ -2166,7 +2166,7 @@ export function ComplianceSetup() {
                 </div>
 
                 {/* Tips / Info Card*/}
-                <div className="bg-indigo-600 rounded-lg sm:rounded-4xl p-6 sm:p-8 text-white shadow-xl shadow-indigo-200 overflow-hidden relative group">
+                <div className="bg-indigo-600 rounded-lg sm:rounded-lg p-6 sm:p-8 text-white shadow-xl shadow-indigo-200 overflow-hidden relative group">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-150 duration-700"></div>
                   <div className="relative z-10">
                     <h4 className="text-lg font-bold mb-3">AI Context Hint</h4>
@@ -2185,7 +2185,7 @@ export function ComplianceSetup() {
 
               {/* Right Column: Profile Details*/}
               <div className="lg:col-span-8">
-                <div className="bg-white rounded-4xl sm:rounded-4xl border border-slate-100 p-6 md:p-12 shadow-xl shadow-slate-200/50">
+                <div className="bg-white rounded-lg sm:rounded-lg border border-slate-100 p-6 md:p-12 shadow-xl shadow-slate-200/50">
                   <PhaseHeader
                     num={2}
                     title={`${activeType.charAt(0).toUpperCase() + activeType.slice(1)} Delivery Profile`}

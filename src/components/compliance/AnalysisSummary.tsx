@@ -217,7 +217,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
                         <tr>
                           <td colSpan={3} className="px-8 py-20 text-center">
                             <div className="flex flex-col items-center gap-4">
-                              <div className="w-20 h-20 bg-slate-50 rounded-4xl flex items-center justify-center border border-slate-100 shadow-inner">
+                              <div className="w-20 h-20 bg-slate-50 rounded-lg flex items-center justify-center border border-slate-100 shadow-inner">
                                 <ClipboardList className="w-10 h-10 text-slate-200" />
                               </div>
                               <p className="font-black text-slate-300 uppercase tracking-widest text-[10px]">No requirements identified yet</p>
@@ -256,7 +256,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
                         <tr>
                           <td colSpan={4} className="px-8 py-20 text-center">
                             <div className="flex flex-col items-center gap-4">
-                              <div className="w-20 h-20 bg-emerald-50 rounded-4xl flex items-center justify-center border border-emerald-100 shadow-inner">
+                              <div className="w-20 h-20 bg-emerald-50 rounded-lg flex items-center justify-center border border-emerald-100 shadow-inner">
                                 <ShieldCheck className="w-10 h-10 text-emerald-200" />
                               </div>
                               <p className="font-black text-emerald-400 uppercase tracking-widest text-[10px]">Framework fully optimized</p>

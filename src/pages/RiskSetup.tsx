@@ -711,7 +711,7 @@ export function RiskSetup() {
                 </div>
             )}
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
+            <div className="space-y-6">
                 {/* ── HEADER SECTION ───────────*/}
                 <div className="mb-8 md:mb-12">
                     <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">

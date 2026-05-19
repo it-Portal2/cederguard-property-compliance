@@ -434,14 +434,14 @@ export const Landing: React.FC = () => {
                         className="relative w-full hidden lg:block"
                         style={{ perspective: "2000px" }}
                     >
-                        <div className="absolute -inset-1.5 bg-gradient-to-tr from-indigo-500 via-cyan-400 to-purple-500 rounded-4xl blur-xl opacity-15 dark:opacity-25" />
+                        <div className="absolute -inset-1.5 bg-gradient-to-tr from-indigo-500 via-cyan-400 to-purple-500 rounded-lg blur-xl opacity-15 dark:opacity-25" />
                         <motion.img
                             whileHover={{ rotateX: 1, rotateY: -1, scale: 1.01 }}
                             transition={{ duration: 0.5 }}
                             src="/dashboard_showcase.png"
                             alt="CedarGuard Risk Management dashboard preview"
                             title="CedarGuard — Risk Management dashboard"
-                            className="relative w-full h-auto rounded-4xl shadow-[0_40px_100px_rgba(0,0,0,0.18)] dark:shadow-[0_40px_100px_rgba(0,0,0,0.6)] border-4 border-white/60 dark:border-white/5 object-cover object-top"
+                            className="relative w-full h-auto rounded-lg shadow-[0_40px_100px_rgba(0,0,0,0.18)] dark:shadow-[0_40px_100px_rgba(0,0,0,0.6)] border-4 border-white/60 dark:border-white/5 object-cover object-top"
                         />
                     </motion.div>
 
@@ -598,7 +598,7 @@ export const Landing: React.FC = () => {
                         </motion.div>
 
                         {/* Right */}
-                        <motion.div {...fadeIn} transition={{ delay: 0.2 }} className="lg:mt-32 border border-slate-200 dark:border-white/10 bg-white dark:bg-[#030303] p-12 lg:p-16 rounded-4xl">
+                        <motion.div {...fadeIn} transition={{ delay: 0.2 }} className="lg:mt-32 border border-slate-200 dark:border-white/10 bg-white dark:bg-[#030303] p-12 lg:p-16 rounded-lg">
                             <h3 className="text-2xl font-light text-slate-900 dark:text-white mb-12">Immediate Action Plan</h3>
                             <ul className="space-y-12">
                                 {[
