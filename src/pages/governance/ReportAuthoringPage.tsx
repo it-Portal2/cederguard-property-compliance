@@ -346,7 +346,7 @@ export function ReportAuthoringPage() {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2, ease: 'easeOut' }}
-      className="mx-auto flex h-full max-w-7xl flex-col gap-4"
+      className="flex h-full flex-col gap-4"
     >
       {/* Header */}
       <header className="flex flex-wrap items-start justify-between gap-3">
