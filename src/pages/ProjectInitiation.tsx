@@ -14,6 +14,7 @@ import { toast } from "react-hot-toast";
 
 import { PublicationChecklist } from "../components/PublicationChecklist";
 import { DeliveryTeamCRUD } from "../components/DeliveryTeamCRUD";
+import { CheckPillGroup, inputBase } from "../components/forms";
 
 // ─── Main Page
 export function ProjectInitiation() {
@@ -582,34 +583,24 @@ export function ProjectInitiation() {
     }
   };
 
-  const inputCls =
-    "w-full px-3 py-2.5 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors";
+  const inputCls = inputBase;
   const labelCls =
-    "block text-[11px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1";
+    "block text-sm font-medium text-slate-700 mb-1.5";
 
   return (
     <div>
       <div className="space-y-6">
         {/* ── HEADER SECTION ───────────*/}
-        <div className="mb-8 md:mb-12">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 border border-indigo-100/50 text-indigo-600">
-                <Rocket className="w-3.5 h-3.5" />
-                <span className="text-[10px] font-black uppercase tracking-widest">
-                  Setup Phase
-                </span>
-              </div>
-              <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">
-                Project <span className="text-indigo-600">Initiation</span>
-              </h1>
-              <p className="text-slate-500 font-medium max-w-2xl text-sm md:text-base leading-relaxed">
-                Establish the core foundations, delivery team, and key
-                milestones for your project.
+        <div className="pb-6 border-b border-slate-200">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+            <div className="min-w-0">
+              <h1 className="text-2xl font-semibold text-slate-900">Project initiation</h1>
+              <p className="mt-1 text-sm text-slate-500 max-w-2xl">
+                Establish the core foundations, delivery team, and key milestones for your project.
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2">
               {isAtLeastPM(userRole) && activeProjectId && (
                 <button
                   type="button"
@@ -617,19 +608,19 @@ export function ProjectInitiation() {
                     setActiveProject(null);
                     resetForm();
                   }}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 font-bold rounded-lg hover:bg-slate-50 hover:border-indigo-200 hover:text-indigo-600 transition-all text-xs shadow-sm active:scale-95"
+                  className="inline-flex items-center gap-1.5 px-3 h-9 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors"
                 >
                   <Plus className="w-4 h-4" />
-                  New Project
+                  New
                 </button>
               )}
               <button
                 type="button"
                 onClick={loadDummy}
-                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 font-bold rounded-lg hover:bg-slate-50 hover:border-indigo-200 hover:text-indigo-600 transition-all text-xs shadow-sm active:scale-95"
+                className="inline-flex items-center gap-1.5 px-3 h-9 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors"
               >
                 <LayoutTemplate className="w-4 h-4" />
-                Load Demo
+                Load demo
               </button>
               <button
                 onClick={() => handleSubmit()}
@@ -640,25 +631,24 @@ export function ProjectInitiation() {
                     : undefined
                 }
                 className={clsx(
-                  "flex items-center gap-2 px-6 py-2.5 font-black rounded-lg text-xs uppercase tracking-widest transition-all shadow-lg active:scale-95",
+                  "inline-flex items-center gap-1.5 px-4 h-9 text-sm font-semibold rounded-md transition-colors",
                   loading || (!!activeProjectId && !isDirty)
-                    ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200 shadow-none"
-                    : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100 hover:shadow-indigo-200",
+                    ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                    : "bg-indigo-600 text-white hover:bg-indigo-700",
                 )}
               >
                 {loading ? (
                   <>
-                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />{" "}
-                    Working…
+                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Saving…
                   </>
                 ) : activeProjectId ? (
                   <>
-                    <Save className="w-4 h-4 text-indigo-200" /> Save Details
+                    <Save className="w-4 h-4" /> Save details
                   </>
                 ) : (
                   <>
-                    <Rocket className="w-4 h-4 text-indigo-200" /> Create
-                    Project
+                    <Rocket className="w-4 h-4" /> Create project
                   </>
                 )}
               </button>
@@ -669,10 +659,10 @@ export function ProjectInitiation() {
         {/* ── MAIN CONTENT GRID ───────────*/}
         <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {loading && (
-            <div className="absolute inset-0 z-50 bg-white/60 backdrop-blur-[2px] rounded-lg flex items-center justify-center">
+            <div className="absolute inset-0 z-50 bg-white/80 rounded-lg flex items-center justify-center">
               <div className="flex flex-col items-center gap-3">
-                <div className="w-10 h-10 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin shadow-md" />
-                <span className="text-sm font-black text-indigo-900 tracking-widest uppercase">Processing</span>
+                <div className="w-8 h-8 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin" />
+                <span className="text-sm font-medium text-slate-700">Processing…</span>
               </div>
             </div>
           )}
@@ -680,23 +670,20 @@ export function ProjectInitiation() {
           <div className="lg:col-span-8 order-2 lg:order-1 space-y-8">
             <form
               onSubmit={handleSubmit}
-              className="bg-white border border-slate-200 rounded-lg p-6 md:p-10 shadow-xl shadow-slate-200/50 space-y-10"
+              className="bg-white border border-slate-200 rounded-lg p-6 md:p-8 space-y-10"
             >
-              {/* Continuing Drafts Overlay-style section*/}
+              {/* Continuing Drafts Section*/}
               {(Array.isArray(projects) ? projects : []).filter(
                 (p) => !p.isPublished,
               ).length > 0 && (
-                <div className="bg-indigo-50/50 p-6 rounded-lg border border-indigo-100/50 mb-8 overflow-hidden relative group">
-                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
-                    <Save className="w-20 h-20 text-indigo-600 rotate-12" />
-                  </div>
-                  <div className="relative z-10">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <p className="text-[11px] font-black text-indigo-600 uppercase tracking-widest leading-none">
-                          In-Progress Drafts
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                  <div>
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-slate-900">
+                          In-progress drafts
                         </p>
-                        <p className="text-[10px] text-slate-500 font-bold mt-1">
+                        <p className="mt-0.5 text-xs text-slate-500">
                           Pick up where you left off or start fresh.
                         </p>
                       </div>
@@ -707,15 +694,15 @@ export function ProjectInitiation() {
                             setActiveProject(null);
                             resetForm();
                           }}
-                          className="text-[10px] font-black text-indigo-600 hover:text-indigo-700 uppercase tracking-widest px-3 py-1.5 bg-white rounded-lg border border-indigo-100 shadow-sm active:scale-95 transition-all"
+                          className="inline-flex items-center gap-1.5 px-3 h-8 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors"
                         >
-                          New Project
+                          New project
                         </button>
                       )}
                     </div>
                     <div className="flex flex-col sm:flex-row gap-3">
                       <select
-                        className="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-lg text-[13px] font-black text-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all shadow-sm"
+                        className={`${inputCls} flex-1`}
                         value={activeProjectId || ""}
                         onChange={(e) => {
                           const id = e.target.value;
@@ -817,10 +804,10 @@ export function ProjectInitiation() {
               {/* ── SECTION: CORE DETAILS ──*/}
               <div className="space-y-6">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-100">
+                  <span className="inline-flex w-9 h-9 items-center justify-center rounded-md bg-indigo-50 text-indigo-600">
                     <Info className="w-4 h-4" />
-                  </div>
-                  <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest">
+                  </span>
+                  <h2 className="text-lg font-semibold text-slate-900">
                     Metadata & Identity
                   </h2>
                 </div>
@@ -842,31 +829,31 @@ export function ProjectInitiation() {
                       required
                     />
                     {formErrors.name && (
-                      <p className="mt-1 ml-1 text-[11px] text-rose-500 font-bold">{formErrors.name}</p>
+                      <p className="mt-1.5 text-xs text-rose-600 font-medium">{formErrors.name}</p>
                     )}
                   </div>
 
                   {/* ── UX 1: Programme fields elevated to top — high-level classification ──*/}
-                  <div className="p-4 bg-indigo-50/60 border border-indigo-100 rounded-lg space-y-4">
-                    <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest leading-none">
-                      Programme Classification
+                  <div className="pt-6 border-t border-slate-100 space-y-5">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                      Programme classification
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <div>
-                        <label className={clsx(labelCls, "text-indigo-700 flex items-center gap-1.5")}>
-                          Associated Programme
+                        <label className={clsx(labelCls, "flex items-center gap-1.5")}>
+                          Associated programme
                           {isAtLeastClientAdmin(userRole) && (
                             <span className="text-rose-500 ml-0.5">*</span>
                           )}
                           {loadingProgrammes && (
-                            <span className="flex items-center gap-1 text-indigo-500 font-semibold normal-case tracking-normal text-[10px]">
-                              <div className="w-2.5 h-2.5 border-2 border-indigo-200 border-t-indigo-500 rounded-full animate-spin" />
+                            <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500">
+                              <div className="w-2.5 h-2.5 border-2 border-slate-200 border-t-indigo-500 rounded-full animate-spin" />
                               Loading…
                             </span>
                           )}
                         </label>
                         <select
-                          className={clsx(inputCls, "border-indigo-200 focus:border-indigo-500")}
+                          className={inputCls}
                           value={formData.programmeId}
                           onChange={(e) => set("programmeId", e.target.value)}
                           disabled={loadingPMs || loadingProgrammes}
@@ -886,12 +873,12 @@ export function ProjectInitiation() {
                         </select>
                         {/* UX 5: guidance for client admins*/}
                         {isAtLeastClientAdmin(userRole) && !formData.programmeId && !loadingProgrammes && (
-                          <p className="text-[10px] text-amber-600 font-semibold mt-1.5 ml-1">
+                          <p className="mt-1.5 text-xs text-amber-600">
                             Recommended: link to a programme or confirm as independent.
                           </p>
                         )}
                         {formData.programmeManagerId && !loadingProgrammes && filteredProgrammes.length === 0 && (
-                          <p className="text-[10px] text-slate-500 font-semibold mt-1.5 ml-1">
+                          <p className="mt-1.5 text-xs text-slate-500">
                             This supervisor hasn't created any programmes yet. You can continue as independent and link one later.
                           </p>
                         )}
@@ -925,10 +912,10 @@ export function ProjectInitiation() {
                     {formData.programmeId && (() => {
                       const linked = filteredProgrammes.find(p => p.id === formData.programmeId);
                       return linked ? (
-                        <div className="flex items-center gap-2 text-xs text-indigo-700 font-semibold bg-indigo-100/60 px-3 py-2 rounded-lg border border-indigo-200/60">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                        <div className="flex items-center gap-2 text-xs text-slate-700 bg-slate-50 px-3 py-2 rounded-md border border-slate-200">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                           This project will be added to{' '}
-                          <span className="font-black">{linked.name}</span>
+                          <span className="font-semibold text-slate-900">{linked.name}</span>
                         </div>
                       ) : null;
                     })()}
@@ -962,7 +949,7 @@ export function ProjectInitiation() {
                         </optgroup>
                       </select>
                       {formErrors.type && (
-                        <p className="mt-1 ml-1 text-[11px] text-rose-500 font-bold">{formErrors.type}</p>
+                        <p className="mt-1.5 text-xs text-rose-600 font-medium">{formErrors.type}</p>
                       )}
                     </div>
 
@@ -981,7 +968,7 @@ export function ProjectInitiation() {
                         required
                       />
                       {formErrors.loc && (
-                        <p className="mt-1 ml-1 text-[11px] text-rose-500 font-bold">{formErrors.loc}</p>
+                        <p className="mt-1.5 text-xs text-rose-600 font-medium">{formErrors.loc}</p>
                       )}
                     </div>
 
@@ -991,13 +978,13 @@ export function ProjectInitiation() {
                         {formData.programmeId ? (
                           <span className="text-rose-500 ml-0.5">*</span>
                         ) : (
-                          <span className="text-slate-400 ml-0.5 font-semibold normal-case tracking-normal text-[10px]">
+                          <span className="text-xs font-normal text-slate-500">
                             (optional for independent projects)
                           </span>
                         )}
                         {loadingAssignablePMs && (
-                          <span className="flex items-center gap-1 text-indigo-500 font-semibold normal-case tracking-normal text-[10px]">
-                            <div className="w-2.5 h-2.5 border-2 border-indigo-200 border-t-indigo-500 rounded-full animate-spin" />
+                          <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500">
+                            <div className="w-2.5 h-2.5 border-2 border-slate-200 border-t-indigo-500 rounded-full animate-spin" />
                             Loading…
                           </span>
                         )}
@@ -1053,7 +1040,7 @@ export function ProjectInitiation() {
                         }
                       </select>
                       {formErrors.projectManagerId && (
-                        <p className="mt-1 ml-1 text-[11px] text-rose-500 font-bold">{formErrors.projectManagerId}</p>
+                        <p className="mt-1.5 text-xs text-rose-600 font-medium">{formErrors.projectManagerId}</p>
                       )}
                     </div>
 
@@ -1092,10 +1079,10 @@ export function ProjectInitiation() {
               {/* ── SECTION: PROPERTY & FINANCIAL ── */}
               <div className="space-y-6">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white shadow-lg shadow-emerald-100">
+                  <span className="inline-flex w-9 h-9 items-center justify-center rounded-md bg-indigo-50 text-indigo-600">
                     <Shield className="w-4 h-4" />
-                  </div>
-                  <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest">
+                  </span>
+                  <h2 className="text-lg font-semibold text-slate-900">
                     Scope & Assets
                   </h2>
                 </div>
@@ -1113,35 +1100,21 @@ export function ProjectInitiation() {
                   </div>
 
                   <div>
-                    <label className={labelCls}>Funding Streams</label>
-                    <select
-                      multiple
-                      className={clsx(inputCls, "min-h-[120px] scrollbar-hide")}
-                      value={formData.fundingStreams}
-                      onChange={(e) =>
-                        set(
-                          "fundingStreams",
-                          Array.from(
-                            e.target.selectedOptions,
-                            (o) => (o as HTMLOptionElement).value,
-                          ),
-                        )
-                      }
-                    >
-                      <option value="Grant">Government Grant</option>
-                      <option value="RTB receipts">
-                        Right to Buy Receipts
-                      </option>
-                      <option value="S106 income">Section 106 Income</option>
-                      <option value="Sales income">Private Sales Income</option>
-                      <option value="Private finance">
-                        Private Finance / Loans
-                      </option>
-                      <option value="Other">Other Internal Funds</option>
-                    </select>
-                    <p className="text-[10px] text-slate-400 font-bold mt-2 uppercase tracking-tight italic">
-                      Hold Ctrl / Cmd to multi-pick
-                    </p>
+                    <label htmlFor="project-funding-streams" className={labelCls}>Funding streams</label>
+                    <CheckPillGroup
+                      id="project-funding-streams"
+                      options={[
+                        { value: "Grant", label: "Government Grant" },
+                        { value: "RTB receipts", label: "Right to Buy Receipts" },
+                        { value: "S106 income", label: "Section 106 Income" },
+                        { value: "Sales income", label: "Private Sales Income" },
+                        { value: "Private finance", label: "Private Finance / Loans" },
+                        { value: "Other", label: "Other Internal Funds" },
+                      ]}
+                      values={formData.fundingStreams}
+                      onChange={(v) => set("fundingStreams", v)}
+                      variant="pill"
+                    />
                   </div>
 
                   <div className="space-y-4">
@@ -1209,10 +1182,10 @@ export function ProjectInitiation() {
                   / Project Count, which are aggregate/portfolio concepts). */}
               <div id="project-cost" className="space-y-6 scroll-mt-24">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white shadow-lg shadow-emerald-100">
+                  <span className="inline-flex w-9 h-9 items-center justify-center rounded-md bg-indigo-50 text-indigo-600">
                     <DollarSign className="w-4 h-4" />
-                  </div>
-                  <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest">
+                  </span>
+                  <h2 className="text-lg font-semibold text-slate-900">
                     Project Cost
                   </h2>
                 </div>
@@ -1265,10 +1238,10 @@ export function ProjectInitiation() {
  old version).*/}
               <div id="project-governance" className="space-y-6 scroll-mt-24">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-100">
+                  <span className="inline-flex w-9 h-9 items-center justify-center rounded-md bg-indigo-50 text-indigo-600">
                     <Shield className="w-4 h-4" />
-                  </div>
-                  <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest">
+                  </span>
+                  <h2 className="text-lg font-semibold text-slate-900">
                     Governance Setup
                   </h2>
                 </div>
@@ -1343,10 +1316,10 @@ export function ProjectInitiation() {
               {/* ── SECTION: MILESTONES ──*/}
               <div className="space-y-6 pb-2">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center text-white shadow-lg shadow-amber-100">
+                  <span className="inline-flex w-9 h-9 items-center justify-center rounded-md bg-indigo-50 text-indigo-600">
                     <LayoutTemplate className="w-4 h-4" />
-                  </div>
-                  <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest">
+                  </span>
+                  <h2 className="text-lg font-semibold text-slate-900">
                     Key Timeline
                   </h2>
                 </div>
@@ -1372,7 +1345,7 @@ export function ProjectInitiation() {
                   </div>
                 </div>
 
-                <div className="flex justify-end pt-8 mt-8 border-t border-slate-100">
+                <div className="flex justify-end pt-6 mt-6 border-t border-slate-200">
                   <button
                     type="button"
                     onClick={(e) => handleSubmit(e as any)}
@@ -1383,23 +1356,23 @@ export function ProjectInitiation() {
                         : undefined
                     }
                     className={clsx(
-                      "flex items-center gap-2 px-8 py-3.5 font-black rounded-lg text-sm uppercase tracking-widest transition-all shadow-lg active:scale-95",
+                      "inline-flex items-center gap-1.5 px-4 h-10 text-sm font-semibold rounded-md transition-colors",
                       loading || (!!activeProjectId && !isDirty)
-                        ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200 shadow-none"
-                        : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200 hover:shadow-indigo-300 transform hover:-translate-y-0.5"
+                        ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                        : "bg-indigo-600 text-white hover:bg-indigo-700",
                     )}
                   >
                     {loading ? (
                       <>
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Working…
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving…
                       </>
                     ) : activeProjectId ? (
                       <>
-                        <Save className="w-5 h-5 text-indigo-200" /> Save Details
+                        <Save className="w-4 h-4" /> Save details
                       </>
                     ) : (
                       <>
-                        <Rocket className="w-5 h-5 text-indigo-200" /> Create Project
+                        <Rocket className="w-4 h-4" /> Create project
                       </>
                     )}
                   </button>
@@ -1417,27 +1390,27 @@ export function ProjectInitiation() {
 
       {/* No-Programme Warning Modal (UX 3)*/}
       {showNoProgrammeWarning && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200">
-            <div className="flex items-center gap-3 mb-4 text-amber-600">
-              <div className="p-2 bg-amber-50 rounded-lg">
-                <AlertTriangle className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-black tracking-tight text-slate-900">Independent Project?</h3>
+        <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="inline-flex w-9 h-9 items-center justify-center rounded-md bg-amber-50 text-amber-600">
+                <AlertTriangle className="w-5 h-5" />
+              </span>
+              <h3 className="text-lg font-semibold text-slate-900">Independent project?</h3>
             </div>
-            <p className="text-slate-500 mb-1 text-sm leading-relaxed">
-              This project is not linked to any programme. It will be saved as an <span className="font-bold text-slate-700">independent project</span>.
+            <p className="text-sm text-slate-600 mb-1 leading-relaxed">
+              This project is not linked to any programme. It will be saved as an <span className="font-semibold text-slate-900">independent project</span>.
             </p>
-            <p className="text-slate-400 mb-6 text-xs leading-relaxed">
+            <p className="text-xs text-slate-500 mb-6 leading-relaxed">
               You can link it to a programme later from this page. If this is intentional, continue below.
             </p>
-            <div className="flex items-center gap-3 justify-end">
+            <div className="flex items-center gap-2 justify-end">
               <button
                 type="button"
                 onClick={() => setShowNoProgrammeWarning(false)}
-                className="px-4 py-2 font-black text-xs uppercase tracking-widest text-slate-500 hover:bg-slate-50 border border-slate-200 rounded-lg transition-all"
+                className="inline-flex items-center gap-1.5 px-3 h-9 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors"
               >
-                Cancel — Add Programme
+                Cancel — add programme
               </button>
               <button
                 type="button"
@@ -1445,9 +1418,9 @@ export function ProjectInitiation() {
                   setShowNoProgrammeWarning(false);
                   handleSubmit(undefined, true);
                 }}
-                className="flex items-center gap-2 px-4 py-2 font-black text-xs uppercase tracking-widest text-white bg-amber-500 hover:bg-amber-600 shadow-lg shadow-amber-100 rounded-lg transition-all"
+                className="inline-flex items-center gap-1.5 px-4 h-9 text-sm font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-md transition-colors"
               >
-                Continue as Independent
+                Continue as independent
               </button>
             </div>
           </div>
@@ -1456,23 +1429,23 @@ export function ProjectInitiation() {
 
       {/* Delete Draft Modal*/}
       {draftToDelete && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200">
-            <div className="flex items-center gap-3 mb-4 text-rose-600">
-              <div className="p-2 bg-rose-50 rounded-lg">
-                <AlertTriangle className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-black tracking-tight">Delete Draft Project</h3>
+        <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="inline-flex w-9 h-9 items-center justify-center rounded-md bg-rose-50 text-rose-600">
+                <AlertTriangle className="w-5 h-5" />
+              </span>
+              <h3 className="text-lg font-semibold text-slate-900">Delete draft project</h3>
             </div>
-            <p className="text-slate-500 mb-6 text-sm leading-relaxed">
+            <p className="text-sm text-slate-600 mb-6 leading-relaxed">
               Are you sure you want to completely remove this draft? This will permanently delete the project from the database and cannot be undone.
             </p>
-            <div className="flex items-center gap-3 justify-end">
+            <div className="flex items-center gap-2 justify-end">
               <button
                 type="button"
                 disabled={deletingDraft}
                 onClick={() => setDraftToDelete(null)}
-                className="px-4 py-2 font-black text-xs uppercase tracking-widest text-slate-500 hover:bg-slate-50 border border-slate-200 rounded-lg transition-all"
+                className="inline-flex items-center gap-1.5 px-3 h-9 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Cancel
               </button>
@@ -1494,7 +1467,7 @@ export function ProjectInitiation() {
                     setDeletingDraft(false);
                   }
                 }}
-                className="flex items-center justify-center gap-2 px-4 py-2 font-black text-xs uppercase tracking-widest text-white bg-rose-600 hover:bg-rose-700 shadow-lg shadow-rose-200/50 rounded-lg transition-all min-w-[100px]"
+                className="inline-flex items-center justify-center gap-1.5 px-4 h-9 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md transition-colors min-w-25"
               >
                 {deletingDraft ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Delete"}
               </button>

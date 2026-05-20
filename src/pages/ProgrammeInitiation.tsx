@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { ArrowLeft, Shield, AlertTriangle, CheckCircle2, ScanSearch, DollarSign, Rocket, Target, Plus, Loader2 } from 'lucide-react';
+import { ArrowLeft, Shield, AlertTriangle, ScanSearch, DollarSign, Rocket, Target, Plus, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useStore } from '../store/useStore';
 import { api } from '../lib/api';
@@ -13,10 +13,11 @@ import { format } from 'date-fns';
 import { calculateProgrammeProgress } from '../lib/progress';
 import { DeliveryTeamCRUD } from '../components/DeliveryTeamCRUD';
 import { PublicationChecklist } from '../components/PublicationChecklist';
+import { CheckPillGroup, inputBase, textareaBase } from '../components/forms';
 
-const inputCls = "w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white/80 backdrop-blur-sm placeholder:text-slate-400 shadow-sm hover:border-slate-300";
-const labelCls = "block text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] mb-2 ml-1";
-const textareaCls = `${inputCls} resize-none min-h-[100px]`;
+const inputCls = inputBase;
+const labelCls = "block text-sm font-medium text-slate-700 mb-1.5";
+const textareaCls = textareaBase;
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 const PROGRAMME_TYPES = [
@@ -97,39 +98,22 @@ const REGULATORY_OBLIGATIONS = [
 ];
 
 
-// ─── Multi-checkbox component ────────────────────────────────────────────────
-function CheckGroup({ options, selected, onChange }: {
+// ─── Multi-checkbox component (delegates to shared primitive) ──────────────
+function CheckGroup({ id, options, selected, onChange }: {
+    id?: string;
     options: string[];
     selected: string[];
     onChange: (val: string[]) => void;
 }) {
-    // Guard against non-array values that may arrive from DB hydration
-    const safeSelected = Array.isArray(selected) ? selected : [];
-    const toggle = (opt: string) => {
-        onChange(safeSelected.includes(opt) ? safeSelected.filter(o => o !== opt) : [...safeSelected, opt]);
-    };
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {options.map(opt => {
-                const on = safeSelected.includes(opt);
-                return (
-                    <label
-                        key={opt}
-                        onClick={() => toggle(opt)}
-                        className={`group flex items-start gap-3 cursor-pointer rounded-lg border p-4 text-[11px] transition-all select-none ${on
-                            ? 'border-indigo-500 bg-indigo-50/50 shadow-sm shadow-indigo-100/50'
-                            : 'border-slate-200 bg-white/50 hover:border-indigo-300 hover:bg-white hover:shadow-md'}`}
-                    >
-                        <div className={`mt-0.5 w-5 h-5 rounded-md flex-shrink-0 border-2 flex items-center justify-center transition-all ${on ? 'border-indigo-600 bg-indigo-600 shadow-sm' : 'border-slate-300 group-hover:border-indigo-400'}`}>
-                            {on && <CheckCircle2 className="w-3 h-3 text-white stroke-[3px]" />}
-                        </div>
-                        <div className="flex-1">
-                            <span className={`block transition-colors ${on ? 'text-indigo-900 font-bold' : 'text-slate-600 group-hover:text-slate-900'}`}>{opt}</span>
-                        </div>
-                    </label>
-                );
-            })}
-        </div>
+        <CheckPillGroup
+            id={id || 'check-group'}
+            options={options}
+            values={Array.isArray(selected) ? selected : []}
+            onChange={onChange}
+            variant="card"
+            columns={2}
+        />
     );
 }
 
@@ -621,61 +605,58 @@ export function ProgrammeInitiation() {
         <div>
             <div className="space-y-6">
                 {/* ── HEADER SECTION ──────────────────────────────────────────*/}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 md:mb-12 border-b border-slate-100 pb-8">
-                    <div className="flex items-center gap-4">
-                        <button onClick={() => navigate(-1)} className="p-2 hover:bg-slate-50 rounded-lg transition-colors">
+                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 pb-6 border-b border-slate-200">
+                    <div className="flex items-start gap-3 min-w-0">
+                        <button
+                            onClick={() => navigate(-1)}
+                            className="p-2 hover:bg-slate-100 rounded-md transition-colors shrink-0"
+                            aria-label="Back"
+                        >
                             <ArrowLeft className="w-5 h-5 text-slate-500" />
                         </button>
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <h1 className="text-xl font-black text-slate-900 tracking-tight">Programme Initiation</h1>
-                                <div className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] font-black rounded-lg uppercase tracking-wider">Strategic Setup</div>
-                                
-                                {isAtLeastClientAdmin(_userRole) && (
-                                    <button
-                                        onClick={() => {
-                                            setActiveProgramme(null);
-                                            navigate('/programmes/new');
-                                        }}
-                                        className="flex items-center gap-2 px-3 py-1 bg-white border border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-200 rounded-lg transition-all text-[10px] font-black uppercase tracking-wider"
-                                    >
-                                        <Plus className="w-3 h-3 text-indigo-500" />
-                                        New Programme
-                                    </button>
-                                )}
-                            </div>
-                            <p className="text-sm text-slate-500 mt-1 font-medium">Define governance, financials and regulatory context.</p>
+                        <div className="min-w-0">
+                            <h1 className="text-2xl font-semibold text-slate-900">Programme initiation</h1>
+                            <p className="mt-1 text-sm text-slate-500">Define governance, financials and regulatory context.</p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        <button 
+                    <div className="flex flex-wrap items-center gap-2">
+                        {isAtLeastClientAdmin(_userRole) && (
+                            <button
+                                onClick={() => {
+                                    setActiveProgramme(null);
+                                    navigate('/programmes/new');
+                                }}
+                                className="inline-flex items-center gap-1.5 px-3 h-9 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors"
+                            >
+                                <Plus className="w-4 h-4" />
+                                New
+                            </button>
+                        )}
+                        <button
                             onClick={loadDemo}
-                            className="flex items-center gap-2 px-4 py-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all text-sm font-bold border border-transparent hover:border-indigo-100"
+                            className="inline-flex items-center gap-1.5 px-3 h-9 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors"
                         >
-                            <Target className="w-4 h-4" /> Load Demo
+                            <Target className="w-4 h-4" /> Load demo
                         </button>
-                        
-                        <button 
+                        <button
                             onClick={() => handleSave(true)}
                             disabled={loading || success}
-                            className="px-5 py-2 text-slate-600 hover:text-slate-900 bg-white border border-slate-200 rounded-lg transition-all text-sm font-black shadow-sm"
+                            className="inline-flex items-center gap-1.5 px-3 h-9 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
-                            Save Draft
+                            Save draft
                         </button>
-
                         <button
                             onClick={() => handleSave(false)}
                             disabled={loading || success}
                             className={clsx(
-                                "flex items-center gap-2 px-6 py-2.5 rounded-lg transition-all text-sm font-black shadow-lg shadow-indigo-200",
+                                "inline-flex items-center gap-1.5 px-4 h-9 text-sm font-semibold rounded-md transition-colors",
                                 (loading || success)
-                                    ? "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none"
-                                    : "bg-indigo-600 text-white hover:bg-indigo-700 hover:-translate-y-0.5"
+                                    ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                                    : "bg-indigo-600 text-white hover:bg-indigo-700",
                             )}
                         >
-                            {loading ? 'Saving...' : success ? 'Success!' : 'Finalise Programme'}
-                            {!loading && !success && <Rocket className="w-4 h-4" />}
+                            {loading ? 'Saving…' : success ? 'Saved' : 'Finalise programme'}
                         </button>
                     </div>
                 </div>
@@ -684,10 +665,10 @@ export function ProgrammeInitiation() {
                 <div className="relative flex flex-col lg:flex-row gap-8">
                     {/* Full-section loader overlay during create / update*/}
                     {loading && (
-                        <div className="absolute inset-0 z-30 bg-white/70 backdrop-blur-[3px] rounded-lg flex flex-col items-center justify-center gap-4 min-h-[200px]">
-                            <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin shadow-md" />
-                            <span className="text-sm font-black text-indigo-900 tracking-widest uppercase">
-                                {existing ? 'Updating Programme…' : 'Creating Programme…'}
+                        <div className="absolute inset-0 z-30 bg-white/80 rounded-lg flex flex-col items-center justify-center gap-3 min-h-[200px]">
+                            <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+                            <span className="text-sm font-medium text-slate-700">
+                                {existing ? 'Updating programme…' : 'Creating programme…'}
                             </span>
                         </div>
                     )}
@@ -695,41 +676,35 @@ export function ProgrammeInitiation() {
                     <div className="flex-1 min-w-0 space-y-8">
                         {/* Continue Setup Section*/}
                         {unfinishedProgrammes.length > 0 && !activeProgrammeId && (
-                            <div className="p-6 bg-indigo-50 border border-indigo-100 rounded-lg">
-                                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                                    <div className="flex items-center gap-4">
-                                        <div className="p-3 bg-white rounded-lg shadow-sm border border-indigo-100">
-                                            <Rocket className="w-5 h-5 text-indigo-600" />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-sm font-black text-indigo-900 uppercase tracking-tight">Continue Setup</h3>
-                                            <p className="text-xs text-indigo-700/70 font-medium">You have {unfinishedProgrammes.length} programme{unfinishedProgrammes.length > 1 ? 's' : ''} in progress.</p>
-                                        </div>
+                            <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-semibold text-slate-900">Continue setup</p>
+                                        <p className="mt-0.5 text-xs text-slate-500">You have {unfinishedProgrammes.length} programme{unfinishedProgrammes.length > 1 ? 's' : ''} in progress.</p>
                                     </div>
-                                    <div className="flex items-center gap-3 w-full sm:w-auto">
-                                        <select 
-                                            className="flex-1 bg-white border border-indigo-200 rounded-lg px-4 py-2 text-xs font-bold text-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm min-w-[180px]"
-                                            onChange={(e) => handleContinue(e.target.value)}
-                                            value={activeProgrammeId || ""}
-                                        >
-                                            <option value="" disabled>Select Programme to Continue...</option>
-                                            {unfinishedProgrammes.map(p => (
-                                                <option key={p.id} value={p.id}>{stripMarkdown(p.name)} ({p.setupProgress}%)</option>
-                                            ))}
-                                        </select>
-                                    </div>
+                                    <select
+                                        className={`${inputCls} sm:max-w-xs`}
+                                        onChange={(e) => handleContinue(e.target.value)}
+                                        value={activeProgrammeId || ""}
+                                        aria-label="Continue programme"
+                                    >
+                                        <option value="" disabled>Select programme to continue…</option>
+                                        {unfinishedProgrammes.map(p => (
+                                            <option key={p.id} value={p.id}>{stripMarkdown(p.name)} ({p.setupProgress}%)</option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
                         )}
 
                         <div className="space-y-6 md:space-y-8">
                             {/* Section 1: Identity & Governance*/}
-                            <div id="programme-identity" className="p-5 md:p-8 bg-white border border-slate-200 rounded-lg shadow-sm space-y-6">
-                                <div className="flex items-center gap-3 pb-6 border-b border-slate-50">
-                                    <div className="p-2.5 bg-indigo-50 rounded-lg"><Target className="w-5 h-5 text-indigo-600" /></div>
+                            <div id="programme-identity" className="p-5 md:p-8 bg-white border border-slate-200 rounded-lg space-y-6">
+                                <div className="flex items-center gap-3 pb-6 border-b border-slate-100">
+                                    <span className="inline-flex w-9 h-9 items-center justify-center rounded-md bg-indigo-50 text-indigo-600"><Target className="w-5 h-5" /></span>
                                     <div>
-                                        <h2 className="text-lg font-black text-slate-900 tracking-tight">Identity & Governance</h2>
-                                        <p className="text-xs text-slate-500 font-medium mt-0.5">Define core identifiers and leadership structure.</p>
+                                        <h2 className="text-lg font-semibold text-slate-900">Identity & governance</h2>
+                                        <p className="mt-1 text-sm text-slate-500">Define core identifiers and leadership structure.</p>
                                     </div>
                                 </div>
 
@@ -741,7 +716,7 @@ export function ProgrammeInitiation() {
                                     <div className="md:col-span-3">
                                         <label className={labelCls}>Programme Full Name *</label>
                                         <input data-required-field="name" className={clsx(inputCls, formErrors.name && 'border-rose-400 focus:border-rose-500')} value={form.name} onChange={e => { set('name', e.target.value); setFormErrors(p => ({ ...p, name: '' })); }} placeholder="e.g. Manchester Net Zero Housing Programme" />
-                                        {formErrors.name && <p className="mt-1 ml-1 text-[11px] text-rose-500 font-bold">{formErrors.name}</p>}
+                                        {formErrors.name && <p className="mt-1.5 text-xs text-rose-600 font-medium">{formErrors.name}</p>}
                                     </div>
                                 </div>
 
@@ -752,7 +727,7 @@ export function ProgrammeInitiation() {
                                             <option value="">— Select —</option>
                                             {Array.isArray(PROGRAMME_TYPES) && PROGRAMME_TYPES.map(t => <option key={t}>{t}</option>)}
                                         </select>
-                                        {formErrors.type && <p className="mt-1 ml-1 text-[11px] text-rose-500 font-bold">{formErrors.type}</p>}
+                                        {formErrors.type && <p className="mt-1.5 text-xs text-rose-600 font-medium">{formErrors.type}</p>}
                                     </div>
                                     <div>
                                         <label className={labelCls}>Geographic Scope</label>
@@ -763,7 +738,7 @@ export function ProgrammeInitiation() {
                                 <div>
                                     <label className={labelCls}>Strategic Objectives *</label>
                                     <textarea data-required-field="strategicObjectives" className={clsx(textareaCls, formErrors.strategicObjectives && 'border-rose-400 focus:border-rose-500')} rows={3} value={form.strategicObjectives} onChange={e => { set('strategicObjectives', e.target.value); setFormErrors(p => ({ ...p, strategicObjectives: '' })); }} placeholder="Define the core mission of this programme..." />
-                                    {formErrors.strategicObjectives && <p className="mt-1 ml-1 text-[11px] text-rose-500 font-bold">{formErrors.strategicObjectives}</p>}
+                                    {formErrors.strategicObjectives && <p className="mt-1.5 text-xs text-rose-600 font-medium">{formErrors.strategicObjectives}</p>}
                                 </div>
 
                                 {/*standardised Governance Profile.
@@ -801,12 +776,12 @@ export function ProgrammeInitiation() {
 
 
                             {/* Section 3: Scale & Financials*/}
-                            <div id="programme-finance" className="p-5 md:p-8 bg-white border border-slate-200 rounded-lg shadow-sm space-y-6">
-                                <div className="flex items-center gap-3 pb-6 border-b border-slate-50">
-                                    <div className="p-2.5 bg-emerald-50 rounded-lg"><DollarSign className="w-5 h-5 text-emerald-600" /></div>
+                            <div id="programme-finance" className="p-5 md:p-8 bg-white border border-slate-200 rounded-lg space-y-6">
+                                <div className="flex items-center gap-3 pb-6 border-b border-slate-100">
+                                    <span className="inline-flex w-9 h-9 items-center justify-center rounded-md bg-indigo-50 text-indigo-600"><DollarSign className="w-5 h-5" /></span>
                                     <div>
-                                        <h2 className="text-lg font-black text-slate-900 tracking-tight">Scale & Portfolio Financials</h2>
-                                        <p className="text-xs text-slate-500 font-medium mt-0.5">Budget targets and unit volume.</p>
+                                        <h2 className="text-lg font-semibold text-slate-900">Scale & portfolio financials</h2>
+                                        <p className="mt-1 text-sm text-slate-500">Budget targets and unit volume.</p>
                                     </div>
                                 </div>
 
@@ -845,12 +820,12 @@ export function ProgrammeInitiation() {
                             </div>
 
                             {/* Section 4: Regulatory & Compliance*/}
-                            <div id="programme-compliance" className="p-5 md:p-8 bg-white border border-slate-200 rounded-lg shadow-sm space-y-6">
-                                <div className="flex items-center gap-3 pb-6 border-b border-slate-50">
-                                    <div className="p-2.5 bg-violet-50 rounded-lg"><Shield className="w-5 h-5 text-violet-600" /></div>
+                            <div id="programme-compliance" className="p-5 md:p-8 bg-white border border-slate-200 rounded-lg space-y-6">
+                                <div className="flex items-center gap-3 pb-6 border-b border-slate-100">
+                                    <span className="inline-flex w-9 h-9 items-center justify-center rounded-md bg-indigo-50 text-indigo-600"><Shield className="w-5 h-5" /></span>
                                     <div>
-                                        <h2 className="text-lg font-black text-slate-900 tracking-tight">Regulatory Compliance</h2>
-                                        <p className="text-xs text-slate-500 font-medium mt-0.5">Cross-cutting standards and standards alignment.</p>
+                                        <h2 className="text-lg font-semibold text-slate-900">Regulatory compliance</h2>
+                                        <p className="mt-1 text-sm text-slate-500">Cross-cutting standards and standards alignment.</p>
                                     </div>
                                 </div>
 
@@ -897,48 +872,48 @@ export function ProgrammeInitiation() {
                             </div>
 
                             {/* Section 5: Strategic Risk Identification*/}
-                            <div id="programme-risk" className="p-5 md:p-8 bg-white border border-slate-200 rounded-lg shadow-sm space-y-6">
-                                <div className="flex items-center gap-3 pb-6 border-b border-slate-50">
-                                    <div className="p-2.5 bg-rose-50 rounded-lg"><AlertTriangle className="w-5 h-5 text-rose-600" /></div>
+                            <div id="programme-risk" className="p-5 md:p-8 bg-white border border-slate-200 rounded-lg space-y-6">
+                                <div className="flex items-center gap-3 pb-6 border-b border-slate-100">
+                                    <span className="inline-flex w-9 h-9 items-center justify-center rounded-md bg-indigo-50 text-indigo-600"><AlertTriangle className="w-5 h-5" /></span>
                                     <div>
-                                        <h2 className="text-lg font-black text-slate-900 tracking-tight">Strategic Risk Identification</h2>
-                                        <p className="text-xs text-slate-500 font-medium mt-0.5">High-level risk discovery and AI insights.</p>
+                                        <h2 className="text-lg font-semibold text-slate-900">Strategic risk identification</h2>
+                                        <p className="mt-1 text-sm text-slate-500">High-level risk discovery and AI insights.</p>
                                     </div>
                                 </div>
 
-                                <div className="bg-indigo-600 rounded-lg p-6 text-white shadow-xl shadow-indigo-200 overflow-hidden relative group">
-                                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-3xl rounded-full translate-x-32 -translate-y-32" />
-                                    <div className="relative flex flex-col sm:flex-row items-center justify-between gap-6">
-                                        <div className="flex-1 text-center sm:text-left">
-                                            <div className="flex items-center justify-center sm:justify-start gap-2 mb-2">
-                                                <ScanSearch className="w-5 h-5 text-indigo-200" />
-                                                <span className="text-sm font-black uppercase tracking-wider">AI Strategic Advisor</span>
-                                            </div>
-                                            <p className="text-xs text-indigo-100 font-medium leading-relaxed">
-                                                Using your Strategic Objectives, we can generate a baseline set of programme-level risks automatically.
+                                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                    <div className="flex items-start gap-3 min-w-0">
+                                        <span className="inline-flex w-9 h-9 items-center justify-center rounded-md bg-white border border-slate-200 text-indigo-600 shrink-0">
+                                            <ScanSearch className="w-5 h-5" />
+                                        </span>
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-semibold text-slate-900">AI strategic advisor</p>
+                                            <p className="mt-0.5 text-xs text-slate-500 leading-relaxed">
+                                                Using your strategic objectives, generate a baseline set of programme-level risks automatically.
                                             </p>
                                         </div>
-                                        <button
-                                            onClick={runAiAnalysis}
-                                            disabled={aiAnalyzing || !form.strategicObjectives}
-                                            className="w-full sm:w-auto px-6 py-3 bg-white text-indigo-600 text-xs font-black rounded-lg hover:bg-slate-50 transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg"
-                                        >
-                                            {aiAnalyzing
-                                                ? <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing...</>
-                                                : <><ScanSearch className="w-4 h-4" /> Run Discovery</>
-                                            }
-                                        </button>
                                     </div>
+                                    <button
+                                        onClick={runAiAnalysis}
+                                        disabled={aiAnalyzing || !form.strategicObjectives}
+                                        className="inline-flex items-center justify-center gap-1.5 px-3 h-9 text-sm font-semibold bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+                                    >
+                                        {aiAnalyzing
+                                            ? <><Loader2 className="w-4 h-4 animate-spin" /> Analysing…</>
+                                            : <><ScanSearch className="w-4 h-4" /> Run discovery</>
+                                        }
+                                    </button>
                                 </div>
 
-                                {aiError && <div className="p-4 bg-red-50 border border-red-100 rounded-lg text-xs text-red-600 font-bold">{aiError}</div>}
+                                {aiError && <div className="p-3 bg-rose-50 border border-rose-200 rounded-md text-sm text-rose-700">{aiError}</div>}
 
                                 <div>
-                                    <label className={labelCls}>Strategic Risks</label>
-                                    <textarea 
-                                        className={`${textareaCls} font-mono text-[12px] h-[300px]`} 
-                                        value={form.knownStrategicRisks} 
-                                        onChange={e => set('knownStrategicRisks', e.target.value)} 
+                                    <label htmlFor="prog-strategic-risks" className={labelCls}>Strategic risks</label>
+                                    <textarea
+                                        id="prog-strategic-risks"
+                                        className={`${textareaCls} font-mono text-xs h-[300px]`}
+                                        value={form.knownStrategicRisks}
+                                        onChange={e => set('knownStrategicRisks', e.target.value)}
                                         placeholder="[FINANCIAL] Inflation impact...&#10;[REGULATORY] BSA 2022 Gateway delays..."
                                     />
                                 </div>
