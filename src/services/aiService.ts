@@ -1313,6 +1313,34 @@ export async function chatWithAI(
 // keep using `api.geminiPrompt` directly with their own creative-task
 // configs (typically 0.7 temperature, topK 40). Strict isolation by
 // design: per-feature wrapper > shared route config tweaks.
+
+// Schema for TAC insight responses — mirrors SummaryTabContent in
+// src/types/technicalAssurance.ts. Listed required[] are the always-
+// present top-level data fields; drawing / rfi / costProgramme stay
+// optional because advisory enquiries legitimately omit them and the
+// costProgramme retry path handles substantive enquiries better than a
+// router-level 502 would. With this schema in place the router (a)
+// embeds it in the system message so OpenRouter models see the shape
+// on the costProgramme retry path, and (b) shape-validates the response
+// — wrong shape throws 502 → cascade falls through to Gemini-direct.
+// The initial PDF call is multimodal so it bypasses OpenRouter entirely
+// and goes straight to Gemini direct, which natively enforces this
+// schema via its `responseSchema` API.
+const TAC_INSIGHT_SCHEMA = {
+  type: "object",
+  properties: {
+    lede:               { type: "string" },
+    options:            { type: "array",  items: { type: "object" } },
+    citations:          { type: "array",  items: { type: "object" } },
+    complianceSnapshot: { type: "array",  items: { type: "object" } },
+    nextActions:        { type: "array",  items: { type: "string" } },
+    drawing:            { type: "object" },
+    rfi:                { type: "object" },
+    costProgramme:      { type: "object" },
+  },
+  required: ["lede", "options", "citations", "complianceSnapshot", "nextActions"],
+};
+
 async function tacInsightGeminiCall(
   prompt: string,
   inlineParts?: Array<{ mimeType: string; data: string }>,
@@ -1330,6 +1358,7 @@ async function tacInsightGeminiCall(
       topK: 1,
       maxOutputTokens: 16384,
       responseMimeType: "application/json",
+      responseSchema: TAC_INSIGHT_SCHEMA,
     },
     "tacGenerateInsight",
     inlineParts,
