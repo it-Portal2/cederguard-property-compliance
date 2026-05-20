@@ -314,6 +314,7 @@ function AppContent() {
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { NotificationWrapper } from './components/NotificationWrapper';
 import { Toaster } from 'react-hot-toast';
+import { CustomToast } from './components/CustomToast';
 
 export default function App() {
   const setDeferredPrompt = useStore(state => state.setDeferredPrompt);
@@ -356,17 +357,15 @@ export default function App() {
         <AuthProvider>
           <NotificationWrapper>
             <AppContent />
-            <Toaster 
-              position="top-right" 
+            <Toaster
+              position="top-right"
               toastOptions={{
-                success: {
-                  duration: 4000,
-                },
-                error: {
-                  duration: 6000,
-                },
+                success: { duration: 4000 },
+                error:   { duration: 6000 },
               }}
-            />
+            >
+              {(t) => <CustomToast t={t} />}
+            </Toaster>
           </NotificationWrapper>
         </AuthProvider>
       </ErrorBoundary>

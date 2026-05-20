@@ -102,3 +102,10 @@ html, body {
     scrollbar-width: none;
   }
 }
+
+/* CustomToast progress-bar countdown — width animates from 100% → 0%
+   over the toast's duration, matching the screenshot's bottom indicator. */
+@keyframes toast-progress {
+  from { width: 100%; }
+  to   { width: 0%; }
+}
