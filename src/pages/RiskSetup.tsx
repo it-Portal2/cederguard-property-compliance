@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router';
 import { Briefcase, ScanSearch, Building2, ShieldAlert, FileWarning, AlertTriangle, ArrowRight, Settings, Check, Loader2, CheckCircle2 } from 'lucide-react';
 import { analyzeCompliance } from '../services/aiService';
@@ -608,8 +609,8 @@ export function RiskSetup() {
     return (
         <div>
             {/* Restart Confirmation Dialog*/}
-            {showRestartConfirm && (
-                <div className="fixed inset-0 z-110 flex items-center justify-center p-4 bg-slate-900/50">
+            {showRestartConfirm && createPortal(
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/50">
                     <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
                         <div className="flex items-center gap-3 mb-4">
                             <span className="inline-flex w-9 h-9 items-center justify-center rounded-md bg-rose-50 text-rose-600">
@@ -635,12 +636,13 @@ export function RiskSetup() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body,
             )}
 
             {/* Restart Loading Overlay*/}
-            {isRestarting && (
-                <div className="fixed inset-0 z-110 flex items-center justify-center bg-slate-900/50">
+            {isRestarting && createPortal(
+                <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/50">
                     <div className="bg-white rounded-lg shadow-xl p-6 flex flex-col items-center gap-3 max-w-xs w-full mx-4">
                         <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
                         <div className="text-center">
@@ -648,12 +650,13 @@ export function RiskSetup() {
                             <p className="text-xs text-slate-500 mt-1">Removing all previous risk analysis data…</p>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body,
             )}
 
             {/* Existing Analysis Overlay*/}
-            {showAnalysisExists && (
-                <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/50">
+            {showAnalysisExists && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50">
                     <div className="bg-white rounded-lg shadow-xl max-w-xl w-full p-6 sm:p-8">
                         <div className="text-center">
                             <span className="inline-flex w-12 h-12 items-center justify-center rounded-md bg-indigo-50 text-indigo-600 mx-auto mb-4">
@@ -711,7 +714,8 @@ export function RiskSetup() {
                             </div>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body,
             )}
 
             <div className="space-y-6">

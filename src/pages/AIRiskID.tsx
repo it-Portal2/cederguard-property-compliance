@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useStore } from "../store/useStore";
 import { analyzeRisks, analyzeStrategicRisks } from "../services/aiService";
 import { Link, useSearchParams, useNavigate } from "react-router";
@@ -505,7 +506,7 @@ export function AIRiskID() {
 
       {/* Restarting Loading Overlay*/}
       {isRestarting && (
-        <div className="fixed inset-0 z-110 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[110] flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm">
           <Loader2 className="w-10 h-10 text-indigo-600 animate-spin mb-4" />
           <p className="text-slate-700 font-bold text-sm uppercase tracking-widest">Clearing Analysis Data...</p>
         </div>
@@ -548,82 +549,68 @@ export function AIRiskID() {
       )}
 
       {/* Existing Analysis Overlay */}
-      {showAnalysisExists && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white rounded-lg shadow-2xl max-w-lg w-full overflow-hidden border border-slate-100 animate-in zoom-in-95 slide-in-from-bottom-8 duration-500">
-            <div className="bg-slate-900 p-8 text-white relative">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -mr-16 -mt-16 blur-3xl" />
-              <ShieldAlert className="w-12 h-12 text-emerald-400 mb-4" />
-              <h3 className="text-xl font-black tracking-tight leading-tight mb-2">
-                Risk Analysis Already Complete
+      {showAnalysisExists && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="text-center">
+              <span className="inline-flex w-12 h-12 items-center justify-center rounded-md bg-indigo-50 text-indigo-600 mx-auto mb-4">
+                <ShieldAlert className="w-6 h-6" />
+              </span>
+              <h3 className="text-xl font-semibold text-slate-900 mb-2">
+                Risk analysis already complete
               </h3>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                A risk profile has already been established for this entity.
-                Running a new analysis will identify potential threats based on
-                current project data.
+              <p className="text-sm text-slate-600 leading-relaxed max-w-sm mx-auto mb-6">
+                A risk profile has already been established for this entity. Would you like to view the results or start fresh?
               </p>
-            </div>
-            <div className="p-8 space-y-4">
-              <div className="flex flex-col gap-3">
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <button
                   onClick={() =>
                     navigate(
                       `/risk/dashboard?from=initiation&type=${activeProjectId ? "project" : "programme"}${activeProjectId ? `&projectId=${activeProjectId}` : `&programmeId=${activeProgrammeId}`}`,
                     )
                   }
-                  className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-emerald-600 text-white rounded-lg font-black text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-100 active:scale-[0.98]"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 h-10 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-md transition-colors"
                 >
-                  <Eye className="w-4 h-4" /> View Risk Dashboard
+                  <Eye className="w-4 h-4" /> View dashboard
                 </button>
-                <div className="flex items-center gap-3 py-2">
-                  <div className="h-px bg-slate-100 flex-1" />
-                  <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">
-                    OR
-                  </span>
-                  <div className="h-px bg-slate-100 flex-1" />
-                </div>
                 <button
                   onClick={() => setShowRestartConfirm(true)}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-white text-rose-600 border-2 border-rose-50 rounded-lg font-black text-xs uppercase tracking-widest hover:bg-rose-50 hover:border-rose-100 transition-all active:scale-[0.98]"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 h-10 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors"
                 >
-                  <RefreshCw className="w-4 h-4" /> Restart Analysis
+                  <RefreshCw className="w-4 h-4" /> Restart analysis
                 </button>
               </div>
 
-              {fromInitiation ? (
-                <button
-                  onClick={async () => {
-                    const contextId = activeProjectId || activeProgrammeId;
-                    if (contextId) {
-                      if (activeProjectId)
-                        await updateProject(contextId, {
-                          riskSetupDone: true,
-                          aiRiskDiscoveryDone: true,
-                        });
-                      else
-                        await updateProgramme(contextId, {
-                          riskSetupDone: true,
-                          aiRiskDiscoveryDone: true,
-                        });
-                    }
-                    navigate(activeProjectId ? "/initiate" : "/programmes/new");
-                  }}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-emerald-50 text-emerald-700 rounded-lg font-black text-[10px] uppercase tracking-widest hover:bg-emerald-100 transition-all border border-emerald-100 mt-4"
-                >
-                  <CheckCircle2 className="w-4 h-4" /> Continue to Initiation
-                  Step 4
-                </button>
-              ) : (
-                <button
-                  onClick={() => setShowAnalysisExists(false)}
-                  className="w-full text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] hover:text-slate-600 transition-colors mt-4"
-                >
-                  Cancel & Return
-                </button>
+              {fromInitiation && (
+                <div className="mt-4">
+                  <button
+                    onClick={async () => {
+                      const contextId = activeProjectId || activeProgrammeId;
+                      if (contextId) {
+                        if (activeProjectId)
+                          await updateProject(contextId, {
+                            riskSetupDone: true,
+                            aiRiskDiscoveryDone: true,
+                          });
+                        else
+                          await updateProgramme(contextId, {
+                            riskSetupDone: true,
+                            aiRiskDiscoveryDone: true,
+                          });
+                      }
+                      navigate(activeProjectId ? "/initiate" : "/programmes/new");
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 h-9 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md hover:bg-emerald-100 transition-colors"
+                  >
+                    <CheckCircle2 className="w-4 h-4" /> Continue to initiation step 4
+                  </button>
+                </div>
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
       {fromInitiation && (

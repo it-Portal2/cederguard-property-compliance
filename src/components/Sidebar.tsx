@@ -6,7 +6,7 @@ import {
   ShieldAlert, Brain, BarChart, BellRing, Layers, TrendingUp,
   ClipboardList, PieChart, ScrollText, Gavel, Users, User, LogOut,
   ChevronDown, ChevronRight, FileBarChart, LayoutTemplate, Plus, Target, Wand2,
-  Terminal, KeyRound, HelpCircle, Calculator, Rocket, CreditCard, FileText, Calendar as CalendarIcon, X, Map,
+  Terminal, KeyRound, HelpCircle, Calculator, Rocket, FileText, Calendar as CalendarIcon, X, Map,
   FolderClosed, MessageSquare, ShieldCheck
 } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -14,7 +14,7 @@ import { useStore } from '../store/useStore';
 import { logout } from '../lib/firebase';
 import { useNavigate, useSearchParams, useLocation } from 'react-router';
 import { useState, useEffect } from 'react';
-import { isSuperAdmin, isAtLeastClientAdmin, isAtLeastPM, canCreateProject, canCreateProgramme, isSystemAdmin, isComplianceLead } from '../lib/roles';
+import { isSuperAdmin, isAtLeastClientAdmin, isAtLeastPM, canCreateProject, canCreateProgramme, isComplianceLead } from '../lib/roles';
 
 interface NavGroupProps {
   label: string;
@@ -361,17 +361,15 @@ export function Sidebar() {
 
         {/* ACCOUNT */}
         {(isClientAdmin || isAdmin) && (
-          <NavGroup 
-            label="Account" 
-            isAdmin={hasCoreAccess} 
-            isOpen={openGroup === 'Account'} 
+          <NavGroup
+            label="Account"
+            isAdmin={hasCoreAccess}
+            isOpen={openGroup === 'Account'}
             onToggle={() => toggleGroup('Account')}
           >
             {isClientAdmin && <NavItem to="/setup/workspace" icon={Settings2} label="Workspace Management" />}
-            {isSystemAdmin(user?.email) && (
+            {isAdmin && (
               <>
-                <NavItem to="/team" icon={Users} label="Team Management" iconClass="text-indigo-500" />
-                <NavItem to="/admin/billing" icon={CreditCard} label="Billing & Subscription" iconClass="text-emerald-500" />
                 <NavItem to="/admin" icon={Shield} label="Platform Admin" iconClass="text-orange-500" />
                 <NavItem to="/admin/calculator" icon={Calculator} label="Cost Calculator" iconClass="text-violet-500" />
               </>

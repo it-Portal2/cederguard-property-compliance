@@ -1391,7 +1391,7 @@ export function ProjectInitiation() {
 
       {/* No-Programme Warning Modal (UX 3)*/}
       {showNoProgrammeWarning && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/50 p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex items-center gap-3 mb-4">
               <span className="inline-flex w-9 h-9 items-center justify-center rounded-md bg-amber-50 text-amber-600">
@@ -1430,7 +1430,7 @@ export function ProjectInitiation() {
 
       {/* Delete Draft Modal*/}
       {draftToDelete && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/50 p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex items-center gap-3 mb-4">
               <span className="inline-flex w-9 h-9 items-center justify-center rounded-md bg-rose-50 text-rose-600">

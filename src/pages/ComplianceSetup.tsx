@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate, useSearchParams, Link } from "react-router";
 import { ClipboardList, ScanSearch, ShieldCheck, AlertCircle, AlertTriangle, Loader2, Check, ArrowRight, ArrowLeft, CheckCircle2, Info, Trash2, Lock, ChevronDown, ChevronUp, Layers, FolderKanban, Target } from 'lucide-react';
 import { clsx } from "clsx";
@@ -1287,7 +1288,7 @@ export function ComplianceSetup() {
     <>
       <div className="relative space-y-6 overflow-visible">
         {!!loadingStep && (
-          <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/60  animate-in fade-in duration-300">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60  animate-in fade-in duration-300">
             <div className="bg-white p-12 rounded-lg  border border-slate-100 flex flex-col items-center gap-8 max-w-sm w-full mx-4 text-center transform scale-100 animate-in zoom-in-95 duration-300">
               <div className="relative">
                 <div className="w-24 h-24 border-4 border-indigo-100 rounded-full animate-spin border-t-indigo-600"></div>
@@ -1314,7 +1315,7 @@ export function ComplianceSetup() {
         )}
         {/* Restart Confirmation Dialog*/}
         {showRestartConfirm && (
-          <div className="fixed inset-0 z-110 flex items-center justify-center p-4 bg-slate-900/60  animate-in fade-in duration-200">
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60  animate-in fade-in duration-200">
             <div className="bg-white rounded-lg  border border-slate-100 max-w-md w-full overflow-hidden animate-in zoom-in duration-300">
               <div className="p-8 text-center">
                 <div className="w-16 h-16 bg-red-50 rounded-lg flex items-center justify-center mx-auto mb-6 ring-4 ring-white ">
@@ -1345,7 +1346,7 @@ export function ComplianceSetup() {
           </div>
         )}
         {isRestarting && (
-          <div className="fixed inset-0 z-110 flex items-center justify-center bg-slate-900/60  animate-in fade-in duration-200">
+          <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/60  animate-in fade-in duration-200">
             <div className="bg-white rounded-lg  p-8 flex flex-col items-center gap-4 max-w-xs w-full mx-4">
               <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
               <div className="text-center">
@@ -1355,32 +1356,31 @@ export function ComplianceSetup() {
             </div>
           </div>
         )}
-        {isDataLoading && !loadingStep && !isRestarting && (
-          <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/40  animate-in fade-in duration-200">
-            <div className="bg-white rounded-lg  p-8 flex flex-col items-center gap-4 max-w-xs w-full mx-4">
+        {isDataLoading && !loadingStep && !isRestarting && createPortal(
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50">
+            <div className="bg-white rounded-lg shadow-xl p-6 flex flex-col items-center gap-3 max-w-xs w-full mx-4">
               <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
-              <p className="text-sm font-bold text-slate-600 uppercase tracking-wide">Loading...</p>
+              <p className="text-sm font-medium text-slate-700">Loading…</p>
             </div>
-          </div>
+          </div>,
+          document.body,
         )}
         {/* Existing Analysis Overlay*/}
-        {showAnalysisExists && (
-          <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/40 ">
-            <div className="bg-white rounded-lg sm:rounded-lg  border border-slate-100 max-w-2xl w-full overflow-hidden animate-in fade-in zoom-in duration-500">
-              <div className="p-6 sm:p-10 text-center">
-                <div className="w-20 h-20 bg-indigo-50 rounded-lg flex items-center justify-center mx-auto mb-8  ring-4 ring-white">
-                  <ShieldCheck className="w-10 h-10 text-indigo-600" />
-                </div>
-                <h3 className="text-3xl font-semibold text-slate-900  mb-4">
-                  Analysis Already Complete
+        {showAnalysisExists && createPortal(
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+              <div className="text-center">
+                <span className="inline-flex w-12 h-12 items-center justify-center rounded-md bg-indigo-50 text-indigo-600 mx-auto mb-4">
+                  <ShieldCheck className="w-6 h-6" />
+                </span>
+                <h3 className="text-xl font-semibold text-slate-900 mb-2">
+                  Analysis already complete
                 </h3>
-                <p className="text-slate-500 leading-relaxed max-w-md mx-auto mb-10 font-medium">
-                  A compliance analysis has already been performed for this{" "}
-                  {activeType}. Would you like to view the results or start
-                  fresh?
+                <p className="text-sm text-slate-600 leading-relaxed max-w-sm mx-auto mb-6">
+                  A compliance analysis has already been performed for this {activeType}. Would you like to view the results or start fresh?
                 </p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <button
                     onClick={() =>
                       navigate(
@@ -1389,21 +1389,21 @@ export function ComplianceSetup() {
                           : `/compliance/dashboard?type=project${fromInitiation ? "&from=initiation" : ""}`,
                       )
                     }
-                    className="w-full flex items-center justify-center gap-3 px-8 py-5 bg-emerald-600 text-white rounded-lg font-semibold text-xs uppercase tracking-wide transition-all hover:bg-emerald-700 hover: "
+                    className="inline-flex items-center justify-center gap-1.5 px-4 h-10 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-md transition-colors"
                   >
-                    View Compliance Dashboard <ArrowRight className="w-4 h-4" />
+                    View dashboard <ArrowRight className="w-4 h-4" />
                   </button>
                   <button
                     onClick={handleRestart}
                     disabled={loading}
-                    className="w-full flex items-center justify-center gap-3 px-8 py-5 bg-white text-slate-900 border-2 border-slate-100 rounded-lg font-semibold text-xs uppercase tracking-wide transition-all hover:bg-slate-50 hover:border-slate-200  disabled:opacity-50 disabled:pointer-events-none"
+                    className="inline-flex items-center justify-center gap-1.5 px-4 h-10 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
-                    Restart Analysis
+                    Restart analysis
                   </button>
                 </div>
 
-                <div className="mt-8 flex flex-col items-center gap-4">
-                  {fromInitiation ? (
+                {fromInitiation && (
+                  <div className="mt-4">
                     <button
                       disabled={loading}
                       onClick={async () => {
@@ -1424,29 +1424,16 @@ export function ComplianceSetup() {
                             : "/initiate",
                         );
                       }}
-                      className="flex items-center gap-2 px-6 py-3 bg-emerald-50 text-emerald-700 rounded-lg font-semibold text-xs uppercase tracking-wide hover:bg-emerald-100 transition-all border border-emerald-100 disabled:opacity-50 disabled:pointer-events-none"
+                      className="inline-flex items-center gap-1.5 px-3 h-9 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                      <CheckCircle2 className="w-4 h-4" /> Continue to
-                      Initiation Step 3
+                      <CheckCircle2 className="w-4 h-4" /> Continue to initiation step 3
                     </button>
-                  ) : (
-                    <button
-                      onClick={() =>
-                        navigate(
-                          activeType === "programme"
-                            ? `/compliance/dashboard?type=programme${fromInitiation ? "&from=initiation" : ""}`
-                            : `/compliance/dashboard?type=project${fromInitiation ? "&from=initiation" : ""}`,
-                        )
-                      }
-                      className="text-xs font-semibold text-slate-400 uppercase tracking-wide hover:text-indigo-600 transition-colors"
-                    >
-                      View Compliance Dashboard
-                    </button>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
         <div className="space-y-6 sm:space-y-8 overflow-visible">
@@ -2376,7 +2363,7 @@ export function ComplianceSetup() {
           userInitiatedOpen.current = true;
           setIsAIInquiryOpen(true);
         }}
-        className="fixed bottom-8 right-8 z-150 bg-indigo-600 text-white p-3 rounded-full hover:bg-indigo-700 transition-colors shadow-lg"
+        className="fixed bottom-8 right-8 z-[150] bg-indigo-600 text-white p-3 rounded-full hover:bg-indigo-700 transition-colors shadow-lg"
         title="Consult CedarGuard AI"
       >
         <ScanSearch className="w-5 h-5" />
