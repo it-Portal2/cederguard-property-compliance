@@ -6,7 +6,7 @@ import {
   ShieldAlert, Brain, BarChart, BellRing, Layers, TrendingUp,
   ClipboardList, PieChart, ScrollText, Gavel, Users, User, LogOut,
   ChevronDown, ChevronRight, FileBarChart, LayoutTemplate, Plus, Target, Wand2,
-  Terminal, KeyRound, HelpCircle, Calculator, Rocket, FileText, Calendar as CalendarIcon, X, Map,
+  Terminal, KeyRound, HelpCircle, Rocket, FileText, Calendar as CalendarIcon, X, Map,
   FolderClosed, MessageSquare, ShieldCheck
 } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -369,10 +369,7 @@ export function Sidebar() {
           >
             {isClientAdmin && <NavItem to="/setup/workspace" icon={Settings2} label="Workspace Management" />}
             {isAdmin && (
-              <>
-                <NavItem to="/admin" icon={Shield} label="Platform Admin" iconClass="text-orange-500" />
-                <NavItem to="/admin/calculator" icon={Calculator} label="Cost Calculator" iconClass="text-violet-500" />
-              </>
+              <NavItem to="/admin" icon={Shield} label="Platform Admin" iconClass="text-orange-500" />
             )}
           </NavGroup>
         )}
