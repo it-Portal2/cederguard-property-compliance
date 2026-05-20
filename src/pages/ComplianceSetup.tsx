@@ -1549,39 +1549,47 @@ export function ComplianceSetup() {
                 );
               })}
             </div>
-            <div className="pr-4 hidden md:block">
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">
-                    Status
-                  </p>
-                  <p className="text-[11px] font-bold text-slate-900 leading-none">
-                    {phase === 1
-                      ? "Phase 1: Metadata"
-                      : phase === 2
-                        ? "Phase 2: Identification"
-                        : phase === 3
-                          ? "Phase 3: Review"
-                          : "Phase 4: Done"}
-                  </p>
-                </div>
-                <div className="w-10 h-10 rounded-full border-2 border-indigo-100 flex items-center justify-center relative">
-                  <div className="text-[10px] font-black text-indigo-600">
-                    {Math.round((phase / 4) * 100)}%
-                  </div>
-                  <svg className="absolute -inset-1 w-12 h-12 -rotate-90">
-                    <circle
-                      cx="24"
-                      cy="24"
-                      r="20"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      className="text-indigo-600 transition-all duration-1000"
-                      strokeDasharray="125.6"
-                      strokeDashoffset={125.6 - 125.6 * (phase / 4)}
-                    />
-                  </svg>
+            <div className="hidden md:flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide leading-none mb-1">
+                  Status
+                </p>
+                <p className="text-sm font-semibold text-slate-900 leading-none">
+                  {phase === 1
+                    ? "Phase 1: Metadata"
+                    : phase === 2
+                      ? "Phase 2: Identification"
+                      : phase === 3
+                        ? "Phase 3: Review"
+                        : "Phase 4: Done"}
+                </p>
+              </div>
+              <div className="relative w-12 h-12 shrink-0">
+                <svg className="w-12 h-12 -rotate-90" viewBox="0 0 48 48">
+                  <circle
+                    cx="24"
+                    cy="24"
+                    r="20"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    className="text-slate-200"
+                  />
+                  <circle
+                    cx="24"
+                    cy="24"
+                    r="20"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    className="text-indigo-600 transition-all duration-700"
+                    strokeDasharray={2 * Math.PI * 20}
+                    strokeDashoffset={2 * Math.PI * 20 * (1 - phase / 4)}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-indigo-600 tabular-nums">
+                  {Math.round((phase / 4) * 100)}%
                 </div>
               </div>
             </div>

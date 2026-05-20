@@ -1,6 +1,20 @@
 import { useState, useEffect, useMemo } from 'react';
 import { api } from '../lib/api';
-import { Loader2, RefreshCw, AlertTriangle, CheckCircle2, Clock, BarChart, ChevronDown, ChevronUp, FolderKanban, Users, Download, Filter, Search, Layers, ShieldAlert, HeartPulse, ScanSearch, Plus } from 'lucide-react';
+import {
+  Loader2,
+  AlertTriangle,
+  FolderKanban,
+  Users,
+  Layers,
+  ShieldAlert,
+  ShieldCheck,
+  Plus,
+  Printer,
+  HeartPulse,
+  TrendingUp,
+  AlertCircle,
+  Activity,
+} from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { clsx } from 'clsx';
 import html2canvas from 'html2canvas';
@@ -8,6 +22,9 @@ import jsPDF from 'jspdf';
 import { useNavigate } from 'react-router';
 import { stripMarkdown } from '../lib/utils';
 import { isAtLeastClientAdmin } from '../lib/roles';
+import { StatsCard } from '../components/common/StatsCard';
+import DynamicTable from '../components/table/DynamicTable';
+import type { ColumnDef, RowAction, FilterDef } from '../components/table/types';
 
 type RAG = 'Red' | 'Amber' | 'Green' | 'Grey';
 
@@ -50,11 +67,10 @@ export function ClientProgrammeReport() {
     const [projects, setProjects] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [search, setSearch] = useState('');
-    const [ragFilter, setRagFilter] = useState<RAG | 'All'>('All');
-    const [programmeFilter, setProgrammeFilter] = useState('All');
-    const [sortBy, setSortBy] = useState<'name' | 'rag' | 'compPct' | 'riskHigh'>('rag');
-    const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+    // Search and filter state lives inside DynamicTable now (its built-in
+    // toolbar covers Programme / RAG selects + free-text search). The KPI
+    // strip and Top Risks / Top Compliance cards show portfolio-wide totals
+    // so they don't need external filter state to drive them.
     const [lastSynced, setLastSynced] = useState<Date | null>(null);
     const [topRisks, setTopRisks] = useState<any[]>([]);
     const [topCompliance, setTopCompliance] = useState<any[]>([]);
@@ -69,13 +85,35 @@ export function ClientProgrammeReport() {
                 api.getData('complianceItems').catch(() => [])
             ]);
             setProjects((projRes as any).projects || []);
-            
+
+            // Top portfolio risks — only OPEN risks sorted by gross rating descending.
+            // Closed / mitigated / managed risks shouldn't surface as "top".
             const risks = Array.isArray(risksRes) ? risksRes : [];
-            const sortedRisks = [...risks].sort((a, b) => (b.grossRating || 0) - (a.grossRating || 0));
+            const openRisks = risks.filter((r: any) => !r.status || r.status === 'Open');
+            const sortedRisks = [...openRisks].sort((a: any, b: any) => (b.grossRating || 0) - (a.grossRating || 0));
             setTopRisks(sortedRisks.slice(0, 5));
 
+            // Critical compliance gaps — items that are APPLICABLE to the context
+            // (status === 'applicable'), still OPEN (stage is not Live or Archived),
+            // AND carry a High / Critical risk classification. The previous filter
+            // used `c.status !== 'Complete' && c.status !== 'At Risk'` which never
+            // matched anything because compliance items don't have those statuses.
             const compliance = Array.isArray(compRes) ? compRes : [];
-            const gaps = compliance.filter(c => c.status !== 'Complete' && c.status !== 'At Risk');
+            const gaps = compliance.filter((c: any) => {
+                const applicable = !c.status || c.status === 'applicable';
+                const notComplete = c.stage !== 'Live' && c.stage !== 'Archived';
+                const highRisk = c.risk === 'High' || c.risk === 'Critical';
+                return applicable && notComplete && highRisk;
+            });
+            // Sort by stage severity (Information Gap / Risk Identified first), then by domain
+            gaps.sort((a: any, b: any) => {
+                const stageRank: Record<string, number> = {
+                    'Risk Identified': 0,
+                    'Information Gap': 1,
+                    'In Progress': 2,
+                };
+                return (stageRank[a.stage] ?? 9) - (stageRank[b.stage] ?? 9);
+            });
             setTopCompliance(gaps.slice(0, 5));
 
             setLastSynced(new Date());
@@ -88,36 +126,25 @@ export function ClientProgrammeReport() {
 
     useEffect(() => { fetchData(); }, []);
 
-    // Filter + sort
-    const filtered = useMemo(() => {
-        let list = [...projects];
-        if (ragFilter !== 'All') list = list.filter(p => p.rag === ragFilter);
-        if (programmeFilter !== 'All') list = list.filter(p => p.programmeId === programmeFilter);
-        if (search) list = list.filter(p =>
-            (p.name || '').toLowerCase().includes(search.toLowerCase()) ||
-            (p.pmName || '').toLowerCase().includes(search.toLowerCase()) ||
-            (p.type || '').toLowerCase().includes(search.toLowerCase())
-        );
-        list.sort((a, b) => {
-            const ragOrder: Record<string, number> = { Red: 0, Amber: 1, Grey: 2, Green: 3 };
-            let cmp = 0;
-            if (sortBy === 'rag') cmp = (ragOrder[a.rag] ?? 4) - (ragOrder[b.rag] ?? 4);
-            else if (sortBy === 'compPct') cmp = (a.compPct || 0) - (b.compPct || 0);
-            else if (sortBy === 'riskHigh') cmp = (a.riskHigh || 0) - (b.riskHigh || 0);
-            else cmp = (a.name || '').localeCompare(b.name || '');
-            return sortDir === 'asc' ? cmp : -cmp;
-        });
-        return list;
-    }, [projects, ragFilter, programmeFilter, search, sortBy, sortDir]);
+    // Initial-display sort: Red → Amber → Grey → Green. DynamicTable still
+    // lets users re-sort by clicking any column header.
+    const sortedProjects = useMemo(() => {
+        const ragOrder: Record<string, number> = { Red: 0, Amber: 1, Grey: 2, Green: 3 };
+        return [...projects].sort((a, b) => (ragOrder[a.rag] ?? 4) - (ragOrder[b.rag] ?? 4));
+    }, [projects]);
 
     // Summary stats (based on filtered list to be context-aware)
+    // Portfolio-wide totals — these summarise the whole estate and don't
+    // depend on the table's internal search / filter selections. The table
+    // shows whichever subset the user has filtered to; the KPI strip and
+    // Top Risks / Top Compliance panels always report the full picture.
     const totals = useMemo(() => {
-        const pCount = filtered.length;
-        const avgComp = pCount ? Math.round(filtered.reduce((s, p) => s + (p.compPct || 0), 0) / pCount) : 0;
+        const pCount = projects.length;
+        const avgComp = pCount ? Math.round(projects.reduce((s, p) => s + (p.compPct || 0), 0) / pCount) : 0;
 
         let health: RAG = 'Green';
-        const redPct = pCount ? (filtered.filter(p => p.rag === 'Red').length / pCount) * 100 : 0;
-        const amberPct = pCount ? (filtered.filter(p => p.rag === 'Amber').length / pCount) * 100 : 0;
+        const redPct = pCount ? (projects.filter(p => p.rag === 'Red').length / pCount) * 100 : 0;
+        const amberPct = pCount ? (projects.filter(p => p.rag === 'Amber').length / pCount) * 100 : 0;
 
         if (redPct > 10) health = 'Red';
         else if (amberPct > 25 || redPct > 0) health = 'Amber';
@@ -125,39 +152,138 @@ export function ClientProgrammeReport() {
 
         return {
             projects: pCount,
-            red: filtered.filter(p => p.rag === 'Red').length,
-            amber: filtered.filter(p => p.rag === 'Amber').length,
-            green: filtered.filter(p => p.rag === 'Green').length,
-            pms: new Set(filtered.map(p => p.userId)).size,
-            riskHigh: filtered.reduce((s, p) => s + (p.riskHigh || 0), 0),
-            issueOpen: filtered.reduce((s, p) => s + (p.issueOpen || 0), 0),
+            red: projects.filter(p => p.rag === 'Red').length,
+            amber: projects.filter(p => p.rag === 'Amber').length,
+            green: projects.filter(p => p.rag === 'Green').length,
+            pms: new Set(projects.map(p => p.userId)).size,
+            riskHigh: projects.reduce((s, p) => s + (p.riskHigh || 0), 0),
+            issueOpen: projects.reduce((s, p) => s + (p.issueOpen || 0), 0),
             avgComp,
-            health
+            health,
         };
-    }, [filtered]);
+    }, [projects]);
 
-    const handleSort = (col: typeof sortBy) => {
-        if (sortBy === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
-        else { setSortBy(col); setSortDir('desc'); }
-    };
+    // ── DynamicTable column definitions ─────────────────────────────────────
+    type ProjectRow = (typeof projects)[number];
 
-    const SortIcon = ({ col }: { col: typeof sortBy }) => sortBy === col
-        ? (sortDir === 'desc' ? <ChevronDown className="w-3 h-3 inline ml-0.5" /> : <ChevronUp className="w-3 h-3 inline ml-0.5" />)
-        : null;
+    const projectColumns: ColumnDef<ProjectRow>[] = [
+        {
+            key: 'name',
+            label: 'Project',
+            sortable: true,
+            render: (_v, p) => (
+                <div className="flex items-center gap-3 min-w-0">
+                    <div className="p-1.5 bg-slate-100 rounded shrink-0">
+                        <FolderKanban className="w-4 h-4 text-slate-500" />
+                    </div>
+                    <div className="min-w-0">
+                        <div className="text-sm font-semibold text-slate-900 leading-snug truncate">{p.name || 'Untitled project'}</div>
+                        <div className="text-xs text-slate-500 mt-0.5">{p.type || 'Custom'}</div>
+                    </div>
+                </div>
+            ),
+        },
+        {
+            key: 'pmName',
+            label: 'Project manager',
+            sortable: true,
+            render: (_v, p) => (
+                <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-semibold shrink-0">
+                        {(p.pmName || '?')[0].toUpperCase()}
+                    </div>
+                    <span className="text-sm text-slate-700 truncate">{p.pmName || 'Unassigned'}</span>
+                </div>
+            ),
+        },
+        {
+            key: 'rag',
+            label: 'RAG',
+            align: 'center',
+            sortable: true,
+            render: (_v, p) => (
+                <span className={clsx(
+                    'inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-semibold border',
+                    ragColors[p.rag as RAG] || ragColors.Grey,
+                )}>
+                    <span className={clsx('w-1.5 h-1.5 rounded-full', ragDot[p.rag as RAG] || ragDot.Grey)} />
+                    {p.rag}
+                </span>
+            ),
+        },
+        {
+            key: 'compPct',
+            label: 'Compliance',
+            sortable: true,
+            render: (_v, p) => (
+                <div className="min-w-[140px]">
+                    <ProgressBar
+                        pct={p.compPct || 0}
+                        color={(p.compPct || 0) >= 75 ? 'green' : (p.compPct || 0) >= 40 ? 'indigo' : 'red'}
+                    />
+                </div>
+            ),
+        },
+        {
+            key: 'riskHigh',
+            label: 'High risks',
+            align: 'right',
+            sortable: true,
+            render: (_v, p) => (
+                <div className="flex flex-col items-end">
+                    <span className={clsx('text-sm font-semibold tabular-nums', (p.riskHigh ?? 0) > 0 ? 'text-rose-600' : 'text-slate-700')}>
+                        {p.riskHigh ?? 0}
+                    </span>
+                    <span className="text-xs text-slate-500">{p.riskOpen ?? 0} total open</span>
+                </div>
+            ),
+        },
+        {
+            key: 'issueOpen',
+            label: 'Open issues',
+            align: 'right',
+            sortable: true,
+            render: (_v, p) => (
+                <span className={clsx('text-sm font-semibold tabular-nums', (p.issueOpen ?? 0) > 0 ? 'text-amber-600' : 'text-slate-400')}>
+                    {p.issueOpen ?? 0}
+                </span>
+            ),
+        },
+    ];
 
-    const exportCSV = () => {
-        const headers = ['Project', 'Type', 'Project Manager', 'RAG', 'Compliance %', 'Open Risks', 'High Risks', 'Escalated Risks', 'Open Issues', 'Last Activity'];
-        const rows = filtered.map(p => [
-            p.name || 'Untitled Project', p.type || '', p.pmName || '', p.rag,
-            p.compPct, p.riskOpen, p.riskHigh, p.riskEscalated, p.issueOpen,
-            p.lastActivity ? new Date(p.lastActivity).toLocaleDateString('en-GB') : 'No activity'
-        ]);
-        const csv = [headers, ...rows].map(row => row.map(v => `"${v}"`).join(',')).join('\n');
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = `programme_report_${new Date().toISOString().slice(0, 10)}.csv`;
-        a.click(); URL.revokeObjectURL(url);
-    };
+    // DynamicTable filter dropdowns — drives the table's internal filter
+    // state. The KPI strip + Top cards are portfolio-wide and unaffected.
+    const projectFilters: FilterDef<ProjectRow>[] = [
+        {
+            key: 'programmeId',
+            label: 'Programme',
+            type: 'select',
+            options: programmes.map((pg: any) => ({ value: pg.id, label: pg.name })),
+        },
+        {
+            key: 'rag',
+            label: 'RAG',
+            type: 'select',
+            options: [
+                { value: 'Red', label: 'Red' },
+                { value: 'Amber', label: 'Amber' },
+                { value: 'Green', label: 'Green' },
+                { value: 'Grey', label: 'Grey' },
+            ],
+        },
+    ];
+
+    const projectRowActions: RowAction<ProjectRow>[] = [
+        {
+            key: 'view-report',
+            label: 'View report',
+            icon: TrendingUp,
+            onClick: (p) => {
+                setActiveProject(p.id);
+                navigate('/reporting/project');
+            },
+        },
+    ];
 
     const handleExportPDF = async () => {
         const element = document.getElementById('programme-report');
@@ -184,410 +310,254 @@ export function ClientProgrammeReport() {
 
     return (
         <div id="programme-report" className="space-y-6 print:p-0">
-            {/* PREMIUM STRATEGIC HEADER */}
-            <div className="bg-[#111827] p-8 md:p-12 mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6 rounded-lg relative overflow-hidden shadow-2xl">
-                {/* Abstract background element */}
-                <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 blur-[100px] -mr-48 -mt-48 rounded-full pointer-events-none" />
-                
-                <div className="relative z-10 space-y-3">
-                    <div className="flex items-center gap-4 mb-2">
-                        <div className="p-3 bg-indigo-500 text-white rounded-lg shadow-lg shadow-indigo-500/20">
-                            <Layers className="w-8 h-8" />
-                        </div>
-                        <div>
-                            <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight uppercase leading-none">Programme Risk & Compliance: Strategic Dashboard</h1>
-                            <p className="text-indigo-400 font-black uppercase tracking-[0.2em] text-[10px] mt-2">Aggregate Portfolio Performance · Confidential Insight</p>
-                        </div>
+            {/* ─── HEADER BAND ─── */}
+            <section className="bg-slate-900 px-6 py-8 md:px-10 md:py-10 rounded-lg print:rounded-none print:break-inside-avoid">
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                    <div className="min-w-0">
+                        <h1 className="text-2xl md:text-3xl font-semibold text-white flex items-center gap-2.5">
+                            <Layers className="w-6 h-6 text-indigo-300" /> Programme Risk &amp; Compliance
+                        </h1>
+                        <p className="text-sm text-slate-400 mt-1">
+                            Aggregate portfolio performance across {totals.projects} project{totals.projects === 1 ? '' : 's'}
+                            {lastSynced && ` · last synced ${lastSynced.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`}
+                        </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2 print:hidden">
+                        <button
+                            onClick={handleExportPDF}
+                            disabled={loading || projects.length === 0}
+                            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white/10 text-white border border-white/15 rounded-lg text-sm font-medium hover:bg-white/15 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <Printer className="w-4 h-4" /> Export PDF
+                        </button>
+                        {isAtLeastClientAdmin(userRole) && (
+                            <button
+                                onClick={() => { useStore.getState().setActiveProgramme(null); navigate('/programmes/new'); }}
+                                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white text-slate-900 rounded-lg text-sm font-semibold hover:bg-slate-100 transition-colors"
+                            >
+                                <Plus className="w-4 h-4" /> New programme
+                            </button>
+                        )}
                     </div>
                 </div>
+            </section>
 
-                <div className="flex items-center gap-3 relative z-10">
-                    <button 
-                        onClick={fetchData} 
-                        disabled={loading}
-                        className="flex items-center gap-2 px-5 py-3 bg-white/5 text-white border border-white/10 rounded-lg text-[11px] font-black uppercase tracking-widest hover:bg-white/10 transition-all backdrop-blur-md disabled:opacity-50"
-                    >
-                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Sync
-                    </button>
-                    <button 
-                        onClick={exportCSV} 
-                        disabled={loading || filtered.length === 0}
-                        className="flex items-center gap-2 px-5 py-3 bg-white/5 text-white border border-white/10 rounded-lg text-[11px] font-black uppercase tracking-widest hover:bg-white/10 transition-all disabled:opacity-50"
-                    >
-                        <Download className="w-4 h-4" /> CSV
-                    </button>
-                    <button 
-                        onClick={handleExportPDF} 
-                        disabled={loading || filtered.length === 0}
-                        className="flex items-center gap-2 px-6 py-3 bg-indigo-500 text-white rounded-lg text-[11px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-xl shadow-indigo-500/20"
-                    >
-                        <Download className="w-4 h-4" /> Export PDF
-                    </button>
-                    {isAtLeastClientAdmin(userRole) && (
-                        <button
-                            onClick={() => { useStore.getState().setActiveProgramme(null); navigate('/programmes/new'); }}
-                            className="flex items-center gap-2 px-6 py-3 bg-white text-indigo-600 border border-indigo-100 rounded-lg font-black text-[11px] uppercase tracking-widest hover:bg-indigo-50 transition-all shadow-sm active:scale-95"
-                        >
-                            <Plus className="w-4 h-4" />
-                            New Programme
-                        </button>
-                    )}
-                </div>
-            </div>
+            {/* ─── KPI STRIP ─── */}
+            <section className="grid grid-cols-2 md:grid-cols-4 gap-4 print:break-inside-avoid">
+                <StatsCard
+                    icon={HeartPulse}
+                    title="Programme health"
+                    value={loading ? '…' : totals.health}
+                    description={
+                        totals.health === 'Red' ? 'Action required' :
+                        totals.health === 'Amber' ? 'Monitor closely' :
+                        totals.health === 'Green' ? 'On track' : 'Awaiting data'
+                    }
+                    size="lg"
+                    iconBgClassName={
+                        totals.health === 'Red' ? 'bg-rose-50' :
+                        totals.health === 'Amber' ? 'bg-amber-50' :
+                        totals.health === 'Green' ? 'bg-emerald-50' : 'bg-slate-100'
+                    }
+                    iconClassName={
+                        totals.health === 'Red' ? 'text-rose-600' :
+                        totals.health === 'Amber' ? 'text-amber-600' :
+                        totals.health === 'Green' ? 'text-emerald-600' : 'text-slate-500'
+                    }
+                />
+                <StatsCard
+                    icon={FolderKanban}
+                    title="Live projects"
+                    value={loading ? '…' : totals.projects}
+                    description={`${totals.pms} active PM${totals.pms === 1 ? '' : 's'}`}
+                    size="lg"
+                    iconBgClassName="bg-indigo-50"
+                    iconClassName="text-indigo-600"
+                />
+                <StatsCard
+                    icon={Activity}
+                    title="Avg compliance"
+                    value={loading ? '…' : `${totals.avgComp}%`}
+                    size="lg"
+                    iconBgClassName="bg-emerald-50"
+                    iconClassName="text-emerald-600"
+                    progress
+                    progressValue={totals.avgComp}
+                    progressClassName="bg-emerald-500"
+                    progressLabel="Portfolio mean"
+                />
+                <StatsCard
+                    icon={AlertCircle}
+                    title="High risks open"
+                    value={loading ? '…' : totals.riskHigh}
+                    description={`${totals.issueOpen} open issue${totals.issueOpen === 1 ? '' : 's'}`}
+                    size="lg"
+                    iconBgClassName="bg-rose-50"
+                    iconClassName="text-rose-600"
+                />
+            </section>
 
-            {/* Summary stats - 8 Tiles Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-                {/* 1. Health State */}
-                <div className={clsx(
-                    "border rounded-lg p-4 text-center transition-all shadow-sm",
-                    totals.health === 'Green' ? "bg-emerald-50 border-emerald-100" :
-                    totals.health === 'Amber' ? "bg-amber-50 border-amber-100" :
-                    totals.health === 'Red' ? "bg-rose-50 border-rose-100" : "bg-slate-50 border-slate-200"
-                )}>
-                    <div className={clsx(
-                        "text-2xl font-black uppercase tracking-tighter italic leading-none truncate",
-                        totals.health === 'Green' ? "text-emerald-600" :
-                        totals.health === 'Amber' ? "text-amber-600" :
-                        totals.health === 'Red' ? "text-rose-600" : "text-slate-400"
-                    )}>
-                        {totals.health}
-                    </div>
-                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">Health State</div>
-                </div>
-
-                {/* 2. Live Projects */}
-                <div className="bg-white border border-slate-200 rounded-lg p-4 text-center shadow-sm">
-                    <div className="text-2xl font-black text-slate-800 leading-none">{loading ? '—' : totals.projects}</div>
-                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">Live Projects</div>
-                </div>
-
-                {/* 3. PMs */}
-                <div className="bg-white border border-slate-200 rounded-lg p-4 text-center shadow-sm">
-                    <div className="text-2xl font-black text-indigo-600 leading-none">{loading ? '—' : totals.pms}</div>
-                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">Active PMs</div>
-                </div>
-
-                {/* 4. Avg Comp */}
-                <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-4 text-center shadow-sm">
-                    <div className="text-2xl font-black text-indigo-700 leading-none">{loading ? '—' : `${totals.avgComp}%`}</div>
-                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">Avg Compliance</div>
-                </div>
-
-                {/* 5. Critical */}
-                <div className="bg-rose-50 border border-rose-100 rounded-lg p-4 text-center shadow-sm">
-                    <div className="text-2xl font-black text-rose-600 leading-none">{loading ? '—' : totals.red}</div>
-                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">Critical (Red)</div>
-                </div>
-
-                {/* 6. Warning */}
-                <div className="bg-amber-50 border border-amber-100 rounded-lg p-4 text-center shadow-sm">
-                    <div className="text-2xl font-black text-amber-600 leading-none">{loading ? '—' : totals.amber}</div>
-                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">Warning (Amber)</div>
-                </div>
-
-                {/* 7. High Risks */}
-                <div className="bg-rose-50 border border-rose-100 rounded-lg p-4 text-center shadow-sm">
-                    <div className="text-2xl font-black text-rose-700 leading-none">{loading ? '—' : totals.riskHigh}</div>
-                    <div className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">High Risks</div>
-                </div>
-
-                {/* 8. Open Issues */}
-                <div className="bg-[#111827] border border-slate-800 rounded-lg p-4 text-center shadow-lg">
-                    <div className="text-2xl font-black text-white leading-none">{loading ? '—' : totals.issueOpen}</div>
-                    <div className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mt-2 text-white/50">Open Issues</div>
-                </div>
-            </div>
-
-            {/* Filters */}
-            <div className="flex flex-wrap items-center gap-3 bg-white border border-slate-200 rounded-lg px-4 py-3 shadow-sm">
-                <div className="flex items-center gap-2 text-slate-400 mr-2">
-                    <Filter className="w-4 h-4" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Filters</span>
-                </div>
-                <div className="relative flex-1 min-w-[200px]">
-                    <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                        className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium"
-                        placeholder="Search specific project, PM, or type…"
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                    />
-                </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg">
-                    <Layers className="w-3.5 h-3.5 text-slate-400" />
-                    <select
-                        className="bg-transparent text-[11px] font-black text-slate-600 focus:outline-none cursor-pointer uppercase tracking-tighter"
-                        value={programmeFilter}
-                        onChange={e => setProgrammeFilter(e.target.value)}
-                    >
-                        <option value="All">All Programmes</option>
-                        {programmes.map(pg => (
-                            <option key={pg.id} value={pg.id}>{pg.name}</option>
-                        ))}
-                    </select>
-                </div>
-                <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
-                    {(['All', 'Red', 'Amber', 'Green'] as const).map(r => (
-                        <button
-                            key={r}
-                            onClick={() => setRagFilter(r)}
-                            className={clsx(
-                                "px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all duration-300 border",
-                                ragFilter === r 
-                                    ? "bg-white shadow-sm text-slate-800 border-slate-200 scale-[1.02]" 
-                                    : "text-slate-500 border-transparent hover:bg-white hover:text-indigo-600 hover:border-slate-100 hover:shadow-sm active:scale-95"
-                            )}
-                        >
-                            {r}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {/* Loading / Error */}
-            {loading && (
-                <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-100 rounded-lg shadow-sm">
-                    <Loader2 className="w-10 h-10 animate-spin text-indigo-500 mb-4" />
-                    <span className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em]">Synchronizing data...</span>
-                </div>
-            )}
+            {/* ─── ERROR ─── */}
             {!loading && error && (
-                <div className="bg-rose-50 border border-rose-200 rounded-lg p-4 text-rose-700 text-sm flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                <div className="bg-rose-50 border border-rose-200 rounded-lg p-4 text-rose-700 text-sm flex items-center gap-3">
                     <ShieldAlert className="w-5 h-5 shrink-0" />
-                    <div className="font-semibold">{error}</div>
+                    <div className="font-medium">{error}</div>
                 </div>
             )}
 
-            {/* Top Risks and Compliance Gaps */}
+            {/* ─── LOADING ─── */}
+            {loading && (
+                <div className="flex flex-col items-center justify-center py-16 bg-white border border-slate-200 rounded-lg gap-3 min-h-[280px]">
+                    <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+                    <span className="text-sm font-medium text-slate-700">Syncing portfolio data…</span>
+                    <span className="text-xs text-slate-500">This usually takes a few seconds.</span>
+                </div>
+            )}
+
+            {/* ─── TOP RISKS + COMPLIANCE GAPS ─── */}
             {!loading && !error && (topRisks.length > 0 || topCompliance.length > 0) && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-2">
-                    {/* Top Portfolio Risks */}
-                    <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-rose-50/30">
-                            <div className="flex items-center gap-3">
-                                <div className="p-1.5 bg-rose-100 rounded-lg text-rose-600">
-                                    <AlertTriangle className="w-4 h-4" />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-slate-800 text-sm">Top Portfolio Risks</h3>
-                                    <p className="text-[10px] text-slate-500 uppercase tracking-wider">Highest gross rating</p>
-                                </div>
+                <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:break-inside-avoid">
+                    <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+                        <div className="px-5 py-4 border-b border-slate-200 flex items-center gap-2.5">
+                            <AlertTriangle className="w-5 h-5 text-rose-600" />
+                            <div>
+                                <h3 className="text-sm font-semibold text-slate-900">Top portfolio risks</h3>
+                                <p className="text-xs text-slate-500">Highest gross rating, open status only</p>
                             </div>
                         </div>
-                        <div className="p-0 divide-y divide-slate-100 flex-1 flex flex-col">
+                        <ul className="divide-y divide-slate-200">
                             {topRisks.length > 0 ? topRisks.map((risk, i) => (
-                                <div key={risk.id || i} className="p-4 hover:bg-slate-50 transition-colors flex gap-4 items-center">
-                                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500 shrink-0">#{i + 1}</div>
+                                <li key={risk.id || i} className="px-5 py-3 flex items-center gap-4 hover:bg-slate-50 transition-colors">
+                                    <span className="w-6 h-6 rounded bg-slate-100 text-slate-600 text-xs font-semibold flex items-center justify-center shrink-0 tabular-nums">{i + 1}</span>
                                     <div className="flex-1 min-w-0">
-                                        <div className="font-semibold text-sm text-slate-800 truncate">{stripMarkdown(risk.title || risk.name || 'Unnamed Risk')}</div>
-                                        <div className="text-xs text-slate-500 truncate mt-0.5">{stripMarkdown(risk.description || 'No description provided')}</div>
+                                        <p className="text-sm font-semibold text-slate-900 truncate">{stripMarkdown(risk.title || risk.name || 'Unnamed risk')}</p>
+                                        <p className="text-xs text-slate-500 truncate">{stripMarkdown(risk.description || risk.desc || 'No description')}</p>
                                     </div>
                                     <div className="text-right shrink-0">
-                                        <div className="text-sm font-black text-rose-600">Rating: {risk.grossRating || 0}</div>
-                                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{risk.status || 'Open'}</div>
+                                        <div className="text-sm font-semibold text-rose-600 tabular-nums">{risk.grossRating || 0}</div>
+                                        <div className="text-xs text-slate-500">{risk.status || 'Open'}</div>
                                     </div>
-                                </div>
+                                </li>
                             )) : (
-                                <div className="p-8 text-center text-slate-500 text-sm m-auto">No significant risks identified.</div>
+                                <li className="px-5 py-8 text-center text-sm text-slate-500">No significant risks identified.</li>
                             )}
-                        </div>
+                        </ul>
                     </div>
 
-                    {/* Critical Compliance Gaps */}
-                    <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-amber-50/30">
-                            <div className="flex items-center gap-3">
-                                <div className="p-1.5 bg-amber-100 rounded-lg text-amber-600">
-                                    <ShieldAlert className="w-4 h-4" />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-slate-800 text-sm">Critical Compliance Gaps</h3>
-                                    <p className="text-[10px] text-slate-500 uppercase tracking-wider">Outstanding items requiring attention</p>
-                                </div>
+                    <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+                        <div className="px-5 py-4 border-b border-slate-200 flex items-center gap-2.5">
+                            <ShieldCheck className="w-5 h-5 text-amber-600" />
+                            <div>
+                                <h3 className="text-sm font-semibold text-slate-900">Critical compliance gaps</h3>
+                                <p className="text-xs text-slate-500">High-risk items not yet Live or Archived</p>
                             </div>
                         </div>
-                        <div className="p-0 divide-y divide-slate-100 flex-1 flex flex-col">
+                        <ul className="divide-y divide-slate-200">
                             {topCompliance.length > 0 ? topCompliance.map((comp, i) => (
-                                <div key={comp.id || i} className="p-4 hover:bg-slate-50 transition-colors flex gap-4 items-center">
-                                    <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center text-xs font-bold text-amber-600 border border-amber-100 shrink-0">!</div>
+                                <li key={comp.id || i} className="px-5 py-3 flex items-center gap-4 hover:bg-slate-50 transition-colors">
+                                    <span className="w-6 h-6 rounded bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold flex items-center justify-center shrink-0">!</span>
                                     <div className="flex-1 min-w-0">
-                                        <div className="font-semibold text-sm text-slate-800 truncate">{stripMarkdown(comp.title || comp.name || 'Unnamed Requirement')}</div>
-                                        <div className="text-xs text-slate-500 truncate mt-0.5">{stripMarkdown(comp.framework || 'General Compliance')}</div>
+                                        <p className="text-sm font-semibold text-slate-900 truncate">{stripMarkdown(comp.req || comp.title || comp.name || 'Unnamed requirement')}</p>
+                                        <p className="text-xs text-slate-500 truncate">{stripMarkdown(comp.reg || comp.framework || comp.domain || 'General')}</p>
                                     </div>
                                     <div className="text-right shrink-0">
-                                        <div className="text-sm font-bold text-amber-600">{comp.status || 'Pending'}</div>
-                                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Gap Identified</div>
+                                        <div className="text-sm font-medium text-amber-700">{comp.stage || comp.status || 'Pending'}</div>
+                                        <div className="text-xs text-slate-500">{comp.risk || 'High'} risk</div>
                                     </div>
-                                </div>
+                                </li>
                             )) : (
-                                <div className="p-8 text-center text-slate-500 text-sm m-auto">No critical compliance gaps detected.</div>
+                                <li className="px-5 py-8 text-center text-sm text-slate-500">No critical compliance gaps detected.</li>
                             )}
+                        </ul>
+                    </div>
+                </section>
+            )}
+
+            {/* ─── PROJECTS TABLE ─── */}
+            {!loading && !error && (
+                <section className="print:break-inside-avoid">
+                    <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                        <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2.5">
+                            <FolderKanban className="w-5 h-5 text-indigo-600" /> Portfolio projects
+                        </h2>
+                        <div className="flex items-center gap-3 text-xs text-slate-500">
+                            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-rose-500" /> {totals.red} Red</span>
+                            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-500" /> {totals.amber} Amber</span>
+                            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500" /> {totals.green} Green</span>
                         </div>
                     </div>
-                </div>
+                    <DynamicTable<ProjectRow>
+                        data={sortedProjects}
+                        columns={projectColumns}
+                        rowActions={projectRowActions}
+                        filters={projectFilters}
+                        searchable
+                        searchPlaceholder="Search project, PM, or type…"
+                        searchFields={['name', 'pmName', 'type']}
+                        pagination={{ enabled: true, pageSize: 10, pageSizeOptions: [10, 25, 50] }}
+                        export={{ csv: true, filename: `programme_report_${new Date().toISOString().slice(0, 10)}` }}
+                        getRowId={(p) => p.id}
+                        emptyState={{
+                            title: projects.length === 0 ? 'No portfolio data' : 'No results',
+                            description: projects.length === 0
+                                ? 'Connect Project Managers to aggregate live governance data.'
+                                : 'Adjust your search or filter criteria to view specific results.',
+                            icon: FolderKanban,
+                        }}
+                        headerVariant="light"
+                    />
+                </section>
             )}
 
-            {/* Table */}
-            {!loading && !error && filtered.length > 0 && (
-                <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="border-b border-slate-100 bg-slate-50/50">
-                                <th className="text-left px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                    <button onClick={() => handleSort('name')} className="flex items-center gap-1 hover:text-slate-700 uppercase tracking-widest">Project Control <SortIcon col="name" /></button>
-                                </th>
-                                <th className="text-left px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest hidden md:table-cell">Assigned PM</th>
-                                <th className="text-left px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                    <button onClick={() => handleSort('rag')} className="flex items-center gap-1 hover:text-slate-700 uppercase tracking-widest">RAG State <SortIcon col="rag" /></button>
-                                </th>
-                                <th className="text-left px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                    <button onClick={() => handleSort('compPct')} className="flex items-center gap-1 hover:text-slate-700 uppercase tracking-widest">Compliance % <SortIcon col="compPct" /></button>
-                                </th>
-                                <th className="text-right px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest hidden lg:table-cell">Open Issues</th>
-                                <th className="text-right px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest hidden xl:table-cell">Last Sync</th>
-                                <th className="text-right px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-50">
-                            {filtered.map(p => (
-                                <tr key={p.id} className="hover:bg-slate-50/80 transition-all border-l-2 border-l-transparent hover:border-l-indigo-500">
-                                    <td className="px-4 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-1.5 bg-slate-50 rounded">
-                                                <FolderKanban className="w-4 h-4 text-slate-400" />
-                                            </div>
-                                            <div>
-                                                <div className="font-bold text-slate-800 text-sm leading-tight">{p.name || 'Untitled Project'}</div>
-                                                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter mt-0.5">{p.type || 'Custom Type'}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-4 hidden md:table-cell">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[11px] font-black italic border border-white shadow-sm">
-                                                {(p.pmName || '?')[0].toUpperCase()}
-                                            </div>
-                                            <span className="text-xs font-bold text-slate-600 truncate max-w-[120px]">{p.pmName || 'System'}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-4">
-                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-black uppercase border shadow-sm ${ragColors[p.rag as RAG] || ragColors.Grey}`}>
-                                            <span className={`w-1.5 h-1.5 rounded-full ${ragDot[p.rag as RAG] || ragDot.Grey}`} />
-                                            {p.rag}
-                                        </span>
-                                    </td>
-                                    <td className="px-4 py-4 min-w-[140px]">
-                                        <ProgressBar pct={p.compPct || 0} color={p.compPct >= 75 ? 'green' : p.compPct >= 40 ? 'indigo' : 'red'} />
-                                    </td>
-                                    <td className="px-4 py-4 text-right hidden lg:table-cell">
-                                        <div className="flex flex-col items-end">
-                                            <span className={`font-black ${p.riskHigh > 0 ? 'text-red-500' : 'text-slate-700'}`}>{p.riskHigh ?? 0} Critical</span>
-                                            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{p.riskOpen ?? 0} Total Active</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-4 text-right hidden lg:table-cell">
-                                        <span className={`text-xs font-black ${p.issueOpen > 0 ? 'text-amber-600' : 'text-slate-300'}`}>
-                                            {p.issueOpen ?? 0} ACTIVE
-                                        </span>
-                                    </td>
-                                    <td className="px-4 py-4 text-right hidden xl:table-cell">
-                                        <div className="text-[10px] font-bold text-slate-400 flex items-center justify-end gap-1 uppercase tracking-tighter">
-                                            <Clock className="w-3 h-3" />
-                                            {p.lastActivity ? new Date(p.lastActivity).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'Never'}
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-4 text-right">
-                                        <button 
-                                            onClick={() => {
-                                                setActiveProject(p.id);
-                                                navigate('/reporting/project');
-                                            }}
-                                            className="px-3 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-black uppercase tracking-widest rounded hover:bg-indigo-100 transition-all border border-indigo-100/50"
-                                        >
-                                            View Report
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                    <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest flex justify-between items-center">
-                        <div>Showing {filtered.length} Projects in Lifecycle</div>
-                        <div className="flex items-center gap-4">
-                            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm" /> CRITICAL: {totals.red}</span>
-                            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm" /> WARNING: {totals.amber}</span>
-                            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm" /> COMPLIANT: {totals.green}</span>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Empty state */}
-            {!loading && !error && filtered.length === 0 && (
-                <div className="bg-white border border-slate-100 rounded-lg py-20 flex flex-col items-center justify-center text-center shadow-sm">
-                    <div className="p-4 bg-slate-50 rounded-full mb-4">
-                        <FolderKanban className="w-10 h-10 text-slate-200" />
-                    </div>
-                    <h3 className="text-lg font-black text-slate-700 uppercase tracking-tighter">
-                        {projects.length === 0 ? 'No Portfolio Data' : 'No Results Found'}
-                    </h3>
-                    <p className="text-sm text-slate-400 mt-2 max-w-xs font-medium">
-                        {projects.length === 0
-                            ? 'Connect Project Managers to aggregate live governance data.'
-                            : 'Adjust your search parameters or filter criteria to view specific results.'}
-                    </p>
-                </div>
-            )}
-
-            {/* PM breakdown section */}
+            {/* ─── PM BREAKDOWN ─── */}
             {!loading && !error && projects.length > 0 && (
-                <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-                    <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3 bg-slate-50/30">
-                        <Users className="w-4 h-4 text-indigo-600" />
-                        <span className="font-black text-slate-800 text-xs uppercase tracking-widest">Resource Performance & Oversight</span>
+                <section className="bg-white rounded-lg border border-slate-200 overflow-hidden print:break-inside-avoid">
+                    <div className="px-5 py-4 border-b border-slate-200 flex items-center gap-2.5">
+                        <Users className="w-5 h-5 text-indigo-600" />
+                        <h3 className="text-sm font-semibold text-slate-900">Resource performance &amp; oversight</h3>
                     </div>
-                    <div className="divide-y divide-slate-100">
+                    <ul className="divide-y divide-slate-200">
                         {Array.from(new Set(projects.map(p => p.userId))).map(pmUid => {
                             const pmProjects = projects.filter(p => p.userId === pmUid);
-                            const pmName = pmProjects[0]?.pmName || 'Portfolio Lead';
+                            const pmName = pmProjects[0]?.pmName || 'Portfolio lead';
                             const pmRed = pmProjects.filter(p => p.rag === 'Red').length;
                             const pmAmber = pmProjects.filter(p => p.rag === 'Amber').length;
                             const pmGreen = pmProjects.filter(p => p.rag === 'Green').length;
                             const avgComp = Math.round(pmProjects.reduce((s, p) => s + (p.compPct || 0), 0) / pmProjects.length);
                             return (
-                                <div key={pmUid as string} className="px-5 py-5 flex flex-col md:flex-row md:items-center gap-6 transition-colors hover:bg-slate-50/50">
-                                    <div className="flex items-center gap-4 md:w-1/4">
-                                        <div className="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm font-black italic shadow-inner">
+                                <li key={pmUid as string} className="px-5 py-4 flex flex-col md:flex-row md:items-center gap-4">
+                                    <div className="flex items-center gap-3 md:w-1/4 min-w-0">
+                                        <div className="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm font-semibold shrink-0">
                                             {pmName[0].toUpperCase()}
                                         </div>
                                         <div className="min-w-0">
-                                            <div className="font-black text-slate-900 text-sm truncate uppercase tracking-tighter">{pmName}</div>
-                                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Lead Manager</div>
+                                            <p className="text-sm font-semibold text-slate-900 truncate">{pmName}</p>
+                                            <p className="text-xs text-slate-500">Lead manager</p>
                                         </div>
                                     </div>
-                                    <div className="flex-1">
+                                    <div className="flex-1 min-w-0">
                                         <div className="flex justify-between mb-1.5">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Average Governance Score</span>
-                                            <span className="text-[10px] font-black text-indigo-600">{avgComp}%</span>
+                                            <span className="text-xs font-medium text-slate-500">Average governance score</span>
+                                            <span className="text-xs font-semibold text-indigo-600 tabular-nums">{avgComp}%</span>
                                         </div>
                                         <ProgressBar pct={avgComp} color={avgComp >= 75 ? 'green' : avgComp >= 40 ? 'indigo' : 'red'} />
                                     </div>
                                     <div className="flex items-center gap-3 shrink-0 md:justify-end md:min-w-[200px]">
-                                        <div className="text-right mr-2">
-                                            <div className="text-xs font-black text-slate-800">{pmProjects.length}</div>
-                                            <div className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Projects</div>
+                                        <div className="text-right pr-2 border-r border-slate-200">
+                                            <div className="text-sm font-semibold text-slate-900 tabular-nums">{pmProjects.length}</div>
+                                            <div className="text-xs text-slate-500">Project{pmProjects.length === 1 ? '' : 's'}</div>
                                         </div>
                                         <div className="flex gap-1.5">
-                                            {pmRed > 0 && <span className="w-6 h-6 flex items-center justify-center rounded bg-rose-50 text-rose-600 text-[10px] font-black border border-rose-100 shadow-sm" title="Red RAG projects">{pmRed}</span>}
-                                            {pmAmber > 0 && <span className="w-6 h-6 flex items-center justify-center rounded bg-amber-50 text-amber-600 text-[10px] font-black border border-amber-100 shadow-sm" title="Amber RAG projects">{pmAmber}</span>}
-                                            {pmGreen > 0 && <span className="w-6 h-6 flex items-center justify-center rounded bg-emerald-50 text-emerald-600 text-[10px] font-black border border-emerald-100 shadow-sm" title="Green RAG projects">{pmGreen}</span>}
+                                            {pmRed > 0 && <span className="w-7 h-7 inline-flex items-center justify-center rounded bg-rose-50 text-rose-700 text-xs font-semibold border border-rose-200" title="Red RAG projects">{pmRed}</span>}
+                                            {pmAmber > 0 && <span className="w-7 h-7 inline-flex items-center justify-center rounded bg-amber-50 text-amber-700 text-xs font-semibold border border-amber-200" title="Amber RAG projects">{pmAmber}</span>}
+                                            {pmGreen > 0 && <span className="w-7 h-7 inline-flex items-center justify-center rounded bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-200" title="Green RAG projects">{pmGreen}</span>}
                                         </div>
                                     </div>
-                                </div>
+                                </li>
                             );
                         })}
-                    </div>
-                </div>
+                    </ul>
+                </section>
             )}
         </div>
     );
