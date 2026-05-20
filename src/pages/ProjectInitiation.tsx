@@ -14,7 +14,7 @@ import { toast } from "react-hot-toast";
 
 import { PublicationChecklist } from "../components/PublicationChecklist";
 import { DeliveryTeamCRUD } from "../components/DeliveryTeamCRUD";
-import { CheckPillGroup, inputBase } from "../components/forms";
+import { CheckPillGroup, inputBase, textareaBase } from "../components/forms";
 
 // ─── Main Page
 export function ProjectInitiation() {
@@ -584,6 +584,7 @@ export function ProjectInitiation() {
   };
 
   const inputCls = inputBase;
+  const textareaCls = textareaBase;
   const labelCls =
     "block text-sm font-medium text-slate-700 mb-1.5";
 
@@ -1092,7 +1093,7 @@ export function ProjectInitiation() {
                     <label className={labelCls}>Scope of Works</label>
                     <textarea
                       rows={3}
-                      className={inputCls}
+                      className={textareaCls}
                       placeholder="Main project objectives and deliverables…"
                       value={formData.description}
                       onChange={(e) => set("description", e.target.value)}

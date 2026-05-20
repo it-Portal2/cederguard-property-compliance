@@ -9,9 +9,14 @@ import { RIBA_STAGES } from '../constants/ribaStages';
 import { PublicationChecklist } from '../components/PublicationChecklist';
 import { stripMarkdown } from '../lib/utils';
 import { isAtLeastClientAdmin, UserRole, isSuperAdmin, isAtLeastPM } from '../lib/roles';
+import { inputBase } from '../components/forms';
 
-const inputCls = "w-full border border-slate-200 rounded-lg px-6 py-4 text-sm font-medium focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 focus-visible:ring-offset-2 transition-all bg-white/80 backdrop-blur-sm placeholder:text-slate-400 shadow-sm hover:border-slate-300";
-const labelCls = "block text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3 ml-1 opacity-80 cursor-pointer hover:text-indigo-600 transition-colors";
+const inputCls = inputBase;
+const labelCls = "block text-sm font-medium text-slate-700 mb-1.5 cursor-pointer";
+// Used inside the 2-column questionnaire grid: reserves 2 lines of label
+// height so 1-line and 2-line labels in the same row produce inputs that
+// align horizontally across columns.
+const questionLabelCls = "block text-sm font-medium text-slate-700 mb-1.5 cursor-pointer min-h-10 leading-snug";
 
 interface Question {
     id: string;
@@ -604,32 +609,30 @@ export function RiskSetup() {
         <div>
             {/* Restart Confirmation Dialog*/}
             {showRestartConfirm && (
-                <div className="fixed inset-0 z-110 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-lg shadow-2xl border border-slate-100 max-w-md w-full overflow-hidden animate-in zoom-in duration-300">
-                        <div className="p-8 text-center">
-                            <div className="w-16 h-16 bg-red-50 rounded-lg flex items-center justify-center mx-auto mb-6 ring-4 ring-white shadow-lg shadow-red-100">
-                                <AlertTriangle className="w-8 h-8 text-red-500" />
-                            </div>
-                            <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-3">
-                                Restart Risk Analysis?
-                            </h3>
-                            <p className="text-slate-500 text-sm leading-relaxed font-medium mb-8">
-                                This will permanently clear all risk profiling answers and AI setup data for this {contextType}. This action cannot be undone.
-                            </p>
-                            <div className="grid grid-cols-2 gap-3">
-                                <button
-                                    onClick={() => setShowRestartConfirm(false)}
-                                    className="w-full px-6 py-4 bg-slate-100 text-slate-700 rounded-lg font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all active:scale-95"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleRestartConfirmed}
-                                    className="w-full px-6 py-4 bg-red-600 text-white rounded-lg font-black text-xs uppercase tracking-widest hover:bg-red-700 transition-all hover:shadow-xl hover:shadow-red-200 active:scale-95"
-                                >
-                                    Yes, Restart
-                                </button>
-                            </div>
+                <div className="fixed inset-0 z-110 flex items-center justify-center p-4 bg-slate-900/50">
+                    <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <span className="inline-flex w-9 h-9 items-center justify-center rounded-md bg-rose-50 text-rose-600">
+                                <AlertTriangle className="w-5 h-5" />
+                            </span>
+                            <h3 className="text-lg font-semibold text-slate-900">Restart risk analysis?</h3>
+                        </div>
+                        <p className="text-sm text-slate-600 leading-relaxed mb-6">
+                            This will permanently clear all risk profiling answers and AI setup data for this {contextType}. This action cannot be undone.
+                        </p>
+                        <div className="flex items-center gap-2 justify-end">
+                            <button
+                                onClick={() => setShowRestartConfirm(false)}
+                                className="inline-flex items-center gap-1.5 px-3 h-9 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleRestartConfirmed}
+                                className="inline-flex items-center gap-1.5 px-4 h-9 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-md transition-colors"
+                            >
+                                Yes, restart
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -637,12 +640,12 @@ export function RiskSetup() {
 
             {/* Restart Loading Overlay*/}
             {isRestarting && (
-                <div className="fixed inset-0 z-110 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-lg shadow-2xl p-8 flex flex-col items-center gap-4 max-w-xs w-full mx-4">
-                        <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
+                <div className="fixed inset-0 z-110 flex items-center justify-center bg-slate-900/50">
+                    <div className="bg-white rounded-lg shadow-xl p-6 flex flex-col items-center gap-3 max-w-xs w-full mx-4">
+                        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
                         <div className="text-center">
-                            <p className="text-sm font-black text-slate-800 uppercase tracking-wider">Clearing Risk Data</p>
-                            <p className="text-xs text-slate-500 mt-1">Removing all previous risk analysis data...</p>
+                            <p className="text-sm font-semibold text-slate-900">Clearing risk data</p>
+                            <p className="text-xs text-slate-500 mt-1">Removing all previous risk analysis data…</p>
                         </div>
                     </div>
                 </div>
@@ -650,18 +653,18 @@ export function RiskSetup() {
 
             {/* Existing Analysis Overlay*/}
             {showAnalysisExists && (
-                <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md">
-                    <div className="bg-white rounded-lg shadow-2xl border border-slate-100 max-w-2xl w-full overflow-hidden animate-in fade-in zoom-in duration-500">
-                        <div className="p-10 text-center">
-                            <div className="w-20 h-20 bg-indigo-50 rounded-lg flex items-center justify-center mx-auto mb-8 shadow-xl shadow-indigo-100 ring-4 ring-white">
-                                <ShieldAlert className="w-10 h-10 text-indigo-600" />
-                            </div>
-                            <h3 className="text-3xl font-black text-slate-900 tracking-tight mb-4">Risk Analysis Complete</h3>
-                            <p className="text-slate-500 leading-relaxed max-w-md mx-auto mb-10 font-medium">
+                <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/50">
+                    <div className="bg-white rounded-lg shadow-xl max-w-xl w-full p-6 sm:p-8">
+                        <div className="text-center">
+                            <span className="inline-flex w-12 h-12 items-center justify-center rounded-md bg-indigo-50 text-indigo-600 mx-auto mb-4">
+                                <ShieldAlert className="w-6 h-6" />
+                            </span>
+                            <h3 className="text-xl font-semibold text-slate-900 mb-2">Risk analysis complete</h3>
+                            <p className="text-sm text-slate-600 leading-relaxed max-w-md mx-auto mb-6">
                                 A risk analysis has already been performed for this {contextType}. Would you like to view the results or start fresh?
                             </p>
-                            
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 <button
                                     onClick={() => {
                                         if (suggestedRisks.length > 0) {
@@ -670,19 +673,19 @@ export function RiskSetup() {
                                             navigate(contextType === 'project' ? `/risk/register${fromParam}` : `/risk/programme-register${fromParam}`);
                                         }
                                     }}
-                                    className="w-full flex items-center justify-center gap-3 px-8 py-5 bg-slate-900 text-white rounded-lg font-black text-xs uppercase tracking-[0.2em] transition-all hover:bg-slate-800 hover:shadow-2xl active:scale-95"
+                                    className="inline-flex items-center justify-center gap-1.5 px-4 h-10 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-md transition-colors"
                                 >
-                                    {suggestedRisks.length > 0 ? "Review AI Suggestions" : "View Risk Register"} <ArrowRight className="w-4 h-4" />
+                                    {suggestedRisks.length > 0 ? "Review AI suggestions" : "View risk register"} <ArrowRight className="w-4 h-4" />
                                 </button>
                                 <button
                                     onClick={handleRestart}
-                                    className="w-full flex items-center justify-center gap-3 px-8 py-5 bg-white text-slate-900 border-2 border-slate-100 rounded-lg font-black text-xs uppercase tracking-[0.2em] transition-all hover:bg-slate-50 hover:border-slate-200 active:scale-95"
+                                    className="inline-flex items-center justify-center gap-1.5 px-4 h-10 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors"
                                 >
-                                    Restart Analysis
+                                    Restart analysis
                                 </button>
                             </div>
-                            
-                            <div className="mt-8 flex flex-col items-center gap-4">
+
+                            <div className="mt-6 flex flex-col items-center gap-3">
                                 {searchParams.get('from') === 'initiation' ? (
                                     <button
                                         onClick={async () => {
@@ -693,16 +696,16 @@ export function RiskSetup() {
                                             }
                                             navigate(contextType === 'programme' ? '/programmes/new' : '/initiate');
                                         }}
-                                        className="flex items-center gap-2 px-6 py-3 bg-emerald-50 text-emerald-700 rounded-lg font-black text-[10px] uppercase tracking-widest hover:bg-emerald-100 transition-all border border-emerald-100"
+                                        className="inline-flex items-center gap-1.5 px-3 h-9 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md hover:bg-emerald-100 transition-colors"
                                     >
-                                        <CheckCircle2 className="w-4 h-4" /> Continue to Initiation Step 4
+                                        <CheckCircle2 className="w-4 h-4" /> Continue to initiation step 4
                                     </button>
                                 ) : (
                                     <button
                                         onClick={() => navigate((contextType === 'project' ? '/risk/register' : '/risk/programme-register') + fromParam)}
-                                        className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] hover:text-indigo-600 transition-colors"
+                                        className="text-sm font-medium text-slate-500 hover:text-indigo-600 transition-colors"
                                     >
-                                        Go to Risk Register
+                                        Go to risk register
                                     </button>
                                 )}
                             </div>
@@ -713,23 +716,13 @@ export function RiskSetup() {
 
             <div className="space-y-6">
                 {/* ── HEADER SECTION ───────────*/}
-                <div className="mb-8 md:mb-12">
-                    <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
-                        <div className="space-y-3">
-                            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 border border-indigo-100/50 text-indigo-600">
-                                <Briefcase className="w-3.5 h-3.5" />
-                                <span className="text-[10px] font-black uppercase tracking-widest">Risk Profiling</span>
-                            </div>
-                            <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">
-                                AI Risk <span className="text-indigo-600">Identification</span>
-                            </h1>
-                            <p className="text-slate-500 font-medium max-w-2xl text-sm md:text-base leading-relaxed">
-                                {contextType === 'programme'
-                                    ? "Leverage the Cedar Intelligence Engine to analyse your programme portfolio. We'll suggest strategic risks, governance gaps, and cross-project dependencies."
-                                    : "Leverage the Cedar Intelligence Engine to analyse your project context. We'll suggest specific risks with pre-scored ratings, designated owners, and strategic controls."}
-                            </p>
-                        </div>
-                    </div>
+                <div className="pb-6 border-b border-slate-200">
+                    <h1 className="text-2xl font-semibold text-slate-900">AI risk identification</h1>
+                    <p className="mt-1 text-sm text-slate-500 max-w-2xl leading-relaxed">
+                        {contextType === 'programme'
+                            ? "Analyse your programme portfolio to surface strategic risks, governance gaps, and cross-project dependencies."
+                            : "Analyse your project context to surface specific risks with pre-scored ratings, designated owners, and strategic controls."}
+                    </p>
                 </div>
 
                 {/* ── MAIN CONTENT GRID ───────────*/}
@@ -746,23 +739,23 @@ export function RiskSetup() {
                                         role="region"
                                         aria-label={phase.phase}
                                         className={clsx(
-                                            "bg-white/60 backdrop-blur-xl rounded-lg border border-white/60 overflow-hidden shadow-2xl shadow-indigo-900/5 transition-all duration-700 group",
-                                            activePhase === idx ? "ring-2 ring-indigo-500/20 bg-white/90 scale-[1.01]" : "hover:bg-white/80"
+                                            "bg-white rounded-lg border border-slate-200 overflow-hidden transition-colors group",
+                                            activePhase === idx && "border-indigo-300"
                                         )}
                                     >
-                                        <div className="px-10 py-8 border-b border-slate-100/50 flex items-center justify-between bg-linear-to-r from-white/40 to-transparent">
-                                            <div className="flex items-center gap-6">
+                                        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+                                            <div className="flex items-center gap-4">
                                                 <div className={clsx(
-                                                    "w-1.5 h-10 rounded-full transition-all duration-500 shadow-xl",
-                                                    activePhase === idx ? "bg-indigo-600 h-12 shadow-indigo-200" : "bg-slate-900 group-hover:bg-indigo-600 group-hover:h-12"
+                                                    "w-1 h-8 rounded-full transition-colors",
+                                                    activePhase === idx ? "bg-indigo-600" : "bg-slate-200"
                                                 )}></div>
                                                 <div>
-                                                    <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.3em] mb-1.5 opacity-60">Step 0{idx + 1}</p>
-                                                    <h2 className="text-xl font-black text-slate-900 tracking-tight">{phase.phase.split(': ')[1]}</h2>
+                                                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-0.5">Step {String(idx + 1).padStart(2, '0')}</p>
+                                                    <h2 className="text-lg font-semibold text-slate-900">{phase.phase.split(': ')[1]}</h2>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="p-10 grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+                                        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                                             {phase.questions.map(q => {
                                                 const val = answers[q.id] || '';
                                                 const inputId = `risk-${q.id}`;
@@ -781,24 +774,22 @@ export function RiskSetup() {
                                                                             type="button"
                                                                             aria-pressed={isChecked}
                                                                             className={clsx(
-                                                                                "group flex flex-col gap-4 p-5 rounded-lg border cursor-pointer transition-all duration-500 select-none items-center text-center outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/50",
+                                                                                "group flex items-center gap-2 p-3 rounded-md border cursor-pointer transition-colors select-none text-left outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40",
                                                                                 isChecked
-                                                                                    ? 'bg-slate-900 border-slate-900 shadow-2xl shadow-indigo-900/20 scale-[1.02]'
-                                                                                    : 'bg-white/50 border-white shadow-sm hover:border-indigo-300 hover:bg-white'
+                                                                                    ? 'bg-indigo-50 border-indigo-400'
+                                                                                    : 'bg-white border-slate-300 hover:border-slate-400',
                                                                             )}
                                                                             onClick={() => toggleCheck(q.id, o.v)}
                                                                         >
-                                                                            <div className={clsx(
-                                                                                "w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-500",
-                                                                                isChecked
-                                                                                    ? 'bg-indigo-500 border-indigo-500 rotate-0 shadow-lg shadow-indigo-500/30'
-                                                                                    : 'bg-transparent border-slate-200 group-hover:border-indigo-400 rotate-45 group-hover:rotate-0'
-                                                                            )}>
-                                                                                {isChecked && <Check className="w-4 h-4 text-white stroke-[4px]" />}
-                                                                            </div>
                                                                             <span className={clsx(
-                                                                                "text-[10px] leading-tight transition-colors uppercase font-black tracking-widest w-full px-2",
-                                                                                isChecked ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-900'
+                                                                                "shrink-0 w-4 h-4 rounded-sm border flex items-center justify-center transition-colors",
+                                                                                isChecked ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-slate-300',
+                                                                            )}>
+                                                                                {isChecked && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                                                                            </span>
+                                                                            <span className={clsx(
+                                                                                "text-sm leading-snug",
+                                                                                isChecked ? 'text-slate-900 font-medium' : 'text-slate-700',
                                                                             )} title={o.l}>
                                                                                 {o.l}
                                                                             </span>
@@ -811,53 +802,43 @@ export function RiskSetup() {
                                                 }
 
                                                 return (
-                                                    <div key={q.id} className="space-y-3">
-                                                        <label htmlFor={inputId} className={labelCls} title={q.label}>
+                                                    <div key={q.id} className="flex flex-col">
+                                                        <label htmlFor={inputId} className={questionLabelCls} title={q.label}>
                                                             {q.label} {q.required && <span className="text-rose-500 ml-1" aria-hidden="true">*</span>}
                                                         </label>
-                                                        <div className="relative group">
-                                                            {q.type === 'select' ? (
-                                                                <div className="relative">
-                                                                    <select
-                                                                        id={inputId}
-                                                                        aria-required={q.required}
-                                                                        className={clsx(
-                                                                            inputCls,
-                                                                            val && "border-indigo-200 bg-indigo-50/10"
-                                                                        )}
-                                                                        value={val}
-                                                                        onChange={(e) => handleInput(q.id, e.target.value)}
-                                                                    >
-                                                                        <option value="">— Select Option —</option>
-                                                                        {q.opts?.map((o: any) => <option key={typeof o === 'string' ? o : o.v} value={typeof o === 'string' ? o : o.v}>{typeof o === 'string' ? o : o.l}</option>)}
-                                                                    </select>
-                                                                    <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover:text-indigo-500 transition-colors">
-                                                                        <Settings className="w-4 h-4" />
-                                                                    </div>
-                                                                </div>
-                                                            ) : (
-                                                                <input
-                                                                    id={inputId}
-                                                                    type={q.type}
-                                                                    aria-required={q.required}
-                                                                    placeholder={q.placeholder}
-                                                                    value={val}
-                                                                    onChange={(e) => handleInput(q.id, e.target.value)}
-                                                                    className={inputCls}
-                                                                />
-                                                            )}
-                                                        </div>
+                                                        {q.type === 'select' ? (
+                                                            <select
+                                                                id={inputId}
+                                                                aria-required={q.required}
+                                                                className={inputCls}
+                                                                value={val}
+                                                                onChange={(e) => handleInput(q.id, e.target.value)}
+                                                            >
+                                                                <option value="">— Select option —</option>
+                                                                {q.opts?.map((o: any) => <option key={typeof o === 'string' ? o : o.v} value={typeof o === 'string' ? o : o.v}>{typeof o === 'string' ? o : o.l}</option>)}
+                                                            </select>
+                                                        ) : (
+                                                            <input
+                                                                id={inputId}
+                                                                type={q.type}
+                                                                aria-required={q.required}
+                                                                placeholder={q.placeholder}
+                                                                value={val}
+                                                                onChange={(e) => handleInput(q.id, e.target.value)}
+                                                                className={inputCls}
+                                                            />
+                                                        )}
 
                                                         {/* AI Risk Insights (Trigger logic)*/}
                                                         {q.trigger && val && val !== "None identified" && val !== "Low" && val !== "No" && !val.includes("Not yet") && !val.includes("N/A") && (
-                                                            <div className="mt-3 bg-indigo-600/5 border border-indigo-100/50 rounded-lg p-4 flex gap-4 animate-in fade-in slide-in-from-top-2 duration-500">
-                                                                <div className="shrink-0 w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
-                                                                    <ScanSearch className="w-4 h-4 text-indigo-600" />
-                                                                </div>
-                                                                <div className="space-y-1">
-                                                                    <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest">AI Risk Insight</p>
-                                                                    <p className="text-xs text-indigo-900/70 font-medium leading-relaxed italic">
-                                                                        "{q.trigger}"
+                                                            <div className="mt-2 bg-slate-50 border border-slate-200 rounded-md p-3 flex gap-3">
+                                                                <span className="shrink-0 inline-flex w-7 h-7 rounded-md bg-white border border-slate-200 items-center justify-center text-indigo-600">
+                                                                    <ScanSearch className="w-4 h-4" />
+                                                                </span>
+                                                                <div className="space-y-0.5 min-w-0">
+                                                                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">AI risk insight</p>
+                                                                    <p className="text-xs text-slate-600 leading-relaxed">
+                                                                        {q.trigger}
                                                                     </p>
                                                                 </div>
                                                             </div>
@@ -869,52 +850,44 @@ export function RiskSetup() {
                                     </section>
                                 ))}
 
-                                <div className="flex flex-col items-center justify-center pt-8 pb-16 gap-6">
+                                <div className="flex flex-col items-center justify-center pt-6 pb-10 gap-4">
                                     <button
                                         onClick={runAnalysis}
                                         disabled={loading}
-                                        className="group relative flex items-center gap-4 px-12 py-6 bg-slate-900 text-white rounded-lg font-black text-xs uppercase tracking-[0.3em] overflow-hidden transition-all hover:bg-indigo-600 hover:scale-[1.05] hover:shadow-2xl hover:shadow-indigo-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                                        className="inline-flex items-center gap-1.5 px-4 h-10 bg-indigo-600 text-white rounded-md text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                     >
-                                        <div className="absolute inset-0 bg-linear-to-r from-indigo-600 via-indigo-500 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                                        <span className="relative z-10 flex items-center gap-4">
-                                            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Briefcase className="w-5 h-5" />}
-                                            {loading ? "Analysing Context..." : "Run AI Risk Analysis"}
-                                        </span>
+                                        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Briefcase className="w-4 h-4" />}
+                                        {loading ? "Analysing context…" : "Run AI risk analysis"}
                                     </button>
-                                    {error && <p className="text-rose-500 text-xs font-black uppercase tracking-widest">{error}</p>}
+                                    {error && <p className="text-sm text-rose-600 font-medium">{error}</p>}
                                 </div>
                             </div>
                         )}
 
                         {/* Suggested Risks Result*/}
                         {done && (
-                            <div className="space-y-10 px-2 animate-in fade-in slide-in-from-bottom-8 duration-700">
-                                <div className="bg-white/60 backdrop-blur-3xl border border-white/60 rounded-lg p-16 text-center shadow-2xl shadow-indigo-900/10 relative overflow-hidden group">
-                                    <div className="absolute top-0 left-0 w-full h-2 bg-linear-to-r from-emerald-400 via-teal-400 to-emerald-400"></div>
-                                    <div className="relative z-10">
-                                        <div className="w-24 h-24 bg-emerald-500 text-white rounded-lg flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-emerald-200 rotate-12 group-hover:rotate-0 transition-transform duration-500">
-                                            <Check className="w-12 h-12 stroke-[3px]" />
-                                        </div>
-                                        <div className="space-y-4 mb-10">
-                                            <h2 className="text-4xl font-black text-slate-900 tracking-tight">Analysis Complete</h2>
-                                            <p className="text-slate-500 text-lg max-w-2xl mx-auto font-medium leading-relaxed">
-                                                The Cedar Engine has processed your {contextType === 'project' ? 'project' : 'programme'} profile and identifies <span className="text-emerald-600 font-black">12 critical risk factors</span> relevant to your specific operational context.
-                                            </p>
-                                        </div>
-                                        <div className="flex flex-col sm:flex-row justify-center gap-4">
-                                            <button
-                                                onClick={() => navigate('/risk/register' + fromParam)}
-                                                className="px-10 py-5 bg-slate-900 text-white font-black rounded-lg hover:bg-slate-800 transition-all hover:scale-[1.05] active:scale-95 shadow-2xl shadow-slate-200 flex items-center gap-4 uppercase text-xs tracking-widest"
-                                            >
-                                                Access Full Risk Register <ArrowRight className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                onClick={reset}
-                                                className="px-10 py-5 bg-white border border-slate-200 text-slate-500 font-black rounded-lg hover:bg-slate-50 transition-all active:scale-95 uppercase text-xs tracking-widest"
-                                            >
-                                                Modify Setup
-                                            </button>
-                                        </div>
+                            <div className="space-y-6">
+                                <div className="bg-white border border-slate-200 rounded-lg p-8 text-center">
+                                    <span className="inline-flex w-12 h-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 mx-auto mb-4">
+                                        <Check className="w-6 h-6" strokeWidth={3} />
+                                    </span>
+                                    <h2 className="text-2xl font-semibold text-slate-900 mb-2">Analysis complete</h2>
+                                    <p className="text-sm text-slate-600 max-w-2xl mx-auto leading-relaxed mb-6">
+                                        The Cedar Engine has processed your {contextType === 'project' ? 'project' : 'programme'} profile and identifies <span className="text-emerald-700 font-semibold">12 critical risk factors</span> relevant to your specific operational context.
+                                    </p>
+                                    <div className="flex flex-col sm:flex-row justify-center gap-2">
+                                        <button
+                                            onClick={() => navigate('/risk/register' + fromParam)}
+                                            className="inline-flex items-center justify-center gap-1.5 px-4 h-10 bg-indigo-600 text-white text-sm font-semibold rounded-md hover:bg-indigo-700 transition-colors"
+                                        >
+                                            Access full risk register <ArrowRight className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={reset}
+                                            className="inline-flex items-center justify-center gap-1.5 px-4 h-10 bg-white border border-slate-300 text-slate-700 text-sm font-medium rounded-md hover:bg-slate-50 transition-colors"
+                                        >
+                                            Modify setup
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -941,10 +914,10 @@ export function RiskSetup() {
 
                         {/* Sticky Phase Navigation (Specific to Risk Setup)*/}
                         {!done && (
-                            <aside className="hidden xl:block space-y-4 animate-in slide-in-from-right-8 duration-700">
-                                <div className="p-6 bg-white/40 backdrop-blur-xl rounded-lg border border-white/60 shadow-2xl shadow-slate-200/40">
-                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 px-2">Setup Progress</h3>
-                                    <nav className="space-y-1">
+                            <aside className="hidden xl:block space-y-4">
+                                <div className="p-4 bg-white rounded-lg border border-slate-200">
+                                    <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3 px-1">Setup progress</h3>
+                                    <nav className="space-y-0.5">
                                         {currentQuestions.map((p, i) => {
                                             const isComplete = p.questions.every(q => answers[q.id] && (Array.isArray(answers[q.id]) ? answers[q.id].length > 0 : true));
                                             return (
@@ -952,19 +925,21 @@ export function RiskSetup() {
                                                     key={i}
                                                     onClick={() => scrollToPhase(i)}
                                                     className={clsx(
-                                                        "w-full flex items-center gap-4 px-4 py-3.5 rounded-lg text-left transition-all group",
-                                                        activePhase === i 
-                                                            ? "bg-slate-900 text-white shadow-xl shadow-slate-200 translate-x-1" 
-                                                            : "text-slate-500 hover:bg-white hover:text-slate-900"
+                                                        "w-full flex items-center gap-3 px-3 py-2 rounded-md text-left transition-colors",
+                                                        activePhase === i
+                                                            ? "bg-indigo-50 text-indigo-900"
+                                                            : "text-slate-600 hover:bg-slate-50",
                                                     )}
                                                 >
-                                                    <div className={clsx(
-                                                        "w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black transition-all",
-                                                        activePhase === i ? "bg-indigo-500 text-white" : "bg-slate-100 text-slate-400 group-hover:bg-slate-200"
+                                                    <span className={clsx(
+                                                        "shrink-0 w-6 h-6 rounded-full inline-flex items-center justify-center text-xs font-semibold transition-colors",
+                                                        isComplete && activePhase !== i && "bg-emerald-100 text-emerald-700",
+                                                        activePhase === i && "bg-indigo-600 text-white",
+                                                        !isComplete && activePhase !== i && "bg-slate-100 text-slate-500",
                                                     )}>
-                                                        {isComplete ? <Check className="w-3 h-3 stroke-[3px]" /> : i + 1}
-                                                    </div>
-                                                    <span className="text-[11px] font-black uppercase tracking-wider truncate" title={p.phase.split(': ')[1]}>
+                                                        {isComplete ? <Check className="w-3 h-3" strokeWidth={3} /> : i + 1}
+                                                    </span>
+                                                    <span className="text-sm truncate" title={p.phase.split(': ')[1]}>
                                                         {p.phase.split(': ')[1]}
                                                     </span>
                                                 </button>
@@ -972,29 +947,31 @@ export function RiskSetup() {
                                         })}
                                     </nav>
                                 </div>
-                                
-                                <div className="p-6 bg-indigo-600/5 rounded-lg border border-indigo-100/30">
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <ScanSearch className="w-4 h-4 text-indigo-500" />
-                                        <h4 className="text-[10px] font-black text-indigo-900 uppercase tracking-widest">AI Readiness</h4>
+
+                                <div className="p-4 bg-white rounded-lg border border-slate-200">
+                                    <div className="flex items-center justify-between gap-2 mb-2">
+                                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">AI readiness</span>
+                                        <span className="text-xs font-medium text-slate-700 tabular-nums">
+                                            {Math.round((Object.keys(answers).length / Math.max(1, currentQuestions.reduce((acc, p) => acc + p.questions.length, 0))) * 100)}%
+                                        </span>
                                     </div>
-                                    <div className="h-1.5 w-full bg-indigo-100 rounded-full overflow-hidden">
-                                        <div 
-                                            className="h-full bg-indigo-500 transition-all duration-700" 
-                                            style={{ width: `${(Object.keys(answers).length / currentQuestions.reduce((acc, p) => acc + p.questions.length, 0)) * 100}%` }}
+                                    <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-indigo-600 transition-all duration-300"
+                                            style={{ width: `${(Object.keys(answers).length / Math.max(1, currentQuestions.reduce((acc, p) => acc + p.questions.length, 0))) * 100}%` }}
                                         ></div>
                                     </div>
                                 </div>
                             </aside>
                         )}
-                        
+
                         {/* Selector Controls (Moved from header for cleaner mobile flow)*/}
-                        <div className="space-y-4 p-6 bg-white/40 backdrop-blur-xl rounded-lg border border-white/60 shadow-xl shadow-slate-200/40">
-                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-2 px-2">Project Context</h3>
+                        <div className="p-4 bg-white rounded-lg border border-slate-200">
+                            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3 px-1">Project context</h3>
                             <div className="space-y-3">
                                 {!isClientAdmin && (
                                     <select
-                                        className="w-full bg-white border border-slate-200 rounded-lg px-5 py-3 text-xs font-black text-slate-900 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all hover:border-indigo-400 shadow-sm"
+                                        className={inputCls}
                                         value={selectedProjectId}
                                         onChange={async (e) => {
                                             const pid = e.target.value;
@@ -1006,7 +983,7 @@ export function RiskSetup() {
                                             if (pid) await useStore.getState().loadProjectData(pid);
                                         }}
                                     >
-                                        <option value="">Select Project</option>
+                                        <option value="">Select project</option>
                                         {(Array.isArray(projects) ? projects : []).map(p => <option key={p.id} value={p.id}>{stripMarkdown(p.name) || p.id}</option>)}
                                     </select>
                                 )}
@@ -1014,7 +991,7 @@ export function RiskSetup() {
                                 {isClientAdmin && (
                                     <>
                                         <select
-                                            className="w-full bg-white border border-slate-200 rounded-lg px-5 py-3 text-xs font-black text-slate-900 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all hover:border-indigo-400 shadow-sm"
+                                            className={inputCls}
                                             value={selectedProgrammeId}
                                             onChange={async (e) => {
                                                 const pid = e.target.value;
@@ -1028,12 +1005,12 @@ export function RiskSetup() {
                                                 else useStore.getState().setActiveProgramme(null);
                                             }}
                                         >
-                                            <option value="">Select Programme</option>
+                                            <option value="">Select programme</option>
                                             {(Array.isArray(programmes) ? programmes : []).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                         </select>
                                         {contextType === 'project' && projectsInProgramme.length > 0 && (
                                             <select
-                                                className="w-full bg-white border border-slate-200 rounded-lg px-5 py-3 text-xs font-black text-slate-900 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all hover:border-indigo-400 shadow-sm"
+                                                className={inputCls}
                                                 value={selectedProjectId}
                                                 onChange={async (e) => {
                                                     const pid = e.target.value;
@@ -1045,7 +1022,7 @@ export function RiskSetup() {
                                                     if (pid) await useStore.getState().loadProjectData(pid);
                                                 }}
                                             >
-                                                <option value="">Select Project</option>
+                                                <option value="">Select project</option>
                                                 {projectsInProgramme.map(p => <option key={p.id} value={p.id}>{stripMarkdown(p.name) || p.id}</option>)}
                                             </select>
                                         )}

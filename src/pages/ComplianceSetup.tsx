@@ -22,6 +22,7 @@ import { AIInquiryPopup } from "../components/AIInquiryPopup";
 
 import { AnalysisSummary } from "../components/compliance/AnalysisSummary";
 import { determineProjectCategory } from "../utils/complianceCategorization";
+import { inputBase, textareaBase } from "../components/forms";
 
 // ─── Checkbox pill component
 function CheckPill({
@@ -39,27 +40,28 @@ function CheckPill({
   return (
     <label
       className={clsx(
-        "flex items-start gap-3 p-3 sm:p-4 rounded-lg border cursor-pointer transition-all select-none text-sm font-semibold min-w-0",
+        "flex items-start gap-3 px-3 py-2.5 rounded-md border cursor-pointer transition-colors select-none text-sm min-w-0",
         checked
-          ? "bg-indigo-600 border-indigo-600 text-white shadow-md"
-          : "bg-white border-slate-200 text-slate-600 hover:border-indigo-400 hover:bg-slate-50",
+          ? "bg-indigo-50 border-indigo-500"
+          : "bg-white border-slate-300 hover:border-slate-400",
       )}
     >
       <input
         type="checkbox"
         checked={checked}
         onChange={onChange}
-        className="hidden"
+        className="sr-only"
       />
-      <div
+      <span
         className={clsx(
-          "w-5 h-5 shrink-0 rounded-md border flex items-center justify-center transition-all mt-0.5",
-          checked ? "bg-white/20 border-white/40" : "bg-white border-slate-300",
+          "w-4 h-4 shrink-0 rounded-sm border flex items-center justify-center transition-colors mt-0.5",
+          checked ? "bg-indigo-600 border-indigo-600" : "bg-white border-slate-300",
         )}
+        aria-hidden="true"
       >
-        {checked && <Check className="w-3.5 h-3.5 text-white stroke-[3px]" />}
-      </div>
-      <span className="leading-relaxed wrap-break-word min-w-0">{label}</span>
+        {checked && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+      </span>
+      <span className={clsx("leading-snug wrap-break-word min-w-0", checked ? "text-slate-900 font-medium" : "text-slate-700")}>{label}</span>
     </label>
   );
 }
@@ -67,11 +69,11 @@ function CheckPill({
 // ─── Phase header
 function PhaseHeader({ num, title }: { num: number; title: string }) {
   return (
-    <div className="flex items-center gap-4 mb-6 sm:mb-8 pb-4 sm:pb-6 border-b border-slate-100">
-      <div className="bg-slate-900 text-white text-[10px] font-black px-3 py-1.5 rounded-lg uppercase tracking-wider">
+    <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-200">
+      <span className="inline-flex h-7 items-center px-2.5 rounded-md bg-slate-900 text-white text-xs font-semibold uppercase tracking-wide">
         Phase {num}
-      </div>
-      <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+      </span>
+      <h2 className="text-lg font-semibold text-slate-900">
         {title}
       </h2>
     </div>
@@ -79,10 +81,8 @@ function PhaseHeader({ num, title }: { num: number; title: string }) {
 }
 
 // ─── Form field wrappers
-const inputCls =
-  "w-full border border-slate-200 rounded-lg px-6 py-4 text-sm font-medium focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white/80 backdrop-blur-sm placeholder:text-slate-400 shadow-sm hover:border-slate-300";
-const labelCls =
-  "block text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3 ml-2 opacity-70";
+const inputCls = inputBase;
+const labelCls = "block text-sm font-medium text-slate-700 mb-1.5";
 
 function Field({
   label,
@@ -98,11 +98,12 @@ function Field({
   return (
     <div>
       <label className={labelCls}>
-        {label} {required && <span className="text-red-400">*</span>}
+        {label}
+        {required && <span className="text-rose-500 ml-0.5" aria-label="required">*</span>}
       </label>
       {children}
       {hint && (
-        <p className="mt-1.5 text-[10px] text-amber-600 flex items-start gap-1 font-medium italic">
+        <p className="mt-1.5 text-xs text-amber-600 flex items-start gap-1">
           <AlertCircle className="w-3 h-3 shrink-0 mt-0.5" />
           {hint}
         </p>
@@ -1286,8 +1287,8 @@ export function ComplianceSetup() {
     <>
       <div className="relative space-y-6 overflow-visible">
         {!!loadingStep && (
-          <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-            <div className="bg-white p-12 rounded-lg shadow-2xl border border-slate-100 flex flex-col items-center gap-8 max-w-sm w-full mx-4 text-center transform scale-100 animate-in zoom-in-95 duration-300">
+          <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/60  animate-in fade-in duration-300">
+            <div className="bg-white p-12 rounded-lg  border border-slate-100 flex flex-col items-center gap-8 max-w-sm w-full mx-4 text-center transform scale-100 animate-in zoom-in-95 duration-300">
               <div className="relative">
                 <div className="w-24 h-24 border-4 border-indigo-100 rounded-full animate-spin border-t-indigo-600"></div>
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -1295,7 +1296,7 @@ export function ComplianceSetup() {
                 </div>
               </div>
               <div>
-                <h3 className="text-xl font-black text-slate-900 mb-2 uppercase tracking-tight">
+                <h3 className="text-xl font-semibold text-slate-900 mb-2 uppercase ">
                   CedarGuard AI
                 </h3>
                 <p className="text-sm font-bold text-slate-500 leading-relaxed min-h-[40px]">
@@ -1313,13 +1314,13 @@ export function ComplianceSetup() {
         )}
         {/* Restart Confirmation Dialog*/}
         {showRestartConfirm && (
-          <div className="fixed inset-0 z-110 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white rounded-lg shadow-2xl border border-slate-100 max-w-md w-full overflow-hidden animate-in zoom-in duration-300">
+          <div className="fixed inset-0 z-110 flex items-center justify-center p-4 bg-slate-900/60  animate-in fade-in duration-200">
+            <div className="bg-white rounded-lg  border border-slate-100 max-w-md w-full overflow-hidden animate-in zoom-in duration-300">
               <div className="p-8 text-center">
-                <div className="w-16 h-16 bg-red-50 rounded-lg flex items-center justify-center mx-auto mb-6 ring-4 ring-white shadow-lg shadow-red-100">
+                <div className="w-16 h-16 bg-red-50 rounded-lg flex items-center justify-center mx-auto mb-6 ring-4 ring-white ">
                   <AlertTriangle className="w-8 h-8 text-red-500" />
                 </div>
-                <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-3">
+                <h3 className="text-2xl font-semibold text-slate-900  mb-3">
                   Restart Analysis?
                 </h3>
                 <p className="text-slate-500 text-sm leading-relaxed font-medium mb-8">
@@ -1328,13 +1329,13 @@ export function ComplianceSetup() {
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => setShowRestartConfirm(false)}
-                    className="w-full px-6 py-4 bg-slate-100 text-slate-700 rounded-lg font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all active:scale-95"
+                    className="w-full px-6 py-4 bg-slate-100 text-slate-700 rounded-lg font-semibold text-xs uppercase tracking-wide hover:bg-slate-200 transition-all "
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleRestartConfirmed}
-                    className="w-full px-6 py-4 bg-red-600 text-white rounded-lg font-black text-xs uppercase tracking-widest hover:bg-red-700 transition-all hover:shadow-xl hover:shadow-red-200 active:scale-95"
+                    className="w-full px-6 py-4 bg-red-600 text-white rounded-lg font-semibold text-xs uppercase tracking-wide hover:bg-red-700 transition-all hover: hover: "
                   >
                     Yes, Restart
                   </button>
@@ -1344,33 +1345,33 @@ export function ComplianceSetup() {
           </div>
         )}
         {isRestarting && (
-          <div className="fixed inset-0 z-110 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white rounded-lg shadow-2xl p-8 flex flex-col items-center gap-4 max-w-xs w-full mx-4">
+          <div className="fixed inset-0 z-110 flex items-center justify-center bg-slate-900/60  animate-in fade-in duration-200">
+            <div className="bg-white rounded-lg  p-8 flex flex-col items-center gap-4 max-w-xs w-full mx-4">
               <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
               <div className="text-center">
-                <p className="text-sm font-black text-slate-800 uppercase tracking-wider">Clearing Analysis Data</p>
+                <p className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Clearing Analysis Data</p>
                 <p className="text-xs text-slate-500 mt-1">Removing all previous compliance results...</p>
               </div>
             </div>
           </div>
         )}
         {isDataLoading && !loadingStep && !isRestarting && (
-          <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white rounded-lg shadow-xl p-8 flex flex-col items-center gap-4 max-w-xs w-full mx-4">
+          <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/40  animate-in fade-in duration-200">
+            <div className="bg-white rounded-lg  p-8 flex flex-col items-center gap-4 max-w-xs w-full mx-4">
               <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
-              <p className="text-sm font-bold text-slate-600 uppercase tracking-wider">Loading...</p>
+              <p className="text-sm font-bold text-slate-600 uppercase tracking-wide">Loading...</p>
             </div>
           </div>
         )}
         {/* Existing Analysis Overlay*/}
         {showAnalysisExists && (
-          <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md">
-            <div className="bg-white rounded-lg sm:rounded-lg shadow-2xl border border-slate-100 max-w-2xl w-full overflow-hidden animate-in fade-in zoom-in duration-500">
+          <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/40 ">
+            <div className="bg-white rounded-lg sm:rounded-lg  border border-slate-100 max-w-2xl w-full overflow-hidden animate-in fade-in zoom-in duration-500">
               <div className="p-6 sm:p-10 text-center">
-                <div className="w-20 h-20 bg-indigo-50 rounded-lg flex items-center justify-center mx-auto mb-8 shadow-xl shadow-indigo-100 ring-4 ring-white">
+                <div className="w-20 h-20 bg-indigo-50 rounded-lg flex items-center justify-center mx-auto mb-8  ring-4 ring-white">
                   <ShieldCheck className="w-10 h-10 text-indigo-600" />
                 </div>
-                <h3 className="text-3xl font-black text-slate-900 tracking-tight mb-4">
+                <h3 className="text-3xl font-semibold text-slate-900  mb-4">
                   Analysis Already Complete
                 </h3>
                 <p className="text-slate-500 leading-relaxed max-w-md mx-auto mb-10 font-medium">
@@ -1388,14 +1389,14 @@ export function ComplianceSetup() {
                           : `/compliance/dashboard?type=project${fromInitiation ? "&from=initiation" : ""}`,
                       )
                     }
-                    className="w-full flex items-center justify-center gap-3 px-8 py-5 bg-emerald-600 text-white rounded-lg font-black text-xs uppercase tracking-[0.2em] transition-all hover:bg-emerald-700 hover:shadow-2xl active:scale-95"
+                    className="w-full flex items-center justify-center gap-3 px-8 py-5 bg-emerald-600 text-white rounded-lg font-semibold text-xs uppercase tracking-wide transition-all hover:bg-emerald-700 hover: "
                   >
                     View Compliance Dashboard <ArrowRight className="w-4 h-4" />
                   </button>
                   <button
                     onClick={handleRestart}
                     disabled={loading}
-                    className="w-full flex items-center justify-center gap-3 px-8 py-5 bg-white text-slate-900 border-2 border-slate-100 rounded-lg font-black text-xs uppercase tracking-[0.2em] transition-all hover:bg-slate-50 hover:border-slate-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                    className="w-full flex items-center justify-center gap-3 px-8 py-5 bg-white text-slate-900 border-2 border-slate-100 rounded-lg font-semibold text-xs uppercase tracking-wide transition-all hover:bg-slate-50 hover:border-slate-200  disabled:opacity-50 disabled:pointer-events-none"
                   >
                     Restart Analysis
                   </button>
@@ -1423,7 +1424,7 @@ export function ComplianceSetup() {
                             : "/initiate",
                         );
                       }}
-                      className="flex items-center gap-2 px-6 py-3 bg-emerald-50 text-emerald-700 rounded-lg font-black text-[10px] uppercase tracking-widest hover:bg-emerald-100 transition-all border border-emerald-100 disabled:opacity-50 disabled:pointer-events-none"
+                      className="flex items-center gap-2 px-6 py-3 bg-emerald-50 text-emerald-700 rounded-lg font-semibold text-xs uppercase tracking-wide hover:bg-emerald-100 transition-all border border-emerald-100 disabled:opacity-50 disabled:pointer-events-none"
                     >
                       <CheckCircle2 className="w-4 h-4" /> Continue to
                       Initiation Step 3
@@ -1437,7 +1438,7 @@ export function ComplianceSetup() {
                             : `/compliance/dashboard?type=project${fromInitiation ? "&from=initiation" : ""}`,
                         )
                       }
-                      className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] hover:text-indigo-600 transition-colors"
+                      className="text-xs font-semibold text-slate-400 uppercase tracking-wide hover:text-indigo-600 transition-colors"
                     >
                       View Compliance Dashboard
                     </button>
@@ -1453,7 +1454,7 @@ export function ComplianceSetup() {
             <div className="flex justify-start mb-0 -mt-2">
               <Link
                 to={activeProjectId ? "/initiate" : "/programmes/new"}
-                className="flex items-center gap-2 px-5 py-3 bg-slate-900 text-white rounded-lg sm:rounded-lg font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-slate-200 hover:bg-indigo-600 transition-all active:scale-95 animate-in fade-in slide-in-from-right-4 duration-700"
+                className="flex items-center gap-2 px-5 py-3 bg-slate-900 text-white rounded-lg sm:rounded-lg font-semibold text-xs uppercase tracking-wide  shadow-slate-200 hover:bg-indigo-600 transition-all  animate-in fade-in slide-in-from-right-4 duration-700"
               >
                 <ArrowLeft className="w-4 h-4" />{" "}
                 <span className="hidden sm:inline">
@@ -1465,7 +1466,7 @@ export function ComplianceSetup() {
           )}
 
           {/* ─── Premium Breadcrumb Nav ───*/}
-          <div className="flex items-center justify-between bg-white/60 backdrop-blur-md p-2 sm:p-3 rounded-lg sm:rounded-lg border border-slate-200/50 shadow-sm mb-4 overflow-x-auto scrollbar-hide">
+          <div className="flex items-center justify-between bg-white  p-2 sm:p-3 rounded-lg sm:rounded-lg border border-slate-200/50 shadow-sm mb-4 overflow-x-auto scrollbar-hide">
             <div className="flex items-center gap-1 sm:gap-2 shrink-0 min-w-max px-1">
               {[
                 { n: 1, label: "Metadata", p: 1 },
@@ -1491,7 +1492,7 @@ export function ComplianceSetup() {
                         if (s.p === 4 && phase < 4 && !activeDetails?.complianceSetupDone) {
                           toast.error("Please click 'Finalise Analysis' to save your results before proceeding to publication.", {
                             icon: "🔒",
-                            className: "font-black text-xs uppercase tracking-widest"
+                            className: "font-semibold text-xs uppercase tracking-wide"
                           });
                           return;
                         }
@@ -1510,7 +1511,7 @@ export function ComplianceSetup() {
                       className={clsx(
                         "flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-500 group/step",
                         isActive
-                          ? "bg-slate-900 text-white shadow-xl shadow-slate-200"
+                          ? "bg-slate-900 text-white  shadow-slate-200"
                           : isPast
                             ? "text-emerald-600 bg-emerald-50/50 hover:bg-emerald-100/50"
                             : isLocked
@@ -1520,7 +1521,7 @@ export function ComplianceSetup() {
                     >
                       <div
                         className={clsx(
-                          "w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-black tracking-tight transition-all duration-500",
+                          "w-5 h-5 rounded-lg flex items-center justify-center text-xs font-semibold  transition-all duration-500",
                           isActive
                             ? "bg-white/20"
                             : isPast
@@ -1538,7 +1539,7 @@ export function ComplianceSetup() {
                           s.n
                         )}
                       </div>
-                      <span className="text-[10px] font-black uppercase tracking-[0.2em] hidden lg:inline">
+                      <span className="text-xs font-semibold uppercase tracking-wide hidden lg:inline">
                         {s.label}
                       </span>
                     </button>
@@ -1597,16 +1598,16 @@ export function ComplianceSetup() {
 
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pt-4 pb-2">
             <div className="flex items-center gap-5">
-              <div className="w-16 h-16 bg-white rounded-lg shadow-xl shadow-slate-200/60 flex items-center justify-center border border-slate-100 animate-in zoom-in duration-700">
+              <div className="w-16 h-16 bg-white rounded-lg  flex items-center justify-center border border-slate-100 animate-in zoom-in duration-700">
                 <ClipboardList className="w-8 h-8 text-indigo-600" />
               </div>
               <div>
-                <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight leading-none mb-1">
+                <h1 className="text-2xl sm:text-4xl font-semibold text-slate-900  leading-none mb-1">
                   Compliance Setup
                 </h1>
                 <div className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">
                     {phase === 1
                       ? "Step 1: Define Metadata"
                       : phase === 2
@@ -1618,7 +1619,7 @@ export function ComplianceSetup() {
             </div>
 
             <div className="hidden lg:block">
-              <div className="bg-white/50 backdrop-blur-sm px-6 py-4 rounded-lg border border-slate-200/60 shadow-sm max-w-md">
+              <div className="bg-white/50  px-6 py-4 rounded-lg border border-slate-200/60 shadow-sm max-w-md">
                 <p className="text-xs text-slate-500 font-medium leading-relaxed">
                   {phase === 1
                     ? "Define the scope and core metadata for your compliance assessment."
@@ -1667,14 +1668,14 @@ export function ComplianceSetup() {
           {/* ─── Publication & Completion ───*/}
           {phase === 4 && (
             <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in zoom-in duration-700 pb-20">
-              <div className="bg-slate-900 rounded-lg p-12 text-white relative overflow-hidden shadow-2xl shadow-slate-900/40">
+              <div className="bg-slate-900 rounded-lg p-12 text-white relative overflow-hidden ">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/20 rounded-full blur-3xl -mr-32 -mt-32"></div>
                 <div className="relative z-10 flex flex-col items-center text-center space-y-8">
-                  <div className="w-24 h-24 bg-emerald-500 rounded-lg flex items-center justify-center shadow-xl shadow-emerald-500/20">
+                  <div className="w-24 h-24 bg-emerald-500 rounded-lg flex items-center justify-center  /20">
                     <ShieldCheck className="w-12 h-12 text-white" />
                   </div>
                   <div className="space-y-4">
-                    <h2 className="text-2xl sm:text-4xl font-black tracking-tight uppercase">
+                    <h2 className="text-2xl sm:text-4xl font-semibold  uppercase">
                       Framework Ready for Publication
                     </h2>
                     <p className="text-slate-400 font-medium max-w-xl mx-auto leading-relaxed text-sm sm:text-base">
@@ -1686,27 +1687,27 @@ export function ComplianceSetup() {
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full pt-8">
                     <div className="bg-white/5 border border-white/10 rounded-lg p-6">
-                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
                         Requirements
                       </p>
-                      <p className="text-3xl font-black">
+                      <p className="text-3xl font-semibold">
                         {complianceItems.length}
                       </p>
                     </div>
                     <div className="bg-white/5 border border-white/10 rounded-lg p-6">
-                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
                         Authorities
                       </p>
-                      <p className="text-3xl font-black">
+                      <p className="text-3xl font-semibold">
                         {lastAnalysisResults?.regulatoryAuthorities?.length ||
                           0}
                       </p>
                     </div>
                     <div className="bg-white/5 border border-white/10 rounded-lg p-6">
-                      <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
                         Confidence
                       </p>
-                      <p className="text-3xl font-black text-emerald-400">
+                      <p className="text-3xl font-semibold text-emerald-400">
                         98%
                       </p>
                     </div>
@@ -1716,7 +1717,7 @@ export function ComplianceSetup() {
                     <button
                       onClick={publishFramework}
                       disabled={loading}
-                      className="flex items-center gap-3 px-10 py-5 bg-emerald-500 text-white rounded-lg font-black text-xs uppercase tracking-[0.2em] hover:bg-emerald-600 transition-all active:scale-95 shadow-xl shadow-emerald-500/20 disabled:opacity-50"
+                      className="flex items-center gap-3 px-10 py-5 bg-emerald-500 text-white rounded-lg font-semibold text-xs uppercase tracking-wide hover:bg-emerald-600 transition-all   /20 disabled:opacity-50"
                     >
                       {loading && !loadingStep ? (
                         <>
@@ -1730,7 +1731,7 @@ export function ComplianceSetup() {
                     </button>
                     <button
                       onClick={() => setPhase(3)}
-                      className="flex items-center gap-3 px-10 py-5 bg-white/10 text-white rounded-lg font-black text-xs uppercase tracking-[0.2em] hover:bg-white/20 transition-all active:scale-95 border border-white/10"
+                      className="flex items-center gap-3 px-10 py-5 bg-white/10 text-white rounded-lg font-semibold text-xs uppercase tracking-wide hover:bg-white/20 transition-all  border border-white/10"
                     >
                       <ArrowLeft className="w-4 h-4" /> Return to Review
                     </button>
@@ -1740,7 +1741,7 @@ export function ComplianceSetup() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8">
                 <div className="bg-white rounded-lg border border-slate-100 p-10 shadow-sm relative overflow-hidden group">
-                  <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-6 flex items-center gap-2">
+                  <h4 className="text-xs font-semibold text-slate-900 uppercase tracking-wide mb-6 flex items-center gap-2">
                     <Layers className="w-4 h-4 text-indigo-600" /> Key
                     Regulation Domains
                   </h4>
@@ -1757,7 +1758,7 @@ export function ComplianceSetup() {
                           <span className="font-bold text-slate-700 text-sm">
                             {domain}
                           </span>
-                          <span className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-[10px] font-black text-slate-500">
+                          <span className="px-3 py-1 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-500">
                             {
                               complianceItems.filter(
                                 (i: any) => i.domain === domain,
@@ -1770,7 +1771,7 @@ export function ComplianceSetup() {
                   </div>
                 </div>
                 <div className="bg-white rounded-lg border border-slate-100 p-10 shadow-sm">
-                  <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-6 flex items-center gap-2">
+                  <h4 className="text-xs font-semibold text-slate-900 uppercase tracking-wide mb-6 flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 text-amber-500" /> Key
                     Actions & Milestones
                   </h4>
@@ -1789,7 +1790,7 @@ export function ComplianceSetup() {
                                 ? action
                                 : action.description}
                             </p>
-                            <p className="text-[10px] text-amber-600 font-bold uppercase tracking-widest mt-1">
+                            <p className="text-xs text-amber-600 font-bold uppercase tracking-wide mt-1">
                               Priority: High
                             </p>
                           </div>
@@ -1804,7 +1805,7 @@ export function ComplianceSetup() {
                             <p className="font-bold text-slate-900 text-sm">
                               Consumer Standards Return
                             </p>
-                            <p className="text-[10px] text-amber-600 font-bold uppercase tracking-widest mt-1">
+                            <p className="text-xs text-amber-600 font-bold uppercase tracking-wide mt-1">
                               Due in 45 Days
                             </p>
                           </div>
@@ -1815,7 +1816,7 @@ export function ComplianceSetup() {
                             <p className="font-bold text-slate-900 text-sm">
                               Building Safety Case Update
                             </p>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
+                            <p className="text-xs text-slate-400 font-bold uppercase tracking-wide mt-1">
                               Pending Publication
                             </p>
                           </div>
@@ -1848,7 +1849,7 @@ export function ComplianceSetup() {
                       className={clsx(
                         "bg-white rounded-lg border-2 transition-all duration-500 overflow-hidden scroll-mt-32",
                         isExpanded
-                          ? "border-indigo-100 shadow-xl shadow-indigo-50/50 mb-8"
+                          ? "border-indigo-100 /50 mb-8"
                           : "border-slate-50 mb-4 hover:border-slate-200",
                       )}
                     >
@@ -1870,15 +1871,15 @@ export function ComplianceSetup() {
                                 : "bg-white border-slate-100 text-slate-400",
                             )}
                           >
-                            <span className="text-lg font-black">
+                            <span className="text-lg font-semibold">
                               {idx + 1}
                             </span>
                           </div>
                           <div className="text-left">
-                            <h3 className="text-xl font-bold text-slate-900 tracking-tight">
+                            <h3 className="text-xl font-bold text-slate-900 ">
                               {qPhase.title}
                             </h3>
-                            <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">
+                            <p className="text-slate-400 text-xs font-semibold uppercase tracking-wide mt-1">
                               Section {idx + 1} &bull; {qPhase.num}
                             </p>
                           </div>
@@ -1904,9 +1905,9 @@ export function ComplianceSetup() {
                             : "max-h-0 opacity-0 pointer-events-none",
                         )}
                       >
-                        <div className="p-4 sm:p-8 pt-0 space-y-6 sm:space-y-8">
-                          <div className="h-px bg-linear-to-r from-transparent via-slate-100 to-transparent mb-6 sm:mb-8"></div>
-                          <p className="text-slate-500 text-xs sm:text-sm font-medium italic border-l-4 border-indigo-100 pl-4">
+                        <div className="p-4 sm:p-6 pt-0 space-y-6">
+                          <div className="border-t border-slate-100 mb-4"></div>
+                          <p className="text-sm text-slate-600 leading-relaxed">
                             {qPhase.hint}
                           </p>
 
@@ -1986,7 +1987,7 @@ export function ComplianceSetup() {
                                               key={opt}
                                               onClick={() => set(q.id, opt)}
                                               className={clsx(
-                                                "px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all duration-300 shrink-0",
+                                                "px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg text-xs sm:text-xs font-semibold uppercase tracking-wide transition-all duration-300 shrink-0",
                                                 projectInfo[q.id] === opt
                                                   ? opt === "Yes"
                                                     ? "bg-slate-900 text-white shadow-lg shadow-slate-200"
@@ -2047,9 +2048,9 @@ export function ComplianceSetup() {
                                                   set(q.id, next);
                                                 }}
                                                 className={clsx(
-                                                  "px-4 py-3 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all text-left flex items-center gap-3",
+                                                  "px-4 py-3 rounded-lg text-xs font-semibold uppercase tracking-wide border transition-all text-left flex items-center gap-3",
                                                   isSelected
-                                                    ? "bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-100"
+                                                    ? "bg-indigo-600 text-white border-indigo-600 "
                                                     : "bg-white text-slate-500 border-slate-200 hover:border-indigo-300",
                                                 )}
                                               >
@@ -2090,7 +2091,7 @@ export function ComplianceSetup() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
               {/* Left Column: Context Selection*/}
               <div className="lg:col-span-4 space-y-6 sm:space-y-8">
-                <div className="bg-white rounded-lg sm:rounded-lg border border-slate-100 p-6 sm:p-8 shadow-xl shadow-slate-200/50">
+                <div className="bg-white rounded-lg sm:rounded-lg border border-slate-100 p-6 sm:p-8 ">
                   <PhaseHeader num={1} title="Context Selection" />
                   <div className="space-y-6">
                     <div>
@@ -2104,7 +2105,7 @@ export function ComplianceSetup() {
                           )}
                         </div>
                         <div>
-                          <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-0.5">
+                          <p className="text-xs font-semibold text-indigo-400 uppercase tracking-wide mb-0.5">
                             Context
                           </p>
                           <p className="text-sm font-bold text-indigo-900">
@@ -2159,7 +2160,7 @@ export function ComplianceSetup() {
                     <div className="pt-4 border-t border-slate-50">
                       <button
                         onClick={loadDemo}
-                        className="w-full py-4 text-[10px] font-black text-slate-400 hover:text-indigo-600 uppercase tracking-[0.2em] transition-colors flex items-center justify-center gap-2"
+                        className="w-full py-4 text-xs font-semibold text-slate-400 hover:text-indigo-600 uppercase tracking-wide transition-colors flex items-center justify-center gap-2"
                       >
                         <ScanSearch className="w-4 h-4" /> Load Demo Strategy
                         Template
@@ -2169,26 +2170,20 @@ export function ComplianceSetup() {
                 </div>
 
                 {/* Tips / Info Card*/}
-                <div className="bg-indigo-600 rounded-lg sm:rounded-lg p-6 sm:p-8 text-white shadow-xl shadow-indigo-200 overflow-hidden relative group">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-150 duration-700"></div>
-                  <div className="relative z-10">
-                    <h4 className="text-lg font-bold mb-3">AI Context Hint</h4>
-                    <p className="text-white/80 text-sm leading-relaxed mb-6 font-medium">
-                      The more information you provide in Phase 2, the more
-                      accurate the AI determination of applicable building
-                      regulations will be.
-                    </p>
-                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-200">
-                      <CheckCircle2 className="w-4 h-4" /> Real-time compliance
-                      scoring
-                    </div>
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-5">
+                  <h4 className="text-base font-semibold text-slate-900 mb-2">AI context hint</h4>
+                  <p className="text-sm text-slate-600 leading-relaxed mb-3">
+                    The more information you provide in Phase 2, the more accurate the AI determination of applicable building regulations will be.
+                  </p>
+                  <div className="flex items-center gap-2 text-xs font-medium text-emerald-700">
+                    <CheckCircle2 className="w-4 h-4" /> Real-time compliance scoring
                   </div>
                 </div>
               </div>
 
               {/* Right Column: Profile Details*/}
               <div className="lg:col-span-8">
-                <div className="bg-white rounded-lg sm:rounded-lg border border-slate-100 p-6 md:p-12 shadow-xl shadow-slate-200/50">
+                <div className="bg-white rounded-lg sm:rounded-lg border border-slate-100 p-6 md:p-12 ">
                   <PhaseHeader
                     num={2}
                     title={`${activeType.charAt(0).toUpperCase() + activeType.slice(1)} Delivery Profile`}
@@ -2241,7 +2236,7 @@ export function ComplianceSetup() {
                       hint="Briefly describe the scale, purpose, and key deliverables."
                     >
                       <textarea
-                        className={clsx(inputCls, "h-32 resize-none")}
+                        className={clsx(textareaBase, "min-h-32")}
                         value={projectInfo.scope || ""}
                         onChange={(e) => set("scope", e.target.value)}
                         placeholder="e.g. Delivery of 250 zero-carbon homes, including 2 High Rise Buildings and extensive landscaping..."
@@ -2279,7 +2274,7 @@ export function ComplianceSetup() {
                     <div className="pt-10 flex flex-col md:flex-row items-center justify-between gap-6 border-t border-slate-100">
                       <div className="flex items-center gap-4 text-slate-400">
                         <Lock className="w-5 h-5" />
-                        <p className="text-[10px] font-bold uppercase tracking-widest leading-relaxed max-w-xs">
+                        <p className="text-xs font-bold uppercase tracking-wide leading-relaxed max-w-xs">
                           Profile details are used to filter the regulatory
                           questionnaire.
                         </p>
@@ -2287,7 +2282,7 @@ export function ComplianceSetup() {
 
                       <div className="flex flex-col items-end gap-2 w-full md:w-auto">
                         {(!projectInfo.name || !projectInfo.type || !projectInfo.loc || !projectInfo.scope) && (
-                          <p className="text-[11px] text-amber-600 font-bold flex items-center gap-1.5">
+                          <p className="text-xs text-amber-600 font-bold flex items-center gap-1.5">
                             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                             Required: {[!projectInfo.name && 'Name', !projectInfo.type && 'Type', !projectInfo.loc && 'Location', !projectInfo.scope && 'Scope'].filter(Boolean).join(', ')}
                           </p>
@@ -2299,7 +2294,7 @@ export function ComplianceSetup() {
                             setIsQuestionnaireActive(true);
                           }}
                           className={clsx(
-                            "w-full px-10 py-5 bg-indigo-600 text-white rounded-lg font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-indigo-200 transition-all hover:bg-indigo-700 active:scale-95 flex items-center justify-center gap-3",
+                            "w-full px-10 py-5 bg-indigo-600 text-white rounded-lg font-semibold text-xs uppercase tracking-wide   transition-all hover:bg-indigo-700  flex items-center justify-center gap-3",
                             (!projectInfo.name ||
                               !projectInfo.type ||
                               !projectInfo.loc ||
@@ -2321,13 +2316,13 @@ export function ComplianceSetup() {
           {/* ─── AI Action Footer ───*/}
           {isQuestionnaireActive && phase !== 3 && (
             <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-12 duration-1000">
-              <div className="bg-slate-900/90 text-white px-8 py-5 rounded-lg shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/10 flex items-center justify-between gap-8 backdrop-blur-xl">
+              <div className="bg-slate-900/90 text-white px-8 py-5 rounded-lg shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/10 flex items-center justify-between gap-8 ">
                 <div className="hidden sm:flex items-center gap-4 border-r border-white/10 pr-8">
                   <div className="w-10 h-10 bg-indigo-500 rounded-lg flex items-center justify-center">
                     <ScanSearch className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-black text-white/50 uppercase tracking-widest">
+                    <p className="text-xs font-semibold text-white/50 uppercase tracking-wide">
                       Questionnaire Progress
                     </p>
                     <p className="text-sm font-bold">
@@ -2346,7 +2341,7 @@ export function ComplianceSetup() {
                   <button
                     onClick={runAnalysis}
                     disabled={loading}
-                    className="flex items-center gap-3 px-8 py-3.5 bg-indigo-500 text-white rounded-lg font-black text-xs uppercase tracking-[0.2em] transition-all hover:bg-indigo-400 hover:shadow-[0_0_30px_rgba(99,102,241,0.4)] active:scale-95 disabled:opacity-50"
+                    className="flex items-center gap-3 px-8 py-3.5 bg-indigo-500 text-white rounded-lg font-semibold text-xs uppercase tracking-wide transition-all hover:bg-indigo-400 hover:shadow-[0_0_30px_rgba(99,102,241,0.4)]  disabled:opacity-50"
                   >
                     {!!loadingStep ? (
                       <>
@@ -2381,10 +2376,10 @@ export function ComplianceSetup() {
           userInitiatedOpen.current = true;
           setIsAIInquiryOpen(true);
         }}
-        className="fixed bottom-8 right-8 z-150 bg-indigo-600 text-white p-4 rounded-full shadow-2xl shadow-indigo-500/40 hover:bg-slate-900 transition-all hover:scale-110 active:scale-95 group"
+        className="fixed bottom-8 right-8 z-150 bg-indigo-600 text-white p-3 rounded-full hover:bg-indigo-700 transition-colors shadow-lg"
         title="Consult CedarGuard AI"
       >
-        <ScanSearch className="w-6 h-6 group-hover:rotate-12 transition-transform" />
+        <ScanSearch className="w-5 h-5" />
       </button>
     </>
   );
