@@ -69,6 +69,7 @@ import { BillingPanel } from './pages/BillingPanel';
 import { MobileHeader } from './components/MobileHeader';
 import { ProfileSettingsModal } from './components/ProfileSettingsModal';
 import { GlobalAIAssistant } from './components/GlobalAIAssistant';
+import { CommandPalette } from './components/CommandPalette';
 
 // Programme Governance (placeholder pages)
 import { GovernanceDashboardPage } from './pages/governance/DashboardPage';
@@ -127,6 +128,27 @@ function AppContent() {
       mainRef.current.scrollTop = 0;
     }
   }, [routerLocation.pathname]);
+
+  // Global ⌘K / Ctrl+K command palette. State lives here so the palette
+  // overlays the entire authenticated layout. Header.tsx (and any other
+  // surface) opens the palette by dispatching `cg:open-command-palette`
+  // on `window` — no prop drilling.
+  const [commandPaletteOpen, setCommandPaletteOpen] = React.useState(false);
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setCommandPaletteOpen((v) => !v);
+      }
+    };
+    const onOpen = () => setCommandPaletteOpen(true);
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('cg:open-command-palette', onOpen);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('cg:open-command-palette', onOpen);
+    };
+  }, []);
 
   if (!user) {
     return (
@@ -296,6 +318,12 @@ function AppContent() {
  the component) and routes where it doesn't fit (login, editor sandbox,
  report authoring).*/}
         <GlobalAIAssistant />
+        {/* Global ⌘K command palette — opened by Cmd/Ctrl+K or by
+            dispatching `cg:open-command-palette` on window. */}
+        <CommandPalette
+          open={commandPaletteOpen}
+          onClose={() => setCommandPaletteOpen(false)}
+        />
         {/* Global Modals rendered at the root to avoid CSS positioning traps*/}
         {isProfileSettingsOpen && (
           <ProfileSettingsModal

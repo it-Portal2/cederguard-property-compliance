@@ -5,7 +5,11 @@ type MiniSparklineProps = {
   data: number[];
   color?: string;
   className?: string;
+  /** Fixed pixel height. Ignored when `fill` is true. */
   height?: number;
+  /** When true, the chart fills 100% of its container's height — wrap in a
+   *  parent that gives it room (e.g. flex-1). */
+  fill?: boolean;
   /** Optional date labels for tooltip (e.g. "Mon", "Tue" or "01 Jan"). */
   labels?: string[];
 };
@@ -25,6 +29,7 @@ export function MiniSparkline({
   color = '#6366f1',
   className,
   height = 32,
+  fill = false,
   labels,
 }: MiniSparklineProps) {
   if (!data || data.length === 0) return null;
@@ -37,7 +42,10 @@ export function MiniSparkline({
   const gradientId = `sl-gradient-${color.replace(/[^a-z0-9]/gi, '')}`;
 
   return (
-    <div className={clsx('w-full', className)} style={{ height }}>
+    <div
+      className={clsx(fill ? 'w-full h-full min-h-12' : 'w-full', className)}
+      style={fill ? undefined : { height }}
+    >
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={chartData} margin={{ top: 2, right: 0, bottom: 2, left: 0 }}>
           <defs>

@@ -3,3 +3,7 @@ export { AnimatedCounter } from './AnimatedCounter';
 export { ComplianceVelocityChart } from './ComplianceVelocityChart';
 export { ActivityTimeline } from './ActivityTimeline';
 export { ShimmerSkeleton } from './ShimmerSkeleton';
+export { RiskBurnDown } from './RiskBurnDown';
+export { RiskCallout } from './RiskCallout';
+export { AIFollowUpPrompts } from './AIFollowUpPrompts';
+export { RibaTimeline } from './RibaTimeline';

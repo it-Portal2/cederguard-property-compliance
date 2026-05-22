@@ -39,6 +39,8 @@ import {
   ArrowRight,
   Star,
   Calendar,
+  RefreshCw,
+  FileText,
 } from "lucide-react";
 import {
   isSuperAdmin,
@@ -56,7 +58,12 @@ import {
   AnimatedCounter,
   ComplianceVelocityChart,
   ActivityTimeline,
+  RiskBurnDown,
+  RiskCallout,
+  AIFollowUpPrompts,
+  RibaTimeline,
 } from "../components/dashboard";
+import { AIInquiryPopup } from "../components/AIInquiryPopup";
 import DynamicTable from "../components/table/DynamicTable";
 import { canCreateProgramme as canCreateProgrammeFn } from "../lib/roles";
 import { auth } from "../lib/firebase";
@@ -157,7 +164,76 @@ export function Dashboard() {
   const [generatingInsights, setGeneratingInsights] = useState(false);
   const [aiError, setAiError] = useState<string | ApiError | null>(null);
   const [insightsTimestamp, setInsightsTimestamp] = useState<Date | null>(null);
+  const [matrixView, setMatrixView] = useState<"gross" | "residual">("gross");
   const [showFullDetails, setShowFullDetails] = useState(false);
+
+  // AI follow-up prompt → opens AIInquiryPopup pre-filled with the chip text.
+  // Uses the existing controlled-popup API; no changes to AIInquiryPopup itself.
+  const [aiInquiryOpen, setAiInquiryOpen] = useState(false);
+  const [aiInquiryPrefill, setAiInquiryPrefill] = useState<string>("");
+  const handleAskFollowUp = (prompt: string) => {
+    setAiInquiryPrefill(prompt);
+    setAiInquiryOpen(true);
+  };
+
+  // ── Hero header date filter — drives ComplianceVelocityChart's range and
+  //    will be the canonical source for any future time-windowed widgets. ──
+  const [dashboardRange, setDashboardRange] = useState<7 | 30 | 90>(30);
+
+  // ── Hero refresh — re-runs the appropriate loader for the active context.
+  //    Uses the same data-fetch paths the page already uses; no new endpoints. ──
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const handleRefresh = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      if (activeProjectId) await loadProjectData(activeProjectId);
+      else if (activeProgrammeId) await loadProgrammeData(activeProgrammeId);
+      else await loadAggregateData();
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // ── AI streaming text — body text of the AI outlook types out character-
+  //    by-character on each context switch / new insight. prefers-reduced-motion
+  //    jumps straight to the final string. ──
+  const [streamedOutlook, setStreamedOutlook] = useState("");
+  const [isStreamingOutlook, setIsStreamingOutlook] = useState(false);
+  useEffect(() => {
+    const full = strategicInsights?.outlook
+      ? stripMarkdown(strategicInsights.outlook)
+      : "";
+    if (!full) {
+      setStreamedOutlook("");
+      setIsStreamingOutlook(false);
+      return;
+    }
+    const reduce =
+      typeof window !== "undefined" &&
+      window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) {
+      setStreamedOutlook(full);
+      setIsStreamingOutlook(false);
+      return;
+    }
+    setStreamedOutlook("");
+    setIsStreamingOutlook(true);
+    let i = 0;
+    const step = Math.max(2, Math.floor(full.length / 90));
+    const id = window.setInterval(() => {
+      i += step;
+      if (i >= full.length) {
+        setStreamedOutlook(full);
+        setIsStreamingOutlook(false);
+        window.clearInterval(id);
+      } else {
+        setStreamedOutlook(full.slice(0, i));
+      }
+    }, 16);
+    return () => window.clearInterval(id);
+  }, [strategicInsights?.outlook, activeProjectId, activeProgrammeId]);
 
   const safeProjects = Array.isArray(projects) ? projects : [];
   const safeProgrammes = Array.isArray(programmes) ? programmes : [];
@@ -454,19 +530,22 @@ export function Dashboard() {
     return Math.round(((recent - prior) / prior) * 100);
   };
 
-  // 5×5 risk matrix data: count residual risks per (likelihood, impact) cell.
-  const riskMatrixCells = (() => {
+  // 5×5 risk matrix data: count risks per (likelihood, impact) cell for both
+  // gross (pre-mitigation) and residual (post-mitigation) views.
+  const buildMatrix = (lKey: "grossL" | "residualL", iKey: "grossI" | "residualI") => {
     const cells: Record<string, number> = {};
     contextRisks.forEach((r) => {
-      const l = Number((r as any).residualL || (r as any).residualLikelihood || (r as any).likelihood || 0);
-      const i = Number((r as any).residualI || (r as any).residualImpact || (r as any).impact || 0);
+      const l = Number((r as any)[lKey] || 0);
+      const i = Number((r as any)[iKey] || 0);
       if (l >= 1 && l <= 5 && i >= 1 && i <= 5) {
         const key = `${l}-${i}`;
         cells[key] = (cells[key] || 0) + 1;
       }
     });
     return cells;
-  })();
+  };
+  const grossMatrixCells = buildMatrix("grossL", "grossI");
+  const residualMatrixCells = buildMatrix("residualL", "residualI");
 
   const formatGBP = (n: number) => {
     if (n >= 1_000_000) return `£${(n / 1_000_000).toFixed(1)}M`;
@@ -527,105 +606,115 @@ export function Dashboard() {
         onDismiss={handleOnboardingDismiss}
       />
 
-      {/* ─── GLOBAL CONTEXT SELECTOR ─── */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-lg border border-slate-200 shadow-sm"
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center shrink-0 border border-indigo-100">
-            <LayoutTemplate className="w-5 h-5 text-indigo-600" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-slate-900">
-              {activeProjectId
-                ? "Active Project"
-                : activeProgrammeId
-                  ? "Active Programme"
-                  : "Portfolio Aggregate"}
-            </h3>
-            <p className="text-xs text-slate-500 font-bold uppercase tracking-wide">
-              {activeProject?.name ||
-                activeProgramme?.name ||
-                "All Authorized Projects"}
-            </p>
-          </div>
+      {/* ─── HERO HEADER — breadcrumb + title + subtitle + date filter + refresh ─── */}
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          {/* Breadcrumb — context-aware crumb trail above the H1. */}
+          <nav
+            aria-label="Breadcrumb"
+            className="flex items-center gap-1.5 text-xs text-slate-500 mb-1.5"
+          >
+            <span className="text-slate-500">Overview</span>
+            <span className="text-slate-300">/</span>
+            {activeProjectId ? (
+              <>
+                <span className="text-slate-500">Project</span>
+                <span className="text-slate-300">/</span>
+                <span className="text-slate-700 font-medium truncate max-w-[420px]">
+                  {stripMarkdown(
+                    activeProject?.name ||
+                      safeProjects.find((p) => p.id === activeProjectId)?.name ||
+                      "Active project",
+                  )}
+                </span>
+              </>
+            ) : activeProgrammeId ? (
+              <>
+                <span className="text-slate-500">Programme</span>
+                <span className="text-slate-300">/</span>
+                <span className="text-slate-700 font-medium truncate max-w-[420px]">
+                  {stripMarkdown(
+                    activeProgramme?.name ||
+                      safeProgrammes.find((p) => p.id === activeProgrammeId)
+                        ?.name ||
+                      "Active programme",
+                  )}
+                </span>
+              </>
+            ) : (
+              <span className="text-slate-700 font-medium">Portfolio dashboard</span>
+            )}
+          </nav>
+          <h1 className="text-[22px] font-semibold tracking-tight text-slate-900">
+            {activeProjectId
+              ? "Project dashboard"
+              : activeProgrammeId
+                ? "Programme dashboard"
+                : "Portfolio dashboard"}
+          </h1>
+          <p className="text-[13px] text-slate-500 mt-1 max-w-2xl">
+            {activeProjectId
+              ? "Compliance and risk overview for the active project."
+              : activeProgrammeId && activeProgramme
+                ? `Aggregated overview for all projects linked to: ${stripMarkdown(
+                    activeProgramme.name,
+                  )}.`
+                : "Aggregated overview across all programmes and projects in your organisation."}
+          </p>
         </div>
-
-        <div className="flex items-center gap-3 bg-slate-50 p-1.5 rounded-lg border border-slate-200/60 w-full md:w-auto">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-lg shadow-sm w-full md:w-auto">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide shrink-0">
-              Context:
-            </span>
-            <select
-              value={
-                activeProjectId
-                  ? `project:${activeProjectId}`
-                  : activeProgrammeId
-                    ? `programme:${activeProgrammeId}`
-                    : "all"
-              }
-              onChange={(e) => {
-                const [type, id] = e.target.value.split(":");
-                setContextSwitching(true);
-                
-                // Set IDs and let the useEffect handle data loading.
-                // setContextSwitching(false) is called in the useEffect's .finally() 
-                // via the loading state flags — no hardcoded timers.
-                if (type === "all") {
-                  setActiveProject(null);
-                  setActiveProgramme(null);
-                  navigate("/dashboard");
-                } else if (type === "programme") {
-                  setActiveProject(null);
-                  setActiveProgramme(id);
-                  navigate(`/dashboard?programmeId=${id}`);
-                } else if (type === "project") {
-                  setActiveProgramme(null);
-                  setActiveProject(id);
-                  navigate(`/dashboard?projectId=${id}`);
-                }
-              }}
-              className="bg-transparent border-none text-xs font-bold text-indigo-600 focus:ring-0 cursor-pointer w-full md:min-w-[240px]"
+        <div className="flex items-center gap-2 shrink-0">
+          <div
+            className="inline-flex items-center gap-0.5 rounded-md border border-slate-200 bg-slate-50 p-0.5"
+            role="group"
+            aria-label="Dashboard time range"
+          >
+            {([7, 30, 90] as const).map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => setDashboardRange(r)}
+                className={clsx(
+                  "px-2.5 h-7 text-xs font-medium rounded-md transition-colors font-mono tabular-nums",
+                  dashboardRange === r
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700",
+                )}
+                aria-pressed={dashboardRange === r}
+              >
+                {r}d
+              </button>
+            ))}
+            <span
+              className="px-2.5 h-7 inline-flex items-center text-xs font-medium font-mono text-slate-400 cursor-not-allowed"
+              title="Custom range — coming soon"
             >
-              <option value="all">
-                {isProjectManager
-                  ? "Portfolio Aggregate (All)"
-                  : "My Projects (Aggregate)"}
-              </option>
-
-              {isProjectManager && displayProgrammes.length > 0 && (
-                <optgroup label="BY PROGRAMME">
-                  {displayProgrammes.map((p) => (
-                    <option
-                      key={p.id}
-                      value={`programme:${p.id}`}
-                      title={stripMarkdown(p.name)}
-                    >
-                      {stripMarkdown(p.name)}
-                    </option>
-                  ))}
-                </optgroup>
-              )}
-
-              {displayProjects.length > 0 && (
-                <optgroup label="BY PROJECT">
-                  {displayProjects.map((p) => (
-                    <option
-                      key={p.id}
-                      value={`project:${p.id}`}
-                      title={stripMarkdown(p.name)}
-                    >
-                      {stripMarkdown(p.name)}
-                    </option>
-                  ))}
-                </optgroup>
-              )}
-            </select>
+              Custom
+            </span>
           </div>
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-slate-200 bg-white text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            aria-label="Refresh dashboard data"
+          >
+            <RefreshCw
+              className={clsx(
+                "w-3.5 h-3.5 text-slate-500",
+                isRefreshing && "animate-spin",
+              )}
+            />
+            Refresh
+          </button>
+          <Link
+            to={activeProjectId ? "/reporting/project" : "/reporting/programme-report"}
+            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-indigo-600 hover:bg-indigo-500 text-xs font-medium text-white transition-colors shadow-sm"
+          >
+            <FileText className="w-3.5 h-3.5" />
+            {activeProjectId ? "Project report" : "Programme report"}
+          </Link>
         </div>
-      </motion.div>
+      </div>
 
       {/* ─── CLIENT ADMIN BACKDOOR BANNER ─── */}
       {isViewingAsPM &&
@@ -640,7 +729,7 @@ export function Dashboard() {
                   <Eye className="w-4 h-4 text-amber-600" />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-amber-800 uppercase tracking-wide">
+                  <p className="font-mono uppercase tracking-wide text-[11px] font-medium text-amber-800">
                     Admin Backdoor — PM View
                   </p>
                   <p className="text-xs text-amber-700 font-medium mt-0.5">
@@ -656,7 +745,7 @@ export function Dashboard() {
                   setActiveProject(null);
                   navigate("/projects");
                 }}
-                className="flex items-center gap-1.5 px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-bold rounded-lg transition-colors shrink-0 whitespace-nowrap"
+                className="flex items-center gap-1.5 px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-semibold rounded-lg transition-colors shrink-0 whitespace-nowrap"
               >
                 <ArrowLeft className="w-3.5 h-3.5" /> Back to Projects
               </button>
@@ -706,25 +795,25 @@ export function Dashboard() {
               )}
             >
               <div className="bg-white rounded-lg p-4 border border-slate-200">
-                <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Programmes</div>
+                <div className="font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500">Programmes</div>
                 <div className="mt-1 text-2xl font-semibold text-slate-900 tabular-nums">
                   <AnimatedCounter value={displayProgrammes.length} />
                 </div>
               </div>
               <div className="bg-white rounded-lg p-4 border border-slate-200">
-                <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Projects</div>
+                <div className="font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500">Projects</div>
                 <div className="mt-1 text-2xl font-semibold text-slate-900 tabular-nums">
                   <AnimatedCounter value={displayProjects.length} />
                 </div>
               </div>
               <div className="bg-white rounded-lg p-4 border border-slate-200">
-                <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Published</div>
+                <div className="font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500">Published</div>
                 <div className="mt-1 text-2xl font-semibold text-emerald-600 tabular-nums">
                   <AnimatedCounter value={displayProjects.filter((p: any) => p.isPublished).length} />
                 </div>
               </div>
               <div className="bg-white rounded-lg p-4 border border-slate-200">
-                <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Draft</div>
+                <div className="font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500">Draft</div>
                 <div className="mt-1 text-2xl font-semibold text-amber-600 tabular-nums">
                   <AnimatedCounter value={displayProjects.filter((p: any) => !p.isPublished).length} />
                 </div>
@@ -734,7 +823,7 @@ export function Dashboard() {
                   to="/setup/workspace"
                   className="bg-white rounded-lg p-4 border border-slate-200 hover:bg-slate-50/40 transition-colors flex flex-col justify-between"
                 >
-                  <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Workspace</div>
+                  <div className="font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500">Workspace</div>
                   <div className="mt-1 inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600">
                     <Plus className="w-4 h-4" /> Invite PM
                   </div>
@@ -756,18 +845,37 @@ export function Dashboard() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                   {displayProjects.slice(0, 8).map((p: any) => {
-                    const pct = (() => {
-                      const v = Number(p.setupProgress ?? p.progress ?? 0);
-                      if (isFinite(v) && v >= 0 && v <= 100) return Math.round(v);
-                      return 0;
-                    })();
-                    const rag = (p.overallRAG || p.rag || "Green").toString().toLowerCase();
-                    const isRed = rag.includes("red");
-                    const isAmber = rag.includes("amber") || rag.includes("yellow");
+                    // Derive REAL signal per-project from the store, not just static setupProgress
+                    const projCompliance = safeComplianceItems.filter((c) => c.projectId === p.id);
+                    const projComplete = projCompliance.filter((c) => c.stage === "Live" || c.stage === "Archived").length;
+                    const projRisks = safeRisks.filter((r) => r.projectId === p.id);
+                    const projCriticalRisks = projRisks.filter((r) => (r.grossRating || 0) >= 16).length;
+                    const projComplianceTotal = projCompliance.length;
+
+                    // % is real compliance completion (fallback to setupProgress if no items yet)
+                    const pct = projComplianceTotal > 0
+                      ? Math.round((projComplete / projComplianceTotal) * 100)
+                      : (() => {
+                          const v = Number(p.setupProgress ?? p.progress ?? 0);
+                          return isFinite(v) && v >= 0 && v <= 100 ? Math.round(v) : 0;
+                        })();
+
+                    // RAG is computed from real risk + compliance signal, not the stale field
+                    let isRed = false;
+                    let isAmber = false;
+                    if (projCriticalRisks >= 3 || (projComplianceTotal > 0 && pct < 30)) isRed = true;
+                    else if (projCriticalRisks >= 1 || (projComplianceTotal > 0 && pct < 70)) isAmber = true;
+                    // Override with explicit field if present (admin set)
+                    const explicitRAG = (p.overallRAG || p.rag || "").toString().toLowerCase();
+                    if (explicitRAG.includes("red")) { isRed = true; isAmber = false; }
+                    else if (explicitRAG.includes("amber") || explicitRAG.includes("yellow")) { isRed = false; isAmber = true; }
+
                     const ragRail = isRed ? "bg-rose-500" : isAmber ? "bg-amber-500" : "bg-emerald-500";
+                    const ragLabel = isRed ? "Red" : isAmber ? "Amber" : "Green";
                     const ringColor = pct >= 70 ? "#10b981" : pct >= 40 ? "#f59e0b" : "#94a3b8";
                     const circumference = 2 * Math.PI * 18;
                     const offset = circumference - (circumference * pct) / 100;
+
                     return (
                       <button
                         key={p.id}
@@ -809,6 +917,21 @@ export function Dashboard() {
                               {stripMarkdown(p.name || "Untitled project")}
                             </p>
                             <p className="text-xs text-slate-500 truncate mt-0.5">{p.type || "—"}</p>
+                            <div className="mt-1.5 flex items-center gap-2 text-xs">
+                              <span className={clsx(
+                                "inline-flex items-center gap-1 font-medium",
+                                isRed ? "text-rose-700" : isAmber ? "text-amber-700" : "text-emerald-700",
+                              )}>
+                                <span className={clsx("w-1.5 h-1.5 rounded-full", ragRail)} />
+                                {ragLabel}
+                              </span>
+                              {projCriticalRisks > 0 && (
+                                <>
+                                  <span className="text-slate-300">·</span>
+                                  <span className="text-slate-500 tabular-nums">{projCriticalRisks} critical</span>
+                                </>
+                              )}
+                            </div>
                           </div>
                           {/* Chevron reveal on hover */}
                           <ChevronRight className="w-4 h-4 text-slate-300 shrink-0 self-center opacity-0 group-hover:opacity-100 group-hover:text-slate-500 transition-opacity" />
@@ -833,25 +956,34 @@ export function Dashboard() {
         !activeProgrammeId &&
         !isClientAdmin &&
         safeProjects.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-10 text-center">
-            <FolderKanban className="w-16 h-16 text-indigo-200 mb-4" />
-            <h2 className="text-xl font-bold text-slate-800 mb-2">
-              No Projects Found
-            </h2>
-            <p className="text-sm text-slate-500 max-w-sm mb-6">
-              You haven't created any projects yet. Use the Project Initiation
-              wizard to set up your first project.
-            </p>
-            <button
-              onClick={() => {
-                setActiveProject(null);
-                setActiveProgramme(null);
-                navigate("/initiate");
-              }}
-              className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors shadow-md"
-            >
-              <Plus className="w-5 h-5" /> Start Project Initiation
-            </button>
+          <div className="bg-white rounded-lg border border-slate-200 px-6 py-16">
+            <div className="flex flex-col items-center justify-center text-center max-w-md mx-auto">
+              {/* Inline illustration: stacked translucent project tiles + plus token */}
+              <div className="relative w-32 h-24 mb-6">
+                <span className="absolute left-3 top-4 w-20 h-12 rounded-md bg-slate-100 border border-slate-200 -rotate-6" />
+                <span className="absolute left-7 top-2 w-20 h-12 rounded-md bg-slate-50 border border-slate-200 rotate-3" />
+                <span className="absolute left-11 top-0 w-20 h-12 rounded-md bg-white border border-slate-300 shadow-sm flex items-center justify-center">
+                  <FolderKanban className="w-5 h-5 text-indigo-500" />
+                </span>
+                <span className="absolute -right-1 -top-1 w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-sm ring-4 ring-white">
+                  <Plus className="w-4 h-4" strokeWidth={3} />
+                </span>
+              </div>
+              <h2 className="text-lg font-semibold text-slate-900">No projects yet</h2>
+              <p className="mt-1.5 text-sm text-slate-500 max-w-sm">
+                Use the Project Initiation wizard to set up your first project — onboarding takes about three minutes.
+              </p>
+              <button
+                onClick={() => {
+                  setActiveProject(null);
+                  setActiveProgramme(null);
+                  navigate("/initiate");
+                }}
+                className="mt-5 inline-flex items-center gap-1.5 px-4 h-10 bg-indigo-600 text-white text-sm font-semibold rounded-md hover:bg-indigo-700 transition-colors"
+              >
+                <Plus className="w-4 h-4" /> Start project initiation
+              </button>
+            </div>
           </div>
         )}
 
@@ -861,100 +993,16 @@ export function Dashboard() {
         (!isClientAdmin && safeProjects.length > 0) ||
         (isClientAdmin && !activeProjectId && !activeProgrammeId)) && (
         <div className="space-y-6">
-          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl font-semibold text-slate-900">
-                  {activeProjectId
-                    ? "Project dashboard"
-                    : isProjectManager
-                    ? "Portfolio dashboard"
-                    : "Projects overview"}
-                </h1>
-                {!activeProjectId && (
-                  <span className="inline-flex items-center px-2 h-6 bg-slate-100 text-slate-700 text-xs font-medium rounded-md">
-                    {activeProgrammeId
-                      ? "Programme view"
-                      : isProjectManager
-                      ? "Aggregate portfolio"
-                      : "All projects"}
-                  </span>
-                )}
-              </div>
-              <p className="mt-1 text-sm text-slate-500 max-w-2xl">
-                {activeProjectId
-                  ? "Compliance and risk overview for the active project."
-                  : activeProgrammeId
-                  ? `Aggregated overview for all projects linked to: ${stripMarkdown(safeProgrammes.find((p) => p.id === activeProgrammeId)?.name ?? "this programme")}`
-                  : isProjectManager
-                  ? "Aggregated overview for all projects in your organisation."
-                  : "Overview of all your active projects and their compliance status."}
-              </p>
-              {/* System status pill — only when everything's healthy */}
-              {pendingComplianceCount === 0 && !aiError && (isComplianceSetup || isRiskSetup) && (
-                <div className="mt-3 inline-flex items-center gap-2 px-2.5 h-7 rounded-md bg-emerald-50 border border-emerald-100">
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
-                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  </span>
-                  <span className="text-xs font-medium text-emerald-700">All systems operational</span>
-                </div>
-              )}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                onClick={handleClearData}
-                disabled={loadingClear || loadingDemo}
-                className={clsx(
-                  "inline-flex items-center px-3 h-9 text-sm font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap border",
-                  confirmClear
-                    ? "bg-rose-600 text-white border-rose-600 hover:bg-rose-700"
-                    : "bg-white border-slate-300 text-slate-700 hover:bg-slate-50",
-                )}
-              >
-                {loadingClear ? "Clearing…" : confirmClear ? "Confirm clear" : isClientAdmin ? "Clear data" : "Clear project"}
-              </button>
-              <button
-                onClick={handleLoadDemo}
-                disabled={loadingDemo || loadingClear}
-                className="inline-flex items-center px-3 h-9 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
-              >
-                {loadingDemo ? "Loading…" : isClientAdmin ? "Load demo" : "Load project"}
-              </button>
-              {!isProjectManager || isClientAdmin ? (
-                <Link
-                  to="/monitoring/aggregation"
-                  className="inline-flex items-center gap-1.5 px-3 h-9 bg-white border border-slate-300 text-slate-700 text-sm font-medium rounded-md hover:bg-slate-50 transition-colors whitespace-nowrap"
-                >
-                  <Layers className="w-4 h-4" />
-                  Aggregation
-                </Link>
-              ) : (
-                <Link
-                  to="/setup/regulations"
-                  className="inline-flex items-center gap-1.5 px-3 h-9 bg-white border border-slate-300 text-slate-700 text-sm font-medium rounded-md hover:bg-slate-50 transition-colors whitespace-nowrap"
-                >
-                  <BookOpen className="w-4 h-4" />
-                  Regulations
-                </Link>
-              )}
-              <Link
-                to={isClientAdmin ? "/reporting/programme" : "/reporting/project"}
-                className="inline-flex items-center gap-1.5 px-3 h-9 bg-indigo-600 text-white text-sm font-semibold rounded-md hover:bg-indigo-700 transition-colors whitespace-nowrap"
-              >
-                <FileBarChart className="w-4 h-4" />
-                {isClientAdmin ? "Programme report" : "Project report"}
-              </Link>
-            </div>
-          </div>
-
           {/* ─── PENDING COMPLIANCE VERIFICATION ALERT ─── */}
           {pendingComplianceCount > 0 && (
             <motion.div
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-amber-50 rounded-md p-3.5 border border-amber-200"
+              className="rounded-md p-3.5 border border-amber-200/60"
+              style={{
+                background:
+                  "linear-gradient(90deg, rgba(245,158,11,0.10), rgba(245,158,11,0.02))",
+              }}
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-start gap-3 min-w-0">
@@ -979,201 +1027,146 @@ export function Dashboard() {
             </motion.div>
           )}
 
-          {/* ─── HERO BENTO — featured Compliance + 3 stacked stat tiles ─── */}
+          {/* ─── KPI STRIP — 4 equal cards (v4 layout) ─── */}
           {(isComplianceSetup || isRiskSetup) && (
             <motion.div
               initial="hidden"
               animate="show"
               variants={{
                 hidden: { opacity: 1 },
-                show: { opacity: 1, transition: { staggerChildren: 0.06 } },
+                show: { opacity: 1, transition: { staggerChildren: 0.05 } },
               }}
-              className="grid grid-cols-12 gap-4"
+              className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4"
             >
-              {/* Featured Compliance card (big, left half on lg+) */}
-              <motion.div
-                variants={{
-                  hidden: { opacity: 0, y: 8 },
-                  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.2, 0.65, 0.3, 0.9] } },
-                }}
-                className="col-span-12 lg:col-span-6 bg-white rounded-lg border border-slate-200 p-6 transition-colors"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Compliance health</p>
-                    <div className="mt-2 flex items-baseline gap-3">
-                      <AnimatedCounter
-                        value={compPct}
-                        format={(n) => `${Math.round(n)}%`}
-                        className="text-5xl font-semibold text-slate-900 leading-none"
-                      />
-                      {(() => {
-                        const d = trendDelta(complianceSpark);
-                        if (d === 0) return (
-                          <span className="text-xs text-slate-400">No change vs prior 7d</span>
-                        );
-                        const up = d > 0;
-                        return (
-                          <span className={clsx(
-                            "inline-flex items-center gap-1 px-2 h-6 rounded-md text-xs font-medium",
-                            up ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700",
-                          )}>
-                            {up ? "↑" : "↓"} {Math.abs(d)}% <span className="text-slate-500 font-normal">7d</span>
-                          </span>
-                        );
-                      })()}
-                    </div>
-                    <p className="mt-2 text-sm text-slate-600">
-                      <span className="font-semibold text-slate-900 tabular-nums">{compComplete}</span> of <span className="tabular-nums">{compTotal}</span> items verified
-                      {compHighRisk > 0 && (
-                        <> · <span className="text-rose-700 font-medium">{compHighRisk} high risk</span></>
-                      )}
-                    </p>
-                  </div>
-                  <span className="inline-flex w-11 h-11 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 shrink-0">
-                    <CheckCircle2 className="w-6 h-6" />
-                  </span>
-                </div>
-                <div className="mt-5">
-                  <MiniSparkline data={complianceSpark} color="#6366f1" labels={sparkLabels} height={56} />
-                </div>
-                <div className="mt-4 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-indigo-600 transition-all duration-700"
-                    style={{ width: `${compPct}%` }}
-                  />
-                </div>
-              </motion.div>
+              <KpiCard
+                title="Compliance health"
+                icon={<CheckCircle2 className="w-3.5 h-3.5" />}
+                iconTone="indigo"
+                value={compComplete}
+                suffix={`/ ${compTotal}`}
+                sub={
+                  <>
+                    <span className="font-semibold text-slate-700 tabular-nums">{compHighRisk}</span> high-risk · {compNotStarted} pending
+                  </>
+                }
+                delta={trendDelta(complianceSpark)}
+                sparkData={complianceSpark}
+                sparkColor="#10b981"
+                sparkLabels={sparkLabels}
+              />
+              <KpiCard
+                title="Open risks"
+                icon={<AlertTriangle className="w-3.5 h-3.5" />}
+                iconTone="rose"
+                value={riskOpen}
+                sub={`${riskTotal} total · ${riskEscalated} escalated`}
+                delta={trendDelta(riskSpark)}
+                deltaInvert
+                sparkData={riskSpark}
+                sparkColor="#f43f5e"
+                sparkLabels={sparkLabels}
+              />
+              <KpiCard
+                title="Critical"
+                icon={<Flame className="w-3.5 h-3.5" />}
+                iconTone="amber"
+                value={riskHigh}
+                sub="Gross score ≥ 16"
+                delta={trendDelta(criticalSpark)}
+                deltaInvert
+                sparkData={criticalSpark}
+                sparkColor="#f59e0b"
+                sparkLabels={sparkLabels}
+              />
+              <KpiCard
+                title="Financial exposure"
+                icon={<PoundSterling className="w-3.5 h-3.5" />}
+                iconTone="emerald"
+                value={riskResidualALE}
+                format={formatGBP}
+                sub={`${issueOpen} open issue${issueOpen === 1 ? "" : "s"} · ${issueTotal} total`}
+                delta={trendDelta(issueSpark)}
+                deltaInvert
+                sparkData={issueSpark}
+                sparkColor="#6366f1"
+                sparkLabels={sparkLabels}
+              />
+            </motion.div>
+          )}
 
-              {/* Right column: 3 small stat tiles stacked */}
-              <div className="col-span-12 lg:col-span-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {/* Open risks */}
-                <motion.div
-                  variants={{
-                    hidden: { opacity: 0, y: 8 },
-                    show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.2, 0.65, 0.3, 0.9] } },
-                  }}
-                  className="bg-white rounded-lg border border-slate-200 p-5 transition-colors hover:bg-slate-50/40"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Open risks</p>
-                    <span className="inline-flex w-8 h-8 items-center justify-center rounded-md bg-rose-50 text-rose-600 shrink-0">
-                      <AlertTriangle className="w-4 h-4" />
-                    </span>
-                  </div>
-                  <div className="mt-2 flex items-baseline gap-2">
-                    <AnimatedCounter value={riskOpen} className="text-3xl font-semibold text-slate-900 leading-none" />
-                    {(() => {
-                      const d = trendDelta(riskSpark);
-                      if (d === 0) return null;
-                      const up = d > 0;
-                      return (
-                        <span className={clsx(
-                          "text-xs font-medium",
-                          up ? "text-rose-600" : "text-emerald-600",
-                        )}>
-                          {up ? "↑" : "↓"} {Math.abs(d)}%
-                        </span>
-                      );
-                    })()}
-                  </div>
-                  <div className="mt-3">
-                    <MiniSparkline data={riskSpark} color="#f43f5e" labels={sparkLabels} height={24} />
-                  </div>
-                  <p className="mt-2 text-xs text-slate-500">
-                    {riskTotal} total · {riskEscalated} escalated
-                  </p>
-                </motion.div>
-
-                {/* Critical risks */}
-                <motion.div
-                  variants={{
-                    hidden: { opacity: 0, y: 8 },
-                    show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.2, 0.65, 0.3, 0.9] } },
-                  }}
-                  className="bg-white rounded-lg border border-slate-200 p-5 transition-colors hover:bg-slate-50/40"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Critical</p>
-                    <span className="inline-flex w-8 h-8 items-center justify-center rounded-md bg-amber-50 text-amber-600 shrink-0">
-                      <Flame className="w-4 h-4" />
-                    </span>
-                  </div>
-                  <div className="mt-2 flex items-baseline gap-2">
-                    <AnimatedCounter value={riskHigh} className="text-3xl font-semibold text-slate-900 leading-none" />
-                    {(() => {
-                      const d = trendDelta(criticalSpark);
-                      if (d === 0) return null;
-                      const up = d > 0;
-                      return (
-                        <span className={clsx(
-                          "text-xs font-medium",
-                          up ? "text-rose-600" : "text-emerald-600",
-                        )}>
-                          {up ? "↑" : "↓"} {Math.abs(d)}%
-                        </span>
-                      );
-                    })()}
-                  </div>
-                  <div className="mt-3">
-                    <MiniSparkline data={criticalSpark} color="#f59e0b" labels={sparkLabels} height={24} />
-                  </div>
-                  <p className="mt-2 text-xs text-slate-500">
-                    Score ≥16 gross
-                  </p>
-                </motion.div>
-
-                {/* Residual exposure */}
-                <motion.div
-                  variants={{
-                    hidden: { opacity: 0, y: 8 },
-                    show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.2, 0.65, 0.3, 0.9] } },
-                  }}
-                  className="bg-white rounded-lg border border-slate-200 p-5 transition-colors hover:bg-slate-50/40"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Exposure</p>
-                    <span className="inline-flex w-8 h-8 items-center justify-center rounded-md bg-emerald-50 text-emerald-600 shrink-0">
-                      <PoundSterling className="w-4 h-4" />
-                    </span>
-                  </div>
-                  <div className="mt-2">
-                    <AnimatedCounter
-                      value={riskResidualALE}
-                      format={formatGBP}
-                      className="text-3xl font-semibold text-slate-900 leading-none"
-                    />
-                  </div>
-                  <div className="mt-3">
-                    <MiniSparkline data={issueSpark} color="#10b981" labels={sparkLabels} height={24} />
-                  </div>
-                  <p className="mt-2 text-xs text-slate-500">
-                    {issueOpen} open issue{issueOpen === 1 ? "" : "s"}
-                  </p>
-                </motion.div>
-              </div>
+          {/* ─── RISK BURN-DOWN HERO (90-day projection) ─── */}
+          {isRiskSetup && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: [0.2, 0.65, 0.3, 0.9], delay: 0.03 }}
+            >
+              <RiskBurnDown
+                critical={riskHigh}
+                open={riskOpen}
+                onPlanSprint={() =>
+                  handleAskFollowUp(
+                    "Plan a 14-day verification sprint focused on the top critical risks.",
+                  )
+                }
+              />
             </motion.div>
           )}
 
           {/* ─── COMPLIANCE VELOCITY CHART ─── */}
           {isComplianceSetup && (
-            <ComplianceVelocityChart items={contextCompliance} />
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: [0.2, 0.65, 0.3, 0.9], delay: 0.05 }}
+            >
+              <ComplianceVelocityChart
+                items={contextCompliance}
+                range={dashboardRange}
+                onRangeChange={setDashboardRange}
+              />
+            </motion.div>
           )}
 
           {/* ─── RISK MATRIX + CRITICAL RISKS TABLE (side-by-side at lg+) ─── */}
           {isRiskSetup && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-              <div className="lg:col-span-5 bg-white rounded-lg border border-slate-200 p-5">
-                <div className="mb-4">
-                  <h3 className="text-base font-semibold text-slate-900">Risk matrix</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Residual likelihood × impact across {riskTotal} risk{riskTotal === 1 ? "" : "s"}.
-                  </p>
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: [0.2, 0.65, 0.3, 0.9], delay: 0.1 }}
+              className="grid grid-cols-1 lg:grid-cols-12 gap-4"
+            >
+              <div className="lg:col-span-5 bg-white rounded-lg border border-slate-200 p-5 flex flex-col">
+                <div className="flex items-start justify-between gap-3 mb-4">
+                  <div>
+                    <h3 className="text-base font-semibold text-slate-900">Risk matrix</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {matrixView === "gross" ? "Gross" : "Residual"} likelihood × impact across {riskTotal} risk{riskTotal === 1 ? "" : "s"}.
+                    </p>
+                  </div>
+                  <div className="inline-flex items-center gap-0.5 rounded-md border border-slate-200 bg-slate-50 p-0.5 shrink-0">
+                    {(["gross", "residual"] as const).map((v) => (
+                      <button
+                        key={v}
+                        type="button"
+                        onClick={() => setMatrixView(v)}
+                        className={clsx(
+                          "px-2.5 h-7 text-xs font-medium rounded-md transition-colors capitalize",
+                          matrixView === v
+                            ? "bg-white text-slate-900 shadow-sm"
+                            : "text-slate-500 hover:text-slate-700",
+                        )}
+                      >
+                        {v}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                {/* Inline 5×5 heatmap — counts per cell from riskMatrixCells */}
+                {/* Inline 5×5 heatmap — counts per cell from gross or residual */}
                 {(() => {
                   const rows = [5, 4, 3, 2, 1]; // impact rows top→bottom
                   const cols = [1, 2, 3, 4, 5]; // likelihood cols left→right
+                  const cells = matrixView === "gross" ? grossMatrixCells : residualMatrixCells;
                   const cellBand = (l: number, i: number) => {
                     const score = l * i;
                     if (score >= 16) return "bg-rose-100 text-rose-900 border-rose-200";
@@ -1186,7 +1179,7 @@ export function Dashboard() {
                       <div className="flex items-stretch gap-1.5">
                         {/* Y axis label */}
                         <div className="flex flex-col items-center justify-center pr-1">
-                          <span className="text-xs font-medium text-slate-500 uppercase tracking-wide [writing-mode:vertical-rl] rotate-180">
+                          <span className="font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500 [writing-mode:vertical-rl] rotate-180">
                             Impact →
                           </span>
                         </div>
@@ -1195,7 +1188,7 @@ export function Dashboard() {
                             <div key={i} className="flex items-center gap-1.5 mb-1.5 last:mb-0">
                               <span className="w-3 text-xs font-medium text-slate-500 text-right tabular-nums">{i}</span>
                               {cols.map((l) => {
-                                const count = riskMatrixCells[`${l}-${i}`] || 0;
+                                const count = cells[`${l}-${i}`] || 0;
                                 return (
                                   <div
                                     key={l}
@@ -1219,7 +1212,7 @@ export function Dashboard() {
                               <span key={l} className="flex-1 text-center text-xs font-medium text-slate-500 tabular-nums">{l}</span>
                             ))}
                           </div>
-                          <div className="text-center text-xs font-medium text-slate-500 uppercase tracking-wide mt-1">
+                          <div className="text-center font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500 mt-1">
                             Likelihood →
                           </div>
                         </div>
@@ -1241,8 +1234,18 @@ export function Dashboard() {
                     </div>
                   );
                 })()}
+                {/* Narrative callout — critical-quadrant concentration + mitigation hint */}
+                <RiskCallout
+                  risks={contextRisks}
+                  className="mt-4"
+                  onGenerate={() =>
+                    handleAskFollowUp(
+                      "Generate a mitigation plan for the critical-quadrant risks.",
+                    )
+                  }
+                />
               </div>
-              <div className="lg:col-span-7 bg-white rounded-lg border border-slate-200 p-5">
+              <div className="lg:col-span-7 bg-white rounded-lg border border-slate-200 p-5 flex flex-col">
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <h3 className="text-base font-semibold text-slate-900">Critical risks</h3>
@@ -1263,107 +1266,235 @@ export function Dashboard() {
                     <p className="text-sm text-slate-500">No critical risks identified.</p>
                   </div>
                 ) : (
-                  <ul className="divide-y divide-slate-100">
-                    {topRisks.map((r) => {
+                  <ul className="-mx-2">
+                    {topRisks.slice(0, 6).map((r, idx) => {
                       const score = r.grossRating || 0;
-                      const sev =
-                        score >= 16
-                          ? { label: "Critical", bg: "bg-rose-50", text: "text-rose-700" }
-                          : score >= 9
-                          ? { label: "High", bg: "bg-amber-50", text: "text-amber-700" }
-                          : { label: "Moderate", bg: "bg-slate-100", text: "text-slate-700" };
+                      const l = Number((r as any).grossL || 0);
+                      const i = Number((r as any).grossI || 0);
+                      const exposure = Number((r as any).residualALE || 0);
+                      const cat = (r as any).category || (r as any).domain || "Risk";
+                      const maxScore = Math.max(
+                        ...topRisks.map((x) => x.grossRating || 0),
+                        16,
+                      );
+                      const barWidth = Math.round((score / maxScore) * 100);
+                      const barColor =
+                        score >= 22
+                          ? "bg-rose-500"
+                          : score >= 16
+                            ? "bg-amber-500"
+                            : "bg-sky-500";
                       return (
-                        <li key={r.id} className="py-2.5 flex items-center gap-3">
-                          <span className={clsx("inline-flex items-center px-2 h-6 rounded-md text-xs font-semibold shrink-0", sev.bg, sev.text)}>
-                            {sev.label}
-                          </span>
-                          <p className="flex-1 min-w-0 text-sm text-slate-700 truncate">
-                            {stripMarkdown(r.title || "Untitled risk")}
-                          </p>
-                          <span className="text-xs font-medium text-slate-500 tabular-nums shrink-0">
-                            {score}
-                          </span>
+                        <li key={r.id} className="border-t border-slate-100 first:border-t-0">
+                          <Link
+                            to="/risk/register"
+                            className="group grid grid-cols-[28px_1fr_80px_44px] items-center gap-3 px-3 py-2.5 rounded-md hover:bg-slate-50 transition-colors"
+                          >
+                            {/* Mono zero-padded index */}
+                            <span className="font-mono tabular-nums text-[11px] text-slate-400 shrink-0">
+                              {String(idx + 1).padStart(2, "0")}
+                            </span>
+                            {/* Title + metadata line */}
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-slate-900 truncate group-hover:text-slate-900">
+                                {stripMarkdown(r.title || "Untitled risk")}
+                              </p>
+                              <div className="mt-1 flex items-center gap-1.5 font-mono uppercase tracking-wide text-[10.5px] text-slate-500">
+                                <span className="truncate">{cat}</span>
+                                {l > 0 && i > 0 && (
+                                  <>
+                                    <span className="text-slate-300">·</span>
+                                    <span className="tabular-nums shrink-0">L{l}·I{i}</span>
+                                  </>
+                                )}
+                                {exposure > 0 && (
+                                  <>
+                                    <span className="text-slate-300">·</span>
+                                    <span className="tabular-nums shrink-0">{formatGBP(exposure)}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            {/* Score bar */}
+                            <div className="h-1 rounded-full bg-slate-100 overflow-hidden">
+                              <div
+                                className={clsx("h-full rounded-full transition-all duration-500", barColor)}
+                                style={{ width: `${barWidth}%` }}
+                              />
+                            </div>
+                            {/* Mono score */}
+                            <span
+                              className={clsx(
+                                "font-mono tabular-nums text-sm font-semibold text-right",
+                                score >= 22 ? "text-rose-600" : "text-slate-900",
+                              )}
+                            >
+                              {score}
+                            </span>
+                          </Link>
                         </li>
                       );
                     })}
                   </ul>
                 )}
               </div>
+            </motion.div>
+          )}
+
+          {/* ─── ACTIVITY TIMELINE + RIBA PLAN OF WORK ──────────────────────
+              Project view: side-by-side bento — Recent activity (7/12) +
+              vertical RIBA Plan of Work (5/12) so the stage rail fits the
+              activity card's height. Other views: activity full width. */}
+          {(isComplianceSetup || isRiskSetup) && (
+            <div
+              className={clsx(
+                "grid gap-4",
+                activeProject ? "grid-cols-1 lg:grid-cols-12" : "grid-cols-1",
+              )}
+            >
+              <div className={clsx(activeProject && "lg:col-span-7")}>
+                <ActivityTimeline
+                  compliance={contextCompliance}
+                  risks={contextRisks}
+                  issues={contextIssues}
+                  limit={8}
+                />
+              </div>
+              {activeProject && (
+                <div className="lg:col-span-5">
+                  <RibaTimeline
+                    currentRiba={activeProject.riba}
+                    milestones={activeProject.milestones || []}
+                  />
+                </div>
+              )}
             </div>
           )}
 
-          {/* ─── ACTIVITY TIMELINE ─── */}
+          {/* AI Strategic Intelligence — Hidden if no stats available at all */}
           {(isComplianceSetup || isRiskSetup) && (
-            <ActivityTimeline
-              compliance={contextCompliance}
-              risks={contextRisks}
-              issues={contextIssues}
-              limit={8}
-            />
-          )}
-
-          {/* AI Strategic Intelligence - Hidden if no stats available at all */}
-          {(isComplianceSetup || isRiskSetup) && (
-            <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+            <div
+              className="bg-white rounded-lg border border-slate-200 overflow-hidden"
+              style={{
+                backgroundImage:
+                  "linear-gradient(180deg, rgba(99,102,241,0.04), transparent 50%)",
+              }}
+            >
               <div className="border-b border-slate-200 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <span className="inline-flex w-9 h-9 items-center justify-center rounded-md bg-indigo-50 text-indigo-600">
-                    <TrendingUp className="w-5 h-5" />
+                <div className="flex items-center gap-3 min-w-0">
+                  {/* AI Orb — radial-gradient indigo with inner highlight reflection */}
+                  <span
+                    className="relative inline-flex w-7 h-7 items-center justify-center rounded-md text-white shrink-0"
+                    style={{
+                      background:
+                        "radial-gradient(120% 120% at 30% 30%, #818cf8, #4f46e5 60%, #4338ca)",
+                      boxShadow:
+                        "0 0 0 1px rgba(67,56,202,0.5), 0 8px 22px -8px rgba(99,102,241,0.35)",
+                    }}
+                  >
+                    <ScanSearch className="w-3.5 h-3.5 relative z-10" />
+                    <span
+                      className="absolute inset-0.5 rounded-[5px] pointer-events-none"
+                      style={{
+                        background:
+                          "radial-gradient(60% 60% at 30% 25%, rgba(255,255,255,0.5), transparent 60%)",
+                      }}
+                    />
                   </span>
-                  <div>
-                    <h3 className="text-base font-semibold text-slate-900">
-                      {isProjectManager && !activeProjectId ? "Portfolio" : "Project"} strategic intelligence
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      {insightsTimestamp ? (
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-sm font-semibold text-slate-900 tracking-tight">
+                        Strategic intelligence
+                      </h3>
+                      <span className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded text-[11px] font-medium border border-indigo-200 bg-indigo-50 text-indigo-700">
+                        Live ·{" "}
+                        {activeProject?.name ||
+                          activeProgramme?.name ||
+                          "Portfolio Aggregate"}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-2">
+                      {/* Pulsing emerald dot */}
+                      <span className="relative inline-flex w-1.5 h-1.5 shrink-0">
+                        <span className="absolute inline-flex w-full h-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
+                        <span className="relative inline-flex w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      </span>
+                      {strategicInsights ? (
                         <>
-                          Last analysed{" "}
-                          {(() => {
-                            const diffMs = Date.now() - insightsTimestamp.getTime();
-                            const m = Math.round(diffMs / 60000);
-                            if (m < 1) return "just now";
-                            if (m < 60) return `${m}m ago`;
-                            const h = Math.round(m / 60);
-                            if (h < 24) return `${h}h ago`;
-                            return insightsTimestamp.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
-                          })()}
+                          Re-analysed{" "}
+                          {insightsTimestamp ? (
+                            (() => {
+                              const diffMs =
+                                Date.now() - insightsTimestamp.getTime();
+                              const m = Math.round(diffMs / 60000);
+                              if (m < 1) return "just now";
+                              if (m < 60) return `${m}m ago`;
+                              const h = Math.round(m / 60);
+                              if (h < 24) return `${h}h ago`;
+                              return insightsTimestamp.toLocaleDateString(
+                                "en-GB",
+                                { day: "2-digit", month: "short" },
+                              );
+                            })()
+                          ) : (
+                            <>just now</>
+                          )}
+                          {typeof strategicInsights.healthScore === "number" && (
+                            <>
+                              {" "}
+                              · synthesising{" "}
+                              <span className="tabular-nums">
+                                {strategicInsights.healthScore}%
+                              </span>{" "}
+                              confidence
+                            </>
+                          )}
                         </>
                       ) : (
-                        "AI executive portfolio analysis"
+                        <>AI executive portfolio analysis</>
                       )}
                     </p>
                   </div>
                 </div>
-                {!strategicInsights ? (
-                  <button
-                    onClick={handleGenerateInsights}
-                    disabled={generatingInsights}
-                    className="inline-flex items-center gap-1.5 px-3 h-9 bg-indigo-600 text-white text-sm font-semibold rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {generatingInsights ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <ScanSearch className="w-4 h-4" />
-                    )}
-                    {generatingInsights ? "Analysing…" : "Generate AI insight"}
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => setStrategicInsights(null)}
-                      className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" /> Undo
-                    </button>
+                <div className="flex items-center gap-2 shrink-0">
+                  {!strategicInsights ? (
                     <button
                       onClick={handleGenerateInsights}
                       disabled={generatingInsights}
-                      className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3 h-8 bg-indigo-600 text-white text-xs font-medium rounded-md hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                      <ScanSearch className="w-3.5 h-3.5" /> Refresh
+                      {generatingInsights ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <ScanSearch className="w-3.5 h-3.5" />
+                      )}
+                      {generatingInsights ? "Analysing…" : "Generate insight"}
                     </button>
-                  </div>
-                )}
+                  ) : (
+                    <>
+                      <button
+                        onClick={handleGenerateInsights}
+                        disabled={generatingInsights}
+                        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors disabled:opacity-50"
+                      >
+                        {generatingInsights ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <ScanSearch className="w-3.5 h-3.5" />
+                        )}
+                        Refresh
+                      </button>
+                      <button
+                        onClick={() => setStrategicInsights(null)}
+                        className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-slate-200 bg-white text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                        title="Clear insight"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Clear
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
 
               <div className="p-6">
@@ -1374,25 +1505,70 @@ export function Dashboard() {
                 )}
 
                 {!strategicInsights && !aiError ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-center bg-slate-50 rounded-md border border-dashed border-slate-200">
-                    <Briefcase className="w-10 h-10 text-slate-300 mb-3" />
-                    <p className="text-sm text-slate-600 max-w-xs leading-relaxed">
-                      Analyse cross-functional compliance, risk, and issue data to generate senior-level strategic guidance.
+                  <div className="flex flex-col items-center justify-center py-14 text-center bg-slate-50/60 rounded-md border border-dashed border-slate-200">
+                    {/* Small inline illustration — three concentric circles + scanner icon */}
+                    <div className="relative w-16 h-16 mb-4">
+                      <span className="absolute inset-0 rounded-full bg-indigo-100/60" />
+                      <span className="absolute inset-2 rounded-full bg-indigo-50" />
+                      <span className="absolute inset-0 flex items-center justify-center">
+                        <ScanSearch className="w-7 h-7 text-indigo-600" />
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-semibold text-slate-900">Generate executive insight</h4>
+                    <p className="mt-1 text-sm text-slate-600 max-w-sm leading-relaxed">
+                      Analyse cross-functional compliance, risk, and issue data to surface critical blindspots, strategic priorities, and recommended actions.
                     </p>
+                    <p className="mt-3 text-xs text-slate-400">Use the <span className="font-medium text-slate-500">Generate AI insight</span> button above to start.</p>
                   </div>
                 ) : strategicInsights && !aiError ? (
                   <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                       <div className="md:col-span-3 space-y-6">
-                        <blockquote className="relative pl-4 border-l-2 border-indigo-600">
-                          <p className="text-sm text-slate-700 leading-relaxed italic">
-                            "{stripMarkdown(strategicInsights.outlook)}"
-                          </p>
-                        </blockquote>
+                        {/* Executive Read panel — eyebrow + headline + streamed body */}
+                        {(() => {
+                          const fullOutlook = stripMarkdown(
+                            strategicInsights.outlook || "",
+                          );
+                          // Split into headline (first sentence) + body (rest).
+                          const periodIdx = fullOutlook.indexOf(". ");
+                          const headline =
+                            periodIdx > 0 && periodIdx < 200
+                              ? fullOutlook.slice(0, periodIdx + 1)
+                              : fullOutlook.split("\n")[0] || fullOutlook;
+                          const body =
+                            periodIdx > 0 && periodIdx < 200
+                              ? fullOutlook.slice(periodIdx + 2)
+                              : "";
+                          // Streamed body — slice the live streamedOutlook to
+                          // only show what's beyond the headline.
+                          const bodyStreamed = streamedOutlook.startsWith(
+                            headline,
+                          )
+                            ? streamedOutlook.slice(headline.length).trimStart()
+                            : streamedOutlook;
+                          return (
+                            <div className="rounded-md border border-indigo-200/60 bg-indigo-50/40 p-4">
+                              <p className="text-sm font-semibold text-slate-900 leading-snug mb-2">
+                                {headline}
+                              </p>
+                              {body && (
+                                <p className="text-sm text-slate-700 leading-relaxed">
+                                  {bodyStreamed}
+                                  {isStreamingOutlook && (
+                                    <span
+                                      aria-hidden="true"
+                                      className="inline-block w-[2px] h-3.5 bg-indigo-500 ml-0.5 align-middle animate-pulse"
+                                    />
+                                  )}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })()}
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="space-y-3">
-                            <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide flex items-center gap-1.5">
+                            <h4 className="font-mono uppercase tracking-wide text-[11px] font-medium text-rose-600 flex items-center gap-1.5">
                               <ShieldAlert className="w-3.5 h-3.5 text-rose-500" /> Critical blindspots
                             </h4>
                             <ul className="space-y-2">
@@ -1408,7 +1584,7 @@ export function Dashboard() {
                             </ul>
                           </div>
                           <div className="space-y-3">
-                            <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide flex items-center gap-1.5">
+                            <h4 className="font-mono uppercase tracking-wide text-[11px] font-medium text-indigo-600 flex items-center gap-1.5">
                               <Milestone className="w-3.5 h-3.5 text-indigo-600" /> Strategic priorities
                             </h4>
                             <ul className="space-y-2">
@@ -1430,7 +1606,7 @@ export function Dashboard() {
                         {/* Detailed Suggestions */}
                         {strategicInsights.detailedSuggestions && strategicInsights.detailedSuggestions.length > 0 && (
                           <div className="mt-6 pt-6 border-t border-slate-200">
-                            <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide flex items-center gap-1.5 mb-3">
+                            <h4 className="font-mono uppercase tracking-wide text-[11px] font-medium text-emerald-600 flex items-center gap-1.5 mb-3">
                               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Executive recommendations
                             </h4>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -1492,12 +1668,12 @@ export function Dashboard() {
                             <span className="text-2xl font-semibold text-slate-900 tabular-nums">
                               {strategicInsights.healthScore || 0}%
                             </span>
-                            <span className="text-xs font-medium text-slate-500 uppercase tracking-wide mt-0.5">
+                            <span className="font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500 mt-0.5">
                               Health
                             </span>
                           </div>
                         </div>
-                        <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+                        <h4 className="font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500 mb-1.5">
                           Portfolio health
                         </h4>
                         <p className="text-xs text-slate-600 leading-relaxed">
@@ -1505,6 +1681,8 @@ export function Dashboard() {
                         </p>
                       </div>
                     </div>
+                    {/* Conversational follow-ups — chip row routes back into AI inquiry */}
+                    <AIFollowUpPrompts onAsk={handleAskFollowUp} />
                   </div>
                 ) : null}
               </div>
@@ -1517,7 +1695,7 @@ export function Dashboard() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <FolderKanban className="w-5 h-5 text-indigo-600" />
-                  <h2 className="text-lg font-bold text-slate-800">
+                  <h2 className="text-lg font-semibold text-slate-800">
                     My Projects
                   </h2>
                 </div>
@@ -1528,7 +1706,7 @@ export function Dashboard() {
                       setActiveProgramme(null);
                       navigate("/initiate");
                     }}
-                    className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-700 transition-colors bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100"
+                    className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-700 transition-colors bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100"
                   >
                     <Plus className="w-3.5 h-3.5" /> New Project
                   </button>
@@ -1537,54 +1715,131 @@ export function Dashboard() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {displayProjects.length > 0 ? (
-                  displayProjects.slice(0, 8).map((project) => (
-                    <Link
-                      key={project.id}
-                      to="/dashboard"
-                      onClick={() => setActiveProject(project.id)}
-                      className="bg-white p-4 rounded-lg border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all group"
-                    >
-                      <div className="flex justify-between items-start mb-3">
-                        <div className="bg-slate-50 p-2 rounded-lg group-hover:bg-indigo-50 transition-colors">
-                          <FolderKanban className="w-4 h-4 text-slate-400 group-hover:text-indigo-500" />
-                        </div>
-                        <span
-                          className={clsx(
-                            "text-xs font-semibold px-2 py-0.5 rounded-full uppercase tracking-wide",
-                            project.status === "Active"
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
-                              : project.status === "Draft"
-                                ? "bg-amber-50 text-amber-700 border border-amber-100"
-                                : "bg-slate-50 text-slate-700 border border-slate-100",
-                          )}
-                        >
-                          {project.status || "Draft"}
-                        </span>
-                      </div>
-                      <h3
-                        className="text-sm font-bold text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors truncate"
+                  displayProjects.slice(0, 8).map((project: any) => {
+                    // ── Real-data derivations per project (no static fallbacks) ──
+                    const projCompliance = safeComplianceItems.filter(
+                      (c) => c.projectId === project.id,
+                    );
+                    const projComplete = projCompliance.filter(
+                      (c) => c.stage === "Live" || c.stage === "Archived",
+                    ).length;
+                    const projTotal = projCompliance.length;
+                    const pct =
+                      projTotal > 0
+                        ? Math.round((projComplete / projTotal) * 100)
+                        : 0;
+
+                    const projRisks = safeRisks.filter(
+                      (r) => r.projectId === project.id,
+                    );
+                    const openRisks = projRisks.filter(
+                      (r) => r.status === "Open",
+                    ).length;
+                    const criticalCount = projRisks.filter(
+                      (r) => (r.grossRating || 0) >= 16,
+                    ).length;
+                    const exposure = projRisks.reduce(
+                      (s, r) => s + Number(r.residualALE || 0),
+                      0,
+                    );
+
+                    // RAG derived from real signals; project.rag respected if set.
+                    let isRed = false;
+                    let isAmber = false;
+                    if (criticalCount >= 3 || (projTotal > 0 && pct < 30)) {
+                      isRed = true;
+                    } else if (
+                      criticalCount >= 1 ||
+                      (projTotal > 0 && pct < 70)
+                    ) {
+                      isAmber = true;
+                    }
+                    const explicitRAG = (project.rag || "")
+                      .toString()
+                      .toLowerCase();
+                    if (explicitRAG.includes("red")) {
+                      isRed = true;
+                      isAmber = false;
+                    } else if (
+                      explicitRAG.includes("amber") ||
+                      explicitRAG.includes("yellow")
+                    ) {
+                      isRed = false;
+                      isAmber = true;
+                    }
+                    const ragBarClass = isRed
+                      ? "bg-rose-500"
+                      : isAmber
+                        ? "bg-amber-500"
+                        : "bg-emerald-500";
+
+                    // RIBA short code from the stored project.riba string
+                    // (handles "S2", "Stage 2", "Stage 2 — Concept Design").
+                    const ribaRaw = (project.riba || "").toString();
+                    const ribaDigit = ribaRaw.match(/\d/);
+                    const ribaShort = ribaDigit ? `S${ribaDigit[0]}` : "—";
+
+                    return (
+                      <Link
+                        key={project.id}
+                        to="/dashboard"
+                        onClick={() => setActiveProject(project.id)}
+                        className="bg-white p-3.5 rounded-md border border-slate-200 hover:border-slate-300 transition-colors flex flex-col gap-2.5"
                         title={stripMarkdown(project.name)}
                       >
-                        {stripMarkdown(project.name)}
-                      </h3>
-                      <div className="mt-3 flex items-center justify-between text-xs text-slate-500 font-bold uppercase tracking-wide">
-                        <span>{project.type || "Unknown Type"}</span>
-                        <div className="flex items-center gap-1">
+                        {/* Header row — name + type / status chip */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="text-[13px] font-semibold text-slate-900 tracking-tight truncate">
+                              {stripMarkdown(project.name)}
+                            </div>
+                            <div className="mt-1 font-mono uppercase tracking-wide text-[10.5px] text-slate-500 truncate">
+                              {project.type || "Unspecified type"}
+                            </div>
+                          </div>
                           <span
                             className={clsx(
-                              "w-2 h-2 rounded-full",
-                              project.rag === "Red"
-                                ? "bg-red-500"
-                                : project.rag === "Amber"
-                                  ? "bg-amber-500"
-                                  : "bg-emerald-500",
+                              "shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium border",
+                              project.status === "Active"
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                : project.status === "Draft"
+                                  ? "bg-amber-50 text-amber-700 border-amber-200"
+                                  : "bg-slate-50 text-slate-700 border-slate-200",
                             )}
-                          />
-                          {project.rag || "Green"}
+                          >
+                            {project.status || "Draft"}
+                          </span>
                         </div>
-                      </div>
-                    </Link>
-                  ))
+
+                        {/* Progress row — RIBA·Stage + pct + coloured bar */}
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between font-mono uppercase tracking-wide text-[10.5px] text-slate-500 mb-1">
+                            <span>{ribaShort} · Stage</span>
+                            <span className="tabular-nums">{pct}%</span>
+                          </div>
+                          <div className="h-1 rounded-full bg-slate-100 overflow-hidden">
+                            <div
+                              className={clsx("h-full rounded-full", ragBarClass)}
+                              style={{ width: `${Math.max(0, Math.min(100, pct))}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Footer row — open risks + £ exposure */}
+                        <div className="flex items-center justify-between text-[11px] text-slate-500">
+                          <span>
+                            <span className="font-mono tabular-nums text-slate-700">
+                              {openRisks}
+                            </span>{" "}
+                            open risk{openRisks === 1 ? "" : "s"}
+                          </span>
+                          <span className="font-mono tabular-nums text-slate-700">
+                            {formatGBP(exposure)}
+                          </span>
+                        </div>
+                      </Link>
+                    );
+                  })
                 ) : (
                   <div className="col-span-full py-8 text-center bg-slate-50 rounded-lg border border-dashed border-slate-200">
                     <p className="text-sm text-slate-400 font-medium">
@@ -1598,256 +1853,207 @@ export function Dashboard() {
                 <div className="flex justify-center mt-2">
                   <Link
                     to="/projects"
-                    className="text-xs font-bold text-slate-500 hover:text-indigo-600 transition-colors flex items-center gap-1.5 opacity-70"
+                    className="text-xs font-semibold text-slate-500 hover:text-indigo-600 transition-colors flex items-center gap-1.5 opacity-70"
                   >
                     View All Projects <ChevronRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
               )}
 
-              <div className="bg-indigo-900 rounded-lg p-4 border border-indigo-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0 shadow-lg relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 blur-2xl pointer-events-none group- transition-transform duration-1000" />
-                <div className="flex items-center gap-4 relative z-10">
-                  <div className="bg-indigo-500/20 p-3 rounded-lg border border-indigo-500/20 group-hover:bg-indigo-500/30 transition-colors">
-                    <BookOpen className="w-6 h-6 text-indigo-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-white">
-                      Regulations active for construction programme
-                    </h3>
-                    <p className="text-xs text-indigo-300 font-medium leading-normal max-w-xs">
-                      Access building safety and property compliance regulations
-                      relevant to your active projects.
-                    </p>
-                  </div>
-                </div>
-                <Link
-                  to="/setup/regulations"
-                  className="relative z-10 w-full sm:w-auto text-center px-4 py-3 sm:py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-500 transition-all border border-indigo-400/20  shadow-md"
-                >
-                  Browse Regulations
-                </Link>
-              </div>
             </div>
           )}
 
-          {/* ─── PROJECT / PROGRAMME PLAN MILESTONES ─── */}
-          {activeProject?.milestones?.length ||
-          activeProgramme?.milestones?.length ? (
-            <div className="space-y-4 mt-6">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Milestone className="w-5 h-5 text-indigo-600" />
-                  <h2 className="text-lg font-bold text-slate-800">
-                    {activeProject ? "Project Timeline" : "Programme Timeline"}
-                  </h2>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-4 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 rounded-full bg-amber-400" /> Key
-                      Milestone
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-2 h-2 rounded-full bg-indigo-400" />{" "}
-                      Upcoming
-                    </div>
-                  </div>
-                </div>
-              </div>
 
-              <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wide">
-                      Critical Path & RIBA Milestones
-                    </h3>
-                    <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 text-xs font-semibold rounded uppercase">
-                      Next 6 Events
-                    </span>
-                  </div>
-                  <Link
-                    to={
-                      activeProject ? "/project/plan" : "/projects/programme-setup"
-                    }
-                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 uppercase tracking-wide flex items-center gap-1.5"
-                  >
-                    View Full Schedule <ChevronRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100">
-                  {(() => {
-                    const allMilestones =
-                      activeProject?.milestones ||
-                      activeProgramme?.milestones ||
-                      [];
-                    const keyMilestones = allMilestones
-                      .filter((m) => m.isKey)
-                      .sort(
-                        (a, b) =>
-                          new Date(a.date).getTime() -
-                          new Date(b.date).getTime(),
-                      );
-                    const otherMilestones = allMilestones
-                      .filter((m) => !m.isKey)
-                      .sort(
-                        (a, b) =>
-                          new Date(a.date).getTime() -
-                          new Date(b.date).getTime(),
-                      );
-
-                    // Show up to 6 total: Priority to Key, then others
-                    const displayMilestones = [
-                      ...keyMilestones,
-                      ...otherMilestones,
-                    ].slice(0, 6);
-
-                    if (displayMilestones.length === 0)
-                      return (
-                        <div className="col-span-2 p-12 text-center text-sm text-slate-500">
-                          No upcoming milestones defined.
-                        </div>
-                      );
-
-                    return displayMilestones.map((m) => (
-                      <div
-                        key={m.id}
-                        className="p-5 flex items-center justify-between gap-4 hover:bg-slate-50/80 transition-all group relative"
-                      >
-                        {m.isKey && (
-                          <div className="absolute top-0 left-0 w-1 h-full bg-amber-400" />
-                        )}
-                        <div className="flex items-center gap-4 min-w-0">
-                          <div
-                            className={clsx(
-                              "w-10 h-10 rounded-lg flex flex-col items-center justify-center shrink-0 border shadow-sm transition-transform group-",
-                              m.isKey
-                                ? "bg-amber-50 border-amber-100 text-amber-700"
-                                : "bg-indigo-50 border-indigo-100 text-indigo-700",
-                              m.status === "Completed" &&
-                                "bg-emerald-50 border-emerald-100 text-emerald-700",
-                            )}
-                          >
-                            <span className="text-xs font-semibold uppercase leading-none">
-                              {m.stage || "S?"}
-                            </span>
-                            {m.isKey ? (
-                              <Star className="w-2.5 h-2.5 mt-0.5 fill-amber-500 text-amber-500" />
-                            ) : (
-                              <Calendar className="w-2.5 h-2.5 mt-0.5" />
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                              <h4
-                                className="text-sm font-bold text-slate-900 truncate pr-2"
-                                title={stripMarkdown(m.name)}
-                              >
-                                {stripMarkdown(m.name)}
-                              </h4>
-                              {m.isKey && (
-                                <Star className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" />
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2 mt-0.5 overflow-hidden">
-                              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide whitespace-nowrap">
-                                {getRIBALabel(m.stage || "S0")}
-                              </span>
-                              {m.description && (
-                                <>
-                                  <span className="w-1 h-1 rounded-full bg-slate-200 shrink-0" />
-                                  <span className="text-xs text-slate-500 truncate">
-                                    {stripMarkdown(m.description)}
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <div
-                            className={clsx(
-                              "text-xs font-semibold tracking-tight",
-                              m.status === "Delayed"
-                                ? "text-red-600"
-                                : "text-slate-900",
-                            )}
-                          >
-                            {new Date(m.date).toLocaleDateString("en-GB", {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                            })}
-                          </div>
-                          <div
-                            className={clsx(
-                              "text-xs font-semibold uppercase tracking-wide mt-1 px-1.5 py-0.5 rounded inline-block",
-                              m.status === "Completed"
-                                ? "bg-emerald-100 text-emerald-700"
-                                : m.status === "Delayed"
-                                  ? "bg-red-100 text-red-700"
-                                  : "bg-slate-100 text-slate-600",
-                            )}
-                          >
-                            {m.status}
-                          </div>
-                        </div>
-                      </div>
-                    ));
-                  })()}
-                </div>
-              </div>
-            </div>
-          ) : null}
 
 
           {/* ─── Setup CTAs (only when compliance / risk not yet set up) ─── */}
           {(!isComplianceSetup || !isRiskSetup) && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {!isComplianceSetup && (
-                <div className="bg-white rounded-lg border border-dashed border-slate-300 p-5 flex items-start gap-3">
-                  <span className="inline-flex w-9 h-9 items-center justify-center rounded-md bg-indigo-50 text-indigo-600 shrink-0">
+                <Link
+                  to={`/compliance/setup${activeProgrammeId ? "?type=programme" : ""}`}
+                  className="group bg-white rounded-lg border border-slate-200 p-5 flex items-center gap-4 hover:border-slate-300 hover:bg-slate-50/40 transition-colors"
+                >
+                  <span className="inline-flex w-11 h-11 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 shrink-0">
                     <Shield className="w-5 h-5" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-slate-900">Compliance setup pending</p>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold text-slate-900">Compliance setup pending</p>
+                      <span className="inline-flex items-center px-1.5 h-5 rounded-md text-xs font-medium bg-amber-50 text-amber-700 ring-1 ring-amber-100">Action needed</span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">
                       Run the AI requirement analysis to start tracking compliance for this {activeProgrammeId ? "programme" : "project"}.
                     </p>
-                    <Link
-                      to={`/compliance/setup${activeProgrammeId ? "?type=programme" : ""}`}
-                      className="mt-3 inline-flex items-center gap-1.5 px-3 h-9 bg-indigo-600 text-white text-sm font-semibold rounded-md hover:bg-indigo-700 transition-colors"
-                    >
-                      <ScanSearch className="w-4 h-4" /> Start AI setup
-                    </Link>
                   </div>
-                </div>
+                  <span className="inline-flex items-center gap-1.5 px-3 h-9 bg-indigo-600 text-white text-sm font-semibold rounded-md group-hover:bg-indigo-700 transition-colors shrink-0">
+                    <ScanSearch className="w-4 h-4" /> Start
+                  </span>
+                </Link>
               )}
               {!isRiskSetup && (
-                <div className="bg-white rounded-lg border border-dashed border-slate-300 p-5 flex items-start gap-3">
-                  <span className="inline-flex w-9 h-9 items-center justify-center rounded-md bg-rose-50 text-rose-600 shrink-0">
+                <Link
+                  to={`/risk/ai${activeProgrammeId ? "?type=programme" : ""}`}
+                  className="group bg-white rounded-lg border border-slate-200 p-5 flex items-center gap-4 hover:border-slate-300 hover:bg-slate-50/40 transition-colors"
+                >
+                  <span className="inline-flex w-11 h-11 items-center justify-center rounded-lg bg-rose-50 text-rose-600 shrink-0">
                     <ShieldAlert className="w-5 h-5" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-slate-900">Risk identification pending</p>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold text-slate-900">Risk identification pending</p>
+                      <span className="inline-flex items-center px-1.5 h-5 rounded-md text-xs font-medium bg-amber-50 text-amber-700 ring-1 ring-amber-100">Action needed</span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">
                       Launch AI risk discovery to populate the matrix and critical risks list.
                     </p>
-                    <Link
-                      to={`/risk/ai${activeProgrammeId ? "?type=programme" : ""}`}
-                      className="mt-3 inline-flex items-center gap-1.5 px-3 h-9 bg-indigo-600 text-white text-sm font-semibold rounded-md hover:bg-indigo-700 transition-colors"
-                    >
-                      <Briefcase className="w-4 h-4" /> Launch AI risk ID
-                    </Link>
                   </div>
-                </div>
+                  <span className="inline-flex items-center gap-1.5 px-3 h-9 bg-indigo-600 text-white text-sm font-semibold rounded-md group-hover:bg-indigo-700 transition-colors shrink-0">
+                    <Briefcase className="w-4 h-4" /> Launch
+                  </span>
+                </Link>
               )}
             </div>
           )}
 
         </div>
       )}
+
+      {/* ─── REGS BANNER (page footer) — v4 light indigo gradient ─── */}
+      <div
+        className="rounded-lg border border-indigo-200 grid grid-cols-[40px_1fr_auto] items-center gap-4 px-5 py-4"
+        style={{
+          background:
+            "linear-gradient(90deg, rgba(99,102,241,0.18), rgba(99,102,241,0.08))",
+        }}
+      >
+        <span className="inline-flex w-10 h-10 items-center justify-center rounded-md bg-indigo-100 text-indigo-600">
+          <BookOpen className="w-5 h-5" />
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-slate-900">
+            Regulations active for the construction programme
+          </p>
+          <p className="text-xs text-slate-600 mt-1">
+            Building Safety Act 2022 · SHDF Wave 2 · Asbestos (CAR 2024) · and more
+          </p>
+        </div>
+        <Link
+          to="/regulations"
+          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-indigo-600 hover:bg-indigo-500 text-xs font-medium text-white transition-colors shadow-sm shrink-0"
+        >
+          <BookOpen className="w-3.5 h-3.5" />
+          Browse regulations
+        </Link>
+      </div>
+
+      {/* AI inquiry popup — opened by follow-up prompt chips or the risk callout.
+          Uses the existing controlled-popup API; `initialQuestion` pre-fills the
+          input on each open via `key`-forced remount. */}
+      <AIInquiryPopup
+        key={aiInquiryPrefill}
+        isOpen={aiInquiryOpen}
+        onClose={() => setAiInquiryOpen(false)}
+        initialQuestion={aiInquiryPrefill}
+        context={
+          activeProject?.name || activeProgramme?.name || "Portfolio Aggregate"
+        }
+      />
     </div>
+  );
+}
+
+// ─── KPI card (v4 layout) — eyebrow + delta chip + bignum + sub + sparkline ───
+
+type KpiTone = "indigo" | "rose" | "amber" | "emerald" | "sky";
+
+const ICON_TONES: Record<KpiTone, string> = {
+  indigo: "bg-indigo-50 text-indigo-600",
+  rose: "bg-rose-50 text-rose-600",
+  amber: "bg-amber-50 text-amber-600",
+  emerald: "bg-emerald-50 text-emerald-600",
+  sky: "bg-sky-50 text-sky-600",
+};
+
+function KpiCard({
+  title,
+  icon,
+  iconTone = "indigo",
+  value,
+  suffix,
+  sub,
+  delta,
+  deltaInvert,
+  format,
+  sparkData,
+  sparkColor,
+  sparkLabels,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  iconTone?: KpiTone;
+  value: number;
+  suffix?: string;
+  sub?: React.ReactNode;
+  delta?: number;
+  deltaInvert?: boolean;
+  format?: (n: number) => string;
+  sparkData: number[];
+  sparkColor: string;
+  sparkLabels?: string[];
+}) {
+  const hasDelta = typeof delta === "number" && Number.isFinite(delta);
+  const up = (delta ?? 0) >= 0;
+  const isBad = deltaInvert ? up : !up;
+  return (
+    <motion.div
+      variants={{
+        hidden: { opacity: 0, y: 8 },
+        show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.2, 0.65, 0.3, 0.9] } },
+      }}
+      className="bg-white rounded-lg border border-slate-200 p-4 flex flex-col gap-3 transition-colors hover:bg-slate-50/40"
+    >
+      {/* Eyebrow row — icon + mono title on left, delta chip on right */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="inline-flex items-center gap-1.5 font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500">
+          <span className={clsx("inline-flex w-5 h-5 items-center justify-center rounded", ICON_TONES[iconTone])}>
+            {icon}
+          </span>
+          <span className="truncate">{title}</span>
+        </div>
+        {hasDelta && delta !== 0 ? (
+          <span
+            className={clsx(
+              "inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-medium font-mono tabular-nums border",
+              isBad
+                ? "border-rose-200 bg-rose-50 text-rose-700"
+                : "border-emerald-200 bg-emerald-50 text-emerald-700",
+            )}
+          >
+            {up ? "↑" : "↓"} {Math.abs(delta!)}%
+          </span>
+        ) : hasDelta ? (
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium border border-slate-200 bg-slate-50 text-slate-500">
+            —
+          </span>
+        ) : null}
+      </div>
+      {/* Big number with optional suffix */}
+      <div className="flex items-baseline gap-1">
+        <AnimatedCounter
+          value={value}
+          format={format}
+          className="text-3xl font-medium text-slate-900 leading-none tracking-tight tabular-nums"
+        />
+        {suffix && <span className="text-sm font-medium text-slate-500 tabular-nums">{suffix}</span>}
+      </div>
+      {/* Sub line */}
+      {sub && <p className="text-xs text-slate-500">{sub}</p>}
+      {/* Sparkline */}
+      <div className="mt-auto">
+        <MiniSparkline data={sparkData} color={sparkColor} labels={sparkLabels} height={38} />
+      </div>
+    </motion.div>
   );
 }
 
