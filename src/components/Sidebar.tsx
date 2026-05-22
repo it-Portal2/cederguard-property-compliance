@@ -282,11 +282,11 @@ export function Sidebar() {
         )}
       >
         {/* Logo */}
-        <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+        <div className="px-4 h-14 border-b border-slate-200 flex items-center justify-between shrink-0">
           <img
             src="/logo.png"
             alt="Cedar – Risk Intelligence & Compliance Platform"
-            className="w-full max-w-[150px] h-auto object-contain"
+            className="w-full max-w-[190px] h-11 object-contain"
           />
           <button
             className="md:hidden p-1 text-slate-400 hover:bg-slate-100 rounded-lg transition-colors"
@@ -762,25 +762,33 @@ export function Sidebar() {
             className="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-md transition-colors hover:bg-white text-left"
             title="Profile settings"
           >
-            <span
-              className="inline-flex w-8 h-8 items-center justify-center rounded-full text-[11px] font-semibold text-white shrink-0"
-              style={{
-                background:
-                  "linear-gradient(135deg, oklch(0.7 0.13 60), oklch(0.55 0.17 25))",
-              }}
-              aria-hidden="true"
-            >
-              {(() => {
-                const name =
-                  user?.displayName || user?.name || user?.email || "U";
-                return name
-                  .split(/[\s@]/)
-                  .filter(Boolean)
-                  .slice(0, 2)
-                  .map((s: string) => s[0]?.toUpperCase() || "")
-                  .join("");
-              })()}
-            </span>
+            {user?.photoURL ? (
+              <img
+                src={user.photoURL}
+                alt="Profile"
+                className="w-8 h-8 rounded-full object-cover shrink-0"
+              />
+            ) : (
+              <span
+                className="inline-flex w-8 h-8 items-center justify-center rounded-full text-[11px] font-semibold text-white shrink-0"
+                style={{
+                  background:
+                    "linear-gradient(135deg, oklch(0.7 0.13 60), oklch(0.55 0.17 25))",
+                }}
+                aria-hidden="true"
+              >
+                {(() => {
+                  const name =
+                    user?.displayName || user?.name || user?.email || "U";
+                  return name
+                    .split(/[\s@]/)
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .map((s: string) => s[0]?.toUpperCase() || "")
+                    .join("");
+                })()}
+              </span>
+            )}
             <span className="min-w-0 flex-1">
               <span className="block text-[12px] font-semibold text-slate-900 truncate">
                 {user?.displayName ||
@@ -796,11 +804,15 @@ export function Sidebar() {
             </span>
             <Settings2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
           </button>
+          <div className="h-px bg-slate-200/50 my-1 mx-2" />
           <button
             onClick={handleLogout}
-            className="w-full h-10 text-left flex items-center gap-2.5 px-2.5 rounded-md text-[13px] font-medium transition-colors text-rose-600 hover:bg-rose-50"
+            className="w-full h-10 text-left flex items-center gap-3 px-2.5 rounded-md text-[13px] font-medium transition-all duration-150 text-slate-500 hover:text-rose-600 hover:bg-rose-50/50 group"
           >
-            <LogOut className="w-3.5 h-3.5 shrink-0" /> Sign Out
+            <span className="inline-flex w-8 h-8 items-center justify-center shrink-0 rounded-lg bg-slate-100/70 text-slate-400 group-hover:bg-rose-100/50 group-hover:text-rose-600 transition-colors">
+              <LogOut className="w-3.5 h-3.5" />
+            </span>
+            <span>Sign Out</span>
           </button>
         </div>
       </div>
