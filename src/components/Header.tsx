@@ -1,16 +1,38 @@
-import { useState, useRef, useEffect } from 'react';
-import { useStore } from '../store/useStore';
-import { LogOut, User, ChevronDown, FolderKanban, Plus, Loader2, LayoutTemplate, LayoutDashboard, Bell, BellDot, X, Check, Menu, Search } from 'lucide-react';
-import { clsx } from 'clsx';
-import { SinceLastVisitBadge } from './SinceLastVisitBadge';
-import { logout } from '../lib/firebase';
-import { useNavigate, useLocation } from 'react-router';
-import { ProfileSettingsModal } from './ProfileSettingsModal';
-import { api } from '../lib/api';
-import { isAtLeastClientAdmin, isSuperAdmin, isAtLeastPM, canCreateProject, canCreateProgramme, UserRole } from '../lib/roles';
-import { formatDistanceToNow } from 'date-fns';
-import { safeFormatDistanceToNow } from '../lib/utils';
-
+import { useState, useRef, useEffect } from "react";
+import { useStore } from "../store/useStore";
+import {
+  LogOut,
+  User,
+  ChevronDown,
+  FolderKanban,
+  Plus,
+  Loader2,
+  LayoutTemplate,
+  LayoutDashboard,
+  Bell,
+  BellDot,
+  X,
+  Check,
+  Menu,
+  Search,
+} from "lucide-react";
+import { clsx } from "clsx";
+import { SinceLastVisitBadge } from "./SinceLastVisitBadge";
+import { logout } from "../lib/firebase";
+import { useNavigate, useLocation } from "react-router";
+import { ProfileSettingsModal } from "./ProfileSettingsModal";
+import { api } from "../lib/api";
+import {
+  isAtLeastClientAdmin,
+  isSuperAdmin,
+  isAtLeastPM,
+  canCreateProject,
+  canCreateProgramme,
+  UserRole,
+} from "../lib/roles";
+import { formatDistanceToNow } from "date-fns";
+import { safeFormatDistanceToNow } from "../lib/utils";
+import TableTooltip from "./table/TableTooltip";
 
 export function Header() {
   const {
@@ -40,9 +62,9 @@ export function Header() {
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [showProgrammeDropdown, setShowProgrammeDropdown] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
+  const [showNotificationDropdown, setShowNotificationDropdown] =
+    useState(false);
   const [showContextDropdown, setShowContextDropdown] = useState(false);
-
 
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const projectDropdownRef = useRef<HTMLDivElement>(null);
@@ -60,11 +82,13 @@ export function Header() {
   useEffect(() => {
     const init = async () => {
       // Load all data on mount for authorized roles to populate context lookups
-      if (user && (userIsSuperAdmin || isAtLeastPM(userRole as any) || isAtLeastClientAdmin(userRole as any))) {
-        await Promise.all([
-          fetchProjects(),
-          fetchProgrammes()
-        ]);
+      if (
+        user &&
+        (userIsSuperAdmin ||
+          isAtLeastPM(userRole as any) ||
+          isAtLeastClientAdmin(userRole as any))
+      ) {
+        await Promise.all([fetchProjects(), fetchProgrammes()]);
       }
     };
     init();
@@ -73,34 +97,49 @@ export function Header() {
   // Handle clicking outside to close dropdowns
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
+      if (
+        userDropdownRef.current &&
+        !userDropdownRef.current.contains(event.target as Node)
+      ) {
         setShowUserDropdown(false);
       }
-      if (projectDropdownRef.current && !projectDropdownRef.current.contains(event.target as Node)) {
+      if (
+        projectDropdownRef.current &&
+        !projectDropdownRef.current.contains(event.target as Node)
+      ) {
         setShowProjectDropdown(false);
       }
-      if (programmeDropdownRef.current && !programmeDropdownRef.current.contains(event.target as Node)) {
+      if (
+        programmeDropdownRef.current &&
+        !programmeDropdownRef.current.contains(event.target as Node)
+      ) {
         setShowProgrammeDropdown(false);
       }
-      if (notificationDropdownRef.current && !notificationDropdownRef.current.contains(event.target as Node)) {
+      if (
+        notificationDropdownRef.current &&
+        !notificationDropdownRef.current.contains(event.target as Node)
+      ) {
         setShowNotificationDropdown(false);
       }
-      if (contextDropdownRef.current && !contextDropdownRef.current.contains(event.target as Node)) {
+      if (
+        contextDropdownRef.current &&
+        !contextDropdownRef.current.contains(event.target as Node)
+      ) {
         setShowContextDropdown(false);
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleLogout = async () => {
     try {
       await logout();
       useStore.getState().setUser(null);
-      navigate('/login');
+      navigate("/login");
     } catch (error) {
-      console.error('Logout failed', error);
+      console.error("Logout failed", error);
     }
   };
 
@@ -115,7 +154,7 @@ export function Header() {
       await loadProjectData(projectId);
       navigate(`/dashboard?projectId=${projectId}`);
     } catch (e) {
-      console.error('Failed to switch project', e);
+      console.error("Failed to switch project", e);
     } finally {
       setContextSwitching(false);
     }
@@ -132,37 +171,48 @@ export function Header() {
       await loadProgrammeData(programmeId);
       navigate(`/dashboard?programmeId=${programmeId}`);
     } catch (e) {
-      console.error('Failed to switch programme', e);
+      console.error("Failed to switch programme", e);
     } finally {
       setContextSwitching(false);
     }
   };
 
   const getInitials = (name?: string, email?: string) => {
-    if (name) return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    if (name)
+      return name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .substring(0, 2)
+        .toUpperCase();
     if (email) return email.substring(0, 2).toUpperCase();
-    return 'U';
+    return "U";
   };
 
   const initials = getInitials(user?.displayName, user?.email);
-  const activeProject = (Array.isArray(projects) ? projects : []).find(p => p.id === activeProjectId);
-  const activeProgramme = (Array.isArray(programmes) ? programmes : []).find(p => p.id === activeProgrammeId);
+  const activeProject = (Array.isArray(projects) ? projects : []).find(
+    (p) => p.id === activeProjectId,
+  );
+  const activeProgramme = (Array.isArray(programmes) ? programmes : []).find(
+    (p) => p.id === activeProgrammeId,
+  );
 
   const location = useLocation();
-  const isDashboard = location.pathname === '/' || location.pathname === '/dashboard';
+  const isDashboard =
+    location.pathname === "/" || location.pathname === "/dashboard";
 
   const handleSelectChange = async (value: string) => {
     setContextSwitching(true);
     try {
-      if (value === 'aggregate') {
+      if (value === "aggregate") {
         await loadAggregateData();
-        navigate('/dashboard');
-      } else if (value.startsWith('project:')) {
-        const projectId = value.split(':')[1];
+        navigate("/dashboard");
+      } else if (value.startsWith("project:")) {
+        const projectId = value.split(":")[1];
         await loadProjectData(projectId);
         navigate(`/dashboard?projectId=${projectId}`);
-      } else if (value.startsWith('programme:')) {
-        const programmeId = value.split(':')[1];
+      } else if (value.startsWith("programme:")) {
+        const programmeId = value.split(":")[1];
         await loadProgrammeData(programmeId);
         navigate(`/dashboard?programmeId=${programmeId}`);
       }
@@ -200,7 +250,9 @@ export function Header() {
                 Active context
               </span>
               <span className="truncate text-sm text-slate-900">
-                {activeProject?.name || activeProgramme?.name || 'Portfolio Aggregate'}
+                {activeProject?.name ||
+                  activeProgramme?.name ||
+                  "Portfolio Aggregate"}
               </span>
             </span>
             {isContextSwitching ? (
@@ -210,7 +262,7 @@ export function Header() {
             )}
           </button>
           {showContextDropdown && (
-            <div className="absolute left-0 top-full mt-1.5 z-50 min-w-70 max-h-[60vh] overflow-y-auto rounded-md border border-slate-300 bg-white shadow-lg p-1.5">
+            <div className="absolute left-0 top-full mt-1.5 z-50 min-w-70 max-h-[60vh] rounded-md border border-slate-300 bg-white shadow-lg p-1.5 flex flex-col">
               <div className="px-2 pt-1 pb-1.5 font-mono uppercase tracking-wide text-[10px] font-medium text-slate-400">
                 Switch context
               </div>
@@ -218,13 +270,13 @@ export function Header() {
                 type="button"
                 onClick={() => {
                   setShowContextDropdown(false);
-                  handleSelectChange('aggregate');
+                  handleSelectChange("aggregate");
                 }}
                 className={clsx(
-                  'w-full grid grid-cols-[20px_1fr_14px] items-center gap-2.5 px-2 py-2 rounded text-left transition-colors',
+                  "w-full grid grid-cols-[20px_1fr_14px] items-center gap-2.5 px-2 py-2 rounded text-left transition-colors",
                   !activeProjectId && !activeProgrammeId
-                    ? 'bg-indigo-50'
-                    : 'hover:bg-slate-50',
+                    ? "bg-indigo-50"
+                    : "hover:bg-slate-50",
                 )}
               >
                 <span className="inline-flex w-5 h-5 items-center justify-center rounded bg-indigo-50 text-indigo-600">
@@ -244,75 +296,125 @@ export function Header() {
                   <span />
                 )}
               </button>
-              {(Array.isArray(programmes) ? programmes : []).length > 0 && (
+
+              {/* Programmes Section */}
+              {(Array.isArray(programmes) ? programmes : []).length > 0 ? (
                 <>
                   <div className="px-2 pt-2 pb-1 font-mono uppercase tracking-wide text-[10px] font-medium text-slate-400">
                     Programmes
                   </div>
-                  {(Array.isArray(programmes) ? programmes : []).map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => {
-                        setShowContextDropdown(false);
-                        handleSelectChange(`programme:${p.id}`);
-                      }}
-                      className={clsx(
-                        'w-full grid grid-cols-[20px_1fr_14px] items-center gap-2.5 px-2 py-2 rounded text-left transition-colors',
-                        activeProgrammeId === p.id
-                          ? 'bg-indigo-50'
-                          : 'hover:bg-slate-50',
-                      )}
-                    >
-                      <span className="inline-flex w-5 h-5 items-center justify-center rounded bg-indigo-50 text-indigo-600">
-                        <FolderKanban className="w-3 h-3" />
-                      </span>
-                      <span className="block text-sm font-medium text-slate-900 truncate">
-                        {p.name}
-                      </span>
-                      {activeProgrammeId === p.id ? (
-                        <Check className="w-3.5 h-3.5 text-indigo-600" />
-                      ) : (
-                        <span />
-                      )}
-                    </button>
-                  ))}
+                  <div
+                    className={clsx(
+                      "flex flex-col",
+                      (Array.isArray(programmes) ? programmes : []).length >
+                        3 && "max-h-[calc(3*36px)] overflow-y-auto",
+                    )}
+                  >
+                    {(Array.isArray(programmes) ? programmes : []).map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => {
+                          setShowContextDropdown(false);
+                          handleSelectChange(`programme:${p.id}`);
+                        }}
+                        className={clsx(
+                          "w-full grid grid-cols-[20px_1fr_14px] items-center gap-2.5 px-2 py-2 rounded text-left transition-colors",
+                          activeProgrammeId === p.id
+                            ? "bg-indigo-50"
+                            : "hover:bg-slate-50",
+                        )}
+                      >
+                        <span className="inline-flex w-5 h-5 items-center justify-center rounded bg-indigo-50 text-indigo-600">
+                          <FolderKanban className="w-3 h-3" />
+                        </span>
+                        <TableTooltip
+                          content={p.name}
+                          variant="cell"
+                          align="start"
+                        >
+                          <span className="block text-sm font-medium text-slate-900 truncate">
+                            {p.name}
+                          </span>
+                        </TableTooltip>
+                        {activeProgrammeId === p.id ? (
+                          <Check className="w-3.5 h-3.5 text-indigo-600" />
+                        ) : (
+                          <span />
+                        )}
+                      </button>
+                    ))}
+                  </div>
                 </>
+              ) : (
+                <div className="px-3 py-3 text-center">
+                  <p className="text-xs text-slate-500 font-medium">
+                    No programmes yet
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Create a programme to get started
+                  </p>
+                </div>
               )}
-              {(Array.isArray(projects) ? projects : []).length > 0 && (
+
+              {/* Projects Section */}
+              {(Array.isArray(projects) ? projects : []).length > 0 ? (
                 <>
                   <div className="px-2 pt-2 pb-1 font-mono uppercase tracking-wide text-[10px] font-medium text-slate-400">
                     Projects
                   </div>
-                  {(Array.isArray(projects) ? projects : []).map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => {
-                        setShowContextDropdown(false);
-                        handleSelectChange(`project:${p.id}`);
-                      }}
-                      className={clsx(
-                        'w-full grid grid-cols-[20px_1fr_14px] items-center gap-2.5 px-2 py-2 rounded text-left transition-colors',
-                        activeProjectId === p.id
-                          ? 'bg-indigo-50'
-                          : 'hover:bg-slate-50',
-                      )}
-                    >
-                      <span className="inline-flex w-5 h-5 items-center justify-center rounded bg-indigo-50 text-indigo-600">
-                        <LayoutDashboard className="w-3 h-3" />
-                      </span>
-                      <span className="block text-sm font-medium text-slate-900 truncate">
-                        {p.name}
-                      </span>
-                      {activeProjectId === p.id ? (
-                        <Check className="w-3.5 h-3.5 text-indigo-600" />
-                      ) : (
-                        <span />
-                      )}
-                    </button>
-                  ))}
+                  <div
+                    className={clsx(
+                      "flex flex-col",
+                      (Array.isArray(projects) ? projects : []).length > 3 &&
+                        "max-h-[calc(3*36px)] overflow-y-auto",
+                    )}
+                  >
+                    {(Array.isArray(projects) ? projects : []).map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => {
+                          setShowContextDropdown(false);
+                          handleSelectChange(`project:${p.id}`);
+                        }}
+                        className={clsx(
+                          "w-full grid grid-cols-[20px_1fr_14px] items-center gap-2.5 px-2 py-2 rounded text-left transition-colors",
+                          activeProjectId === p.id
+                            ? "bg-indigo-50"
+                            : "hover:bg-slate-50",
+                        )}
+                      >
+                        <span className="inline-flex w-5 h-5 items-center justify-center rounded bg-indigo-50 text-indigo-600">
+                          <LayoutDashboard className="w-3 h-3" />
+                        </span>
+                        <TableTooltip
+                          content={p.name}
+                          variant="cell"
+                          align="start"
+                        >
+                          <span className="block text-sm font-medium text-slate-900 truncate">
+                            {p.name}
+                          </span>
+                        </TableTooltip>
+                        {activeProjectId === p.id ? (
+                          <Check className="w-3.5 h-3.5 text-indigo-600" />
+                        ) : (
+                          <span />
+                        )}
+                      </button>
+                    ))}
+                  </div>
                 </>
+              ) : (
+                <div className="px-3 py-3 text-center">
+                  <p className="text-xs text-slate-500 font-medium">
+                    No projects yet
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Create a project to get started
+                  </p>
+                </div>
               )}
             </div>
           )}
@@ -325,7 +427,7 @@ export function Header() {
               onClick={() => {
                 setActiveProgramme(null);
                 setActiveProject(null);
-                navigate('/programmes/new');
+                navigate("/programmes/new");
               }}
               className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border border-slate-200 bg-white text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
               title="Initiate New Programme"
@@ -339,7 +441,7 @@ export function Header() {
               onClick={() => {
                 setActiveProject(null);
                 setActiveProgramme(null);
-                navigate('/project/initiation');
+                navigate("/project/initiation");
               }}
               className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-indigo-600 hover:bg-indigo-500 text-xs font-medium text-white transition-colors"
               title="Initiate New Project"
@@ -351,15 +453,13 @@ export function Header() {
         </div>
       </div>
 
-
-
       {/* ⌘K command palette trigger + Since-last-visit badge */}
       <div className="hidden md:flex items-center gap-2 shrink-0">
         <SinceLastVisitBadge />
         <button
           type="button"
           onClick={() =>
-            window.dispatchEvent(new CustomEvent('cg:open-command-palette'))
+            window.dispatchEvent(new CustomEvent("cg:open-command-palette"))
           }
           className="hidden lg:inline-flex items-center gap-2 h-8 px-2.5 rounded-md border border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors text-xs"
           aria-label="Open command palette"
@@ -368,24 +468,35 @@ export function Header() {
           <Search className="w-3.5 h-3.5" />
           <span className="text-slate-400">Search…</span>
           <span className="ml-2 inline-flex items-center gap-0.5">
-            <kbd className="font-mono text-[10px] px-1.5 py-0.5 rounded border border-slate-200 bg-white text-slate-500">⌘</kbd>
-            <kbd className="font-mono text-[10px] px-1.5 py-0.5 rounded border border-slate-200 bg-white text-slate-500">K</kbd>
+            <kbd className="font-mono text-[10px] px-1.5 py-0.5 rounded border border-slate-200 bg-white text-slate-500">
+              ⌘
+            </kbd>
+            <kbd className="font-mono text-[10px] px-1.5 py-0.5 rounded border border-slate-200 bg-white text-slate-500">
+              K
+            </kbd>
           </span>
         </button>
       </div>
 
       {/* Notifications */}
-      <div className="relative flex items-center gap-3 shrink-0" ref={notificationDropdownRef}>
+      <div
+        className="relative flex items-center gap-3 shrink-0"
+        ref={notificationDropdownRef}
+      >
         <button
           onClick={() => setShowNotificationDropdown(!showNotificationDropdown)}
           className="p-2 rounded-lg hover:bg-slate-50 relative text-slate-500 hover:text-indigo-600 transition-all"
         >
-          {(Array.isArray(notifications) ? notifications : []).some(n => n.status === 'Unread') ? (
+          {(Array.isArray(notifications) ? notifications : []).some(
+            (n) => n.status === "Unread",
+          ) ? (
             <BellDot className="w-5 h-5 text-indigo-500" />
           ) : (
             <Bell className="w-5 h-5" />
           )}
-          {(Array.isArray(notifications) ? notifications : []).filter(n => n.status === 'Unread').length > 0 && (
+          {(Array.isArray(notifications) ? notifications : []).filter(
+            (n) => n.status === "Unread",
+          ).length > 0 && (
             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-white" />
           )}
         </button>
@@ -393,8 +504,10 @@ export function Header() {
         {showNotificationDropdown && (
           <div className="absolute right-0 top-10 mt-2 w-80 bg-white rounded-lg shadow-xl border border-slate-200 z-50 overflow-hidden">
             <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-              <span className="text-sm font-semibold text-slate-800">Notifications</span>
-              <button 
+              <span className="text-sm font-semibold text-slate-800">
+                Notifications
+              </span>
+              <button
                 onClick={() => clearNotifications()}
                 className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 uppercase tracking-wider"
               >
@@ -403,40 +516,54 @@ export function Header() {
             </div>
 
             <div className="max-h-96 overflow-y-auto">
-              {(Array.isArray(notifications) ? notifications : []).length === 0 ? (
+              {(Array.isArray(notifications) ? notifications : []).length ===
+              0 ? (
                 <div className="px-4 py-8 text-center">
                   <Bell className="w-8 h-8 text-slate-200 mx-auto mb-2" />
                   <p className="text-sm text-slate-500">No notifications yet</p>
                 </div>
               ) : (
-                (Array.isArray(notifications) ? notifications : []).map(notification => (
-                  <div 
-                    key={notification.id}
-                    className={`px-4 py-3 border-b border-slate-50 last:border-b-0 hover:bg-slate-50 transition-colors flex gap-3 ${notification.status === 'Unread' ? 'bg-indigo-50/30' : ''}`}
-                  >
-                    <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${notification.status === 'Unread' ? 'bg-indigo-500' : 'bg-transparent'}`} />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className={`text-sm font-medium ${notification.status === 'Unread' ? 'text-slate-900' : 'text-slate-600'}`}>
-                          {notification.title}
+                (Array.isArray(notifications) ? notifications : []).map(
+                  (notification) => (
+                    <div
+                      key={notification.id}
+                      className={`px-4 py-3 border-b border-slate-50 last:border-b-0 hover:bg-slate-50 transition-colors flex gap-3 ${notification.status === "Unread" ? "bg-indigo-50/30" : ""}`}
+                    >
+                      <div
+                        className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${notification.status === "Unread" ? "bg-indigo-500" : "bg-transparent"}`}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <p
+                            className={`text-sm font-medium ${notification.status === "Unread" ? "text-slate-900" : "text-slate-600"}`}
+                          >
+                            {notification.title}
+                          </p>
+                          <span className="text-[10px] text-slate-400 whitespace-nowrap pt-1">
+                            {safeFormatDistanceToNow(
+                              notification.time,
+                              formatDistanceToNow,
+                            )}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">
+                          {notification.message || notification.body}
                         </p>
-                        <span className="text-[10px] text-slate-400 whitespace-nowrap pt-1">
-                          {safeFormatDistanceToNow(notification.time, formatDistanceToNow)}
-                        </span>
+                        {notification.status === "Unread" && (
+                          <button
+                            onClick={() =>
+                              markNotificationAsRead(notification.id)
+                            }
+                            className="mt-2 text-[10px] font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+                          >
+                            <Check className="w-3 h-3" />
+                            Mark as read
+                          </button>
+                        )}
                       </div>
-                      <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{notification.message || notification.body}</p>
-                      {notification.status === 'Unread' && (
-                        <button 
-                          onClick={() => markNotificationAsRead(notification.id)}
-                          className="mt-2 text-[10px] font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
-                        >
-                          <Check className="w-3 h-3" />
-                          Mark as read
-                        </button>
-                      )}
                     </div>
-                  </div>
-                ))
+                  ),
+                )
               )}
             </div>
           </div>
@@ -444,13 +571,20 @@ export function Header() {
       </div>
 
       {/* User menu */}
-      <div className="relative flex items-center gap-3 shrink-0" ref={userDropdownRef}>
+      <div
+        className="relative flex items-center gap-3 shrink-0"
+        ref={userDropdownRef}
+      >
         <button
           onClick={() => setShowUserDropdown(!showUserDropdown)}
           className="w-8 h-8 rounded-full bg-indigo-100 ring-2 ring-transparent hover:ring-indigo-300 text-indigo-700 flex items-center justify-center text-sm font-bold transition-all"
         >
           {user?.photoURL ? (
-            <img src={user.photoURL} alt="Profile" className="w-8 h-8 rounded-full object-cover" />
+            <img
+              src={user.photoURL}
+              alt="Profile"
+              className="w-8 h-8 rounded-full object-cover"
+            />
           ) : (
             initials
           )}
@@ -459,12 +593,17 @@ export function Header() {
         {showUserDropdown && (
           <div className="absolute right-0 top-10 mt-2 w-52 bg-white rounded-lg shadow-xl py-1 border border-slate-200 z-50">
             <div className="px-4 py-3 border-b border-slate-100">
-              <p className="text-sm font-semibold text-slate-800 truncate">{user?.displayName || 'User'}</p>
+              <p className="text-sm font-semibold text-slate-800 truncate">
+                {user?.displayName || "User"}
+              </p>
               <p className="text-xs text-slate-500 truncate">{user?.email}</p>
             </div>
 
             <button
-              onClick={() => { setShowUserDropdown(false); setIsSettingsOpen(true); }}
+              onClick={() => {
+                setShowUserDropdown(false);
+                setIsSettingsOpen(true);
+              }}
               className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition-colors"
             >
               <User className="w-4 h-4" />

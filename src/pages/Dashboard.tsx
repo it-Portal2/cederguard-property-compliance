@@ -41,6 +41,8 @@ import {
   Calendar,
   RefreshCw,
   FileText,
+  Globe,
+  PencilIcon,
 } from "lucide-react";
 import {
   isSuperAdmin,
@@ -65,10 +67,156 @@ import {
 } from "../components/dashboard";
 import { AIInquiryPopup } from "../components/AIInquiryPopup";
 import DynamicTable from "../components/table/DynamicTable";
+import TableTooltip from "../components/table/TableTooltip";
 import { canCreateProgramme as canCreateProgrammeFn } from "../lib/roles";
 import { auth } from "../lib/firebase";
 import { GetStartedModal } from "../components/onboarding/GetStartedModal";
 import { getOnboardingSteps } from "../components/onboarding/onboardingSteps";
+
+function getProjectCardModel(
+  project: any,
+  safeComplianceItems: any[],
+  safeRisks: any[],
+) {
+  const projCompliance = safeComplianceItems.filter(
+    (c) => c.projectId === project.id,
+  );
+  const projComplete = projCompliance.filter(
+    (c) => c.stage === "Live" || c.stage === "Archived",
+  ).length;
+  const projTotal = projCompliance.length;
+  const pct = projTotal > 0 ? Math.round((projComplete / projTotal) * 100) : 0;
+
+  const projRisks = safeRisks.filter((r) => r.projectId === project.id);
+  const openRisks = projRisks.filter((r) => r.status === "Open").length;
+  const criticalCount = projRisks.filter(
+    (r) => (r.grossRating || 0) >= 16,
+  ).length;
+  const exposure = projRisks.reduce(
+    (sum, risk) => sum + Number(risk.residualALE || 0),
+    0,
+  );
+
+  let isRed = false;
+  let isAmber = false;
+  if (criticalCount >= 3 || (projTotal > 0 && pct < 30)) {
+    isRed = true;
+  } else if (criticalCount >= 1 || (projTotal > 0 && pct < 70)) {
+    isAmber = true;
+  }
+
+  const explicitRAG = (project.rag || "").toString().toLowerCase();
+  if (explicitRAG.includes("red")) {
+    isRed = true;
+    isAmber = false;
+  } else if (explicitRAG.includes("amber") || explicitRAG.includes("yellow")) {
+    isRed = false;
+    isAmber = true;
+  }
+
+  const ragBarClass = isRed
+    ? "bg-rose-500"
+    : isAmber
+      ? "bg-amber-500"
+      : "bg-emerald-500";
+
+  const ribaRaw = (project.riba || "").toString();
+  const ribaDigit = ribaRaw.match(/\d/);
+  const ribaShort = ribaDigit ? `S${ribaDigit[0]}` : "—";
+
+  return {
+    pct,
+    openRisks,
+    exposure,
+    ragBarClass,
+    ribaShort,
+  };
+}
+
+function ProjectSummaryCard({
+  project,
+  safeComplianceItems,
+  safeRisks,
+  formatGBP,
+  setActiveProject,
+}: {
+  project: any;
+  safeComplianceItems: any[];
+  safeRisks: any[];
+  formatGBP: (n: number) => string;
+  setActiveProject: (project: any) => void;
+}) {
+  const { pct, openRisks, exposure, ragBarClass, ribaShort } =
+    getProjectCardModel(project, safeComplianceItems, safeRisks);
+
+  return (
+    <Link
+      to="/dashboard"
+      onClick={() => setActiveProject(project.id)}
+      className="bg-white p-3.5 rounded-md border border-slate-200 hover:border-slate-300 transition-colors flex flex-col gap-2.5"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <TableTooltip
+            content={stripMarkdown(project.name)}
+            variant="cell"
+            align="start"
+          >
+            <div className="text-[13px] font-semibold text-slate-900 tracking-tight truncate">
+              {stripMarkdown(project.name)}
+            </div>
+          </TableTooltip>
+          <TableTooltip
+            content={project.type || "Unspecified type"}
+            variant="cell"
+            align="start"
+          >
+            <div className="mt-1 font-mono uppercase tracking-wide text-[10.5px] text-slate-500 truncate">
+              {project.type || "Unspecified type"}
+            </div>
+          </TableTooltip>
+        </div>
+        <span
+          className={clsx(
+            "shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium border",
+            project.status === "Active"
+              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+              : project.status === "Draft"
+                ? "bg-amber-50 text-amber-700 border-amber-200"
+                : "bg-slate-50 text-slate-700 border-slate-200",
+          )}
+        >
+          {project.status || "Draft"}
+        </span>
+      </div>
+
+      <div className="flex-1">
+        <div className="flex items-center justify-between font-mono uppercase tracking-wide text-[10.5px] text-slate-500 mb-1">
+          <span>{ribaShort} · Stage</span>
+          <span className="tabular-nums">{pct}%</span>
+        </div>
+        <div className="h-1 rounded-full bg-slate-100 overflow-hidden">
+          <div
+            className={clsx("h-full rounded-full", ragBarClass)}
+            style={{ width: `${Math.max(0, Math.min(100, pct))}%` }}
+          />
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between text-[11px] text-slate-500">
+        <span>
+          <span className="font-mono tabular-nums text-slate-700">
+            {openRisks}
+          </span>{" "}
+          open risk{openRisks === 1 ? "" : "s"}
+        </span>
+        <span className="font-mono tabular-nums text-slate-700">
+          {formatGBP(exposure)}
+        </span>
+      </div>
+    </Link>
+  );
+}
 
 export function Dashboard() {
   const {
@@ -147,7 +295,10 @@ export function Dashboard() {
       console.error("[Dashboard] onboarding flag save failed", err);
     });
     if (navigateToFirstStep) {
-      const steps = getOnboardingSteps(userRole, canCreateProgrammeFn(userRole));
+      const steps = getOnboardingSteps(
+        userRole,
+        canCreateProgrammeFn(userRole),
+      );
       const first = steps[0];
       if (first?.href) navigate(first.href);
     }
@@ -312,7 +463,7 @@ export function Dashboard() {
     return () => {
       loadVersionRef.current++;
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isInitialized, activeProjectId, activeProgrammeId]);
 
   // Sync URL params to store context
@@ -362,9 +513,17 @@ export function Dashboard() {
     }
   };
 
-
   // Filter projects for PM - show projects owned by the user or projects for their client if they have permissions
   const displayProjects = safeProjects.filter((p) => !p.isArchived);
+  const currentUserIds = [user?.uid, user?.id, user?.email].filter(Boolean);
+  const myCreatedProjects = displayProjects.filter((project: any) => {
+    const createdBy = project.createdBy?.toString();
+    const userId = project.userId?.toString();
+    return currentUserIds.some((id) => id === createdBy || id === userId);
+  });
+  const activeProgrammeProjects = activeProgrammeId
+    ? displayProjects.filter((p) => p.programmeId === activeProgrammeId)
+    : [];
 
   // Filter programmes for PMs based on their assignment
   const displayProgrammes = safeProgrammes.filter((p) => !p.isArchived);
@@ -423,8 +582,12 @@ export function Dashboard() {
   // Progressive rendering: only show section skeletons when data for that section
   // hasn't arrived yet. This mirrors the pattern used by ComplianceDashboard and
   // RiskRegister which render instantly from store data.
-  const isLoadingCompliance = (isLoadingContent || loadingOverview) && contextCompliance.length === 0;
-  const isLoadingRisks = (isLoadingContent || loadingOverview) && contextRisks.length === 0 && contextIssues.length === 0;
+  const isLoadingCompliance =
+    (isLoadingContent || loadingOverview) && contextCompliance.length === 0;
+  const isLoadingRisks =
+    (isLoadingContent || loadingOverview) &&
+    contextRisks.length === 0 &&
+    contextIssues.length === 0;
   // Keep legacy isLoading only for the Portfolio Overview section (aggregate stats)
   const isLoading = loadingOverview;
 
@@ -505,8 +668,14 @@ export function Dashboard() {
     compIsComplete(i.stage),
   );
   const riskSpark = bucketLast7(contextRisks, (r) => r.status === "Open");
-  const criticalSpark = bucketLast7(contextRisks, (r) => (r.grossRating || 0) >= 16);
-  const issueSpark = bucketLast7(contextIssues, (i) => i.status !== "4. Resolved");
+  const criticalSpark = bucketLast7(
+    contextRisks,
+    (r) => (r.grossRating || 0) >= 16,
+  );
+  const issueSpark = bucketLast7(
+    contextIssues,
+    (i) => i.status !== "4. Resolved",
+  );
 
   // Day labels for sparkline tooltips (last 7 days, ending today)
   const sparkLabels = (() => {
@@ -515,7 +684,9 @@ export function Dashboard() {
     for (let i = 6; i >= 0; i--) {
       const d = new Date(today);
       d.setDate(today.getDate() - i);
-      out.push(d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }));
+      out.push(
+        d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }),
+      );
     }
     return out;
   })();
@@ -532,7 +703,10 @@ export function Dashboard() {
 
   // 5×5 risk matrix data: count risks per (likelihood, impact) cell for both
   // gross (pre-mitigation) and residual (post-mitigation) views.
-  const buildMatrix = (lKey: "grossL" | "residualL", iKey: "grossI" | "residualI") => {
+  const buildMatrix = (
+    lKey: "grossL" | "residualL",
+    iKey: "grossI" | "residualI",
+  ) => {
     const cells: Record<string, number> = {};
     contextRisks.forEach((r) => {
       const l = Number((r as any)[lKey] || 0);
@@ -623,7 +797,8 @@ export function Dashboard() {
                 <span className="text-slate-700 font-medium truncate max-w-[420px]">
                   {stripMarkdown(
                     activeProject?.name ||
-                      safeProjects.find((p) => p.id === activeProjectId)?.name ||
+                      safeProjects.find((p) => p.id === activeProjectId)
+                        ?.name ||
                       "Active project",
                   )}
                 </span>
@@ -642,7 +817,9 @@ export function Dashboard() {
                 </span>
               </>
             ) : (
-              <span className="text-slate-700 font-medium">Portfolio dashboard</span>
+              <span className="text-slate-700 font-medium">
+                Portfolio dashboard
+              </span>
             )}
           </nav>
           <h1 className="text-[22px] font-semibold tracking-tight text-slate-900">
@@ -707,7 +884,11 @@ export function Dashboard() {
             Refresh
           </button>
           <Link
-            to={activeProjectId ? "/reporting/project" : "/reporting/programme-report"}
+            to={
+              activeProjectId
+                ? "/reporting/project"
+                : "/reporting/programme-report"
+            }
             className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-indigo-600 hover:bg-indigo-500 text-xs font-medium text-white transition-colors shadow-sm"
           >
             <FileText className="w-3.5 h-3.5" />
@@ -764,7 +945,9 @@ export function Dashboard() {
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-3 mb-5">
               <div>
                 <h2 className="text-lg font-semibold text-slate-900">
-                  {isClientAdmin ? "Portfolio overview" : "My project portfolio"}
+                  {isClientAdmin
+                    ? "Portfolio overview"
+                    : "My project portfolio"}
                 </h2>
                 <p className="text-sm text-slate-500 mt-0.5">
                   {isClientAdmin
@@ -782,60 +965,67 @@ export function Dashboard() {
 
             {loadingOverview ? (
               <div className="mb-5">
-                <SkeletonStatCards count={isClientAdmin ? 5 : 4} />
+                <SkeletonStatCards count={4} />
               </div>
             ) : null}
             <div
               className={clsx(
                 "grid gap-3 mb-5",
-                isClientAdmin
-                  ? "grid-cols-2 lg:grid-cols-5"
-                  : "grid-cols-2 lg:grid-cols-4",
+                "grid-cols-2 lg:grid-cols-4",
                 loadingOverview && "hidden",
               )}
             >
-              <div className="bg-white rounded-lg p-4 border border-slate-200">
-                <div className="font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500">Programmes</div>
-                <div className="mt-1 text-2xl font-semibold text-slate-900 tabular-nums">
-                  <AnimatedCounter value={displayProgrammes.length} />
-                </div>
-              </div>
-              <div className="bg-white rounded-lg p-4 border border-slate-200">
-                <div className="font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500">Projects</div>
-                <div className="mt-1 text-2xl font-semibold text-slate-900 tabular-nums">
-                  <AnimatedCounter value={displayProjects.length} />
-                </div>
-              </div>
-              <div className="bg-white rounded-lg p-4 border border-slate-200">
-                <div className="font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500">Published</div>
-                <div className="mt-1 text-2xl font-semibold text-emerald-600 tabular-nums">
-                  <AnimatedCounter value={displayProjects.filter((p: any) => p.isPublished).length} />
-                </div>
-              </div>
-              <div className="bg-white rounded-lg p-4 border border-slate-200">
-                <div className="font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500">Draft</div>
-                <div className="mt-1 text-2xl font-semibold text-amber-600 tabular-nums">
-                  <AnimatedCounter value={displayProjects.filter((p: any) => !p.isPublished).length} />
-                </div>
-              </div>
-              {isClientAdmin && (
-                <Link
-                  to="/setup/workspace"
-                  className="bg-white rounded-lg p-4 border border-slate-200 hover:bg-slate-50/40 transition-colors flex flex-col justify-between"
-                >
-                  <div className="font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500">Workspace</div>
-                  <div className="mt-1 inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600">
-                    <Plus className="w-4 h-4" /> Invite PM
-                  </div>
-                </Link>
-              )}
+              <StatsCard
+                title="Programmes"
+                value={displayProgrammes.length}
+                icon={Briefcase}
+                size="sm"
+                tileClassName="border border-slate-200 bg-indigo-50"
+                iconBgClassName="bg-indigo-100"
+                iconClassName="text-indigo-600"
+                className="!shadow-none"
+              />
+              <StatsCard
+                title="Projects"
+                value={displayProjects.length}
+                icon={FolderKanban}
+                size="sm"
+                tileClassName="border border-slate-200 bg-sky-50"
+                iconBgClassName="bg-sky-100"
+                iconClassName="text-sky-600"
+                className="!shadow-none"
+              />
+              <StatsCard
+                title="Published"
+                value={displayProjects.filter((p: any) => p.isPublished).length}
+                icon={Globe}
+                size="sm"
+                tileClassName="border border-slate-200 bg-emerald-50"
+                iconBgClassName="bg-emerald-100"
+                iconClassName="text-emerald-600"
+                className="!shadow-none"
+              />
+              <StatsCard
+                title="Draft"
+                value={
+                  displayProjects.filter((p: any) => !p.isPublished).length
+                }
+                icon={PencilIcon}
+                size="sm"
+                tileClassName="border border-slate-200 bg-amber-50"
+                iconBgClassName="bg-amber-100"
+                iconClassName="text-amber-600"
+                className="!shadow-none"
+              />
             </div>
 
-            {/* ─── Project portfolio bento — calm cards with progress rings ─── */}
+            {/* ─── All Projects — same card treatment as My Projects ─── */}
             {displayProjects.length > 0 ? (
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-base font-semibold text-slate-900">Projects</h3>
+                  <h3 className="text-base font-semibold text-slate-900">
+                    All Projects
+                  </h3>
                   <Link
                     to="/projects"
                     className="text-sm font-medium text-indigo-600 hover:text-indigo-700 inline-flex items-center gap-1"
@@ -844,107 +1034,31 @@ export function Dashboard() {
                   </Link>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                  {displayProjects.slice(0, 8).map((p: any) => {
-                    // Derive REAL signal per-project from the store, not just static setupProgress
-                    const projCompliance = safeComplianceItems.filter((c) => c.projectId === p.id);
-                    const projComplete = projCompliance.filter((c) => c.stage === "Live" || c.stage === "Archived").length;
-                    const projRisks = safeRisks.filter((r) => r.projectId === p.id);
-                    const projCriticalRisks = projRisks.filter((r) => (r.grossRating || 0) >= 16).length;
-                    const projComplianceTotal = projCompliance.length;
-
-                    // % is real compliance completion (fallback to setupProgress if no items yet)
-                    const pct = projComplianceTotal > 0
-                      ? Math.round((projComplete / projComplianceTotal) * 100)
-                      : (() => {
-                          const v = Number(p.setupProgress ?? p.progress ?? 0);
-                          return isFinite(v) && v >= 0 && v <= 100 ? Math.round(v) : 0;
-                        })();
-
-                    // RAG is computed from real risk + compliance signal, not the stale field
-                    let isRed = false;
-                    let isAmber = false;
-                    if (projCriticalRisks >= 3 || (projComplianceTotal > 0 && pct < 30)) isRed = true;
-                    else if (projCriticalRisks >= 1 || (projComplianceTotal > 0 && pct < 70)) isAmber = true;
-                    // Override with explicit field if present (admin set)
-                    const explicitRAG = (p.overallRAG || p.rag || "").toString().toLowerCase();
-                    if (explicitRAG.includes("red")) { isRed = true; isAmber = false; }
-                    else if (explicitRAG.includes("amber") || explicitRAG.includes("yellow")) { isRed = false; isAmber = true; }
-
-                    const ragRail = isRed ? "bg-rose-500" : isAmber ? "bg-amber-500" : "bg-emerald-500";
-                    const ragLabel = isRed ? "Red" : isAmber ? "Amber" : "Green";
-                    const ringColor = pct >= 70 ? "#10b981" : pct >= 40 ? "#f59e0b" : "#94a3b8";
-                    const circumference = 2 * Math.PI * 18;
-                    const offset = circumference - (circumference * pct) / 100;
-
-                    return (
-                      <button
-                        key={p.id}
-                        onClick={() => {
-                          setActiveProject(p.id);
-                          setActiveProgramme(null);
-                          document.querySelector("main")?.scrollTo(0, 0);
-                          if (isClientAdmin && !isViewingAsPM) {
-                            navigate("/dashboard?viewAs=pm");
-                          }
-                        }}
-                        className="group relative text-left bg-white border border-slate-200 rounded-lg p-4 pl-5 hover:bg-slate-50/40 hover:border-slate-300 transition-colors overflow-hidden"
-                      >
-                        {/* RAG side-rail */}
-                        <span className={clsx("absolute left-0 top-0 bottom-0 w-1", ragRail)} />
-                        <div className="flex items-start gap-3">
-                          <div className="relative w-12 h-12 shrink-0">
-                            <svg className="w-12 h-12 -rotate-90" viewBox="0 0 44 44">
-                              <circle cx="22" cy="22" r="18" stroke="#e2e8f0" strokeWidth="3" fill="none" />
-                              <circle
-                                cx="22"
-                                cy="22"
-                                r="18"
-                                stroke={ringColor}
-                                strokeWidth="3"
-                                strokeLinecap="round"
-                                fill="none"
-                                strokeDasharray={circumference}
-                                strokeDashoffset={offset}
-                                className="transition-all duration-700"
-                              />
-                            </svg>
-                            <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-slate-900 tabular-nums">
-                              {pct}%
-                            </span>
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold text-slate-900 truncate">
-                              {stripMarkdown(p.name || "Untitled project")}
-                            </p>
-                            <p className="text-xs text-slate-500 truncate mt-0.5">{p.type || "—"}</p>
-                            <div className="mt-1.5 flex items-center gap-2 text-xs">
-                              <span className={clsx(
-                                "inline-flex items-center gap-1 font-medium",
-                                isRed ? "text-rose-700" : isAmber ? "text-amber-700" : "text-emerald-700",
-                              )}>
-                                <span className={clsx("w-1.5 h-1.5 rounded-full", ragRail)} />
-                                {ragLabel}
-                              </span>
-                              {projCriticalRisks > 0 && (
-                                <>
-                                  <span className="text-slate-300">·</span>
-                                  <span className="text-slate-500 tabular-nums">{projCriticalRisks} critical</span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                          {/* Chevron reveal on hover */}
-                          <ChevronRight className="w-4 h-4 text-slate-300 shrink-0 self-center opacity-0 group-hover:opacity-100 group-hover:text-slate-500 transition-opacity" />
-                        </div>
-                      </button>
-                    );
-                  })}
+                  {displayProjects.map((project: any) => (
+                    <ProjectSummaryCard
+                      key={project.id}
+                      project={project}
+                      safeComplianceItems={safeComplianceItems}
+                      safeRisks={safeRisks}
+                      formatGBP={formatGBP}
+                      setActiveProject={(projectId) => {
+                        setActiveProject(projectId);
+                        setActiveProgramme(null);
+                        document.querySelector("main")?.scrollTo(0, 0);
+                        if (isClientAdmin && !isViewingAsPM) {
+                          navigate("/dashboard?viewAs=pm");
+                        }
+                      }}
+                    />
+                  ))}
                 </div>
               </div>
             ) : (
               <div className="bg-slate-50 rounded-lg p-8 text-center border border-dashed border-slate-200">
                 <FolderKanban className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                <p className="text-sm text-slate-500">No active projects yet.</p>
+                <p className="text-sm text-slate-500">
+                  No active projects yet.
+                </p>
               </div>
             )}
           </div>
@@ -969,9 +1083,12 @@ export function Dashboard() {
                   <Plus className="w-4 h-4" strokeWidth={3} />
                 </span>
               </div>
-              <h2 className="text-lg font-semibold text-slate-900">No projects yet</h2>
+              <h2 className="text-lg font-semibold text-slate-900">
+                No projects yet
+              </h2>
               <p className="mt-1.5 text-sm text-slate-500 max-w-sm">
-                Use the Project Initiation wizard to set up your first project — onboarding takes about three minutes.
+                Use the Project Initiation wizard to set up your first project —
+                onboarding takes about three minutes.
               </p>
               <button
                 onClick={() => {
@@ -1012,7 +1129,9 @@ export function Dashboard() {
                       Compliance verification required
                     </p>
                     <p className="text-sm text-slate-600 mt-0.5">
-                      {pendingComplianceCount} AI-generated requirement{pendingComplianceCount === 1 ? " is" : "s are"} waiting for your approval.
+                      {pendingComplianceCount} AI-generated requirement
+                      {pendingComplianceCount === 1 ? " is" : "s are"} waiting
+                      for your approval.
                     </p>
                   </div>
                 </div>
@@ -1046,7 +1165,10 @@ export function Dashboard() {
                 suffix={`/ ${compTotal}`}
                 sub={
                   <>
-                    <span className="font-semibold text-slate-700 tabular-nums">{compHighRisk}</span> high-risk · {compNotStarted} pending
+                    <span className="font-semibold text-slate-700 tabular-nums">
+                      {compHighRisk}
+                    </span>{" "}
+                    high-risk · {compNotStarted} pending
                   </>
                 }
                 delta={trendDelta(complianceSpark)}
@@ -1099,7 +1221,11 @@ export function Dashboard() {
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, ease: [0.2, 0.65, 0.3, 0.9], delay: 0.03 }}
+              transition={{
+                duration: 0.4,
+                ease: [0.2, 0.65, 0.3, 0.9],
+                delay: 0.03,
+              }}
             >
               <RiskBurnDown
                 critical={riskHigh}
@@ -1118,7 +1244,11 @@ export function Dashboard() {
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, ease: [0.2, 0.65, 0.3, 0.9], delay: 0.05 }}
+              transition={{
+                duration: 0.4,
+                ease: [0.2, 0.65, 0.3, 0.9],
+                delay: 0.05,
+              }}
             >
               <ComplianceVelocityChart
                 items={contextCompliance}
@@ -1133,15 +1263,23 @@ export function Dashboard() {
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, ease: [0.2, 0.65, 0.3, 0.9], delay: 0.1 }}
+              transition={{
+                duration: 0.4,
+                ease: [0.2, 0.65, 0.3, 0.9],
+                delay: 0.1,
+              }}
               className="grid grid-cols-1 lg:grid-cols-12 gap-4"
             >
               <div className="lg:col-span-5 bg-white rounded-lg border border-slate-200 p-5 flex flex-col">
                 <div className="flex items-start justify-between gap-3 mb-4">
                   <div>
-                    <h3 className="text-base font-semibold text-slate-900">Risk matrix</h3>
+                    <h3 className="text-base font-semibold text-slate-900">
+                      Risk matrix
+                    </h3>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      {matrixView === "gross" ? "Gross" : "Residual"} likelihood × impact across {riskTotal} risk{riskTotal === 1 ? "" : "s"}.
+                      {matrixView === "gross" ? "Gross" : "Residual"} likelihood
+                      × impact across {riskTotal} risk
+                      {riskTotal === 1 ? "" : "s"}.
                     </p>
                   </div>
                   <div className="inline-flex items-center gap-0.5 rounded-md border border-slate-200 bg-slate-50 p-0.5 shrink-0">
@@ -1166,12 +1304,18 @@ export function Dashboard() {
                 {(() => {
                   const rows = [5, 4, 3, 2, 1]; // impact rows top→bottom
                   const cols = [1, 2, 3, 4, 5]; // likelihood cols left→right
-                  const cells = matrixView === "gross" ? grossMatrixCells : residualMatrixCells;
+                  const cells =
+                    matrixView === "gross"
+                      ? grossMatrixCells
+                      : residualMatrixCells;
                   const cellBand = (l: number, i: number) => {
                     const score = l * i;
-                    if (score >= 16) return "bg-rose-100 text-rose-900 border-rose-200";
-                    if (score >= 9)  return "bg-amber-100 text-amber-900 border-amber-200";
-                    if (score >= 4)  return "bg-emerald-50 text-emerald-900 border-emerald-200";
+                    if (score >= 16)
+                      return "bg-rose-100 text-rose-900 border-rose-200";
+                    if (score >= 9)
+                      return "bg-amber-100 text-amber-900 border-amber-200";
+                    if (score >= 4)
+                      return "bg-emerald-50 text-emerald-900 border-emerald-200";
                     return "bg-slate-50 text-slate-700 border-slate-200";
                   };
                   return (
@@ -1185,8 +1329,13 @@ export function Dashboard() {
                         </div>
                         <div className="flex-1">
                           {rows.map((i) => (
-                            <div key={i} className="flex items-center gap-1.5 mb-1.5 last:mb-0">
-                              <span className="w-3 text-xs font-medium text-slate-500 text-right tabular-nums">{i}</span>
+                            <div
+                              key={i}
+                              className="flex items-center gap-1.5 mb-1.5 last:mb-0"
+                            >
+                              <span className="w-3 text-xs font-medium text-slate-500 text-right tabular-nums">
+                                {i}
+                              </span>
                               {cols.map((l) => {
                                 const count = cells[`${l}-${i}`] || 0;
                                 return (
@@ -1209,7 +1358,12 @@ export function Dashboard() {
                           <div className="flex items-center gap-1.5 mt-1">
                             <span className="w-3"></span>
                             {cols.map((l) => (
-                              <span key={l} className="flex-1 text-center text-xs font-medium text-slate-500 tabular-nums">{l}</span>
+                              <span
+                                key={l}
+                                className="flex-1 text-center text-xs font-medium text-slate-500 tabular-nums"
+                              >
+                                {l}
+                              </span>
                             ))}
                           </div>
                           <div className="text-center font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500 mt-1">
@@ -1221,13 +1375,23 @@ export function Dashboard() {
                       <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1.5">
                         {[
                           { c: "bg-slate-100 border-slate-200", l: "Low" },
-                          { c: "bg-emerald-100 border-emerald-200", l: "Moderate" },
+                          {
+                            c: "bg-emerald-100 border-emerald-200",
+                            l: "Moderate",
+                          },
                           { c: "bg-amber-100 border-amber-200", l: "High" },
                           { c: "bg-rose-100 border-rose-200", l: "Critical" },
                         ].map((b) => (
-                          <div key={b.l} className="inline-flex items-center gap-1.5">
-                            <span className={clsx("w-3 h-3 rounded-sm border", b.c)} />
-                            <span className="text-xs text-slate-600">{b.l}</span>
+                          <div
+                            key={b.l}
+                            className="inline-flex items-center gap-1.5"
+                          >
+                            <span
+                              className={clsx("w-3 h-3 rounded-sm border", b.c)}
+                            />
+                            <span className="text-xs text-slate-600">
+                              {b.l}
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -1248,7 +1412,9 @@ export function Dashboard() {
               <div className="lg:col-span-7 bg-white rounded-lg border border-slate-200 p-5 flex flex-col">
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <h3 className="text-base font-semibold text-slate-900">Critical risks</h3>
+                    <h3 className="text-base font-semibold text-slate-900">
+                      Critical risks
+                    </h3>
                     <p className="text-xs text-slate-500 mt-0.5">
                       Top {topRisks.length} by gross rating.
                     </p>
@@ -1263,7 +1429,9 @@ export function Dashboard() {
                 {topRisks.length === 0 ? (
                   <div className="py-8 text-center">
                     <ShieldCheck className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                    <p className="text-sm text-slate-500">No critical risks identified.</p>
+                    <p className="text-sm text-slate-500">
+                      No critical risks identified.
+                    </p>
                   </div>
                 ) : (
                   <ul className="-mx-2">
@@ -1272,7 +1440,8 @@ export function Dashboard() {
                       const l = Number((r as any).grossL || 0);
                       const i = Number((r as any).grossI || 0);
                       const exposure = Number((r as any).residualALE || 0);
-                      const cat = (r as any).category || (r as any).domain || "Risk";
+                      const cat =
+                        (r as any).category || (r as any).domain || "Risk";
                       const maxScore = Math.max(
                         ...topRisks.map((x) => x.grossRating || 0),
                         16,
@@ -1285,7 +1454,10 @@ export function Dashboard() {
                             ? "bg-amber-500"
                             : "bg-sky-500";
                       return (
-                        <li key={r.id} className="border-t border-slate-100 first:border-t-0">
+                        <li
+                          key={r.id}
+                          className="border-t border-slate-100 first:border-t-0"
+                        >
                           <Link
                             to="/risk/register"
                             className="group grid grid-cols-[28px_1fr_80px_44px] items-center gap-3 px-3 py-2.5 rounded-md hover:bg-slate-50 transition-colors"
@@ -1296,29 +1468,50 @@ export function Dashboard() {
                             </span>
                             {/* Title + metadata line */}
                             <div className="min-w-0">
-                              <p className="text-sm font-medium text-slate-900 truncate group-hover:text-slate-900">
-                                {stripMarkdown(r.title || "Untitled risk")}
-                              </p>
-                              <div className="mt-1 flex items-center gap-1.5 font-mono uppercase tracking-wide text-[10.5px] text-slate-500">
-                                <span className="truncate">{cat}</span>
-                                {l > 0 && i > 0 && (
-                                  <>
-                                    <span className="text-slate-300">·</span>
-                                    <span className="tabular-nums shrink-0">L{l}·I{i}</span>
-                                  </>
+                              <TableTooltip
+                                content={stripMarkdown(
+                                  r.title || "Untitled risk",
                                 )}
-                                {exposure > 0 && (
-                                  <>
-                                    <span className="text-slate-300">·</span>
-                                    <span className="tabular-nums shrink-0">{formatGBP(exposure)}</span>
-                                  </>
-                                )}
-                              </div>
+                                variant="cell"
+                                align="start"
+                              >
+                                <div className="space-y-1">
+                                  <p className="text-sm font-medium text-slate-900 truncate group-hover:text-slate-900">
+                                    {stripMarkdown(r.title || "Untitled risk")}
+                                  </p>
+                                  <div className="mt-1 flex items-center gap-1.5 font-mono uppercase tracking-wide text-[10.5px] text-slate-500">
+                                    <span className="truncate">{cat}</span>
+                                    {l > 0 && i > 0 && (
+                                      <>
+                                        <span className="text-slate-300">
+                                          ·
+                                        </span>
+                                        <span className="tabular-nums shrink-0">
+                                          L{l}·I{i}
+                                        </span>
+                                      </>
+                                    )}
+                                    {exposure > 0 && (
+                                      <>
+                                        <span className="text-slate-300">
+                                          ·
+                                        </span>
+                                        <span className="tabular-nums shrink-0">
+                                          {formatGBP(exposure)}
+                                        </span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                              </TableTooltip>
                             </div>
                             {/* Score bar */}
                             <div className="h-1 rounded-full bg-slate-100 overflow-hidden">
                               <div
-                                className={clsx("h-full rounded-full transition-all duration-500", barColor)}
+                                className={clsx(
+                                  "h-full rounded-full transition-all duration-500",
+                                  barColor,
+                                )}
                                 style={{ width: `${barWidth}%` }}
                               />
                             </div>
@@ -1326,7 +1519,9 @@ export function Dashboard() {
                             <span
                               className={clsx(
                                 "font-mono tabular-nums text-sm font-semibold text-right",
-                                score >= 22 ? "text-rose-600" : "text-slate-900",
+                                score >= 22
+                                  ? "text-rose-600"
+                                  : "text-slate-900",
                               )}
                             >
                               {score}
@@ -1348,11 +1543,18 @@ export function Dashboard() {
           {(isComplianceSetup || isRiskSetup) && (
             <div
               className={clsx(
-                "grid gap-4",
-                activeProject ? "grid-cols-1 lg:grid-cols-12" : "grid-cols-1",
+                "grid gap-4 items-stretch",
+                activeProject || activeProgramme
+                  ? "grid-cols-1 lg:grid-cols-12"
+                  : "grid-cols-1",
               )}
             >
-              <div className={clsx(activeProject && "lg:col-span-7")}>
+              <div
+                className={clsx(
+                  (activeProject || activeProgramme) &&
+                    "lg:col-span-7 h-full min-h-0",
+                )}
+              >
                 <ActivityTimeline
                   compliance={contextCompliance}
                   risks={contextRisks}
@@ -1361,11 +1563,56 @@ export function Dashboard() {
                 />
               </div>
               {activeProject && (
-                <div className="lg:col-span-5">
+                <div className="lg:col-span-5 h-full min-h-0">
                   <RibaTimeline
                     currentRiba={activeProject.riba}
                     milestones={activeProject.milestones || []}
                   />
+                </div>
+              )}
+              {activeProgramme && !activeProject && (
+                <div className="lg:col-span-5 h-full min-h-0">
+                  <div className="bg-white rounded-lg border border-slate-200 p-5 h-full min-h-0 flex flex-col">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h3 className="text-base font-semibold text-slate-900">
+                          Programme projects
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Projects linked to this programme.
+                        </p>
+                      </div>
+                      <span className="font-mono text-[11px] text-slate-500 tabular-nums">
+                        {activeProgrammeProjects.length}
+                      </span>
+                    </div>
+
+                    {activeProgrammeProjects.length > 0 ? (
+                      <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+                        <div className="grid grid-cols-1 gap-3">
+                          {activeProgrammeProjects.map((project: any) => (
+                            <ProjectSummaryCard
+                              key={project.id}
+                              project={project}
+                              safeComplianceItems={safeComplianceItems}
+                              safeRisks={safeRisks}
+                              formatGBP={formatGBP}
+                              setActiveProject={setActiveProject}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="min-h-[220px] flex-1 rounded-lg border border-dashed border-slate-200 bg-slate-50 flex items-center justify-center text-center px-6">
+                        <div>
+                          <FolderKanban className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                          <p className="text-sm text-slate-500">
+                            No projects linked to this programme yet.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -1439,7 +1686,8 @@ export function Dashboard() {
                           ) : (
                             <>just now</>
                           )}
-                          {typeof strategicInsights.healthScore === "number" && (
+                          {typeof strategicInsights.healthScore ===
+                            "number" && (
                             <>
                               {" "}
                               · synthesising{" "}
@@ -1500,7 +1748,10 @@ export function Dashboard() {
               <div className="p-6">
                 {aiError && (
                   <div className="mb-6">
-                    <AIErrorAlert error={aiError} onRetry={handleGenerateInsights} />
+                    <AIErrorAlert
+                      error={aiError}
+                      onRetry={handleGenerateInsights}
+                    />
                   </div>
                 )}
 
@@ -1514,11 +1765,21 @@ export function Dashboard() {
                         <ScanSearch className="w-7 h-7 text-indigo-600" />
                       </span>
                     </div>
-                    <h4 className="text-sm font-semibold text-slate-900">Generate executive insight</h4>
+                    <h4 className="text-sm font-semibold text-slate-900">
+                      Generate executive insight
+                    </h4>
                     <p className="mt-1 text-sm text-slate-600 max-w-sm leading-relaxed">
-                      Analyse cross-functional compliance, risk, and issue data to surface critical blindspots, strategic priorities, and recommended actions.
+                      Analyse cross-functional compliance, risk, and issue data
+                      to surface critical blindspots, strategic priorities, and
+                      recommended actions.
                     </p>
-                    <p className="mt-3 text-xs text-slate-400">Use the <span className="font-medium text-slate-500">Generate AI insight</span> button above to start.</p>
+                    <p className="mt-3 text-xs text-slate-400">
+                      Use the{" "}
+                      <span className="font-medium text-slate-500">
+                        Generate AI insight
+                      </span>{" "}
+                      button above to start.
+                    </p>
                   </div>
                 ) : strategicInsights && !aiError ? (
                   <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -1569,65 +1830,88 @@ export function Dashboard() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="space-y-3">
                             <h4 className="font-mono uppercase tracking-wide text-[11px] font-medium text-rose-600 flex items-center gap-1.5">
-                              <ShieldAlert className="w-3.5 h-3.5 text-rose-500" /> Critical blindspots
+                              <ShieldAlert className="w-3.5 h-3.5 text-rose-500" />{" "}
+                              Critical blindspots
                             </h4>
                             <ul className="space-y-2">
-                              {strategicInsights.criticalBlindspots?.slice(0, 3).map((s: string, i: number) => (
-                                <li
-                                  key={i}
-                                  className="flex items-start gap-2.5 bg-rose-50 px-3 py-2.5 rounded-md border border-rose-100"
-                                >
-                                  <ShieldAlert className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
-                                  <p className="text-sm text-slate-700 leading-snug">{stripMarkdown(s)}</p>
-                                </li>
-                              ))}
+                              {strategicInsights.criticalBlindspots
+                                ?.slice(0, 3)
+                                .map((s: string, i: number) => (
+                                  <li
+                                    key={i}
+                                    className="flex items-start gap-2.5 bg-rose-50 px-3 py-2.5 rounded-md border border-rose-100"
+                                  >
+                                    <ShieldAlert className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
+                                    <p className="text-sm text-slate-700 leading-snug">
+                                      {stripMarkdown(s)}
+                                    </p>
+                                  </li>
+                                ))}
                             </ul>
                           </div>
                           <div className="space-y-3">
                             <h4 className="font-mono uppercase tracking-wide text-[11px] font-medium text-indigo-600 flex items-center gap-1.5">
-                              <Milestone className="w-3.5 h-3.5 text-indigo-600" /> Strategic priorities
+                              <Milestone className="w-3.5 h-3.5 text-indigo-600" />{" "}
+                              Strategic priorities
                             </h4>
                             <ul className="space-y-2">
-                              {strategicInsights.strategicPriorities?.slice(0, 3).map((s: string, i: number) => (
-                                <li
-                                  key={i}
-                                  className="flex items-start gap-2.5 bg-indigo-50 px-3 py-2.5 rounded-md border border-indigo-100"
-                                >
-                                  <span className="shrink-0 w-5 h-5 rounded-full bg-indigo-600 text-white inline-flex items-center justify-center text-xs font-semibold">
-                                    {i + 1}
-                                  </span>
-                                  <p className="text-sm text-slate-700 leading-snug mt-0.5">{stripMarkdown(s)}</p>
-                                </li>
-                              ))}
+                              {strategicInsights.strategicPriorities
+                                ?.slice(0, 3)
+                                .map((s: string, i: number) => (
+                                  <li
+                                    key={i}
+                                    className="flex items-start gap-2.5 bg-indigo-50 px-3 py-2.5 rounded-md border border-indigo-100"
+                                  >
+                                    <span className="shrink-0 w-5 h-5 rounded-full bg-indigo-600 text-white inline-flex items-center justify-center text-xs font-semibold">
+                                      {i + 1}
+                                    </span>
+                                    <p className="text-sm text-slate-700 leading-snug mt-0.5">
+                                      {stripMarkdown(s)}
+                                    </p>
+                                  </li>
+                                ))}
                             </ul>
                           </div>
                         </div>
 
                         {/* Detailed Suggestions */}
-                        {strategicInsights.detailedSuggestions && strategicInsights.detailedSuggestions.length > 0 && (
-                          <div className="mt-6 pt-6 border-t border-slate-200">
-                            <h4 className="font-mono uppercase tracking-wide text-[11px] font-medium text-emerald-600 flex items-center gap-1.5 mb-3">
-                              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Executive recommendations
-                            </h4>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                              {Array.isArray(strategicInsights.detailedSuggestions) &&
-                                strategicInsights.detailedSuggestions.slice(0, 3).map((rawS: any, i: number) => {
-                                  const s = typeof rawS === "string" ? rawS : rawS?.content || rawS?.text || JSON.stringify(rawS);
-                                  return (
-                                    <div
-                                      key={i}
-                                      className="flex items-start gap-3 bg-slate-50 p-3 rounded-md border border-slate-200"
-                                    >
-                                      <span className="inline-flex w-8 h-8 items-center justify-center rounded-md bg-emerald-50 text-emerald-600 shrink-0">
-                                        <ShieldCheck className="w-4 h-4" />
-                                      </span>
-                                      <p className="text-sm text-slate-700 leading-snug">{stripMarkdown(s)}</p>
-                                    </div>
-                                  );
-                                })}
+                        {strategicInsights.detailedSuggestions &&
+                          strategicInsights.detailedSuggestions.length > 0 && (
+                            <div className="mt-6 pt-6 border-t border-slate-200">
+                              <h4 className="font-mono uppercase tracking-wide text-[11px] font-medium text-emerald-600 flex items-center gap-1.5 mb-3">
+                                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />{" "}
+                                Executive recommendations
+                              </h4>
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                {Array.isArray(
+                                  strategicInsights.detailedSuggestions,
+                                ) &&
+                                  strategicInsights.detailedSuggestions
+                                    .slice(0, 3)
+                                    .map((rawS: any, i: number) => {
+                                      const s =
+                                        typeof rawS === "string"
+                                          ? rawS
+                                          : rawS?.content ||
+                                            rawS?.text ||
+                                            JSON.stringify(rawS);
+                                      return (
+                                        <div
+                                          key={i}
+                                          className="flex items-start gap-3 bg-slate-50 p-3 rounded-md border border-slate-200"
+                                        >
+                                          <span className="inline-flex w-8 h-8 items-center justify-center rounded-md bg-emerald-50 text-emerald-600 shrink-0">
+                                            <ShieldCheck className="w-4 h-4" />
+                                          </span>
+                                          <p className="text-sm text-slate-700 leading-snug">
+                                            {stripMarkdown(s)}
+                                          </p>
+                                        </div>
+                                      );
+                                    })}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
                       </div>
 
                       <div className="bg-slate-50 rounded-md p-5 border border-slate-200 flex flex-col items-center justify-center text-center self-start w-full">
@@ -1652,15 +1936,17 @@ export function Dashboard() {
                               fill="transparent"
                               strokeDasharray={263.8}
                               strokeDashoffset={
-                                263.8 - (263.8 * (strategicInsights.healthScore || 0)) / 100
+                                263.8 -
+                                (263.8 * (strategicInsights.healthScore || 0)) /
+                                  100
                               }
                               className={clsx(
                                 "transition-all duration-700 ease-out",
                                 strategicInsights.healthScore > 70
                                   ? "text-emerald-500"
                                   : strategicInsights.healthScore > 40
-                                  ? "text-amber-500"
-                                  : "text-rose-500",
+                                    ? "text-amber-500"
+                                    : "text-rose-500",
                               )}
                             />
                           </svg>
@@ -1690,14 +1976,21 @@ export function Dashboard() {
           )}
 
           {/* Portfolio Overview Section for PMs */}
-          {!activeProjectId && isProjectManager && (
+          {!activeProjectId && !activeProgrammeId && isProjectManager && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <FolderKanban className="w-5 h-5 text-indigo-600" />
-                  <h2 className="text-lg font-semibold text-slate-800">
-                    My Projects
-                  </h2>
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-md bg-indigo-50 text-indigo-600">
+                    <FolderKanban className="w-4 h-4" />
+                  </span>
+                  <div>
+                    <h2 className="text-base font-semibold text-slate-900 leading-5">
+                      My Projects
+                    </h2>
+                    <p className="text-sm text-slate-500 mt-1 leading-5">
+                      Projects created by you in this workspace.
+                    </p>
+                  </div>
                 </div>
                 {!isClientAdmin && (
                   <button
@@ -1714,142 +2007,29 @@ export function Dashboard() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {displayProjects.length > 0 ? (
-                  displayProjects.slice(0, 8).map((project: any) => {
-                    // ── Real-data derivations per project (no static fallbacks) ──
-                    const projCompliance = safeComplianceItems.filter(
-                      (c) => c.projectId === project.id,
-                    );
-                    const projComplete = projCompliance.filter(
-                      (c) => c.stage === "Live" || c.stage === "Archived",
-                    ).length;
-                    const projTotal = projCompliance.length;
-                    const pct =
-                      projTotal > 0
-                        ? Math.round((projComplete / projTotal) * 100)
-                        : 0;
-
-                    const projRisks = safeRisks.filter(
-                      (r) => r.projectId === project.id,
-                    );
-                    const openRisks = projRisks.filter(
-                      (r) => r.status === "Open",
-                    ).length;
-                    const criticalCount = projRisks.filter(
-                      (r) => (r.grossRating || 0) >= 16,
-                    ).length;
-                    const exposure = projRisks.reduce(
-                      (s, r) => s + Number(r.residualALE || 0),
-                      0,
-                    );
-
-                    // RAG derived from real signals; project.rag respected if set.
-                    let isRed = false;
-                    let isAmber = false;
-                    if (criticalCount >= 3 || (projTotal > 0 && pct < 30)) {
-                      isRed = true;
-                    } else if (
-                      criticalCount >= 1 ||
-                      (projTotal > 0 && pct < 70)
-                    ) {
-                      isAmber = true;
-                    }
-                    const explicitRAG = (project.rag || "")
-                      .toString()
-                      .toLowerCase();
-                    if (explicitRAG.includes("red")) {
-                      isRed = true;
-                      isAmber = false;
-                    } else if (
-                      explicitRAG.includes("amber") ||
-                      explicitRAG.includes("yellow")
-                    ) {
-                      isRed = false;
-                      isAmber = true;
-                    }
-                    const ragBarClass = isRed
-                      ? "bg-rose-500"
-                      : isAmber
-                        ? "bg-amber-500"
-                        : "bg-emerald-500";
-
-                    // RIBA short code from the stored project.riba string
-                    // (handles "S2", "Stage 2", "Stage 2 — Concept Design").
-                    const ribaRaw = (project.riba || "").toString();
-                    const ribaDigit = ribaRaw.match(/\d/);
-                    const ribaShort = ribaDigit ? `S${ribaDigit[0]}` : "—";
-
+                {myCreatedProjects.length > 0 ? (
+                  myCreatedProjects.slice(0, 8).map((project: any) => {
                     return (
-                      <Link
+                      <ProjectSummaryCard
                         key={project.id}
-                        to="/dashboard"
-                        onClick={() => setActiveProject(project.id)}
-                        className="bg-white p-3.5 rounded-md border border-slate-200 hover:border-slate-300 transition-colors flex flex-col gap-2.5"
-                        title={stripMarkdown(project.name)}
-                      >
-                        {/* Header row — name + type / status chip */}
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <div className="text-[13px] font-semibold text-slate-900 tracking-tight truncate">
-                              {stripMarkdown(project.name)}
-                            </div>
-                            <div className="mt-1 font-mono uppercase tracking-wide text-[10.5px] text-slate-500 truncate">
-                              {project.type || "Unspecified type"}
-                            </div>
-                          </div>
-                          <span
-                            className={clsx(
-                              "shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium border",
-                              project.status === "Active"
-                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                : project.status === "Draft"
-                                  ? "bg-amber-50 text-amber-700 border-amber-200"
-                                  : "bg-slate-50 text-slate-700 border-slate-200",
-                            )}
-                          >
-                            {project.status || "Draft"}
-                          </span>
-                        </div>
-
-                        {/* Progress row — RIBA·Stage + pct + coloured bar */}
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between font-mono uppercase tracking-wide text-[10.5px] text-slate-500 mb-1">
-                            <span>{ribaShort} · Stage</span>
-                            <span className="tabular-nums">{pct}%</span>
-                          </div>
-                          <div className="h-1 rounded-full bg-slate-100 overflow-hidden">
-                            <div
-                              className={clsx("h-full rounded-full", ragBarClass)}
-                              style={{ width: `${Math.max(0, Math.min(100, pct))}%` }}
-                            />
-                          </div>
-                        </div>
-
-                        {/* Footer row — open risks + £ exposure */}
-                        <div className="flex items-center justify-between text-[11px] text-slate-500">
-                          <span>
-                            <span className="font-mono tabular-nums text-slate-700">
-                              {openRisks}
-                            </span>{" "}
-                            open risk{openRisks === 1 ? "" : "s"}
-                          </span>
-                          <span className="font-mono tabular-nums text-slate-700">
-                            {formatGBP(exposure)}
-                          </span>
-                        </div>
-                      </Link>
+                        project={project}
+                        safeComplianceItems={safeComplianceItems}
+                        safeRisks={safeRisks}
+                        formatGBP={formatGBP}
+                        setActiveProject={setActiveProject}
+                      />
                     );
                   })
                 ) : (
                   <div className="col-span-full py-8 text-center bg-slate-50 rounded-lg border border-dashed border-slate-200">
                     <p className="text-sm text-slate-400 font-medium">
-                      No projects found. Use Project Initiation to create one.
+                      No projects created by you yet.
                     </p>
                   </div>
                 )}
               </div>
 
-              {displayProjects.length > 8 && (
+              {myCreatedProjects.length > 8 && (
                 <div className="flex justify-center mt-2">
                   <Link
                     to="/projects"
@@ -1859,12 +2039,8 @@ export function Dashboard() {
                   </Link>
                 </div>
               )}
-
             </div>
           )}
-
-
-
 
           {/* ─── Setup CTAs (only when compliance / risk not yet set up) ─── */}
           {(!isComplianceSetup || !isRiskSetup) && (
@@ -1879,11 +2055,17 @@ export function Dashboard() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold text-slate-900">Compliance setup pending</p>
-                      <span className="inline-flex items-center px-1.5 h-5 rounded-md text-xs font-medium bg-amber-50 text-amber-700 ring-1 ring-amber-100">Action needed</span>
+                      <p className="text-sm font-semibold text-slate-900">
+                        Compliance setup pending
+                      </p>
+                      <span className="inline-flex items-center px-1.5 h-5 rounded-md text-xs font-medium bg-amber-50 text-amber-700 ring-1 ring-amber-100">
+                        Action needed
+                      </span>
                     </div>
                     <p className="text-xs text-slate-500 mt-1">
-                      Run the AI requirement analysis to start tracking compliance for this {activeProgrammeId ? "programme" : "project"}.
+                      Run the AI requirement analysis to start tracking
+                      compliance for this{" "}
+                      {activeProgrammeId ? "programme" : "project"}.
                     </p>
                   </div>
                   <span className="inline-flex items-center gap-1.5 px-3 h-9 bg-indigo-600 text-white text-sm font-semibold rounded-md group-hover:bg-indigo-700 transition-colors shrink-0">
@@ -1901,11 +2083,16 @@ export function Dashboard() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold text-slate-900">Risk identification pending</p>
-                      <span className="inline-flex items-center px-1.5 h-5 rounded-md text-xs font-medium bg-amber-50 text-amber-700 ring-1 ring-amber-100">Action needed</span>
+                      <p className="text-sm font-semibold text-slate-900">
+                        Risk identification pending
+                      </p>
+                      <span className="inline-flex items-center px-1.5 h-5 rounded-md text-xs font-medium bg-amber-50 text-amber-700 ring-1 ring-amber-100">
+                        Action needed
+                      </span>
                     </div>
                     <p className="text-xs text-slate-500 mt-1">
-                      Launch AI risk discovery to populate the matrix and critical risks list.
+                      Launch AI risk discovery to populate the matrix and
+                      critical risks list.
                     </p>
                   </div>
                   <span className="inline-flex items-center gap-1.5 px-3 h-9 bg-indigo-600 text-white text-sm font-semibold rounded-md group-hover:bg-indigo-700 transition-colors shrink-0">
@@ -1915,7 +2102,6 @@ export function Dashboard() {
               )}
             </div>
           )}
-
         </div>
       )}
 
@@ -1935,7 +2121,8 @@ export function Dashboard() {
             Regulations active for the construction programme
           </p>
           <p className="text-xs text-slate-600 mt-1">
-            Building Safety Act 2022 · SHDF Wave 2 · Asbestos (CAR 2024) · and more
+            Building Safety Act 2022 · SHDF Wave 2 · Asbestos (CAR 2024) · and
+            more
           </p>
         </div>
         <Link
@@ -2009,14 +2196,23 @@ function KpiCard({
     <motion.div
       variants={{
         hidden: { opacity: 0, y: 8 },
-        show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.2, 0.65, 0.3, 0.9] } },
+        show: {
+          opacity: 1,
+          y: 0,
+          transition: { duration: 0.35, ease: [0.2, 0.65, 0.3, 0.9] },
+        },
       }}
       className="bg-white rounded-lg border border-slate-200 p-4 flex flex-col gap-3 transition-colors hover:bg-slate-50/40"
     >
       {/* Eyebrow row — icon + mono title on left, delta chip on right */}
       <div className="flex items-start justify-between gap-2">
         <div className="inline-flex items-center gap-1.5 font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500">
-          <span className={clsx("inline-flex w-5 h-5 items-center justify-center rounded", ICON_TONES[iconTone])}>
+          <span
+            className={clsx(
+              "inline-flex w-5 h-5 items-center justify-center rounded",
+              ICON_TONES[iconTone],
+            )}
+          >
             {icon}
           </span>
           <span className="truncate">{title}</span>
@@ -2045,13 +2241,22 @@ function KpiCard({
           format={format}
           className="text-3xl font-medium text-slate-900 leading-none tracking-tight tabular-nums"
         />
-        {suffix && <span className="text-sm font-medium text-slate-500 tabular-nums">{suffix}</span>}
+        {suffix && (
+          <span className="text-sm font-medium text-slate-500 tabular-nums">
+            {suffix}
+          </span>
+        )}
       </div>
       {/* Sub line */}
       {sub && <p className="text-xs text-slate-500">{sub}</p>}
       {/* Sparkline */}
       <div className="mt-auto">
-        <MiniSparkline data={sparkData} color={sparkColor} labels={sparkLabels} height={38} />
+        <MiniSparkline
+          data={sparkData}
+          color={sparkColor}
+          labels={sparkLabels}
+          height={38}
+        />
       </div>
     </motion.div>
   );
