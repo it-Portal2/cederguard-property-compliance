@@ -1,5 +1,6 @@
 import { AlertTriangle, ArrowRight } from 'lucide-react';
 import { clsx } from 'clsx';
+import { getGrossScore, getResidualALE, SEVERE_SCORE_THRESHOLD } from '../../lib/riskMetrics';
 
 type RiskLike = {
   grossRating?: number;
@@ -18,15 +19,10 @@ type Props = {
 export function RiskCallout({ risks, className, onGenerate }: Props) {
   if (!Array.isArray(risks) || risks.length === 0) return null;
 
-  const exposureOf = (r: RiskLike) => Number(r.residualALE || 0);
-  const scoreOf = (r: RiskLike) => {
-    if (typeof r.grossRating === 'number' && r.grossRating > 0) return r.grossRating;
-    const l = Number(r.grossL || 0);
-    const i = Number(r.grossI || 0);
-    return l * i;
-  };
+  const exposureOf = (r: RiskLike) => getResidualALE(r);
+  const scoreOf = (r: RiskLike) => getGrossScore(r);
 
-  const critical = risks.filter((r) => scoreOf(r) >= 16);
+  const critical = risks.filter((r) => scoreOf(r) >= SEVERE_SCORE_THRESHOLD);
   const totalExp = risks.reduce((s, r) => s + exposureOf(r), 0);
   const criticalExp = critical.reduce((s, r) => s + exposureOf(r), 0);
   const top3 = [...risks].sort((a, b) => scoreOf(b) - scoreOf(a)).slice(0, 3);

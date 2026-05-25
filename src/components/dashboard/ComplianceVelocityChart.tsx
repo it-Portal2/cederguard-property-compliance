@@ -13,11 +13,12 @@ import { clsx } from 'clsx';
 
 type ComplianceItem = {
   status?: string;
+  stage?: string;
   dateAdded?: string | number | Date;
   [k: string]: any;
 };
 
-type Range = 7 | 30 | 90;
+type Range = number; // Window in days. Pills set 7/30/90; custom picker can set any positive integer.
 
 type Props = {
   items: ComplianceItem[];
@@ -65,10 +66,10 @@ function bucketByDay(items: ComplianceItem[], days: number) {
       (d.getTime() - startMs.getTime()) / (1000 * 60 * 60 * 24),
     );
     if (idx < 0 || idx >= buckets.length) return;
-    const s = String(it.status || '').toLowerCase();
-    if (s.includes('verified') || s.includes('complete') || s.includes('compliant')) {
+    const s = String(it.stage || '').toLowerCase();
+    if (s === 'live' || s === 'archived') {
       buckets[idx].verified += 1;
-    } else if (s.includes('progress') || s.includes('review') || s.includes('open')) {
+    } else if (s === 'in progress') {
       buckets[idx].inProgress += 1;
     } else {
       buckets[idx].pending += 1;

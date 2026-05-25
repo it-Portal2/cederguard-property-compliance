@@ -245,11 +245,11 @@ export function Header() {
             <span className="inline-flex w-5 h-5 items-center justify-center rounded bg-indigo-50 text-indigo-600 shrink-0">
               <LayoutTemplate className="w-3 h-3" />
             </span>
-            <span className="flex flex-col items-start min-w-0 leading-tight max-w-60">
+            <span className="flex flex-col items-start min-w-0 leading-tight max-w-35 sm:max-w-50 md:max-w-60 lg:max-w-70">
               <span className="font-mono uppercase tracking-wide text-[10px] text-slate-500">
                 Active context
               </span>
-              <span className="truncate text-sm text-slate-900">
+              <span className="block w-full truncate text-sm text-slate-900">
                 {activeProject?.name ||
                   activeProgramme?.name ||
                   "Portfolio Aggregate"}

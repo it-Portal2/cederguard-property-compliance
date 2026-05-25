@@ -79,6 +79,17 @@ export const normalizeRisk = (risk: Partial<RiskItem>): Partial<RiskItem> => {
     normalized.residualRating = calculateMatrixScore(rL, rI);
   }
 
+  // Backfill ALE fields for legacy risks that were saved before ALE
+  // computation existed. Uses the same formula as RiskModal at save time.
+  if (!normalized.residualALE && normalized.residualImpact && normalized.residualProb) {
+    const prob = normalized.residualProb > 1 ? normalized.residualProb / 100 : normalized.residualProb;
+    normalized.residualALE = normalized.residualImpact * prob;
+  }
+  if (!normalized.grossALE && normalized.grossImpact && normalized.grossProb) {
+    const prob = normalized.grossProb > 1 ? normalized.grossProb / 100 : normalized.grossProb;
+    normalized.grossALE = normalized.grossImpact * prob;
+  }
+
   // CASE 1: Check if categoryId exists but is actually a name (not a valid ID format)
   if (
     normalized.categoryId &&
@@ -2513,7 +2524,7 @@ export const useStore = create<AppState>((set, get) => {
       impact: "Converted from risk: " + risk.title,
       owner: risk.owner,
       priority: 3,
-      severity: risk.grossL * risk.grossI || 3,
+      severity: risk.grossL > 0 && risk.grossI > 0 ? calculateMatrixScore(risk.grossL, risk.grossI) : 3,
       response: "Resolve",
       status: "1. Investigating",
     };

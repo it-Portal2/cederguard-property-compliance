@@ -4,6 +4,8 @@ import { clsx } from 'clsx';
 import { useStore } from '../store/useStore';
 import { stripMarkdown } from '../lib/utils';
 import { chatWithAI } from '../services/aiService';
+import { calculateMatrixScore } from '../data/riskScoringMatrix';
+import { SEVERE_SCORE_THRESHOLD, getGrossScore } from '../lib/riskMetrics';
 
 interface Message {
   id: string;
@@ -113,7 +115,7 @@ export function AIInquiryPopup({ isOpen: controlledIsOpen, onClose: controlledOn
         total: ctxRisks.length,
         open: ctxRisks.filter((r) => r.status === 'Open').length,
         highSeverity: ctxRisks.filter(
-          (r) => (r.grossRating ?? r.grossL * r.grossI) >= 16
+          (r) => getGrossScore(r) >= SEVERE_SCORE_THRESHOLD
         ).length,
         topOpen: ctxRisks
           .filter((r) => r.status === 'Open')
@@ -122,7 +124,7 @@ export function AIInquiryPopup({ isOpen: controlledIsOpen, onClose: controlledOn
           .map((r) => ({
             title: r.title,
             category: r.category,
-            rating: r.grossRating ?? r.grossL * r.grossI,
+            rating: getGrossScore(r),
             owner: r.owner,
           })),
       },
@@ -142,7 +144,11 @@ export function AIInquiryPopup({ isOpen: controlledIsOpen, onClose: controlledOn
     };
   };
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
+  // Guard against StrictMode double-invocation of the open effect, which
+  // would otherwise fire two identical handleSend() calls for the same
+  // initialQuestion → two assistant replies.
+  const autoSentRef = useRef(false);
+
   const isRiskContext = context ? context.includes('programme_risks') : false;
 
   useEffect(() => {
@@ -154,10 +160,15 @@ export function AIInquiryPopup({ isOpen: controlledIsOpen, onClose: controlledOn
         timestamp: new Date()
       };
       setMessages([welcomeMsg]);
-      
-      if (initialQuestion) {
+
+      if (initialQuestion && !autoSentRef.current) {
+        autoSentRef.current = true;
         handleSend(initialQuestion);
       }
+    }
+    if (!isOpen) {
+      // Reset for the next open cycle
+      autoSentRef.current = false;
     }
   }, [isOpen]);
 

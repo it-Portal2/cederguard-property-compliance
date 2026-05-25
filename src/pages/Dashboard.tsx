@@ -2,10 +2,20 @@ import { getRIBALabel } from "../constants/ribaStages";
 import { useState, useEffect, useRef } from "react";
 import { useStore } from "../store/useStore";
 import { Link, useNavigate, useSearchParams } from "react-router";
+import { differenceInCalendarDays } from "date-fns";
 import { InfoTooltip } from "../components/InfoTooltip";
 import { StatsCard } from "../components/common/StatsCard";
 import { api, ApiError } from "../lib/api";
 import { AIErrorAlert } from "../components/AIErrorAlert";
+import {
+  SEVERE_SCORE_THRESHOLD,
+  MAJOR_SCORE_THRESHOLD,
+  getGrossScore,
+  getResidualScore,
+  getResidualALE,
+  getGrossALE,
+} from "../lib/riskMetrics";
+import { calculateMatrixScore } from "../data/riskScoringMatrix";
 import {
   FolderKanban,
   Loader2,
@@ -55,6 +65,7 @@ import { clsx } from "clsx";
 import { analyzeStrategicInsights } from "../services/aiService";
 import { stripMarkdown, parseAISuggestion } from "../lib/utils";
 import { motion, AnimatePresence } from "motion/react";
+import toast from "react-hot-toast";
 import {
   MiniSparkline,
   AnimatedCounter,
@@ -90,10 +101,10 @@ function getProjectCardModel(
   const projRisks = safeRisks.filter((r) => r.projectId === project.id);
   const openRisks = projRisks.filter((r) => r.status === "Open").length;
   const criticalCount = projRisks.filter(
-    (r) => (r.grossRating || 0) >= 16,
+    (r) => getGrossScore(r) >= SEVERE_SCORE_THRESHOLD,
   ).length;
   const exposure = projRisks.reduce(
-    (sum, risk) => sum + Number(risk.residualALE || 0),
+    (sum, risk) => sum + getResidualALE(risk),
     0,
   );
 
@@ -329,18 +340,87 @@ export function Dashboard() {
 
   // ── Hero header date filter — drives ComplianceVelocityChart's range and
   //    will be the canonical source for any future time-windowed widgets. ──
-  const [dashboardRange, setDashboardRange] = useState<7 | 30 | 90>(30);
+  // Day window. Pills set 7/30/90; custom picker can produce any positive integer.
+  const [dashboardRange, setDashboardRange] = useState<number>(30);
+  const [customFrom, setCustomFrom] = useState<string>("");
+  const [customTo, setCustomTo] = useState<string>("");
+  const [showCustomPicker, setShowCustomPicker] = useState(false);
+  const customPickerRef = useRef<HTMLDivElement>(null);
+
+  // Outside-click + Esc close for the date-range popover
+  useEffect(() => {
+    if (!showCustomPicker) return;
+    const handleClick = (e: MouseEvent) => {
+      if (
+        customPickerRef.current &&
+        !customPickerRef.current.contains(e.target as Node)
+      ) {
+        setShowCustomPicker(false);
+      }
+    };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowCustomPicker(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [showCustomPicker]);
+
+  // Validation: ensure customTo >= customFrom (an invalid range disables Apply)
+  const customRangeInvalid =
+    customFrom !== "" &&
+    customTo !== "" &&
+    new Date(customTo) < new Date(customFrom);
+
+  // When custom range is active, compute the day count.
+  // Boolean coercion prevents the string from leaking into `aria-pressed`
+  // (strict aria types only accept boolean | "true" | "false" | "mixed").
+  const isCustomRange = Boolean(customFrom && customTo);
+  const customRangeDays = isCustomRange
+    ? Math.max(1, differenceInCalendarDays(new Date(customTo), new Date(customFrom)) + 1)
+    : 0;
+  const effectiveRange: number = isCustomRange ? customRangeDays : dashboardRange;
 
   // ── Hero refresh — re-runs the appropriate loader for the active context.
-  //    Uses the same data-fetch paths the page already uses; no new endpoints. ──
+  //    Uses the same data-fetch paths the page already uses; no new endpoints.
+  //    On failure: surfaces a toast with a retry callback. On success: brief
+  //    confirmation toast so the user knows the dashboard was re-fetched. ──
   const [isRefreshing, setIsRefreshing] = useState(false);
   const handleRefresh = async () => {
     if (isRefreshing) return;
     setIsRefreshing(true);
+    const startedAt = Date.now();
     try {
       if (activeProjectId) await loadProjectData(activeProjectId);
       else if (activeProgrammeId) await loadProgrammeData(activeProgrammeId);
       else await loadAggregateData();
+      // Avoid toast flicker when the call returns in < 200ms (cached)
+      if (Date.now() - startedAt > 250) {
+        toast.success("Dashboard refreshed", { duration: 1800 });
+      }
+    } catch (err: any) {
+      console.error("[Dashboard] refresh failed", err);
+      toast.error(
+        (t) => (
+          <span className="inline-flex items-center gap-2">
+            Failed to refresh dashboard.
+            <button
+              type="button"
+              onClick={() => {
+                toast.dismiss(t.id);
+                void handleRefresh();
+              }}
+              className="font-semibold underline underline-offset-2"
+            >
+              Retry
+            </button>
+          </span>
+        ),
+        { duration: 6000 },
+      );
     } finally {
       setIsRefreshing(false);
     }
@@ -565,6 +645,31 @@ export function Dashboard() {
     return displayProjects.some((p) => p.id === r.projectId);
   });
 
+  // ── Risk Outlook context-aware filter ────────────────────────────────────
+  // Mirrors the page-specific risk register a user navigates to from each
+  // context, so the Outlook's projection set matches what they see there.
+  //   · Project view   → all risks for that project (same as contextRisks).
+  //   · Programme view → escalated child-project risks + programme-level
+  //                      risks (matches `ProgrammeRiskRegister` exactly).
+  //   · Portfolio view → all visible risks (same as contextRisks).
+  const outlookRisks = (() => {
+    if (activeProjectId || !activeProgrammeId) return contextRisks;
+    // Programme view: align with ProgrammeRiskRegister's `allProg` set.
+    const programmeProjectIds = new Set(
+      safeProjects
+        .filter((p) => p.programmeId === activeProgrammeId)
+        .map((p) => p.id),
+    );
+    return safeRisks.filter((r) => {
+      const isProgLevel =
+        (!!(r as any).isProgrammeLevel || r.programmeId === activeProgrammeId);
+      if (isProgLevel) return true;
+      const escalatedFromChildProject =
+        !!(r as any).escalated && programmeProjectIds.has(r.projectId || "");
+      return escalatedFromChildProject;
+    });
+  })();
+
   const contextIssues = safeIssues.filter((i) => {
     if (activeProjectId) return i.projectId === activeProjectId;
     if (activeProgrammeId) {
@@ -622,11 +727,11 @@ export function Dashboard() {
   const riskTotal = contextRisks.length;
   const riskOpen = contextRisks.filter((r) => r.status === "Open").length;
   const riskHigh = contextRisks.filter(
-    (r) => (r.grossRating || 0) >= 16,
+    (r) => getGrossScore(r) >= SEVERE_SCORE_THRESHOLD,
   ).length;
   const riskEscalated = contextRisks.filter((r) => r.escalated).length;
   const riskResidualALE = contextRisks.reduce(
-    (s, r) => s + (r.residualALE || 0),
+    (s, r) => s + getResidualALE(r),
     0,
   );
 
@@ -639,49 +744,48 @@ export function Dashboard() {
     (i) => i.status === "2. Escalated",
   ).length;
 
+  // Sort consistently via `getGrossScore` (which falls back through grossRating
+  // → matrix L×I score). Take the top 6 so the list rendered downstream isn't
+  // silently capped at 5 by a redundant `.slice(0, 6)` further down.
   const topRisks = [...contextRisks]
-    .sort((a, b) => (b.grossRating || 0) - (a.grossRating || 0))
-    .slice(0, 5);
+    .sort((a, b) => getGrossScore(b) - getGrossScore(a))
+    .slice(0, 6);
 
-  // ─── Premium dashboard computations (additive — no impact on existing logic) ───
-  // 7-day sparklines: bucket counts per metric by `dateAdded`, ending today.
-  const bucketLast7 = (items: any[], predicate?: (it: any) => boolean) => {
+  // ─── Premium dashboard computations ───
+  // Sparklines: bucket counts per metric by `dateAdded`, ending today.
+  const bucketByRange = (items: any[], days: number, predicate?: (it: any) => boolean) => {
     const today = new Date();
     today.setHours(23, 59, 59, 999);
     const start = new Date(today);
-    start.setDate(today.getDate() - 6);
+    start.setDate(today.getDate() - (days - 1));
     start.setHours(0, 0, 0, 0);
-    const out = Array.from({ length: 7 }, () => 0);
+    const out = Array.from({ length: days }, () => 0);
     items.forEach((it) => {
       if (predicate && !predicate(it)) return;
       const raw = it?.dateAdded;
       if (!raw) return;
       const d = new Date(raw);
       if (isNaN(d.getTime()) || d < start || d > today) return;
-      const idx = Math.floor((d.getTime() - start.getTime()) / 86400000);
-      if (idx >= 0 && idx < 7) out[idx] += 1;
+      const idx = differenceInCalendarDays(d, start);
+      if (idx >= 0 && idx < days) out[idx] += 1;
     });
     return out;
   };
 
-  const complianceSpark = bucketLast7(contextCompliance, (i) =>
+  const complianceSpark = bucketByRange(contextCompliance, effectiveRange, (i) =>
     compIsComplete(i.stage),
   );
-  const riskSpark = bucketLast7(contextRisks, (r) => r.status === "Open");
-  const criticalSpark = bucketLast7(
+  const riskSpark = bucketByRange(contextRisks, effectiveRange, (r) => r.status === "Open");
+  const criticalSpark = bucketByRange(
     contextRisks,
-    (r) => (r.grossRating || 0) >= 16,
+    effectiveRange,
+    (r) => getGrossScore(r) >= SEVERE_SCORE_THRESHOLD,
   );
-  const issueSpark = bucketLast7(
-    contextIssues,
-    (i) => i.status !== "4. Resolved",
-  );
-
-  // Day labels for sparkline tooltips (last 7 days, ending today)
+  // Day labels for sparkline tooltips
   const sparkLabels = (() => {
     const out: string[] = [];
     const today = new Date();
-    for (let i = 6; i >= 0; i--) {
+    for (let i = effectiveRange - 1; i >= 0; i--) {
       const d = new Date(today);
       d.setDate(today.getDate() - i);
       out.push(
@@ -691,15 +795,41 @@ export function Dashboard() {
     return out;
   })();
 
-  // Trend delta vs the prior period (sum last 3 days vs preceding 4 days).
-  const trendDelta = (spark: number[]) => {
-    if (spark.length < 7) return 0;
-    const recent = spark.slice(4).reduce((a, b) => a + b, 0);
-    const prior = spark.slice(0, 4).reduce((a, b) => a + b, 0);
-    if (prior === 0 && recent === 0) return 0;
-    if (prior === 0) return 100;
+  // Trend delta vs the prior period (symmetric half-split).
+  // Returns null when the sample is too small or the prior period is empty
+  // (can't compute a meaningful %; we'd otherwise show a fake 100%).
+  const trendDelta = (spark: number[]): number | null => {
+    if (spark.length < 2) return null;
+    const half = Math.floor(spark.length / 2);
+    const recent = spark.slice(half).reduce((a, b) => a + b, 0);
+    const prior = spark.slice(0, half).reduce((a, b) => a + b, 0);
+    if (recent + prior < 3) return null;
+    if (prior === 0) return null;
     return Math.round(((recent - prior) / prior) * 100);
   };
+
+  // Financial-exposure sparkline — buckets each risk's residual ALE (£) by
+  // the day it was added. Drives the £ KPI's delta with a £-weighted signal
+  // instead of issue counts.
+  const exposureSpark = (() => {
+    const days = effectiveRange;
+    const out: number[] = Array(days).fill(0);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    const startMs = new Date(today);
+    startMs.setDate(today.getDate() - (days - 1));
+    startMs.setHours(0, 0, 0, 0);
+    contextRisks.forEach((r) => {
+      if (!r.dateAdded) return;
+      const t = new Date(r.dateAdded).getTime();
+      if (isNaN(t) || t < startMs.getTime() || t > today.getTime()) return;
+      const idx = Math.floor((t - startMs.getTime()) / (1000 * 60 * 60 * 24));
+      if (idx < 0 || idx >= days) return;
+      const ale = Number((r as any).residualALE || 0);
+      out[idx] += ale;
+    });
+    return out;
+  })();
 
   // 5×5 risk matrix data: count risks per (likelihood, impact) cell for both
   // gross (pre-mitigation) and residual (post-mitigation) views.
@@ -839,9 +969,9 @@ export function Dashboard() {
                 : "Aggregated overview across all programmes and projects in your organisation."}
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 lg:shrink-0">
           <div
-            className="inline-flex items-center gap-0.5 rounded-md border border-slate-200 bg-slate-50 p-0.5"
+            className="inline-flex items-center gap-0.5 rounded-md border border-slate-200 bg-slate-50 p-0.5 shrink-0"
             role="group"
             aria-label="Dashboard time range"
           >
@@ -849,24 +979,104 @@ export function Dashboard() {
               <button
                 key={r}
                 type="button"
-                onClick={() => setDashboardRange(r)}
+                onClick={() => {
+                  setDashboardRange(r);
+                  setCustomFrom("");
+                  setCustomTo("");
+                  setShowCustomPicker(false);
+                }}
                 className={clsx(
                   "px-2.5 h-7 text-xs font-medium rounded-md transition-colors font-mono tabular-nums",
-                  dashboardRange === r
+                  dashboardRange === r && !isCustomRange
                     ? "bg-white text-slate-900 shadow-sm"
                     : "text-slate-500 hover:text-slate-700",
                 )}
-                aria-pressed={dashboardRange === r}
+                aria-pressed={dashboardRange === r && !isCustomRange}
               >
                 {r}d
               </button>
             ))}
-            <span
-              className="px-2.5 h-7 inline-flex items-center text-xs font-medium font-mono text-slate-400 cursor-not-allowed"
-              title="Custom range — coming soon"
-            >
-              Custom
-            </span>
+            <div className="relative" ref={customPickerRef}>
+              <button
+                type="button"
+                onClick={() => setShowCustomPicker(!showCustomPicker)}
+                className={clsx(
+                  "px-2.5 h-7 text-xs font-medium rounded-md transition-colors font-mono tabular-nums",
+                  isCustomRange
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700",
+                )}
+                aria-pressed={isCustomRange}
+                aria-haspopup="dialog"
+                aria-expanded={showCustomPicker}
+              >
+                Custom
+              </button>
+              {showCustomPicker && (
+                <div
+                  role="dialog"
+                  aria-label="Pick a custom date range"
+                  className="absolute top-full right-0 mt-2 p-3 bg-white border border-slate-200 rounded-md shadow-lg z-50 min-w-[240px]"
+                >
+                  <div className="flex flex-col gap-2">
+                    <label className="font-mono uppercase tracking-wide text-[10px] font-medium text-slate-500">
+                      From
+                    </label>
+                    <input
+                      type="date"
+                      value={customFrom}
+                      max={customTo || undefined}
+                      onChange={(e) => setCustomFrom(e.target.value)}
+                      className="px-2 py-1.5 text-xs border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <label className="font-mono uppercase tracking-wide text-[10px] font-medium text-slate-500">
+                      To
+                    </label>
+                    <input
+                      type="date"
+                      value={customTo}
+                      min={customFrom || undefined}
+                      onChange={(e) => setCustomTo(e.target.value)}
+                      className="px-2 py-1.5 text-xs border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    {customRangeInvalid && (
+                      <p className="text-[11px] text-rose-600">
+                        End date must be on or after the start date.
+                      </p>
+                    )}
+                    {isCustomRange && !customRangeInvalid && (
+                      <p className="text-[11px] text-slate-500 font-mono tabular-nums">
+                        Window: {customRangeDays}d
+                      </p>
+                    )}
+                    <div className="flex gap-2 mt-1.5">
+                      <button
+                        type="button"
+                        disabled={
+                          !isCustomRange || customRangeDays <= 0 || customRangeInvalid
+                        }
+                        onClick={() => setShowCustomPicker(false)}
+                        className="flex-1 px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded-md hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Apply
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomFrom("");
+                          setCustomTo("");
+                          setDashboardRange(30);
+                          setShowCustomPicker(false);
+                        }}
+                        className="px-3 py-1.5 text-xs font-medium text-slate-700 border border-slate-200 rounded-md hover:bg-slate-50 transition-colors"
+                      >
+                        Reset
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
           <button
             type="button"
@@ -890,9 +1100,13 @@ export function Dashboard() {
                 : "/reporting/programme-report"
             }
             className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-indigo-600 hover:bg-indigo-500 text-xs font-medium text-white transition-colors shadow-sm"
+            aria-label={activeProjectId ? "Project report" : "Programme report"}
           >
-            <FileText className="w-3.5 h-3.5" />
-            {activeProjectId ? "Project report" : "Programme report"}
+            <FileText className="w-3.5 h-3.5 shrink-0" />
+            <span className="hidden sm:inline whitespace-nowrap">
+              {activeProjectId ? "Project report" : "Programme report"}
+            </span>
+            <span className="sm:hidden">Report</span>
           </Link>
         </div>
       </div>
@@ -1020,7 +1234,16 @@ export function Dashboard() {
             </div>
 
             {/* ─── All Projects — same card treatment as My Projects ─── */}
-            {displayProjects.length > 0 ? (
+            {isRefreshing || loadingOverview ? (
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-base font-semibold text-slate-900">
+                    All Projects
+                  </h3>
+                </div>
+                <SkeletonProjectsGrid count={4} />
+              </div>
+            ) : displayProjects.length > 0 ? (
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-base font-semibold text-slate-900">
@@ -1147,7 +1370,9 @@ export function Dashboard() {
           )}
 
           {/* ─── KPI STRIP — 4 equal cards (v4 layout) ─── */}
-          {(isComplianceSetup || isRiskSetup) && (
+          {(isComplianceSetup || isRiskSetup) && isRefreshing ? (
+            <SkeletonStatCards count={4} />
+          ) : (isComplianceSetup || isRiskSetup) && (
             <motion.div
               initial="hidden"
               animate="show"
@@ -1193,7 +1418,7 @@ export function Dashboard() {
                 icon={<Flame className="w-3.5 h-3.5" />}
                 iconTone="amber"
                 value={riskHigh}
-                sub="Gross score ≥ 16"
+                sub={`Gross score ≥ ${SEVERE_SCORE_THRESHOLD}`}
                 delta={trendDelta(criticalSpark)}
                 deltaInvert
                 sparkData={criticalSpark}
@@ -1207,9 +1432,9 @@ export function Dashboard() {
                 value={riskResidualALE}
                 format={formatGBP}
                 sub={`${issueOpen} open issue${issueOpen === 1 ? "" : "s"} · ${issueTotal} total`}
-                delta={trendDelta(issueSpark)}
+                delta={trendDelta(exposureSpark)}
                 deltaInvert
-                sparkData={issueSpark}
+                sparkData={exposureSpark}
                 sparkColor="#6366f1"
                 sparkLabels={sparkLabels}
               />
@@ -1217,7 +1442,9 @@ export function Dashboard() {
           )}
 
           {/* ─── RISK BURN-DOWN HERO (90-day projection) ─── */}
-          {isRiskSetup && (
+          {isRiskSetup && isRefreshing ? (
+            <SkeletonBar />
+          ) : isRiskSetup && (
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1228,11 +1455,11 @@ export function Dashboard() {
               }}
             >
               <RiskBurnDown
-                critical={riskHigh}
-                open={riskOpen}
+                risks={outlookRisks}
+                milestones={activeProject?.milestones || []}
                 onPlanSprint={() =>
                   handleAskFollowUp(
-                    "Plan a 14-day verification sprint focused on the top critical risks.",
+                    "Plan a 14-day mitigation sprint for the top critical risks.",
                   )
                 }
               />
@@ -1240,7 +1467,9 @@ export function Dashboard() {
           )}
 
           {/* ─── COMPLIANCE VELOCITY CHART ─── */}
-          {isComplianceSetup && (
+          {isComplianceSetup && isRefreshing ? (
+            <SkeletonBar />
+          ) : isComplianceSetup && (
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1252,14 +1481,23 @@ export function Dashboard() {
             >
               <ComplianceVelocityChart
                 items={contextCompliance}
-                range={dashboardRange}
+                range={effectiveRange}
                 onRangeChange={setDashboardRange}
               />
             </motion.div>
           )}
 
           {/* ─── RISK MATRIX + CRITICAL RISKS TABLE (side-by-side at lg+) ─── */}
-          {isRiskSetup && (
+          {isRiskSetup && isRefreshing ? (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+              <div className="lg:col-span-5">
+                <SkeletonMatrix />
+              </div>
+              <div className="lg:col-span-7">
+                <SkeletonCriticalList />
+              </div>
+            </div>
+          ) : isRiskSetup && (
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1309,10 +1547,10 @@ export function Dashboard() {
                       ? grossMatrixCells
                       : residualMatrixCells;
                   const cellBand = (l: number, i: number) => {
-                    const score = l * i;
-                    if (score >= 16)
+                    const score = calculateMatrixScore(l, i);
+                    if (score >= SEVERE_SCORE_THRESHOLD)
                       return "bg-rose-100 text-rose-900 border-rose-200";
-                    if (score >= 9)
+                    if (score >= MAJOR_SCORE_THRESHOLD)
                       return "bg-amber-100 text-amber-900 border-amber-200";
                     if (score >= 4)
                       return "bg-emerald-50 text-emerald-900 border-emerald-200";
@@ -1435,22 +1673,22 @@ export function Dashboard() {
                   </div>
                 ) : (
                   <ul className="-mx-2">
-                    {topRisks.slice(0, 6).map((r, idx) => {
-                      const score = r.grossRating || 0;
+                    {topRisks.map((r, idx) => {
+                      const score = getGrossScore(r);
                       const l = Number((r as any).grossL || 0);
                       const i = Number((r as any).grossI || 0);
-                      const exposure = Number((r as any).residualALE || 0);
+                      const exposure = getResidualALE(r);
                       const cat =
                         (r as any).category || (r as any).domain || "Risk";
                       const maxScore = Math.max(
-                        ...topRisks.map((x) => x.grossRating || 0),
-                        16,
+                        ...topRisks.map((x) => getGrossScore(x)),
+                        SEVERE_SCORE_THRESHOLD,
                       );
                       const barWidth = Math.round((score / maxScore) * 100);
                       const barColor =
-                        score >= 22
+                        score >= SEVERE_SCORE_THRESHOLD
                           ? "bg-rose-500"
-                          : score >= 16
+                          : score >= MAJOR_SCORE_THRESHOLD
                             ? "bg-amber-500"
                             : "bg-sky-500";
                       return (
@@ -1515,11 +1753,11 @@ export function Dashboard() {
                                 style={{ width: `${barWidth}%` }}
                               />
                             </div>
-                            {/* Mono score */}
+                            {/* Mono score — colour tied to the same SEVERE threshold the bar uses */}
                             <span
                               className={clsx(
                                 "font-mono tabular-nums text-sm font-semibold text-right",
-                                score >= 22
+                                score >= SEVERE_SCORE_THRESHOLD
                                   ? "text-rose-600"
                                   : "text-slate-900",
                               )}
@@ -1540,7 +1778,29 @@ export function Dashboard() {
               Project view: side-by-side bento — Recent activity (7/12) +
               vertical RIBA Plan of Work (5/12) so the stage rail fits the
               activity card's height. Other views: activity full width. */}
-          {(isComplianceSetup || isRiskSetup) && (
+          {(isComplianceSetup || isRiskSetup) && isRefreshing ? (
+            <div
+              className={clsx(
+                "grid gap-4 items-stretch",
+                activeProject || activeProgramme
+                  ? "grid-cols-1 lg:grid-cols-12"
+                  : "grid-cols-1",
+              )}
+            >
+              <div
+                className={clsx(
+                  (activeProject || activeProgramme) && "lg:col-span-7",
+                )}
+              >
+                <SkeletonTable rows={5} />
+              </div>
+              {(activeProject || activeProgramme) && (
+                <div className="lg:col-span-5">
+                  <SkeletonSidePanel />
+                </div>
+              )}
+            </div>
+          ) : (isComplianceSetup || isRiskSetup) && (
             <div
               className={clsx(
                 "grid gap-4 items-stretch",
@@ -2006,28 +2266,32 @@ export function Dashboard() {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {myCreatedProjects.length > 0 ? (
-                  myCreatedProjects.slice(0, 8).map((project: any) => {
-                    return (
-                      <ProjectSummaryCard
-                        key={project.id}
-                        project={project}
-                        safeComplianceItems={safeComplianceItems}
-                        safeRisks={safeRisks}
-                        formatGBP={formatGBP}
-                        setActiveProject={setActiveProject}
-                      />
-                    );
-                  })
-                ) : (
-                  <div className="col-span-full py-8 text-center bg-slate-50 rounded-lg border border-dashed border-slate-200">
-                    <p className="text-sm text-slate-400 font-medium">
-                      No projects created by you yet.
-                    </p>
-                  </div>
-                )}
-              </div>
+              {isRefreshing || loadingOverview ? (
+                <SkeletonProjectsGrid count={4} />
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {myCreatedProjects.length > 0 ? (
+                    myCreatedProjects.slice(0, 8).map((project: any) => {
+                      return (
+                        <ProjectSummaryCard
+                          key={project.id}
+                          project={project}
+                          safeComplianceItems={safeComplianceItems}
+                          safeRisks={safeRisks}
+                          formatGBP={formatGBP}
+                          setActiveProject={setActiveProject}
+                        />
+                      );
+                    })
+                  ) : (
+                    <div className="col-span-full py-8 text-center bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                      <p className="text-sm text-slate-400 font-medium">
+                        No projects created by you yet.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {myCreatedProjects.length > 8 && (
                 <div className="flex justify-center mt-2">
@@ -2043,7 +2307,12 @@ export function Dashboard() {
           )}
 
           {/* ─── Setup CTAs (only when compliance / risk not yet set up) ─── */}
-          {(!isComplianceSetup || !isRiskSetup) && (
+          {/* Suppress while context is loading — otherwise the CTAs flash
+              in the gap between previous-context clear and new-context load. */}
+          {(!isComplianceSetup || !isRiskSetup) &&
+            !isLoadingContent &&
+            !loadingOverview &&
+            !isRefreshing && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {!isComplianceSetup && (
                 <Link
@@ -2118,11 +2387,10 @@ export function Dashboard() {
         </span>
         <div className="min-w-0">
           <p className="text-sm font-semibold text-slate-900">
-            Regulations active for the construction programme
+            Regulations linked to your compliance framework
           </p>
           <p className="text-xs text-slate-600 mt-1">
-            Building Safety Act 2022 · SHDF Wave 2 · Asbestos (CAR 2024) · and
-            more
+            View all regulations linked to your compliance items in the Regulation Library.
           </p>
         </div>
         <Link
@@ -2182,7 +2450,7 @@ function KpiCard({
   value: number;
   suffix?: string;
   sub?: React.ReactNode;
-  delta?: number;
+  delta?: number | null;
   deltaInvert?: boolean;
   format?: (n: number) => string;
   sparkData: number[];
@@ -2265,9 +2533,10 @@ function KpiCard({
 // ─── Skeleton helpers ────────────────────────────────────────────────────────
 
 function SkeletonStatCards({ count }: { count: number }) {
+  const gridCols = count >= 4 ? "xl:grid-cols-4" : "xl:grid-cols-3";
   return (
     <div
-      className={`grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-${count} gap-4`}
+      className={`grid grid-cols-2 lg:grid-cols-3 ${gridCols} gap-4`}
     >
       {Array.from({ length: count }).map((_, i) => (
         <div
@@ -2276,6 +2545,94 @@ function SkeletonStatCards({ count }: { count: number }) {
         >
           <div className="h-3 bg-slate-200 rounded w-3/4 mb-3" />
           <div className="h-7 bg-slate-200 rounded w-1/2" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SkeletonMatrix() {
+  return (
+    <div className="bg-white rounded-lg border border-slate-200 p-5 h-full animate-pulse">
+      <div className="flex items-start justify-between gap-3 mb-4">
+        <div className="space-y-2">
+          <div className="h-3.5 bg-slate-200 rounded w-28" />
+          <div className="h-2.5 bg-slate-100 rounded w-48" />
+        </div>
+        <div className="h-7 w-32 bg-slate-100 rounded-md" />
+      </div>
+      <div className="grid grid-cols-5 gap-1.5">
+        {Array.from({ length: 25 }).map((_, i) => (
+          <div key={i} className="aspect-square bg-slate-100 rounded" />
+        ))}
+      </div>
+      <div className="mt-4 h-12 bg-slate-100 rounded-md" />
+    </div>
+  );
+}
+
+function SkeletonCriticalList() {
+  return (
+    <div className="bg-white rounded-lg border border-slate-200 p-5 h-full animate-pulse">
+      <div className="flex items-start justify-between gap-3 mb-4">
+        <div className="space-y-2">
+          <div className="h-3.5 bg-slate-200 rounded w-28" />
+          <div className="h-2.5 bg-slate-100 rounded w-40" />
+        </div>
+        <div className="h-3 w-24 bg-slate-100 rounded" />
+      </div>
+      <div className="space-y-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="grid grid-cols-[24px_1fr_80px_40px] items-center gap-3">
+            <div className="h-2.5 bg-slate-100 rounded" />
+            <div className="space-y-1.5">
+              <div className="h-2.5 bg-slate-200 rounded w-3/4" />
+              <div className="h-2 bg-slate-100 rounded w-1/2" />
+            </div>
+            <div className="h-1.5 bg-slate-100 rounded-full" />
+            <div className="h-3 bg-slate-200 rounded justify-self-end w-8" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SkeletonSidePanel() {
+  return (
+    <div className="bg-white rounded-lg border border-slate-200 p-5 h-full animate-pulse">
+      <div className="h-3.5 bg-slate-200 rounded w-40 mb-2" />
+      <div className="h-2.5 bg-slate-100 rounded w-56 mb-5" />
+      <div className="space-y-4">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <div className="h-6 w-6 rounded-full bg-slate-200 shrink-0" />
+            <div className="flex-1 space-y-1.5">
+              <div className="h-2.5 bg-slate-200 rounded w-2/3" />
+              <div className="h-2 bg-slate-100 rounded w-1/3" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SkeletonProjectsGrid({ count = 4 }: { count?: number }) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={i}
+          className="bg-white rounded-lg border border-slate-200 p-4 animate-pulse"
+        >
+          <div className="h-3 bg-slate-200 rounded w-1/2 mb-3" />
+          <div className="h-2.5 bg-slate-100 rounded w-1/3 mb-4" />
+          <div className="space-y-2">
+            <div className="h-2 bg-slate-100 rounded w-full" />
+            <div className="h-2 bg-slate-100 rounded w-5/6" />
+          </div>
+          <div className="mt-4 h-7 bg-slate-100 rounded" />
         </div>
       ))}
     </div>
