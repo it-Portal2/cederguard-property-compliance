@@ -47,6 +47,7 @@ import {
 import { clsx } from "clsx";
 import { useStore } from "../store/useStore";
 import { logout } from "../lib/firebase";
+import UserAvatar from "./UserAvatar";
 import { useNavigate, useSearchParams, useLocation } from "react-router";
 import { useState, useEffect } from "react";
 import {
@@ -762,33 +763,13 @@ export function Sidebar() {
             className="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-md transition-colors hover:bg-white text-left"
             title="Profile settings"
           >
-            {user?.photoURL ? (
-              <img
-                src={user.photoURL}
-                alt="Profile"
-                className="w-8 h-8 rounded-full object-cover shrink-0"
-              />
-            ) : (
-              <span
-                className="inline-flex w-8 h-8 items-center justify-center rounded-full text-[11px] font-semibold text-white shrink-0"
-                style={{
-                  background:
-                    "linear-gradient(135deg, oklch(0.7 0.13 60), oklch(0.55 0.17 25))",
-                }}
-                aria-hidden="true"
-              >
-                {(() => {
-                  const name =
-                    user?.displayName || user?.name || user?.email || "U";
-                  return name
-                    .split(/[\s@]/)
-                    .filter(Boolean)
-                    .slice(0, 2)
-                    .map((s: string) => s[0]?.toUpperCase() || "")
-                    .join("");
-                })()}
-              </span>
-            )}
+            <UserAvatar
+              photoURL={user?.photoURL}
+              displayName={user?.displayName || user?.name}
+              email={user?.email}
+              size="sm"
+            />
+
             <span className="min-w-0 flex-1">
               <span className="block text-[12px] font-semibold text-slate-900 truncate">
                 {user?.displayName ||
