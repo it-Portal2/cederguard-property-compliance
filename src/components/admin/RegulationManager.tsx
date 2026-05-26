@@ -154,7 +154,7 @@ export function RegulationManager() {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">
+                    <h2 className="text-2xl font-semibold text-slate-900 flex items-center gap-3">
                         <Shield className="w-8 h-8 text-indigo-600" />
                         Regulation Manager
                     </h2>
@@ -321,9 +321,9 @@ function ItemCard({ item, domainLabel, domainColor, onEdit, onDelete }: {
                     <div className="w-1.5 h-12 rounded-full shrink-0" style={{ backgroundColor: domainColor }} />
                     <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">{domainLabel}</span>
+                            <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-400">{domainLabel}</span>
                             <span className={clsx(
-                                "text-[10px] font-bold px-2 py-0.5 rounded-full",
+                                "font-mono text-[10px] font-medium px-2 py-0.5 rounded-full",
                                 item.risk === 'High' ? "bg-red-50 text-red-600" :
                                 item.risk === 'Medium' ? "bg-amber-50 text-amber-600" : "bg-emerald-50 text-emerald-600"
                             )}>
@@ -341,15 +341,15 @@ function ItemCard({ item, domainLabel, domainColor, onEdit, onDelete }: {
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t border-slate-50">
                 <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Authority</p>
+                    <p className="font-mono text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1">Authority</p>
                     <p className="text-xs font-bold text-slate-700">{item.auth}</p>
                 </div>
                 <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Trigger</p>
+                    <p className="font-mono text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1">Trigger</p>
                     <p className="text-xs font-bold text-slate-700">{item.trigger}</p>
                 </div>
                 <div className="col-span-2">
-                    <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Penalty</p>
+                    <p className="font-mono text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1">Penalty</p>
                     <p className="text-xs text-slate-500 truncate">{item.penalty}</p>
                 </div>
             </div>
@@ -369,7 +369,7 @@ function ItemForm({ item, domains, onSave, onCancel, isSaving }: {
     return (
         <div className="bg-slate-50 border-2 border-indigo-200 rounded-lg p-6 shadow-xl space-y-4 animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between mb-2">
-                <h3 className="font-black text-slate-900 flex items-center gap-2">
+                <h3 className="font-semibold text-slate-900 flex items-center gap-2">
                     <Plus className="w-5 h-5 text-indigo-600" />
                     {item.id ? 'Edit Compliance Item' : 'New Compliance Item'}
                 </h3>
@@ -491,12 +491,12 @@ function DomainCard({ domain, onEdit, isSaving }: { domain: Domain; onEdit: () =
         <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm hover:border-indigo-200 transition-all group">
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center font-black text-white shadow-lg" style={{ backgroundColor: domain.color }}>
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center font-semibold text-white shadow-lg" style={{ backgroundColor: domain.color }}>
                         {domain.abbr}
                     </div>
                     <div>
                         <h4 className="font-bold text-slate-900">{domain.label}</h4>
-                        <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">{domain.id}</p>
+                        <p className="font-mono text-[11px] font-medium text-slate-400 uppercase tracking-wide">{domain.id}</p>
                     </div>
                 </div>
                 <button onClick={onEdit} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 opacity-20 group-hover:opacity-100 transition-opacity">
@@ -522,7 +522,7 @@ function DomainForm({ domain, onSave, onCancel, isSaving }: {
     return (
         <div className="bg-slate-50 border-2 border-indigo-200 rounded-lg p-6 shadow-xl space-y-4">
             <div className="flex items-center justify-between mb-2">
-                <h3 className="font-black text-slate-900 flex items-center gap-2">
+                <h3 className="font-semibold text-slate-900 flex items-center gap-2">
                     <Tag className="w-5 h-5 text-indigo-600" />
                     {domain.id ? 'Edit Domain' : 'New Domain'}
                 </h3>

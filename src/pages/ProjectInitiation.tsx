@@ -836,7 +836,7 @@ export function ProjectInitiation() {
 
                   {/* ── UX 1: Programme fields elevated to top — high-level classification ──*/}
                   <div className="pt-6 border-t border-slate-100 space-y-5">
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                    <p className="text-xs font-mono font-medium text-slate-500 uppercase tracking-wide">
                       Programme classification
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

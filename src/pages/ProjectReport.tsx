@@ -369,7 +369,7 @@ export function ProjectReport() {
                         <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2.5">
                             <ListChecks className="w-5 h-5 text-indigo-600" /> Itemised project risks
                         </h2>
-                        <span className="text-xs font-medium text-slate-500">{projectRisks.length} active</span>
+                        <span className="text-[11px] font-mono font-medium text-slate-500 uppercase tracking-wide tabular-nums">{projectRisks.length} active</span>
                     </div>
 
                     <DynamicTable<RiskItem>
@@ -428,12 +428,12 @@ export function ProjectReport() {
 
                             <div className="pt-4 border-t border-slate-200 grid grid-cols-2 gap-3">
                                 <div className="text-center py-3 bg-slate-50 rounded-lg border border-slate-200">
-                                    <div className="text-2xl font-semibold text-slate-900 tabular-nums">{projectCompliance.length}</div>
-                                    <div className="text-xs font-medium text-slate-500 mt-0.5">Total requirements</div>
+                                    <div className="text-2xl font-medium text-slate-900 tabular-nums">{projectCompliance.length}</div>
+                                    <div className="text-[11px] font-mono font-medium text-slate-500 uppercase tracking-wide mt-0.5">Total requirements</div>
                                 </div>
                                 <div className="text-center py-3 bg-slate-50 rounded-lg border border-slate-200">
-                                    <div className="text-2xl font-semibold text-emerald-600 tabular-nums">{compComplete}</div>
-                                    <div className="text-xs font-medium text-slate-500 mt-0.5">Complete</div>
+                                    <div className="text-2xl font-medium text-emerald-600 tabular-nums">{compComplete}</div>
+                                    <div className="text-[11px] font-mono font-medium text-slate-500 uppercase tracking-wide mt-0.5">Complete</div>
                                 </div>
                             </div>
                         </div>
@@ -580,7 +580,7 @@ export function ProjectReport() {
                                                                 <h5 className="text-sm font-semibold text-slate-900">{stripMarkdown(g.title)}</h5>
                                                             </div>
                                                             <p className="text-sm text-slate-600 leading-relaxed">{stripMarkdown(g.details)}</p>
-                                                            <p className="text-xs font-medium text-indigo-600 uppercase tracking-wide">{stripMarkdown(g.riskVector)}</p>
+                                                            <p className="text-[11px] font-mono font-medium text-indigo-600 uppercase tracking-wide">{stripMarkdown(g.riskVector)}</p>
                                                         </li>
                                                     ))}
                                                 </ul>
@@ -806,9 +806,9 @@ export function ProjectReport() {
                                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                                 <div className="lg:col-span-1 space-y-4">
                                                     <div className="bg-white p-6 rounded-lg border border-slate-200 text-center space-y-3">
-                                                        <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Confidence score</div>
+                                                        <div className="text-[11px] font-mono font-medium text-slate-500 uppercase tracking-wide">Confidence score</div>
                                                         <div className={clsx(
-                                                            "text-4xl md:text-5xl font-semibold tabular-nums",
+                                                            "text-4xl md:text-5xl font-medium tabular-nums",
                                                             sentimentResults.confidenceScore > 70 ? "text-emerald-600" :
                                                             sentimentResults.confidenceScore > 40 ? "text-amber-600" : "text-rose-600"
                                                         )}>
@@ -819,7 +819,7 @@ export function ProjectReport() {
                                                         </div>
                                                     </div>
                                                     <div className="bg-slate-900 p-5 rounded-lg text-white">
-                                                        <h4 className="text-xs font-medium text-indigo-300 uppercase tracking-wide mb-2">Auditor note</h4>
+                                                        <h4 className="text-[11px] font-mono font-medium text-indigo-300 uppercase tracking-wide mb-2">Auditor note</h4>
                                                         <p className="text-sm leading-relaxed text-slate-200">{sentimentResults.auditorNote}</p>
                                                     </div>
                                                 </div>
@@ -860,11 +860,11 @@ export function ProjectReport() {
                     <div className="flex flex-wrap gap-8">
                         <div className="space-y-3">
                             <div className="w-56 h-px bg-slate-300" />
-                            <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Project manager signature</div>
+                            <div className="text-[11px] font-mono font-medium text-slate-500 uppercase tracking-wide">Project manager signature</div>
                         </div>
                         <div className="space-y-3">
                             <div className="w-40 h-px bg-slate-300" />
-                            <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Review date</div>
+                            <div className="text-[11px] font-mono font-medium text-slate-500 uppercase tracking-wide">Review date</div>
                         </div>
                     </div>
                     <p className="text-xs text-slate-400 md:text-right">

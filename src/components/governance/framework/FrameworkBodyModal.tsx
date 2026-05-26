@@ -162,7 +162,7 @@ export function FrameworkBodyModal({
           <div className="flex items-start gap-3">
             <span className={clsx('mt-1.5 inline-flex h-2.5 w-2.5 rounded-full', tierStyle.dot)} />
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+              <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                 {isNew ? 'Add governance body' : 'Edit governance body'}
               </p>
               <h2 className="text-xl font-bold tracking-tight text-slate-900">

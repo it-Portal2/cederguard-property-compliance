@@ -55,7 +55,7 @@ function ProgressBar({ pct, color = 'indigo' }: { pct: number; color?: string })
                     style={{ width: `${Math.min(pct, 100)}%` }}
                 />
             </div>
-            <span className="text-xs font-bold text-slate-600 w-8 text-right">{pct}%</span>
+            <span className="text-[11px] font-mono font-medium text-slate-600 w-8 text-right tabular-nums">{pct}%</span>
         </div>
     );
 }
@@ -231,10 +231,10 @@ export function ClientProgrammeReport() {
             sortable: true,
             render: (_v, p) => (
                 <div className="flex flex-col items-end">
-                    <span className={clsx('text-sm font-semibold tabular-nums', (p.riskHigh ?? 0) > 0 ? 'text-rose-600' : 'text-slate-700')}>
+                    <span className={clsx('text-sm font-medium tabular-nums', (p.riskHigh ?? 0) > 0 ? 'text-rose-600' : 'text-slate-700')}>
                         {p.riskHigh ?? 0}
                     </span>
-                    <span className="text-xs text-slate-500">{p.riskOpen ?? 0} total open</span>
+                    <span className="text-[11px] font-mono text-slate-500 tabular-nums">{p.riskOpen ?? 0} total open</span>
                 </div>
             ),
         },

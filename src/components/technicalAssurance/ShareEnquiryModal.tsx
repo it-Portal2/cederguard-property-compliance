@@ -218,7 +218,7 @@ export function ShareEnquiryModal({
               <div>
                 <label
                   htmlFor="share-search"
-                  className="text-[11px] font-semibold uppercase tracking-widest text-slate-500"
+                  className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-500"
                 >
                   Workspace member
                 </label>
@@ -309,7 +309,7 @@ export function ShareEnquiryModal({
               <div>
                 <label
                   htmlFor="share-note"
-                  className="text-[11px] font-semibold uppercase tracking-widest text-slate-500"
+                  className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-500"
                 >
                   Note for the reviewer (optional)
                 </label>

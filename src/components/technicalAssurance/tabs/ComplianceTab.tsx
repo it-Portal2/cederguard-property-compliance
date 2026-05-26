@@ -117,7 +117,7 @@ function CheckTile({ check }: { check: ComplianceCheck }) {
         </div>
         <span
           className={clsx(
-            "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+            "font-mono shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
             style.pill,
           )}
         >

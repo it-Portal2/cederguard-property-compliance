@@ -153,7 +153,7 @@ export function AIModelEditModal({ isOpen, kind, initial, existingIds, onClose, 
 
                 <div className="overflow-y-auto p-5 flex-1 flex flex-col gap-5">
                     <section>
-                        <div className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-2">
+                        <div className="font-mono text-[10px] uppercase tracking-wide font-bold text-slate-400 mb-2">
                             1. Pick a model from the live catalog
                         </div>
                         <AIModelCatalogPicker
@@ -164,7 +164,7 @@ export function AIModelEditModal({ isOpen, kind, initial, existingIds, onClose, 
 
                     {modelString && (
                         <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="sm:col-span-2 text-[10px] uppercase tracking-widest font-bold text-slate-400">
+                            <div className="font-mono sm:col-span-2 text-[10px] uppercase tracking-wide font-bold text-slate-400">
                                 2. Confirm details
                             </div>
                             <label className="flex flex-col gap-1">

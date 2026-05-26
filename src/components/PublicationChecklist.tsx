@@ -193,7 +193,7 @@ export function PublicationChecklist({
         <div className="absolute inset-0 z-50 bg-white/60 backdrop-blur-[2px] flex items-center justify-center">
           <div className="flex flex-col items-center gap-3">
             <div className="w-10 h-10 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin shadow-md" />
-            <span className="text-sm font-black text-indigo-900 tracking-widest uppercase">Processing</span>
+            <span className="font-mono text-sm font-semibold text-indigo-900 tracking-wide uppercase">Processing</span>
           </div>
         </div>
       )}
@@ -205,17 +205,17 @@ export function PublicationChecklist({
               <Shield className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-[13px] font-black text-slate-900 leading-none">
+              <h3 className="text-[13px] font-semibold text-slate-900 leading-none">
                 Compliance & Risk Setup
               </h3>
-              <p className="text-[10px] text-slate-500 font-bold mt-1 uppercase tracking-tighter">
+              <p className="font-mono text-[10px] text-slate-500 font-medium mt-1 uppercase tracking-wide">
                 Project Publication Status
               </p>
             </div>
           </div>
           <div
             className={clsx(
-              "text-[10px] font-black px-2.5 py-1.5 rounded-lg uppercase tracking-wider shadow-sm",
+              "font-mono text-[10px] font-medium px-2.5 py-1.5 rounded-lg uppercase tracking-wide shadow-sm",
               isComplete
                 ? "bg-emerald-500 text-white"
                 : canPublish
@@ -234,10 +234,10 @@ export function PublicationChecklist({
         {/* Progress bar */}
         <div className="space-y-1.5">
           <div className="flex items-end justify-between">
-            <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">
+            <span className="font-mono text-[11px] font-medium text-slate-500 uppercase tracking-wide">
               Overall Completion
             </span>
-            <span className="text-2xl font-black text-slate-900 tracking-tight">
+            <span className="text-2xl font-semibold text-slate-900 tracking-tight">
               {progress}%
             </span>
           </div>
@@ -259,7 +259,7 @@ export function PublicationChecklist({
 
       {/* Steps */}
       <div className="px-4 sm:px-6 pt-5 pb-2">
-        <div className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2 pb-2 border-b border-slate-50">
+        <div className="font-mono text-[11px] font-medium text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2 pb-2 border-b border-slate-50">
           <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
           Mandatory Requirements
         </div>
@@ -282,7 +282,7 @@ export function PublicationChecklist({
                           `/compliance/setup?type=${activeType}&from=initiation`,
                         )
                       }
-                      className="text-[10px] font-black text-indigo-600 hover:text-indigo-700 uppercase tracking-widest flex items-center gap-1 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100 transition-all active:scale-95"
+                      className="text-xs font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-1 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100 transition-all active:scale-95"
                     >
                       Continue to Compliance Setup
                       <ChevronRight className="w-3 h-3" />
@@ -294,7 +294,7 @@ export function PublicationChecklist({
                           `/compliance/dashboard?type=${activeType}&from=initiation`,
                         )
                       }
-                      className="text-[10px] font-black text-emerald-600 hover:text-emerald-700 uppercase tracking-widest flex items-center gap-1 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100 transition-all active:scale-95"
+                      className="text-xs font-medium text-emerald-600 hover:text-emerald-700 flex items-center gap-1 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100 transition-all active:scale-95"
                     >
                       View Compliance Dashboard
                       <CheckCircle2 className="w-3 h-3" />
@@ -321,7 +321,7 @@ export function PublicationChecklist({
                           `/risk/setup?type=${activeType}&from=initiation`,
                         )
                       }
-                      className="text-[10px] font-black text-indigo-600 hover:text-indigo-700 uppercase tracking-widest flex items-center gap-1 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100 transition-all active:scale-95"
+                      className="text-xs font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-1 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100 transition-all active:scale-95"
                     >
                       Continue to Risk Setup
                       <ChevronRight className="w-3 h-3" />
@@ -332,7 +332,7 @@ export function PublicationChecklist({
                       onClick={() =>
                         navigate(`/risk/ai?type=${activeType}&from=initiation`)
                       }
-                      className="text-[10px] font-black text-indigo-600 hover:text-indigo-700 uppercase tracking-widest flex items-center gap-1 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100 transition-all active:scale-95 animate-pulse shadow-sm"
+                      className="text-xs font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-1 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100 transition-all active:scale-95 animate-pulse shadow-sm"
                     >
                       Complete AI Risk Inquiry
                       <ScanSearch className="w-3 h-3" />
@@ -344,7 +344,7 @@ export function PublicationChecklist({
                           `/risk/dashboard?type=${activeType}&from=initiation`,
                         )
                       }
-                      className="text-[10px] font-black text-emerald-600 hover:text-emerald-700 uppercase tracking-widest flex items-center gap-1 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100 transition-all active:scale-95"
+                      className="text-xs font-medium text-emerald-600 hover:text-emerald-700 flex items-center gap-1 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100 transition-all active:scale-95"
                     >
                       View Risk Dashboard
                       <CheckCircle2 className="w-3 h-3" />
@@ -373,7 +373,7 @@ export function PublicationChecklist({
             else if (onPublish) onPublish();
           }}
           className={clsx(
-            "w-full flex items-center justify-center gap-2 px-6 py-4 text-xs font-black uppercase tracking-[0.2em] rounded-lg transition-all shadow-xl active:scale-95 mt-4",
+            "w-full flex items-center justify-center gap-2 px-6 py-4 text-sm font-medium rounded-lg transition-all shadow-xl active:scale-95 mt-4",
             canPublish && !loading
               ? isComplete
                 ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-200"

@@ -134,14 +134,14 @@ export function ChecklistGate({ type }: ChecklistGateProps) {
               {type === 'programme' ? <Target className="w-5 h-5" /> : <Shield className="w-5 h-5" />}
             </div>
             <div>
-              <h3 className="text-[13px] font-black text-slate-900 leading-none">
+              <h3 className="text-[13px] font-semibold text-slate-900 leading-none">
                 {type === 'programme' ? 'Programme Setup Gate' : 'Publication Checklist'}
               </h3>
-              <p className="text-[10px] text-slate-500 font-bold mt-1 uppercase tracking-tighter">Required for Activation</p>
+              <p className="font-mono text-[10px] text-slate-500 font-bold mt-1 uppercase tracking-wide">Required for Activation</p>
             </div>
           </div>
           <div className={clsx(
-            "text-[10px] font-black px-2.5 py-1.5 rounded-lg uppercase tracking-wider shadow-sm",
+            "font-mono text-[10px] font-semibold px-2.5 py-1.5 rounded-lg uppercase tracking-wider shadow-sm",
             isComplete ? "bg-emerald-500 text-white" : hasErrors ? "bg-rose-500 text-white" : "bg-amber-500 text-white"
           )}>
             {isComplete ? 'Ready' : hasErrors ? 'Incomplete' : 'Action Required'}
@@ -150,8 +150,8 @@ export function ChecklistGate({ type }: ChecklistGateProps) {
 
         <div className="space-y-2.5">
           <div className="flex items-end justify-between mb-1">
-            <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Overall Completion</span>
-            <span className="text-2xl font-black text-slate-900 tracking-tight">{progress}%</span>
+            <span className="font-mono text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Overall Completion</span>
+            <span className="text-2xl font-semibold text-slate-900 tracking-tight">{progress}%</span>
           </div>
           <div className="w-full h-3 bg-slate-200/50 rounded-full overflow-hidden shadow-inner p-0.5 border border-slate-100">
             <div 
@@ -166,7 +166,7 @@ export function ChecklistGate({ type }: ChecklistGateProps) {
       </div>
 
       <div className="p-7">
-        <div className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-5 flex items-center gap-2.5 pb-2 border-b border-slate-50">
+        <div className="font-mono text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-5 flex items-center gap-2.5 pb-2 border-b border-slate-50">
           <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse shadow-sm shadow-indigo-500/50" />
           Mandatory Requirements
         </div>
@@ -185,7 +185,7 @@ export function ChecklistGate({ type }: ChecklistGateProps) {
           <button 
             disabled={!isComplete}
             className={clsx(
-              "w-full flex items-center justify-center gap-2 px-6 py-4 text-sm font-black uppercase tracking-widest rounded-lg transition-all shadow-xl active:scale-95",
+              "font-mono w-full flex items-center justify-center gap-2 px-6 py-4 text-sm font-semibold uppercase tracking-wide rounded-lg transition-all shadow-xl active:scale-95",
               isComplete 
                 ? "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-500/30 hover:shadow-indigo-500/40" 
                 : "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none border border-slate-200"

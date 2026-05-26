@@ -40,7 +40,7 @@ export function RiskReport() {
 
       {/* Executive Summary */}
       <section className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
-        <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-200 pb-3 mb-6">1. Executive Summary</h2>
+        <h2 className="font-mono text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-200 pb-3 mb-6">1. Executive Summary</h2>
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <StatBox label="Total Risks" value={total} color="text-indigo-600" />
@@ -65,10 +65,10 @@ export function RiskReport() {
 
       {/* Top 10 Risks */}
       <section className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
-        <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-200 pb-3 mb-6">2. Top 10 Open Risks by Residual Rating</h2>
+        <h2 className="font-mono text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-200 pb-3 mb-6">2. Top 10 Open Risks by Residual Rating</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
+            <thead className="font-mono bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
               <tr>
                 <th className="p-3 font-medium text-center">#</th>
                 <th className="p-3 font-medium">Ref</th>
@@ -96,13 +96,13 @@ export function RiskReport() {
 
       {/* Escalated Risks */}
       <section className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
-        <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-200 pb-3 mb-6">3. Escalated Risks — Programme Board Actions</h2>
+        <h2 className="font-mono text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-200 pb-3 mb-6">3. Escalated Risks — Programme Board Actions</h2>
         {progRisks.length === 0 ? (
           <div className="text-center py-8 text-slate-500 text-sm">No risks currently escalated to programme level.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
+              <thead className="font-mono bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
                 <tr>
                   <th className="p-3 font-medium">Ref</th>
                   <th className="p-3 font-medium">Title</th>
@@ -127,13 +127,13 @@ export function RiskReport() {
 
       {/* Lessons Learnt */}
       <section className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
-        <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-200 pb-3 mb-6">4. Lessons Learnt Log</h2>
+        <h2 className="font-mono text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-200 pb-3 mb-6">4. Lessons Learnt Log</h2>
         {lessons.length === 0 ? (
           <div className="text-center py-8 text-slate-500 text-sm">No lessons learnt flagged yet.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
+              <thead className="font-mono bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200">
                 <tr>
                   <th className="p-3 font-medium">Ref</th>
                   <th className="p-3 font-medium">Description</th>
@@ -166,7 +166,7 @@ export function RiskReport() {
 function StatBox({ label, value, color }: { label: string, value: string | number, color: string }) {
   return (
     <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{label}</div>
+      <div className="font-mono text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">{label}</div>
       <div className={`text-xl font-bold ${color}`}>{value}</div>
     </div>
   );

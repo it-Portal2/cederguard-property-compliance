@@ -127,10 +127,10 @@ export function KRIModal({ isOpen, onClose, onSave, initialData }: KRIModalProps
                         </div>
                         
                         <div className="md:col-span-2 border-t border-slate-100 pt-4 mt-2">
-                            <h3 className="text-xs font-black text-indigo-600 uppercase tracking-widest mb-4">Threshold Configuration</h3>
+                            <h3 className="font-mono text-xs font-medium text-indigo-600 uppercase tracking-wide mb-4">Threshold Configuration</h3>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div>
-                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Threshold Type</label>
+                                    <label className="font-mono block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Threshold Type</label>
                                     <select 
                                         value={formData.thresholdType || 'high_risks'} 
                                         onChange={e => handleChange('thresholdType', e.target.value)}
@@ -144,25 +144,25 @@ export function KRIModal({ isOpen, onClose, onSave, initialData }: KRIModalProps
                                         <option value="residual_exp">Residual Exposure (£)</option>
                                         <option value="reduction_pct">Risk Reduction %</option>
                                     </select>
-                                    <p className="mt-1 text-[9px] text-slate-400 italic">
+                                    <p className="mt-1 text-[9px] text-slate-400 ">
                                         {formData.thresholdType === 'residual_exp' ? 'Supports £, K, M units' : 
                                          formData.thresholdType?.includes('pct') ? 'Enter as percentage (e.g. 20%)' : 
                                          'Numeric count or range'}
                                     </p>
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Green Bound</label>
+                                    <label className="font-mono block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Green Bound</label>
                                     <input type="text" value={formData.green || ''} onChange={e => handleChange('green', e.target.value)}
                                         className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 shadow-inner"
                                         placeholder="e.g. <=3 or <=£2M" />
-                                    <span className="text-[9px] text-emerald-600 font-bold uppercase tracking-tighter">Healthy boundary</span>
+                                    <span className="font-mono text-[9px] text-emerald-600 font-medium uppercase tracking-wide">Healthy boundary</span>
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Amber Range</label>
+                                    <label className="font-mono block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Amber Range</label>
                                     <input type="text" value={formData.amber || ''} onChange={e => handleChange('amber', e.target.value)}
                                         className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 shadow-inner"
                                         placeholder="e.g. 4-6 or £2M-£4M" />
-                                    <span className="text-[9px] text-amber-600 font-bold uppercase tracking-tighter">Cautionary range</span>
+                                    <span className="font-mono text-[9px] text-amber-600 font-medium uppercase tracking-wide">Cautionary range</span>
                                 </div>
                             </div>
                         </div>
@@ -170,8 +170,8 @@ export function KRIModal({ isOpen, onClose, onSave, initialData }: KRIModalProps
 
                     <div className="border-t border-slate-100 pt-6">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Manual Overrides / Fallbacks</h3>
-                            <span className="text-[9px] text-slate-400 font-bold italic">Values are auto-calculated if risks are linked</span>
+                            <h3 className="font-mono text-xs font-medium text-slate-400 uppercase tracking-wide">Manual Overrides / Fallbacks</h3>
+                            <span className="text-[9px] text-slate-400 font-bold ">Values are auto-calculated if risks are linked</span>
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                             {[

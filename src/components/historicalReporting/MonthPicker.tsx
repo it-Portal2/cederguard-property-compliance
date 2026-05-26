@@ -72,7 +72,7 @@ export function MonthPicker({
     >
       <span
         className={
-          "inline-flex items-center gap-1.5 border-r px-3 text-[11px] font-bold uppercase tracking-widest " +
+          "font-mono inline-flex items-center gap-1.5 border-r px-3 text-[11px] font-bold uppercase tracking-wide " +
           (isHistorical
             ? "border-amber-300 text-amber-700"
             : "border-slate-200 text-slate-500")

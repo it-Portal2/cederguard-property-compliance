@@ -38,7 +38,7 @@ export function EmptyState({
         <div className="absolute inset-0 bg-slate-100 rounded-full animate-pulse -z-10 opacity-50" />
       </div>
       <h3 className={clsx(
-        "font-black text-slate-900 uppercase tracking-wider italic",
+        "font-mono font-semibold text-slate-900 uppercase tracking-wider ",
         compact ? "text-[10px] mb-0.5" : "text-sm mb-1"
       )}>
         {title}

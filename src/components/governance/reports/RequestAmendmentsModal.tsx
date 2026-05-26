@@ -146,7 +146,7 @@ export function RequestAmendmentsModal({
                   className="rounded-lg border border-slate-200 bg-slate-50/50 p-3"
                 >
                   <div className="mb-2 flex items-center justify-between">
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+                    <span className="font-mono text-[10px] font-semibold uppercase tracking-wide text-slate-500">
                       Amendment {idx + 1}
                     </span>
                     {drafts.length > 1 && (

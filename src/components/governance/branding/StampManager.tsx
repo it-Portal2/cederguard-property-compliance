@@ -139,7 +139,7 @@ export function StampManager() {
         {adding && (
           <div className="mb-4 space-y-3 rounded-lg border border-indigo-100 bg-indigo-50/50 p-4 dark:border-indigo-900 dark:bg-indigo-500/5">
             <div className="flex items-center justify-between">
-              <h4 className="text-xs font-semibold uppercase tracking-widest text-indigo-700 dark:text-indigo-300">
+              <h4 className="font-mono text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">
                 New stamp
               </h4>
               <button

@@ -8,7 +8,7 @@ import { useEffect } from 'react';
 import type { Programme } from '../store/useStore';
 
 const inputCls = "w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors bg-white";
-const labelCls = "block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5";
+const labelCls = "font-mono block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5";
 
 export function NewProgramme() {
     const navigate = useNavigate();

@@ -155,7 +155,7 @@ export function ReasonDialog({
             </div>
 
             <div className="px-6 pb-2">
-              <label className="block text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+              <label className="font-mono block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                 {reasonLabel}
                 {!reasonOptional && <span className="ml-1 text-rose-500">*</span>}
               </label>

@@ -58,13 +58,13 @@ export function RiskMatrixHeatmap({
     <div className="rounded-lg border border-slate-200 bg-white p-2 sm:p-3">
       {/* Header with current selection meta*/}
       <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+        <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-slate-500">
           {variant === "gross" ? "Gross matrix" : "Residual matrix"}
         </span>
         {hasSelection && (
           <span
             className={clsx(
-              "px-2 py-0.5 rounded text-[10px] font-black border whitespace-nowrap",
+              "px-2 py-0.5 rounded text-[10px] font-semibold border whitespace-nowrap",
               BAND_STYLES[bandForScore(selectedScore)].pill,
             )}
             title={`L=${selL} (${LIKELIHOOD_LABELS[selL - 1]}) × I=${selI} (${IMPACT_LABELS[selI - 1]}) = ${selectedScore}`}
@@ -82,7 +82,7 @@ export function RiskMatrixHeatmap({
             role="img"
             aria-label="Impact axis, low to high"
             className={clsx(
-              "font-black text-slate-400 uppercase tracking-widest",
+              "font-mono font-semibold text-slate-400 uppercase tracking-wide",
               labelSize,
             )}
             style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
@@ -98,7 +98,7 @@ export function RiskMatrixHeatmap({
               <div key={i} className="flex items-center gap-1">
                 <span
                   className={clsx(
-                    "w-3 text-right font-black text-slate-400 tabular-nums shrink-0",
+                    "w-3 text-right font-semibold text-slate-400 tabular-nums shrink-0",
                     labelSize,
                   )}
                   title={IMPACT_LABELS[i - 1]}
@@ -115,7 +115,7 @@ export function RiskMatrixHeatmap({
                         key={l}
                         title={`L=${l} (${LIKELIHOOD_LABELS[l - 1]}) × I=${i} (${IMPACT_LABELS[i - 1]}) = ${score} (${bandLabelForScore(score)})`}
                         className={clsx(
-                          "inline-flex items-center justify-center font-black rounded transition-all border",
+                          "inline-flex items-center justify-center font-semibold rounded transition-all border",
                           cellSize,
                           BAND_STYLES[band].cell,
                           isSelected
@@ -139,7 +139,7 @@ export function RiskMatrixHeatmap({
                   <span
                     key={l}
                     className={clsx(
-                      "inline-flex items-center justify-center font-black text-slate-400 tabular-nums",
+                      "inline-flex items-center justify-center font-semibold text-slate-400 tabular-nums",
                       cellSize,
                       labelSize,
                     )}
@@ -154,7 +154,7 @@ export function RiskMatrixHeatmap({
               <span className="w-3 shrink-0" />
               <span
                 className={clsx(
-                  "font-black text-slate-400 uppercase tracking-widest text-center w-full",
+                  "font-mono font-semibold text-slate-400 uppercase tracking-wide text-center w-full",
                   labelSize,
                 )}
               >

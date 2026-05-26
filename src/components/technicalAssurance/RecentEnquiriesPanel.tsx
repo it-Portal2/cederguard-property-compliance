@@ -54,7 +54,7 @@ export function RecentEnquiriesPanel({
             Recent enquiries
           </h2>
         </div>
-        <span className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+        <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-400">
           Last {recent.length}
         </span>
       </div>
@@ -77,7 +77,7 @@ export function RecentEnquiriesPanel({
                   </h3>
                   <span
                     className={clsx(
-                      "shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+                      "font-mono shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider",
                       STATUS_PILL[e.status],
                     )}
                   >

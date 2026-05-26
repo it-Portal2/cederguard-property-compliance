@@ -156,7 +156,7 @@ export function SchedulePlannerView({ canEdit, onMeetingsChanged }: Props) {
       {/* Action bar*/}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+          <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-slate-500">
             Filter
           </span>
           {(['Scheduled', 'Held', 'Cancelled', 'all'] as const).map((s) => (

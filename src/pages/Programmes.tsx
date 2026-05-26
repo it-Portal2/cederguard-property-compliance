@@ -151,7 +151,7 @@ export function Programmes() {
                                     showArchived ? "left-6" : "left-1"
                                 )} />
                             </div>
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest group-hover:text-amber-600 transition-colors">
+                            <span className="font-mono text-[10px] font-medium text-slate-500 uppercase tracking-wide group-hover:text-amber-600 transition-colors">
                                 Show Archived Programmes
                             </span>
                         </label>
@@ -198,17 +198,17 @@ export function Programmes() {
                                     </div>
                                     <div className="flex items-center gap-2">
                                         {programme.status === 'Draft' && (
-                                            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-[10px] font-bold uppercase tracking-wider">
+                                            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded font-mono text-[10px] font-medium uppercase tracking-wide">
                                                 Draft
                                             </span>
                                         )}
                                         {programme.isArchived && (
-                                            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-[10px] font-bold uppercase tracking-wider">
+                                            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded font-mono text-[10px] font-medium uppercase tracking-wide">
                                                 Archived
                                             </span>
                                         )}
                                         {activeProgrammeId === programme.id && !programme.isArchived && (
-                                            <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[10px] font-bold uppercase tracking-wider">
+                                            <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded font-mono text-[10px] font-medium uppercase tracking-wide">
                                                 Active
                                             </span>
                                         )}
@@ -226,7 +226,7 @@ export function Programmes() {
                                         {programme.name}
                                     </h3>
                                     <div className="flex items-center justify-between gap-2">
-                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                                        <p className="font-mono text-[11px] font-medium text-slate-400 uppercase tracking-wide tabular-nums">
                                             {programme.reference}
                                         </p>
                                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -266,16 +266,16 @@ export function Programmes() {
                                     <div className="space-y-1">
                                         <div className="flex items-center gap-1.5 text-slate-400">
                                             <Layers className="w-3.5 h-3.5" />
-                                            <span className="text-[10px] font-bold uppercase tracking-wider">Projects</span>
+                                            <span className="font-mono text-[10px] font-medium uppercase tracking-wide">Projects</span>
                                         </div>
-                                        <p className="text-sm font-bold text-slate-700">{getProjectCount(programme.id)}</p>
+                                        <p className="text-sm font-medium text-slate-700 tabular-nums">{getProjectCount(programme.id)}</p>
                                     </div>
                                     <div className="space-y-1">
                                         <div className="flex items-center gap-1.5 text-slate-400">
                                             <TrendingUp className="w-3.5 h-3.5" />
-                                            <span className="text-[10px] font-bold uppercase tracking-wider">Value</span>
+                                            <span className="font-mono text-[10px] font-medium uppercase tracking-wide">Value</span>
                                         </div>
-                                        <p className="text-sm font-bold text-slate-700">{programme.totalValue || 'Not Set'}</p>
+                                        <p className="text-sm font-medium text-slate-700 tabular-nums">{programme.totalValue || 'Not Set'}</p>
                                     </div>
                                 </div>
 
@@ -291,9 +291,9 @@ export function Programmes() {
                                                     title={pillar.label}
                                                 />
                                         ))}
-                                        <span className="ml-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Setup Status</span>
+                                        <span className="ml-2 font-mono text-[10px] font-medium text-slate-400 uppercase tracking-wide">Setup Status</span>
                                     </div>
-                                    <div className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
+                                    <div className="font-mono text-[10px] font-medium text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded tabular-nums">
                                         {calculateProgrammeProgress(programme).percentage}%
                                     </div>
                                 </div>

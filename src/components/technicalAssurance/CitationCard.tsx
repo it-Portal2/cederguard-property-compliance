@@ -53,7 +53,7 @@ export function CitationCard({ citation }: CitationCardProps) {
       >
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+            <div className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-400">
               {documentLabel}
             </div>
             <div className="mt-0.5 flex items-center gap-2">
@@ -97,7 +97,7 @@ export function CitationCard({ citation }: CitationCardProps) {
             <div className="space-y-3 px-4 py-3">
               {citation.quote ? (
                 <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+                  <div className="font-mono text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                     Verbatim excerpt
                   </div>
                   <p className="mt-1 text-[12px] italic leading-5 text-slate-700">

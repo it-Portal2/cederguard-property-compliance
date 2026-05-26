@@ -243,7 +243,7 @@ export function ChatPage() {
       {/* Header */}
       <div className="flex items-center justify-between pb-3 border-b border-slate-200 flex-shrink-0">
         <div className="min-w-0">
-          <h1 className="text-lg font-black text-slate-900 tracking-tight leading-tight">
+          <h1 className="text-lg font-semibold text-slate-900 tracking-tight leading-tight">
             Cedar AI Chat
           </h1>
           <p className="text-[11px] text-slate-400 mt-0.5 hidden sm:block">
@@ -317,7 +317,7 @@ export function ChatPage() {
               <div className="w-14 h-14 rounded-lg bg-indigo-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-200">
                 <MessageSquareDashed className="w-7 h-7 text-white" />
               </div>
-              <h2 className="text-base font-black text-slate-900">
+              <h2 className="text-base font-semibold text-slate-900">
                 How can I help today?
               </h2>
               <p className="text-xs text-slate-500 mt-1 max-w-xs">

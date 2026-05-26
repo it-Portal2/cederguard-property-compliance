@@ -179,7 +179,7 @@ export function Invoices() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-black text-slate-900 flex items-center gap-3">
+          <h1 className="text-xl font-semibold text-slate-900 flex items-center gap-3">
             <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
               <HistoryIcon className="w-7 h-7" />
             </div>
@@ -237,11 +237,11 @@ export function Invoices() {
             <table className="w-full text-left">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Invoice / Date</th>
-                  {isAdmin && <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Client</th>}
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Action</th>
+                  <th className="px-6 py-4 text-[11px] font-mono font-medium text-slate-500 uppercase tracking-wide">Invoice / Date</th>
+                  {isAdmin && <th className="px-6 py-4 text-[11px] font-mono font-medium text-slate-500 uppercase tracking-wide">Client</th>}
+                  <th className="px-6 py-4 text-[11px] font-mono font-medium text-slate-500 uppercase tracking-wide">Amount</th>
+                  <th className="px-6 py-4 text-[11px] font-mono font-medium text-slate-500 uppercase tracking-wide">Status</th>
+                  <th className="px-6 py-4 text-[11px] font-mono font-medium text-slate-500 uppercase tracking-wide text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -265,11 +265,11 @@ export function Invoices() {
                       </td>
                     )}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-black text-indigo-600 font-mono">{fmtGBP(inv.totalAmount)}</span>
+                      <span className="text-sm font-semibold text-indigo-600 font-mono">{fmtGBP(inv.totalAmount)}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={clsx(
-                        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-medium uppercase tracking-wide",
                         inv.status === 'Paid' ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : 
                         "bg-amber-50 text-amber-700 border border-amber-100"
                       )}>

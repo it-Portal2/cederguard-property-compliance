@@ -102,7 +102,7 @@ export function PricingTab() {
                 {/* Infrastructure & SaaS Sections */}
                 {['firestore', 'gemini', 'vercel', 'firebaseStorage', 'support', 'training', 'devOps'].map(sectionKey => (
                     <div key={sectionKey}>
-                        <h3 className="text-md font-semibold text-slate-800 mb-4 border-b pb-2 uppercase tracking-wide">
+                        <h3 className="font-mono text-md font-semibold text-slate-800 mb-4 border-b pb-2 uppercase tracking-wide">
                             {sectionKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
                         </h3>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -119,7 +119,7 @@ export function PricingTab() {
                     if (typeof val !== 'object' || val === null) return null;
                     return (
                         <div key={key}>
-                            <h3 className="text-md font-semibold text-slate-800 mb-4 border-b pb-2 uppercase tracking-wide">
+                            <h3 className="font-mono text-md font-semibold text-slate-800 mb-4 border-b pb-2 uppercase tracking-wide">
                                 {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
                             </h3>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

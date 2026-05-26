@@ -159,7 +159,7 @@ export function ProjectsTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
                             setSchemeType('All Types');
                             setFlags({ hrb: false, overdue: false, leaseholders: false });
                         }}
-                        className="text-[10px] font-black uppercase tracking-wider text-slate-400 hover:text-indigo-600 transition-colors"
+                        className="font-mono text-[10px] font-medium uppercase tracking-wide text-slate-400 hover:text-indigo-600 transition-colors"
                     >
                         Reset All
                     </button>
@@ -182,7 +182,7 @@ export function ProjectsTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
 
                     {/* Programme */}
                     <div className="space-y-2">
-                        <label className="text-[11px] font-black uppercase tracking-wider text-slate-400">Programme</label>
+                        <label className="font-mono text-[11px] font-medium uppercase tracking-wide text-slate-400">Programme</label>
                         <div className="grid grid-cols-1 gap-1">
                             {PROGRAMMES.map(p => {
                                 const count = p === 'All Programmes' ? projects.length : projects.filter(prj => prj.programme === p).length;
@@ -197,7 +197,7 @@ export function ProjectsTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
                                     >
                                         <span className="truncate">{p}</span>
                                         <span className={clsx(
-                                            "text-[10px] px-1.5 py-0.5 rounded-full font-bold",
+                                            "font-mono text-[10px] px-1.5 py-0.5 rounded-full font-medium tabular-nums",
                                             programme === p ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-400"
                                         )}>{count}</span>
                                     </button>
@@ -208,7 +208,7 @@ export function ProjectsTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
 
                     {/* RAG Status */}
                     <div className="space-y-2">
-                        <label className="text-[11px] font-black uppercase tracking-wider text-slate-400">RAG Status</label>
+                        <label className="font-mono text-[11px] font-medium uppercase tracking-wide text-slate-400">RAG Status</label>
                         <div className="grid grid-cols-1 gap-1">
                             {['All', 'Red', 'Amber', 'Green'].map(s => {
                                 const count = s === 'All' ? projects.length : projects.filter(prj => prj.rag === s).length;
@@ -232,7 +232,7 @@ export function ProjectsTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
                                             {s === 'All' ? 'All' : s}
                                         </div>
                                         <span className={clsx(
-                                            "text-[10px] px-1.5 py-0.5 rounded-full font-bold",
+                                            "font-mono text-[10px] px-1.5 py-0.5 rounded-full font-medium tabular-nums",
                                             ragStatus === actualS ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-400"
                                         )}>{count}</span>
                                     </button>
@@ -243,7 +243,7 @@ export function ProjectsTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
 
                     {/* RIBA Stage */}
                     <div className="space-y-2">
-                        <label className="text-[11px] font-black uppercase tracking-wider text-slate-400">RIBA Stage</label>
+                        <label className="font-mono text-[11px] font-medium uppercase tracking-wide text-slate-400">RIBA Stage</label>
                         <div className="grid grid-cols-1 gap-1">
                             {ribaStagesOptions.map(s => {
                                 const count = s.id === 'All Stages' ? projects.length : projects.filter(prj => prj.riba === s.id).length;
@@ -258,7 +258,7 @@ export function ProjectsTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
                                     >
                                         <span className="truncate">{s.label}</span>
                                         <span className={clsx(
-                                            "text-[10px] px-1.5 py-0.5 rounded-full font-bold ml-2",
+                                            "font-mono text-[10px] px-1.5 py-0.5 rounded-full font-medium ml-2 tabular-nums",
                                             ribaStage === s.id ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-400"
                                         )}>{count}</span>
                                     </button>
@@ -269,7 +269,7 @@ export function ProjectsTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
 
                     {/* Scheme Type */}
                     <div className="space-y-2">
-                        <label className="text-[11px] font-black uppercase tracking-wider text-slate-400">Scheme Type</label>
+                        <label className="font-mono text-[11px] font-medium uppercase tracking-wide text-slate-400">Scheme Type</label>
                         <div className="grid grid-cols-1 gap-1">
                             {SCHEME_TYPES.map(t => {
                                 const count = t === 'All Types' ? projects.length : projects.filter(prj => prj.schemeType === t).length;
@@ -284,7 +284,7 @@ export function ProjectsTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
                                     >
                                         <span>{t === 'All Types' ? 'All types' : t}</span>
                                         <span className={clsx(
-                                            "text-[10px] px-1.5 py-0.5 rounded-full font-bold",
+                                            "font-mono text-[10px] px-1.5 py-0.5 rounded-full font-medium tabular-nums",
                                             schemeType === t ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-400"
                                         )}>{count}</span>
                                     </button>
@@ -295,7 +295,7 @@ export function ProjectsTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
 
                     {/* Flags */}
                     <div className="space-y-2 pt-2 border-t border-slate-100">
-                        <label className="text-[11px] font-black uppercase tracking-wider text-slate-400">Flags</label>
+                        <label className="font-mono text-[11px] font-medium uppercase tracking-wide text-slate-400">Flags</label>
                         <div className="space-y-2">
                             <label className="flex items-center justify-between group cursor-pointer">
                                 <div className="flex items-center gap-3">
@@ -303,7 +303,7 @@ export function ProjectsTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
                                     <span className="text-sm font-medium text-slate-600 group-hover:text-slate-900 transition-colors">HRB schemes</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-400 rounded-full font-bold">{projects.filter(p => p.isHRB).length}</span>
+                                    <span className="font-mono text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-400 rounded-full font-medium tabular-nums">{projects.filter(p => p.isHRB).length}</span>
                                     <input type="checkbox" checked={flags.hrb} onChange={e => setFlags({ ...flags, hrb: e.target.checked })} className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 hidden" />
                                 </div>
                             </label>
@@ -313,7 +313,7 @@ export function ProjectsTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
                                     <span className="text-sm font-medium text-slate-600 group-hover:text-slate-900 transition-colors">Overdue actions</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-400 rounded-full font-bold">{projects.filter(p => p.isOverdue || (p.overdueCount || 0) > 0).length}</span>
+                                    <span className="font-mono text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-400 rounded-full font-medium tabular-nums">{projects.filter(p => p.isOverdue || (p.overdueCount || 0) > 0).length}</span>
                                     <input type="checkbox" checked={flags.overdue} onChange={e => setFlags({ ...flags, overdue: e.target.checked })} className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 hidden" />
                                 </div>
                             </label>
@@ -323,7 +323,7 @@ export function ProjectsTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
                                     <span className="text-sm font-medium text-slate-600 group-hover:text-slate-900 transition-colors">Leaseholders</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-400 rounded-full font-bold">{projects.filter(p => p.hasLeaseholders).length}</span>
+                                    <span className="font-mono text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-400 rounded-full font-medium tabular-nums">{projects.filter(p => p.hasLeaseholders).length}</span>
                                     <input type="checkbox" checked={flags.leaseholders} onChange={e => setFlags({ ...flags, leaseholders: e.target.checked })} className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 hidden" />
                                 </div>
                             </label>
@@ -363,19 +363,19 @@ export function ProjectsTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
                 {/* Stats Row */}
                 <div className="flex items-center gap-10 py-1">
                     <div className="text-center">
-                        <p className="text-3xl font-bold text-slate-900 leading-none">{stats.total}</p>
+                        <p className="text-3xl font-medium text-slate-900 leading-none tabular-nums">{stats.total}</p>
                         <p className="text-xs text-slate-500 mt-1">Total projects</p>
                     </div>
                     <div className="text-center">
-                        <p className="text-3xl font-bold text-red-600 leading-none">{stats.red}</p>
+                        <p className="text-3xl font-medium text-red-600 leading-none tabular-nums">{stats.red}</p>
                         <p className="text-xs text-slate-500 mt-1">RAG red</p>
                     </div>
                     <div className="text-center">
-                        <p className="text-3xl font-bold text-amber-500 leading-none">{stats.amber}</p>
+                        <p className="text-3xl font-medium text-amber-500 leading-none tabular-nums">{stats.amber}</p>
                         <p className="text-xs text-slate-500 mt-1">RAG amber</p>
                     </div>
                     <div className="text-center">
-                        <p className="text-3xl font-bold text-emerald-600 leading-none">{stats.green}</p>
+                        <p className="text-3xl font-medium text-emerald-600 leading-none tabular-nums">{stats.green}</p>
                         <p className="text-xs text-slate-500 mt-1">RAG green</p>
                     </div>
                 </div>
@@ -416,7 +416,7 @@ export function ProjectsTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
                                     >
                                         <div className="flex items-start justify-between gap-4">
                                             <div className="flex items-start gap-3 min-w-0">
-                                                <span className="mt-0.5 shrink-0 text-[10px] font-bold px-2 py-0.5 bg-slate-100 text-slate-600 rounded uppercase tracking-wide whitespace-nowrap">
+                                                <span className="mt-0.5 shrink-0 font-mono text-[10px] font-medium px-2 py-0.5 bg-slate-100 text-slate-600 rounded uppercase tracking-wide whitespace-nowrap">
                                                     {project.referenceId || 'P-001'}
                                                 </span>
                                                 <div className="min-w-0">
@@ -431,7 +431,7 @@ export function ProjectsTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
                                             </div>
                                             <div className="flex items-center gap-2 shrink-0">
                                                 {project.isHRB && (
-                                                    <span className="text-[10px] font-bold px-2 py-0.5 bg-red-100 text-red-700 rounded uppercase">HRB</span>
+                                                    <span className="font-mono text-[10px] font-medium px-2 py-0.5 bg-red-100 text-red-700 rounded uppercase tracking-wide">HRB</span>
                                                 )}
                                                 <span className={clsx('inline-flex items-center gap-1.5 text-sm font-semibold', ragText)}>
                                                     <span className={`w-2 h-2 rounded-full ${ragDot}`} />
@@ -449,7 +449,7 @@ export function ProjectsTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
                                                 {/* Left column */}
                                                 <div className="space-y-5">
                                                     <div>
-                                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Project Details</p>
+                                                        <p className="font-mono text-[10px] font-medium uppercase tracking-wide text-slate-400 mb-2">Project Details</p>
                                                         <div className="border border-slate-100 rounded-lg overflow-hidden">
                                                             {([
                                                                 { label: 'Programme', value: project.programme || '—' },
@@ -470,7 +470,7 @@ export function ProjectsTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
                                                     </div>
 
                                                     <div>
-                                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Delivery Team</p>
+                                                        <p className="font-mono text-[10px] font-medium uppercase tracking-wide text-slate-400 mb-2">Delivery Team</p>
                                                         <div className="border border-slate-100 rounded-lg overflow-hidden">
                                                             {([
                                                                 { label: 'Project manager', value: getPMName(project.projectManagerId || project.userId) },
@@ -487,13 +487,13 @@ export function ProjectsTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
                                                     </div>
 
                                                     <div>
-                                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Key Milestones</p>
+                                                        <p className="font-mono text-[10px] font-medium uppercase tracking-wide text-slate-400 mb-2">Key Milestones</p>
                                                         <div className="border border-slate-100 rounded-lg overflow-hidden">
                                                             <div className="grid grid-cols-2 gap-2 px-3 py-1.5 border-b border-slate-100">
                                                                 <span className="text-xs text-slate-500">Start on site</span>
                                                                 <div className="flex items-center gap-2">
                                                                     <span className="text-xs font-semibold text-amber-600">{project.startOnSite || 'Aug 2026 — at risk'}</span>
-                                                                    <span className="text-[10px] bg-slate-100 text-slate-600 font-bold px-1.5 py-0.5 rounded">{project.daysToStart || '109d'}</span>
+                                                                    <span className="font-mono text-[10px] bg-slate-100 text-slate-600 font-medium px-1.5 py-0.5 rounded tabular-nums">{project.daysToStart || '109d'}</span>
                                                                 </div>
                                                             </div>
                                                             <div className="grid grid-cols-2 gap-2 px-3 py-1.5">
@@ -521,37 +521,37 @@ export function ProjectsTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
                                                 {/* Right column */}
                                                 <div className="space-y-5">
                                                     <div>
-                                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Risk &amp; Compliance Snapshot</p>
+                                                        <p className="font-mono text-[10px] font-medium uppercase tracking-wide text-slate-400 mb-2">Risk &amp; Compliance Snapshot</p>
                                                         <div className="grid grid-cols-3 gap-1.5">
                                                             <div className="text-center p-3 bg-white border border-slate-200 rounded-lg">
-                                                                <p className="text-xl font-bold text-slate-900 leading-none">{project.openRisks ?? 6}</p>
+                                                                <p className="text-xl font-medium text-slate-900 leading-none tabular-nums">{project.openRisks ?? 6}</p>
                                                                 <p className="text-[10px] text-slate-500 mt-1">Open risks</p>
                                                             </div>
                                                             <div className="text-center p-3 bg-red-50 border border-red-100 rounded-lg">
-                                                                <p className="text-xl font-bold text-red-600 leading-none">{project.severeRisks ?? 2}</p>
+                                                                <p className="text-xl font-medium text-red-600 leading-none tabular-nums">{project.severeRisks ?? 2}</p>
                                                                 <p className="text-[10px] text-red-500 mt-1">Severe</p>
                                                             </div>
                                                             <div className="text-center p-3 bg-white border border-slate-200 rounded-lg">
-                                                                <p className="text-xl font-bold text-slate-900 leading-none">{project.openIssues ?? 1}</p>
+                                                                <p className="text-xl font-medium text-slate-900 leading-none tabular-nums">{project.openIssues ?? 1}</p>
                                                                 <p className="text-[10px] text-slate-500 mt-1">Open issues</p>
                                                             </div>
                                                             <div className="text-center p-3 bg-amber-50 border border-amber-100 rounded-lg">
-                                                                <p className="text-xl font-bold text-amber-700 leading-none">{project.nonCompliant ?? 7}</p>
+                                                                <p className="text-xl font-medium text-amber-700 leading-none tabular-nums">{project.nonCompliant ?? 7}</p>
                                                                 <p className="text-[10px] text-amber-600 mt-1">Non-compliant</p>
                                                             </div>
                                                             <div className="text-center p-3 bg-white border border-slate-200 rounded-lg">
-                                                                <p className="text-xl font-bold text-slate-900 leading-none">{project.posturePct ?? 68}%</p>
+                                                                <p className="text-xl font-medium text-slate-900 leading-none tabular-nums">{project.posturePct ?? 68}%</p>
                                                                 <p className="text-[10px] text-slate-500 mt-1">Posture</p>
                                                             </div>
                                                             <div className="text-center p-3 bg-white border border-slate-200 rounded-lg">
-                                                                <p className="text-xl font-bold text-slate-900 leading-none">{project.overdueCount ?? 3}</p>
+                                                                <p className="text-xl font-medium text-slate-900 leading-none tabular-nums">{project.overdueCount ?? 3}</p>
                                                                 <p className="text-[10px] text-slate-500 mt-1">Overdue</p>
                                                             </div>
                                                         </div>
                                                     </div>
 
                                                     <div>
-                                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Active Alerts</p>
+                                                        <p className="font-mono text-[10px] font-medium uppercase tracking-wide text-slate-400 mb-2">Active Alerts</p>
                                                         {project.alertsCount > 0 ? (
                                                             <div className="space-y-1.5">
                                                                 <div className="flex overflow-hidden rounded-lg border border-red-100">
@@ -580,7 +580,7 @@ export function ProjectsTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
                                                     </div>
 
                                                     <div>
-                                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Quick Access</p>
+                                                        <p className="font-mono text-[10px] font-medium uppercase tracking-wide text-slate-400 mb-2">Quick Access</p>
                                                         <div className="grid grid-cols-2 gap-1.5">
                                                             <button
                                                                 onClick={async () => { setOpeningProjectId(project.id); await loadProjectData(project.id); navigate('/risk/register'); setOpeningProjectId(null); }}

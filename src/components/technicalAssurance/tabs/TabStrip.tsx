@@ -102,7 +102,7 @@ export function TabStrip({ activeTab, onChange }: TabStripProps) {
               <Icon className="h-4 w-4" strokeWidth={2.25} />
               {spec.label}
               {!spec.available && (
-                <span className="ml-1 inline-flex items-center rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-500">
+                <span className="font-mono ml-1 inline-flex items-center rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-500">
                   Soon
                 </span>
               )}

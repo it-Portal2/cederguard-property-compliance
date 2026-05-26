@@ -249,7 +249,7 @@ export function AIDraftModal({
           <div className="flex-1 overflow-y-auto px-5 py-4">
             {/* Context preview*/}
             <section className="space-y-1.5">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                 Context the AI will see
               </p>
               <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
@@ -281,7 +281,7 @@ export function AIDraftModal({
             <section className="mt-4 space-y-1.5">
               <label
                 htmlFor="ai-instruction"
-                className="text-[11px] font-semibold uppercase tracking-wide text-slate-500"
+                className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-500"
               >
                 What do you want the AI to draft?
               </label>
@@ -322,7 +322,7 @@ export function AIDraftModal({
             {/* Result preview*/}
             {result && (
               <section className="mt-4 space-y-1.5">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-indigo-600">
+                <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-indigo-600">
                   AI draft (preview)
                 </p>
                 <div className="whitespace-pre-wrap rounded-lg border border-indigo-200 bg-indigo-50/40 px-3 py-2.5 text-sm italic text-slate-800">

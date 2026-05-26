@@ -346,7 +346,7 @@ export function ForwardPlanImportModal({ isOpen, onClose, onCommitted }: Props) 
                 {/* Preview table — first 200 rows to keep DOM light */}
                 <div className="overflow-hidden rounded-lg border border-slate-200">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                    <thead className="font-mono bg-slate-50 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                       <tr>
                         <th className="px-3 py-2">Row</th>
                         <th className="px-3 py-2">Title</th>
@@ -562,7 +562,7 @@ function SummaryCard({
 }) {
   return (
     <div className={clsx('rounded-lg border px-3 py-2', TONE_CLS[tone])}>
-      <p className="text-[10px] font-semibold uppercase tracking-wider opacity-75">
+      <p className="font-mono text-[10px] font-semibold uppercase tracking-wider opacity-75">
         {label}
       </p>
       <p className="mt-0.5 text-lg font-bold tabular-nums">{value}</p>

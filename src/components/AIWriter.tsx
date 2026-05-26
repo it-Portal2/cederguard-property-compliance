@@ -166,7 +166,7 @@ export const AIWriter: React.FC<AIWriterProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-indigo-700">
               <ScanSearch className="w-3.5 h-3.5" />
-              <span className="text-[11px] font-semibold uppercase tracking-wider">
+              <span className="font-mono text-[11px] font-medium uppercase tracking-wide">
                 Guide the AI
               </span>
             </div>
@@ -236,7 +236,7 @@ export const AIWriter: React.FC<AIWriterProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-indigo-700">
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span className="text-[11px] font-semibold uppercase tracking-wider">
+              <span className="font-mono text-[11px] font-medium uppercase tracking-wide">
                 AI Suggestion
               </span>
             </div>
@@ -251,7 +251,7 @@ export const AIWriter: React.FC<AIWriterProps> = ({
           </div>
 
           <div className="max-h-36 overflow-y-auto rounded-lg">
-            <p className="text-xs text-slate-700 leading-relaxed italic whitespace-pre-wrap px-1">
+            <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap px-1">
               &ldquo;{result}&rdquo;
             </p>
           </div>

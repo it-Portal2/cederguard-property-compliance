@@ -120,7 +120,7 @@ function FilterSection({
 }) {
   return (
     <div className="mb-6">
-      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
+      <p className="font-mono text-[10px] font-medium uppercase tracking-wide text-slate-400 mb-2">
         {title}
       </p>
       {children}
@@ -387,14 +387,14 @@ export function Projects() {
         <div className="md:hidden sticky top-14 z-30 bg-slate-50/80 backdrop-blur-md -mx-4 px-4 py-3 border-b border-slate-200 space-y-3 mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-lg font-black text-slate-900 tracking-tight leading-none mb-1">
+              <h1 className="text-lg font-semibold text-slate-900 tracking-tight leading-none mb-1">
                 My projects
               </h1>
               <div className="flex items-center gap-2">
-                <div className="text-[9px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-1.5 py-0.5 rounded">
+                <div className="font-mono text-[10px] font-medium text-indigo-600 uppercase tracking-wide bg-indigo-50 px-1.5 py-0.5 rounded tabular-nums">
                   {total} TOTAL
                 </div>
-                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                <div className="font-mono text-[10px] font-medium text-slate-400 uppercase tracking-wide">
                   {isAdminView ? "Admin View" : "PM View"}
                 </div>
               </div>
@@ -409,7 +409,7 @@ export function Projects() {
               </button>
               <button
                 onClick={() => setShowFilters(true)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-xs font-black text-slate-700 shadow-sm transition-transform active:scale-95"
+                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-700 shadow-sm transition-transform active:scale-95"
               >
                 <Filter className="w-3.5 h-3.5 text-indigo-500" />
                 Filters
@@ -444,7 +444,7 @@ export function Projects() {
                 className="fixed inset-y-0 left-0 w-70 bg-white z-70 md:hidden shadow-2xl flex flex-col"
               >
                 <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-                  <h3 className="font-black text-slate-900 uppercase tracking-tight text-sm">
+                  <h3 className="font-mono text-sm font-semibold text-slate-900 uppercase tracking-wide">
                     Filters
                   </h3>
                   <button
@@ -482,10 +482,10 @@ export function Projects() {
           <div className="hidden md:flex flex-row items-end justify-between gap-4 mb-8">
             <div>
               <div className="flex items-center gap-3 mb-1">
-                <h1 className="text-xl font-black text-slate-900 tracking-tight">
+                <h1 className="text-xl font-semibold text-slate-900 tracking-tight">
                   My projects
                 </h1>
-                <div className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-xs font-black uppercase tracking-wider shadow-sm">
+                <div className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full font-mono text-[11px] font-medium uppercase tracking-wide shadow-sm tabular-nums">
                   {total} TOTAL
                 </div>
               </div>
@@ -519,7 +519,7 @@ export function Projects() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => { exportProjectsCSV(filtered, programmes); toast.success(`Exported ${filtered.length} projects to CSV`); }}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
+                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
               >
                 <Download className="w-4 h-4 text-slate-400" /> Export CSV
               </button>
@@ -530,7 +530,7 @@ export function Projects() {
                     setActiveProgramme(null);
                     navigate("/projects/new");
                   }}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800 transition-all shadow-lg shadow-slate-200"
+                  className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-slate-800 transition-all shadow-lg shadow-slate-200"
                 >
                   <Plus className="w-4 h-4" /> Create Project
                 </button>
@@ -562,10 +562,10 @@ export function Projects() {
                 key={label}
                 className="bg-white border border-slate-200 rounded-lg p-4 text-center md:text-left"
               >
-                <p className={clsx("text-xl font-black truncate", color)}>
+                <p className={clsx("text-xl font-medium truncate tabular-nums", color)}>
                   {value}
                 </p>
-                <p className="text-[10px] md:text-xs text-slate-500 mt-0.5 font-bold uppercase tracking-wider">
+                <p className="font-mono text-[11px] text-slate-500 mt-0.5 font-medium uppercase tracking-wide">
                   {label}
                 </p>
               </div>
@@ -621,7 +621,7 @@ export function Projects() {
 
                       <div className="px-5 py-5 md:py-4 flex items-center gap-4">
                         {/* Ref badge */}
-                        <span className="shrink-0 px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] md:text-[11px] font-black tracking-wide hidden sm:block">
+                        <span className="shrink-0 px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg font-mono text-[11px] font-medium tracking-wide tabular-nums hidden sm:block">
                           {ref}
                         </span>
 
@@ -639,7 +639,7 @@ export function Projects() {
                               {project.name || "Untitled Project"}
                             </span>
                             {project.isHRB && (
-                              <span className="px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded text-[9px] font-black uppercase tracking-wider shrink-0">
+                              <span className="px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded font-mono text-[10px] font-medium uppercase tracking-wide shrink-0">
                                 HRB
                               </span>
                             )}
@@ -658,7 +658,7 @@ export function Projects() {
                               {rag}
                             </span>
                             {project.isArchived && (
-                              <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded text-[9px] font-black uppercase tracking-wider shrink-0 border border-slate-200">
+                              <span className="px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded font-mono text-[10px] font-medium uppercase tracking-wide shrink-0 border border-slate-200">
                                 Archived
                               </span>
                             )}
@@ -780,7 +780,7 @@ export function Projects() {
                   <AlertTriangle className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-black text-slate-800 uppercase tracking-tighter text-lg">
+                  <h3 className="text-2xl font-semibold text-slate-800 tracking-tight">
                     Delete Project
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5 truncate max-w-50">
@@ -801,14 +801,14 @@ export function Projects() {
                 <button
                   onClick={() => setDeleteModal(null)}
                   disabled={isDeleting}
-                  className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-lg text-xs font-black uppercase hover:bg-slate-50 transition-colors tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={confirmDeleteProject}
                   disabled={isDeleting}
-                  className="flex-1 px-4 py-2.5 bg-rose-600 text-white rounded-lg text-xs font-black uppercase hover:bg-rose-700 transition-all shadow-lg shadow-rose-200 tracking-widest disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2.5 bg-rose-600 text-white rounded-lg text-sm font-medium hover:bg-rose-700 transition-all shadow-lg shadow-rose-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isDeleting && (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -847,7 +847,7 @@ export function Projects() {
                   )}
                 </div>
                 <div>
-                  <h3 className="font-black text-slate-800 uppercase tracking-tighter text-lg">
+                  <h3 className="text-2xl font-semibold text-slate-800 tracking-tight">
                     {archiveModal.isArchived
                       ? "Restore Project"
                       : "Archive Project"}
@@ -881,7 +881,7 @@ export function Projects() {
                 <button
                   onClick={() => setArchiveModal(null)}
                   disabled={isArchiving}
-                  className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-lg text-xs font-black uppercase hover:bg-slate-50 transition-colors tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
@@ -889,7 +889,7 @@ export function Projects() {
                   onClick={confirmArchiveProject}
                   disabled={isArchiving}
                   className={clsx(
-                    "flex-1 px-4 py-2.5 text-white rounded-lg text-xs font-black uppercase transition-all shadow-lg tracking-widest disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2",
+                    "flex-1 px-4 py-2.5 text-white rounded-lg text-sm font-medium transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2",
                     archiveModal.isArchived
                       ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200"
                       : "bg-amber-600 hover:bg-amber-700 shadow-amber-200",
@@ -997,7 +997,7 @@ export function Projects() {
                 </button>
               ))}
               {filtered.length > 10 && (
-                <p className="text-[10px] text-slate-400 px-3 py-1 italic">
+                <p className="text-[10px] text-slate-400 px-3 py-1 ">
                   +{filtered.length - 10} more...
                 </p>
               )}
@@ -1097,7 +1097,7 @@ export function Projects() {
                     <span className="truncate text-left" title={s}>
                       {s}
                     </span>
-                    <span className="text-[9px] opacity-60 font-black ml-2">
+                    <span className="text-[9px] opacity-60 font-semibold ml-2">
                       {count}
                     </span>
                   </button>
@@ -1139,7 +1139,7 @@ export function Projects() {
                   <span className="truncate" title={st}>
                     {st}
                   </span>
-                  <span className="text-[9px] opacity-60 font-black">{c}</span>
+                  <span className="text-[9px] opacity-60 font-semibold">{c}</span>
                 </button>
               );
             })}
@@ -1185,7 +1185,7 @@ export function Projects() {
                 <span>{label}</span>
                 <span
                   className={clsx(
-                    "text-[9px] px-1.5 py-0.5 rounded-full font-black",
+                    "text-[9px] px-1.5 py-0.5 rounded-full font-semibold",
                     flagFilter === key
                       ? "bg-amber-200 text-amber-800"
                       : "bg-slate-100 text-slate-400",

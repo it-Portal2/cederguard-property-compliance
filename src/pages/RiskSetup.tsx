@@ -754,7 +754,7 @@ export function RiskSetup() {
                                                     activePhase === idx ? "bg-indigo-600" : "bg-slate-200"
                                                 )}></div>
                                                 <div>
-                                                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-0.5">Step {String(idx + 1).padStart(2, '0')}</p>
+                                                    <p className="text-xs font-mono font-medium text-slate-500 uppercase tracking-wide mb-0.5">Step {String(idx + 1).padStart(2, '0')}</p>
                                                     <h2 className="text-lg font-semibold text-slate-900">{phase.phase.split(': ')[1]}</h2>
                                                 </div>
                                             </div>
@@ -840,7 +840,7 @@ export function RiskSetup() {
                                                                     <ScanSearch className="w-4 h-4" />
                                                                 </span>
                                                                 <div className="space-y-0.5 min-w-0">
-                                                                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">AI risk insight</p>
+                                                                    <p className="text-xs font-mono font-medium text-slate-500 uppercase tracking-wide">AI risk insight</p>
                                                                     <p className="text-xs text-slate-600 leading-relaxed">
                                                                         {q.trigger}
                                                                     </p>
@@ -920,7 +920,7 @@ export function RiskSetup() {
                         {!done && (
                             <aside className="hidden xl:block space-y-4">
                                 <div className="p-4 bg-white rounded-lg border border-slate-200">
-                                    <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3 px-1">Setup progress</h3>
+                                    <h3 className="text-xs font-mono font-medium text-slate-500 uppercase tracking-wide mb-3 px-1">Setup progress</h3>
                                     <nav className="space-y-0.5">
                                         {currentQuestions.map((p, i) => {
                                             const isComplete = p.questions.every(q => answers[q.id] && (Array.isArray(answers[q.id]) ? answers[q.id].length > 0 : true));
@@ -954,7 +954,7 @@ export function RiskSetup() {
 
                                 <div className="p-4 bg-white rounded-lg border border-slate-200">
                                     <div className="flex items-center justify-between gap-2 mb-2">
-                                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">AI readiness</span>
+                                        <span className="text-xs font-mono font-medium text-slate-500 uppercase tracking-wide">AI readiness</span>
                                         <span className="text-xs font-medium text-slate-700 tabular-nums">
                                             {Math.round((Object.keys(answers).length / Math.max(1, currentQuestions.reduce((acc, p) => acc + p.questions.length, 0))) * 100)}%
                                         </span>
@@ -971,7 +971,7 @@ export function RiskSetup() {
 
                         {/* Selector Controls (Moved from header for cleaner mobile flow)*/}
                         <div className="p-4 bg-white rounded-lg border border-slate-200">
-                            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3 px-1">Project context</h3>
+                            <h3 className="text-xs font-mono font-medium text-slate-500 uppercase tracking-wide mb-3 px-1">Project context</h3>
                             <div className="space-y-3">
                                 {!isClientAdmin && (
                                     <select

@@ -122,13 +122,13 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <div>
-                    <h3 className="text-sm font-black text-slate-900 tracking-tight">{entityType === 'programme' ? 'Programme' : 'Project'} Milestones</h3>
-                    <p className="text-[11px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">RIBA Stages & Key Deadlines</p>
+                    <h3 className="text-sm font-semibold text-slate-900 tracking-tight">{entityType === 'programme' ? 'Programme' : 'Project'} Milestones</h3>
+                    <p className="font-mono text-[11px] text-slate-500 font-medium uppercase tracking-wide mt-0.5">RIBA Stages & Key Deadlines</p>
                 </div>
                 {!isAdding && (
                     <button
                         onClick={() => setIsAdding(true)}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider transition-colors flex items-center gap-1.5 shadow-sm"
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 shadow-sm"
                     >
                         <Plus className="w-3.5 h-3.5" />
                         Add Milestone
@@ -140,7 +140,7 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 animate-in fade-in slide-in-from-top-2">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div className="col-span-2 md:col-span-1">
-                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Milestone Name</label>
+                            <label className="font-mono block text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Milestone Name</label>
                             <input
                                 autoFocus
                                 type="text"
@@ -151,7 +151,7 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                             />
                         </div>
                         <div>
-                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Target Date</label>
+                            <label className="font-mono block text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Target Date</label>
                             <input
                                 type="date"
                                 value={newMilestone.date || ''}
@@ -160,7 +160,7 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                             />
                         </div>
                         <div>
-                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">RIBA Stage</label>
+                            <label className="font-mono block text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">RIBA Stage</label>
                             <select
                                 value={newMilestone.stage || 'S2'}
                                 onChange={e => setNewMilestone(prev => ({ ...prev, stage: e.target.value }))}
@@ -185,13 +185,13 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                                     checked={newMilestone.isKey || false}
                                     onChange={e => setNewMilestone(prev => ({ ...prev, isKey: e.target.checked }))}
                                 />
-                                <span className={clsx("text-[10px] font-black uppercase tracking-widest", newMilestone.isKey ? "text-amber-700" : "text-slate-500")}>
+                                <span className={clsx("font-mono text-[10px] font-medium uppercase tracking-wide", newMilestone.isKey ? "text-amber-700" : "text-slate-500")}>
                                     Key Milestone
                                 </span>
                             </label>
                         </div>
                         <div className="md:col-span-2">
-                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Description (Optional)</label>
+                            <label className="font-mono block text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Description (Optional)</label>
                             <input
                                 type="text"
                                 value={newMilestone.description || ''}
@@ -211,7 +211,7 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                         <button
                             onClick={handleAdd}
                             disabled={!newMilestone.name || !newMilestone.date}
-                            className="bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white px-4 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider transition-colors flex items-center gap-1.5 shadow-sm"
+                            className="bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white px-4 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 shadow-sm"
                         >
                             <Save className="w-3.5 h-3.5" />
                             Save Milestone
@@ -237,7 +237,7 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                                 <div key={m.id} className="bg-white border-2 border-indigo-500 rounded-lg p-4 shadow-sm relative">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                         <div className="col-span-2 md:col-span-1">
-                                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Name</label>
+                                            <label className="font-mono block text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Name</label>
                                             <input
                                                 type="text"
                                                 value={editForm.name || ''}
@@ -246,7 +246,7 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Date</label>
+                                            <label className="font-mono block text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Date</label>
                                             <input
                                                 type="date"
                                                 value={editForm.date || ''}
@@ -255,7 +255,7 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Stage</label>
+                                            <label className="font-mono block text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Stage</label>
                                             <select
                                                 value={editForm.stage || 'S2'}
                                                 onChange={e => setEditForm(prev => ({ ...prev, stage: e.target.value }))}
@@ -267,7 +267,7 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Status</label>
+                                            <label className="font-mono block text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Status</label>
                                             <select
                                                 value={editForm.status || 'Pending'}
                                                 onChange={e => setEditForm(prev => ({ ...prev, status: e.target.value as ProgrammeMilestone['status'] }))}
@@ -279,7 +279,7 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                                             </select>
                                         </div>
                                         <div className="md:col-span-2">
-                                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Description</label>
+                                            <label className="font-mono block text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Description</label>
                                             <input
                                                 type="text"
                                                 value={editForm.description || ''}
@@ -296,7 +296,7 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                                                     onChange={e => setEditForm(prev => ({ ...prev, isKey: e.target.checked }))}
                                                     className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                                                 />
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Key Milestone</span>
+                                                <span className="font-mono text-[10px] font-medium uppercase tracking-wide text-slate-500">Key Milestone</span>
                                             </label>
                                         </div>
                                     </div>
@@ -304,7 +304,7 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                                         <button onClick={() => setEditingId(null)} className="px-3 py-1.5 text-[11px] font-bold text-slate-500">Cancel</button>
                                         <button
                                             onClick={() => handleUpdate(m.id, editForm)}
-                                            className="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-[11px] font-black uppercase flex items-center gap-1.5"
+                                            className="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5"
                                         >
                                             <Save className="w-3.5 h-3.5" /> Save
                                         </button>
@@ -325,13 +325,13 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                                     )}
                                     <div className="flex items-center gap-3">
                                         <div className={clsx("w-9 h-9 rounded-lg flex flex-col items-center justify-center shrink-0 border border-black/5", statusConfig.bg, statusConfig.text)}>
-                                            <span className="text-[10px] font-black uppercase leading-none">{m.stage || 'S?'}</span>
+                                            <span className="font-mono text-[10px] font-medium uppercase leading-none">{m.stage || 'S?'}</span>
                                             <Calendar className="w-3 h-3 mt-0.5" />
                                         </div>
                                         <div className="min-w-0">
                                             <div className="flex items-center gap-2">
                                                 <h4 className="text-sm font-bold text-slate-900 truncate">{m.name}</h4>
-                                                <span className="px-1.5 py-0.5 bg-slate-50 text-slate-400 text-[8px] font-black uppercase rounded border border-slate-100 italic">
+                                                <span className="px-1.5 py-0.5 bg-slate-50 text-slate-400 font-mono text-[8px] font-medium uppercase rounded border border-slate-100 ">
                                                     {getRIBALabel(m.stage || 'S2')}
                                                 </span>
                                             </div>
@@ -350,7 +350,7 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                                     </div>
                                     <div className="flex items-center justify-between sm:justify-end gap-3 ml-12 sm:ml-0">
                                         <div className="flex items-center gap-2">
-                                            <span className={clsx("px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shrink-0", statusConfig.bg, statusConfig.text)}>
+                                            <span className={clsx("px-2 py-0.5 rounded-md font-mono text-[10px] font-medium uppercase tracking-wide flex items-center gap-1 shrink-0", statusConfig.bg, statusConfig.text)}>
                                                 {statusConfig.icon}
                                                 {m.status}
                                             </span>
@@ -397,7 +397,7 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                                 {isExpanded && m.history && (
                                     <div className="mx-4 sm:mx-12 overflow-hidden animate-in slide-in-from-top-2 duration-300">
                                         <div className="bg-slate-50 border-x border-b border-slate-200 rounded-b-lg p-3 space-y-2 mt-[-1px]">
-                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-2">Timeline History</p>
+                                            <p className="font-mono text-[9px] font-semibold text-slate-400 uppercase tracking-wide pl-2">Timeline History</p>
                                             <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
                                                 {m.history.map(entry => (
                                                     <div key={entry.id} className="bg-white p-2.5 rounded-lg border border-slate-200 flex gap-3 shadow-sm">
@@ -407,11 +407,11 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                                                         </div>
                                                         <div className="flex-1 min-w-0">
                                                             <div className="flex items-center justify-between gap-4 mb-1">
-                                                                <span className="text-[10px] font-black text-slate-900 uppercase">Moved to {isValid(new Date(entry.date)) ? format(new Date(entry.date), 'dd MMM yyyy') : entry.date}</span>
+                                                                <span className="text-[10px] font-semibold text-slate-900 uppercase">Moved to {isValid(new Date(entry.date)) ? format(new Date(entry.date), 'dd MMM yyyy') : entry.date}</span>
                                                                 <span className="text-[9px] text-slate-400 font-medium">{isValid(new Date(entry.updatedAt)) ? format(new Date(entry.updatedAt), 'dd/MM/yy HH:mm') : '—'}</span>
                                                             </div>
-                                                            <p className="text-[11px] text-slate-600 leading-normal italic">"{entry.comment}"</p>
-                                                            <div className="mt-1 text-[8px] font-bold text-slate-400 uppercase tracking-widest">— {entry.updatedBy}</div>
+                                                            <p className="text-[11px] text-slate-600 leading-normal ">"{entry.comment}"</p>
+                                                            <div className="font-mono mt-1 text-[8px] font-bold text-slate-400 uppercase tracking-wide">— {entry.updatedBy}</div>
                                                         </div>
                                                     </div>
                                                 ))}
@@ -435,7 +435,7 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                                     <Trash2 className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <h3 className="font-black text-slate-800 uppercase tracking-tighter text-base">Delete Milestone</h3>
+                                    <h3 className="font-mono font-semibold text-slate-800 uppercase tracking-wide text-base">Delete Milestone</h3>
                                     <p className="text-xs text-slate-500 mt-0.5 truncate max-w-[220px]">
                                         {safeMilestones.find(m => m.id === deleteConfirmId)?.name || 'This milestone'}
                                     </p>
@@ -447,13 +447,13 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                             <div className="pt-5 flex gap-3">
                                 <button
                                     onClick={() => setDeleteConfirmId(null)}
-                                    className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-lg text-xs font-black uppercase hover:bg-slate-50 transition-colors tracking-widest"
+                                    className="font-mono flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-lg text-xs font-semibold uppercase hover:bg-slate-50 transition-colors tracking-wide"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={confirmDelete}
-                                    className="flex-1 px-4 py-2.5 bg-rose-600 text-white rounded-lg text-xs font-black uppercase hover:bg-rose-700 transition-all shadow-lg shadow-rose-200 tracking-widest"
+                                    className="font-mono flex-1 px-4 py-2.5 bg-rose-600 text-white rounded-lg text-xs font-semibold uppercase hover:bg-rose-700 transition-all shadow-lg shadow-rose-200 tracking-wide"
                                 >
                                     Delete
                                 </button>
@@ -471,13 +471,13 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                             <div className="absolute top-0 right-0 p-4 opacity-10">
                                 <History className="w-24 h-24" />
                             </div>
-                            <h2 className="text-xl font-black tracking-tight mb-1">Mandatory Date Tracking</h2>
-                            <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Documentation for Audit Trail</p>
+                            <h2 className="text-xl font-semibold tracking-tight mb-1">Mandatory Date Tracking</h2>
+                            <p className="font-mono text-[10px] font-semibold uppercase tracking-wide opacity-80">Documentation for Audit Trail</p>
                         </div>
                         <div className="p-6 space-y-6">
                             <div className="flex items-center justify-between gap-4 p-4 bg-indigo-50 rounded-lg border border-indigo-100">
                                 <div className="text-center flex-1">
-                                    <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Original Date</p>
+                                    <p className="text-[9px] font-semibold text-slate-400 uppercase mb-1">Original Date</p>
                                     <p className="text-sm font-bold text-slate-600">
                                         {pendingUpdate.originalDate && isValid(parseISO(pendingUpdate.originalDate)) 
                                             ? format(parseISO(pendingUpdate.originalDate), 'dd MMM yyyy') 
@@ -488,8 +488,8 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                                     <Plus className="w-4 h-4 text-indigo-400 rotate-45" />
                                 </div>
                                 <div className="text-center flex-1">
-                                    <p className="text-[9px] font-black text-indigo-500 uppercase mb-1">New Target</p>
-                                    <p className="text-sm font-black text-indigo-700">
+                                    <p className="text-[9px] font-semibold text-indigo-500 uppercase mb-1">New Target</p>
+                                    <p className="text-sm font-semibold text-indigo-700">
                                         {pendingUpdate.updates.date && isValid(parseISO(pendingUpdate.updates.date)) 
                                             ? format(parseISO(pendingUpdate.updates.date), 'dd MMM yyyy') 
                                             : 'No Date'}
@@ -497,7 +497,7 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Reason for Change <span className="text-rose-500">*</span></label>
+                                <label className="font-mono block text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-2">Reason for Change <span className="text-rose-500">*</span></label>
                                 <textarea
                                     autoFocus
                                     value={comment}
@@ -512,14 +512,14 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                             <div className="flex gap-3">
                                 <button
                                     onClick={() => setPendingUpdate(null)}
-                                    className="flex-1 py-3 text-[11px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-100 rounded-lg transition-all"
+                                    className="font-mono flex-1 py-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500 hover:bg-slate-100 rounded-lg transition-all"
                                 >
                                     Revert Change
                                 </button>
                                 <button
                                     onClick={() => performUpdate(pendingUpdate.id, pendingUpdate.updates, comment)}
                                     disabled={!comment.trim()}
-                                    className="flex-1 py-3 bg-indigo-600 disabled:bg-slate-300 text-white text-[11px] font-black uppercase tracking-widest rounded-lg transition-all shadow-lg shadow-indigo-200"
+                                    className="font-mono flex-1 py-3 bg-indigo-600 disabled:bg-slate-300 text-white text-[11px] font-semibold uppercase tracking-wide rounded-lg transition-all shadow-lg shadow-indigo-200"
                                 >
                                     Log & Save
                                 </button>

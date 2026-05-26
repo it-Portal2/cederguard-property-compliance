@@ -193,7 +193,7 @@ export function RfiTab({ enquiry, rfi, onIssued }: RfiTabProps) {
             <ClipboardList className="h-5 w-5" strokeWidth={2.25} />
           </div>
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-400">
               Request for information
             </p>
             <h2 className="text-base font-bold tracking-tight text-slate-900">
@@ -209,7 +209,7 @@ export function RfiTab({ enquiry, rfi, onIssued }: RfiTabProps) {
           </div>
         </div>
         {isIssued && (
-          <span className="inline-flex items-center gap-1 self-start rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-emerald-700">
+          <span className="font-mono inline-flex items-center gap-1 self-start rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-emerald-700">
             <CheckCircle2 className="h-3 w-3" />
             {rfi.status}
           </span>
@@ -221,7 +221,7 @@ export function RfiTab({ enquiry, rfi, onIssued }: RfiTabProps) {
         <div className="space-y-4 lg:col-span-8">
           {/* Subject*/}
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500">
+            <label className="font-mono block text-xs font-semibold uppercase tracking-wide text-slate-500">
               Subject
             </label>
             <input
@@ -237,7 +237,7 @@ export function RfiTab({ enquiry, rfi, onIssued }: RfiTabProps) {
           {/* Body*/}
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between">
-              <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500">
+              <label className="font-mono block text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Body
               </label>
               <p className="text-[11px] text-slate-400">
@@ -259,7 +259,7 @@ export function RfiTab({ enquiry, rfi, onIssued }: RfiTabProps) {
             <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center gap-2">
                 <PlayCircle className="h-4 w-4 text-indigo-600" />
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                   Install walkthrough
                 </p>
               </div>
@@ -297,7 +297,7 @@ export function RfiTab({ enquiry, rfi, onIssued }: RfiTabProps) {
         <div className="space-y-4 lg:col-span-4">
           {/* Priority*/}
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-400">
               Priority
             </p>
             <div className="mt-2 grid grid-cols-3 gap-2">
@@ -308,7 +308,7 @@ export function RfiTab({ enquiry, rfi, onIssued }: RfiTabProps) {
                   onClick={() => setPriority(p.value)}
                   disabled={isIssued}
                   className={clsx(
-                    "rounded-lg border px-2 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-colors disabled:cursor-not-allowed disabled:opacity-60",
+                    "font-mono rounded-lg border px-2 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-colors disabled:cursor-not-allowed disabled:opacity-60",
                     priority === p.value
                       ? p.pill
                       : "border-slate-200 bg-white text-slate-500 hover:border-indigo-200 hover:text-indigo-600",
@@ -323,7 +323,7 @@ export function RfiTab({ enquiry, rfi, onIssued }: RfiTabProps) {
           {/* Recipients*/}
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between">
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+              <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                 {isIssued ? "Sent to" : "Recipients"}
               </p>
               {isIssued && recipients.length > 0 && (

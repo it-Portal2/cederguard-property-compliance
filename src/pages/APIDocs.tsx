@@ -13,7 +13,7 @@ export function APIDocs() {
   const CodeBlock = ({ code, language, section }: { code: string, language: string, section: string }) => (
     <div className="relative mt-4 mb-8 bg-white dark:bg-[#0f1117] rounded-lg overflow-hidden group border border-slate-200 dark:border-slate-800 shadow-2xl transition-colors duration-500">
       <div className="flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-[#1a1d27] border-b border-slate-200 dark:border-slate-800/80 transition-colors">
-        <span className="text-xs font-mono font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{language}</span>
+        <span className="text-[11px] font-mono font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{language}</span>
         <button 
           onClick={() => copyCode(code, section)}
           className="text-slate-400 hover:text-white transition-colors p-1.5 bg-slate-800 hover:bg-slate-700 rounded-md"
@@ -32,10 +32,10 @@ export function APIDocs() {
     <div>
 
       <div className="mb-12 text-center md:text-left">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase tracking-widest mb-4">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[11px] font-mono font-medium uppercase tracking-wide mb-4">
           <Terminal className="w-4 h-4" /> Developers
         </div>
-        <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white mb-4 tracking-tight">Platform API Reference</h1>
+        <h1 className="text-4xl md:text-5xl font-semibold text-slate-900 dark:text-white mb-4 tracking-tight">Platform API Reference</h1>
         <p className="text-xl text-slate-600 dark:text-slate-400 max-w-3xl leading-relaxed">
           Integrate Cedar Risk platform data directly into your BI dashboards, ERP systems, or custom scripts. 
           Our API strictly enforces your Role-Based Access Controls (RBAC) to ensure absolute data security.
@@ -46,23 +46,23 @@ export function APIDocs() {
         {/* Navigation Sidebar */}
         <div className="lg:col-span-3 hidden lg:block">
           <nav className="sticky top-24 flex flex-col gap-1 pr-6 border-r border-slate-200 dark:border-white/10 transition-colors duration-500">
-            <h3 className="text-[10px] font-black text-slate-500 dark:text-slate-500 uppercase tracking-widest pl-2">Getting Started</h3>
+            <h3 className="text-[10px] font-mono font-medium text-slate-500 dark:text-slate-500 uppercase tracking-wide pl-2">Getting Started</h3>
             <a href="#authentication" className="text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 py-2 px-3 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 transition-all">Authentication</a>
             <a href="#base-url" className="text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 py-2 px-3 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 transition-all">Base Architecture</a>
             <a href="#rbac" className="text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 py-2 px-3 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 transition-all">Role-Based Access</a>
             
-            <h3 className="text-[10px] font-black text-slate-500 dark:text-slate-500 uppercase tracking-widest mt-8 mb-3 pl-2">Client Admin API</h3>
+            <h3 className="text-[10px] font-mono font-medium text-slate-500 dark:text-slate-500 uppercase tracking-wide mt-8 mb-3 pl-2">Client Admin API</h3>
             <a href="#client-projects" className="text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 py-2 px-3 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 transition-all">Get Portfolio & RAG</a>
             <a href="#client-team" className="text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 py-2 px-3 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 transition-all">Manage Teams & PMs</a>
             
-            <h3 className="text-[10px] font-black text-slate-500 dark:text-slate-500 uppercase tracking-widest mt-8 mb-3 pl-2">Project Manager API</h3>
+            <h3 className="text-[10px] font-mono font-medium text-slate-500 dark:text-slate-500 uppercase tracking-wide mt-8 mb-3 pl-2">Project Manager API</h3>
             <a href="#pm-projects" className="text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 py-2 px-3 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 transition-all">Assigned Projects</a>
             <a href="#pm-data" className="text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 py-2 px-3 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 transition-all">Risks, Issues & Tasks</a>
             
-            <h3 className="text-[10px] font-black text-slate-500 dark:text-slate-500 uppercase tracking-widest mt-8 mb-3 pl-2">Super Admin API</h3>
+            <h3 className="text-[10px] font-mono font-medium text-slate-500 dark:text-slate-500 uppercase tracking-wide mt-8 mb-3 pl-2">Super Admin API</h3>
             <a href="#admin-stats" className="text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 py-2 px-3 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 transition-all">Global Statistics</a>
             
-            <h3 className="text-[10px] font-black text-slate-500 dark:text-slate-500 uppercase tracking-widest mt-8 mb-3 pl-2">Quickstarts</h3>
+            <h3 className="text-[10px] font-mono font-medium text-slate-500 dark:text-slate-500 uppercase tracking-wide mt-8 mb-3 pl-2">Quickstarts</h3>
 
             <a href="#use-case-sync" className="text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 py-2 px-3 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 transition-all">Use Case: BI Sync</a>
             <a href="#postman" className="text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 py-2 px-3 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 transition-all">Postman Collection</a>
@@ -78,7 +78,7 @@ export function APIDocs() {
               <div className="p-3 bg-indigo-100 dark:bg-indigo-500/20 rounded-lg">
                 <KeyRound className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
               </div>
-              <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Authentication</h2>
+              <h2 className="text-3xl font-semibold text-slate-900 dark:text-white tracking-tight">Authentication</h2>
             </div>
             <p className="text-lg text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">
               All API endpoints require authentication using an API Key. You can generate an API key from the <strong>Developer Settings</strong> page inside the portal. 
@@ -102,7 +102,7 @@ export function APIDocs() {
               <div className="p-3 bg-emerald-100 dark:bg-emerald-500/20 rounded-lg">
                 <Server className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
               </div>
-              <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Base Architecture (RPC)</h2>
+              <h2 className="text-3xl font-semibold text-slate-900 dark:text-white tracking-tight">Base Architecture (RPC)</h2>
             </div>
             <p className="text-lg text-slate-600 dark:text-slate-300 leading-relaxed mb-6">
               The API uses a single RPC-style endpoint. All requests are made as <code className="bg-slate-100 dark:bg-white/10 px-2 py-1 rounded-md text-sm font-mono text-pink-600 dark:text-pink-400 mx-1">POST</code> requests to the base URL, with the desired operation specified in the JSON body via the <code className="bg-slate-100 dark:bg-white/10 px-2 py-1 rounded-md text-sm font-mono text-pink-600 dark:text-pink-400 mx-1">action</code> property.
@@ -119,7 +119,7 @@ export function APIDocs() {
               <div className="p-3 bg-purple-100 dark:bg-purple-500/20 rounded-lg">
                 <Users className="w-8 h-8 text-purple-600 dark:text-purple-400" />
               </div>
-              <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Role-Based Access Control</h2>
+              <h2 className="text-3xl font-semibold text-slate-900 dark:text-white tracking-tight">Role-Based Access Control</h2>
             </div>
             <p className="text-lg text-slate-600 dark:text-slate-300 leading-relaxed mb-6">
               Your API key is bound to your user role. Attempting to call an endpoint you lack permissions for will result in a <code className="font-mono text-red-500">403 Forbidden</code> error.
@@ -153,7 +153,7 @@ export function APIDocs() {
 
           {/* Client Admin API */}
           <section id="client-projects" className="scroll-mt-24">
-            <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-6 tracking-tight">Client Admin & Program Manager API</h2>
+            <h2 className="text-3xl font-semibold text-slate-900 dark:text-white mb-6 tracking-tight">Client Admin & Program Manager API</h2>
             <p className="text-lg text-slate-600 dark:text-slate-400 mb-8">Endpoints designed for organizational oversight and program-level management.</p>
             
             <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Get Portfolio & RAG Status</h3>
@@ -211,7 +211,7 @@ export function APIDocs() {
 
           {/* Project Manager API */}
           <section id="pm-projects" className="scroll-mt-24">
-            <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-6 tracking-tight">Project Manager API</h2>
+            <h2 className="text-3xl font-semibold text-slate-900 dark:text-white mb-6 tracking-tight">Project Manager API</h2>
             <p className="text-lg text-slate-600 dark:text-slate-400 mb-8">Endpoints designed for project-level data ingestion, syncing risk registers, and updating compliance trackers.</p>
             
             <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Read/Write Specific Project Data</h3>
@@ -258,7 +258,7 @@ export function APIDocs() {
 
           {/* Quickstarts */}
           <section id="use-case-sync" className="scroll-mt-24">
-            <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-6 tracking-tight">Use Case: Automated BI Sync</h2>
+            <h2 className="text-3xl font-semibold text-slate-900 dark:text-white mb-6 tracking-tight">Use Case: Automated BI Sync</h2>
             <div className="bg-white dark:bg-[#13151a] p-8 rounded-lg border border-slate-200 dark:border-white/10 shadow-lg">
               <div className="flex items-start gap-6">
                 <div className="p-4 bg-indigo-100 dark:bg-indigo-500/20 rounded-lg shrink-0">
@@ -291,7 +291,7 @@ export function APIDocs() {
           <section id="postman" className="scroll-mt-24 bg-slate-100 dark:bg-slate-900 rounded-lg p-10 overflow-hidden relative border border-slate-200 dark:border-slate-800 shadow-2xl transition-colors duration-500">
             <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-[100px] -mr-20 -mt-20"></div>
             <div className="relative z-10">
-              <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-4 tracking-tight">Ready for Postman?</h2>
+              <h2 className="text-3xl font-semibold text-slate-900 dark:text-white mb-4 tracking-tight">Ready for Postman?</h2>
               <p className="text-slate-600 dark:text-slate-300 text-lg max-w-2xl mb-8 leading-relaxed">
                 Test the API immediately without writing a single line of code. Copy the JSON snippet below to import a pre-configured Cedar API Collection directly into Postman.
               </p>

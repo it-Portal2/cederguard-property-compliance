@@ -77,7 +77,7 @@ export function LessonsLearned() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
+          <h1 className="text-2xl font-semibold text-slate-900 flex items-center gap-2">
             <Lightbulb className="w-8 h-8 text-amber-500" />
             Lessons Learned Repository
           </h1>
@@ -86,7 +86,7 @@ export function LessonsLearned() {
         
         <button
           onClick={() => setIsAddingLesson(true)}
-          className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white font-black rounded-lg hover:bg-slate-800 transition-all shadow-lg active:scale-95"
+          className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white font-semibold rounded-lg hover:bg-slate-800 transition-all shadow-lg active:scale-95"
         >
           <Plus className="w-5 h-5" />
           Capture Lesson
@@ -96,29 +96,29 @@ export function LessonsLearned() {
       {/* Stats/Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-lg border border-indigo-100 shadow-sm flex flex-col">
-          <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Total Insights</span>
-          <span className="text-3xl font-black text-slate-900 leading-none">{lessonsLearned.length}</span>
+          <span className="text-[10px] font-mono font-medium text-indigo-400 uppercase tracking-wide mb-1">Total Insights</span>
+          <span className="text-3xl font-medium text-slate-900 leading-none tabular-nums">{lessonsLearned.length}</span>
           <div className="mt-3 text-[11px] font-bold text-emerald-600 bg-emerald-50 self-start px-2 py-0.5 rounded-full">
             {thisMonthCount > 0 ? `+${thisMonthCount} this month` : 'None this month'}
           </div>
         </div>
         <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col">
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Safety Wins</span>
-          <span className="text-3xl font-black text-slate-900 leading-none">
+          <span className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide mb-1">Safety Wins</span>
+          <span className="text-3xl font-medium text-slate-900 leading-none tabular-nums">
             {lessonsLearned.filter(l => l.category === 'Safety').length}
           </span>
           <div className="mt-3 text-[11px] font-bold text-slate-400">Critical preventing measures</div>
         </div>
         <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm flex flex-col">
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Cost Avoidance</span>
-          <span className="text-3xl font-black text-slate-900 leading-none">
+          <span className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide mb-1">Cost Avoidance</span>
+          <span className="text-3xl font-medium text-slate-900 leading-none tabular-nums">
             {costAvoidance > 0 ? formatCostAvoidance(costAvoidance) : '—'}
           </span>
           <div className="mt-3 text-[11px] font-bold text-emerald-600">Documented savings</div>
         </div>
         <div className="bg-white/50 p-5 rounded-lg border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center">
           <span className="text-[11px] font-bold text-slate-400">Export Knowledge Hub</span>
-          <button className="text-[11px] font-black text-indigo-600 hover:underline">Download PDF Report</button>
+          <button className="text-[11px] font-semibold text-indigo-600 hover:underline">Download PDF Report</button>
         </div>
       </div>
 
@@ -176,7 +176,7 @@ export function LessonsLearned() {
               <div className="p-5 flex-1 flex flex-col md:flex-row md:items-center gap-6">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded uppercase tracking-wider">
+                    <span className="text-[10px] font-mono font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded uppercase tracking-wide">
                       {lesson.category}
                     </span>
                     <span className="text-xs font-bold text-slate-400 flex items-center gap-1">
@@ -184,10 +184,10 @@ export function LessonsLearned() {
                       {lesson.date}
                     </span>
                   </div>
-                  <h3 className="text-lg font-black text-slate-900 group-hover:text-indigo-600 transition-colors">
+                  <h3 className="text-lg font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">
                     {lesson.title}
                   </h3>
-                  <p className="text-slate-500 text-[13px] font-medium line-clamp-1 mt-1 italic">
+                  <p className="text-slate-500 text-[13px] font-medium line-clamp-1 mt-1 ">
                     Problem: {lesson.problem}
                   </p>
                 </div>
@@ -228,7 +228,7 @@ export function LessonsLearned() {
             >
               <div className="p-8">
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-black text-slate-900">Capture New Lesson</h2>
+                  <h2 className="text-2xl font-semibold text-slate-900">Capture New Lesson</h2>
                   <button onClick={() => setIsAddingLesson(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
                     <X className="w-6 h-6" />
                   </button>
@@ -237,7 +237,7 @@ export function LessonsLearned() {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="text-xs font-black text-slate-400 uppercase tracking-wider">Lesson Title</label>
+                      <label className="text-xs font-medium text-slate-500">Lesson Title</label>
                       <input
                         required
                         type="text"
@@ -248,7 +248,7 @@ export function LessonsLearned() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs font-black text-slate-400 uppercase tracking-wider">Project / Programme Context</label>
+                      <label className="text-xs font-medium text-slate-500">Project / Programme Context</label>
                     <select
                         required
                         value={newLesson.project}
@@ -276,7 +276,7 @@ export function LessonsLearned() {
 
                   <div className="space-y-1">
                     <div className="flex items-center justify-between mb-1">
-                      <label className="text-xs font-black text-slate-400 uppercase tracking-wider">What happened? (The Problem)</label>
+                      <label className="text-xs font-medium text-slate-500">What happened? (The Problem)</label>
                       <AIWriter
                         context={`Briefly describe a project problem or risk event for the project: ${newLesson.project}. Title: ${newLesson.title}`}
                         onSuggest={(val) => setNewLesson({...newLesson, problem: val})}
@@ -296,7 +296,7 @@ export function LessonsLearned() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <div className="flex items-center justify-between mb-1">
-                        <label className="text-xs font-black text-slate-400 uppercase tracking-wider">How was it resolved?</label>
+                        <label className="text-xs font-medium text-slate-500">How was it resolved?</label>
                         <AIWriter
                           context={`Suggest an effective resolution for the problem: ${newLesson.problem}. Project: ${newLesson.project}`}
                           onSuggest={(val) => setNewLesson({...newLesson, resolution: val})}
@@ -313,7 +313,7 @@ export function LessonsLearned() {
                     </div>
                     <div className="space-y-1">
                       <div className="flex items-center justify-between mb-1">
-                        <label className="text-xs font-black text-slate-400 uppercase tracking-wider">Future Prevention</label>
+                        <label className="text-xs font-medium text-slate-500">Future Prevention</label>
                         <AIWriter
                           context={`Based on the problem: ${newLesson.problem} and resolution: ${newLesson.resolution}, what should be done to prevent this from happening again?`}
                           onSuggest={(val) => setNewLesson({...newLesson, prevention: val})}
@@ -332,7 +332,7 @@ export function LessonsLearned() {
 
                   <button
                     type="submit"
-                    className="w-full py-4 bg-slate-900 text-white font-black rounded-lg hover:bg-slate-800 transition-all shadow-xl active:scale-95"
+                    className="w-full py-4 bg-slate-900 text-white font-semibold rounded-lg hover:bg-slate-800 transition-all shadow-xl active:scale-95"
                   >
                     Save to Repository
                   </button>
@@ -364,7 +364,7 @@ export function LessonsLearned() {
                 <div className="flex justify-between items-start mb-6">
                   <div>
                     <div className="flex items-center gap-3 mb-2">
-                      <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded uppercase tracking-wider">
+                      <span className="text-[10px] font-mono font-medium text-indigo-600 bg-indigo-50 px-2 py-1 rounded uppercase tracking-wide">
                         {selectedLesson.category}
                       </span>
                       <span className="text-xs font-bold text-slate-400 flex items-center gap-1">
@@ -372,7 +372,7 @@ export function LessonsLearned() {
                         {selectedLesson.date}
                       </span>
                     </div>
-                    <h2 className="text-3xl font-black text-slate-900 leading-tight">
+                    <h2 className="text-3xl font-semibold text-slate-900 leading-tight">
                       {selectedLesson.title}
                     </h2>
                   </div>
@@ -388,7 +388,7 @@ export function LessonsLearned() {
                         <AlertCircle className="w-6 h-6" />
                       </div>
                       <div>
-                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">The Problem</h4>
+                        <h4 className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide mb-1">The Problem</h4>
                         <p className="text-sm font-bold text-slate-700 leading-relaxed">{selectedLesson.problem}</p>
                       </div>
                     </div>
@@ -397,7 +397,7 @@ export function LessonsLearned() {
                         <CheckCircle2 className="w-6 h-6" />
                       </div>
                       <div>
-                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Resolution Applied</h4>
+                        <h4 className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide mb-1">Resolution Applied</h4>
                         <p className="text-sm font-bold text-slate-700 leading-relaxed">{selectedLesson.resolution}</p>
                       </div>
                     </div>
@@ -409,15 +409,15 @@ export function LessonsLearned() {
                         <Lightbulb className="w-6 h-6" />
                       </div>
                       <div>
-                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Prevention & Strategy</h4>
+                        <h4 className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide mb-1">Prevention & Strategy</h4>
                         <p className="text-sm font-bold text-slate-700 leading-relaxed">{selectedLesson.prevention}</p>
                       </div>
                     </div>
                     <div className="p-6 bg-slate-50 rounded-lg border border-slate-100">
-                      <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Linked Context</h4>
+                      <h4 className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide mb-3">Linked Context</h4>
                       <div className="flex flex-wrap gap-2">
                         {selectedLesson.tags.map((tag: any) => (
-                          <span key={tag} className="px-3 py-1.5 bg-white text-[11px] font-black text-slate-600 rounded-lg border border-slate-200">
+                          <span key={tag} className="px-3 py-1.5 bg-white text-[11px] font-semibold text-slate-600 rounded-lg border border-slate-200">
                             #{tag}
                           </span>
                         ))}
@@ -431,7 +431,7 @@ export function LessonsLearned() {
                     <MessageSquare className="w-4 h-4" />
                     <span className="text-[11px] font-bold">4 comments from PM team</span>
                   </div>
-                  <button className="flex items-center gap-2 text-indigo-600 font-black text-sm hover:underline">
+                  <button className="flex items-center gap-2 text-indigo-600 font-semibold text-sm hover:underline">
                     View in Risk Register <ExternalLink className="w-4 h-4" />
                   </button>
                 </div>

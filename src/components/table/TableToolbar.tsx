@@ -230,7 +230,7 @@ export default function TableToolbar<T extends Record<string, any>>({
             return (
               <div key={def.key} className="flex flex-col gap-1.5 min-w-40">
                 <span className={clsx(
-                  'text-[11px] uppercase tracking-wide font-semibold flex items-center gap-1.5',
+                  'font-mono text-[11px] uppercase tracking-wide font-semibold flex items-center gap-1.5',
                   isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'
                 )}>
                   {isActive && <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block" />}

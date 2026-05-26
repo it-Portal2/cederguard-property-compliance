@@ -197,7 +197,7 @@ export function GovernanceEditorSandboxPage() {
             <FlaskConical className="h-5 w-5" strokeWidth={2.25} />
           </div>
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
               Programme Governance · Editor Sandbox
             </p>
             <h1 className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl dark:text-slate-100">

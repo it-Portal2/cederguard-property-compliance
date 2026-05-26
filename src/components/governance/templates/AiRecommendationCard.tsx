@@ -52,7 +52,7 @@ export function AiRecommendationCard({ onSelect, openingId }: AiRecommendationCa
           <Lightbulb className="h-5 w-5" strokeWidth={2.25} />
         </div>
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-indigo-700">
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-indigo-700">
             AI · recommend a template
           </p>
           <h2 className="text-sm font-bold text-slate-900">
@@ -93,7 +93,7 @@ export function AiRecommendationCard({ onSelect, openingId }: AiRecommendationCa
 
       {rec && rec.recommended && (
         <div className="mt-4 rounded-lg border border-indigo-200 bg-white p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-indigo-700">
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-indigo-700">
             Recommended template
           </p>
           <div className="mt-2 flex items-start justify-between gap-3">
@@ -126,7 +126,7 @@ export function AiRecommendationCard({ onSelect, openingId }: AiRecommendationCa
 
           {rec.supplementary.length > 0 && (
             <div className="mt-3 border-t border-indigo-100 pt-3">
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-indigo-700">
+              <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-indigo-700">
                 Also consider
               </p>
               <ul className="mt-1 space-y-1">

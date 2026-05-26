@@ -39,7 +39,7 @@ export default function TableBulkBar<T>({
                 key={action.key}
                 onClick={() => onAction(action)}
                 className={clsx(
-                  'flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-150 active:scale-95',
+                  'flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-semibold uppercase tracking-[0.15em] transition-all duration-150 active:scale-95',
                   action.isDanger
                     ? 'bg-rose-600/80 hover:bg-rose-600 text-white'
                     : 'bg-white/10 hover:bg-white/20 text-white'

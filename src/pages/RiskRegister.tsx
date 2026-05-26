@@ -110,7 +110,7 @@ function StatusBadge({ status }: { status: string }) {
             ? "bg-amber-50 text-amber-600 border-amber-200"
             : "bg-slate-100 text-slate-600 border-slate-200";
   return (
-    <span className={clsx("px-2 py-0.5 rounded text-[10px] font-bold border", cls)}>
+    <span className={clsx("px-2 py-0.5 rounded font-mono text-[10px] font-medium uppercase tracking-wide border", cls)}>
       {status}
     </span>
   );
@@ -384,7 +384,7 @@ export function RiskRegister() {
       sortable: true,
       render: (v, r) => (
         <span
-          className="font-bold text-indigo-600 cursor-pointer hover:underline whitespace-nowrap"
+          className="font-mono font-medium tabular-nums text-indigo-600 cursor-pointer hover:underline whitespace-nowrap"
           onClick={() => {
             if (canModify) {
               setEditingRisk(r);
@@ -432,7 +432,7 @@ export function RiskRegister() {
             key: "projectId" as keyof RiskItem,
             label: "Source Project",
             render: (_v: any, r: RiskItem) => (
-              <span className="font-bold text-[9px] text-slate-500 uppercase tracking-wider whitespace-nowrap">
+              <span className="font-mono text-[11px] font-medium text-slate-500 uppercase tracking-wide whitespace-nowrap">
                 {(Array.isArray(projects) ? projects : []).find(
                   (p) => p.id === r.projectId,
                 )?.name || "Programme-Level"}
@@ -463,14 +463,14 @@ export function RiskRegister() {
               {isSevere && (
                 <span
                   title="Severe Impact (Band 5) — escalate to senior management immediately"
-                  className="px-1.5 py-0.5 bg-rose-100 text-rose-700 text-[8px] font-black uppercase tracking-wider rounded border border-rose-200"
+                  className="px-1.5 py-0.5 bg-rose-100 text-rose-700 font-mono text-[10px] font-medium uppercase tracking-wide rounded border border-rose-200"
                 >
                   Escalate
                 </span>
               )}
               {r.isNew !== false &&
                 differenceInDays(new Date(), new Date(r.dateAdded || "")) < 1 && (
-                  <span className="px-1.5 py-0.5 bg-indigo-600 text-white text-[7px] font-black uppercase rounded shadow-sm">
+                  <span className="px-1.5 py-0.5 bg-indigo-600 text-white font-mono text-[10px] font-medium uppercase tracking-wide rounded shadow-sm">
                     New
                   </span>
                 )}
@@ -498,7 +498,7 @@ export function RiskRegister() {
       render: (v, r) => (
         <div
           className={clsx(
-            "inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-black border",
+            "inline-flex items-center justify-center w-5 h-5 rounded font-mono text-[10px] font-medium tabular-nums border",
             rsScore(r.grossRating || 0),
           )}
         >
@@ -516,7 +516,7 @@ export function RiskRegister() {
       render: (v, r) => (
         <div
           className={clsx(
-            "inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-black border",
+            "inline-flex items-center justify-center w-5 h-5 rounded font-mono text-[10px] font-medium tabular-nums border",
             rsScore(r.grossRating || 0),
           )}
         >
@@ -535,7 +535,7 @@ export function RiskRegister() {
       render: (v) => (
         <div
           className={clsx(
-            "inline-flex items-center justify-center w-6 h-6 rounded text-[11px] font-black border shadow-sm",
+            "inline-flex items-center justify-center w-6 h-6 rounded font-mono text-[11px] font-medium tabular-nums border shadow-sm",
             rsScore(v || 0),
           )}
         >
@@ -550,7 +550,7 @@ export function RiskRegister() {
       truncate: true,
       tooltip: true,
       render: (v) => (
-        <span className="text-slate-600 italic text-[10px]">
+        <span className="text-slate-600 text-[10px]">
           {stripMarkdown(v || "—")}
         </span>
       ),
@@ -583,7 +583,7 @@ export function RiskRegister() {
       render: (v, r) => (
         <div
           className={clsx(
-            "inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-black border",
+            "inline-flex items-center justify-center w-5 h-5 rounded font-mono text-[10px] font-medium tabular-nums border",
             rsScore(r.residualRating || 0),
           )}
         >
@@ -601,7 +601,7 @@ export function RiskRegister() {
       render: (v, r) => (
         <div
           className={clsx(
-            "inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-black border",
+            "inline-flex items-center justify-center w-5 h-5 rounded font-mono text-[10px] font-medium tabular-nums border",
             rsScore(r.residualRating || 0),
           )}
         >
@@ -620,7 +620,7 @@ export function RiskRegister() {
       render: (v) => (
         <div
           className={clsx(
-            "inline-flex items-center justify-center w-6 h-6 rounded text-[11px] font-black border shadow-sm",
+            "inline-flex items-center justify-center w-6 h-6 rounded font-mono text-[11px] font-medium tabular-nums border shadow-sm",
             rsScore(v || 0),
           )}
         >
@@ -637,7 +637,7 @@ export function RiskRegister() {
         return (
           <span
             className={clsx(
-              "px-1.5 py-0.5 rounded text-[10px] font-bold border whitespace-nowrap",
+              "px-1.5 py-0.5 rounded font-mono text-[10px] font-medium tabular-nums border whitespace-nowrap",
               pillClass,
             )}
           >
@@ -650,7 +650,7 @@ export function RiskRegister() {
       key: "appetite",
       label: "Appetite",
       render: (v) => (
-        <span className="text-slate-600 whitespace-nowrap font-medium text-[10px] uppercase tracking-tighter">
+        <span className="text-slate-600 whitespace-nowrap font-mono text-[11px] font-medium uppercase tracking-wide">
           {stripMarkdown(v || "—")}
         </span>
       ),
@@ -695,7 +695,7 @@ export function RiskRegister() {
       groupHeaderClassName: "bg-violet-50 text-violet-700 border-violet-200",
       align: "right",
       render: (v) => (
-        <span className="text-slate-600 whitespace-nowrap font-medium text-[10px]">
+        <span className="text-slate-600 whitespace-nowrap font-mono text-[10px] font-medium tabular-nums">
           {fGBP(v)}
         </span>
       ),
@@ -707,7 +707,7 @@ export function RiskRegister() {
       groupHeaderClassName: "bg-violet-50 text-violet-700 border-violet-200",
       align: "center",
       render: (v) => (
-        <span className="text-slate-600 whitespace-nowrap font-medium text-[10px]">
+        <span className="text-slate-600 whitespace-nowrap font-mono text-[10px] font-medium tabular-nums">
           {probDisplay(v)}
         </span>
       ),
@@ -720,7 +720,7 @@ export function RiskRegister() {
       align: "right",
       sortable: true,
       render: (v) => (
-        <span className="font-bold text-slate-900 whitespace-nowrap text-[11px]">
+        <span className="font-mono font-medium text-slate-900 whitespace-nowrap text-[11px] tabular-nums">
           {fGBP(Math.round(v || 0))}
         </span>
       ),
@@ -733,7 +733,7 @@ export function RiskRegister() {
       groupHeaderClassName: "bg-violet-50 text-violet-700 border-violet-200",
       align: "right",
       render: (v) => (
-        <span className="text-slate-600 whitespace-nowrap font-medium text-[10px]">
+        <span className="text-slate-600 whitespace-nowrap font-mono text-[10px] font-medium tabular-nums">
           {fGBP(v)}
         </span>
       ),
@@ -745,7 +745,7 @@ export function RiskRegister() {
       groupHeaderClassName: "bg-violet-50 text-violet-700 border-violet-200",
       align: "center",
       render: (v) => (
-        <span className="text-slate-600 whitespace-nowrap font-medium text-[10px]">
+        <span className="text-slate-600 whitespace-nowrap font-mono text-[10px] font-medium tabular-nums">
           {probDisplay(v)}
         </span>
       ),
@@ -758,7 +758,7 @@ export function RiskRegister() {
       align: "right",
       sortable: true,
       render: (v) => (
-        <span className="font-bold text-indigo-600 whitespace-nowrap text-[11px]">
+        <span className="font-mono font-medium text-indigo-600 whitespace-nowrap text-[11px] tabular-nums">
           {fGBP(Math.round(v || 0))}
         </span>
       ),
@@ -770,7 +770,7 @@ export function RiskRegister() {
       render: (_v, r) => {
         const reduction = (r.grossALE || 0) - (r.residualALE || 0);
         return (
-          <span className="font-bold text-emerald-600 whitespace-nowrap text-[11px]">
+          <span className="font-mono font-medium text-emerald-600 whitespace-nowrap text-[11px] tabular-nums">
             {reduction > 0 ? fGBP(Math.round(reduction)) : "—"}
           </span>
         );
@@ -783,12 +783,12 @@ export function RiskRegister() {
       render: (_v, r) => (
         <div className="flex flex-col gap-1.5 items-center">
           {r.escalated && (
-            <span className="px-2 py-0.5 bg-rose-100 text-rose-700 border border-rose-200 rounded text-[9px] font-bold flex items-center gap-1 shadow-sm shadow-rose-200/50 uppercase tracking-wider">
+            <span className="px-2 py-0.5 bg-rose-100 text-rose-700 border border-rose-200 rounded font-mono text-[10px] font-medium flex items-center gap-1 shadow-sm shadow-rose-200/50 uppercase tracking-wide">
               <Flag className="w-2.5 h-2.5 fill-current" /> ESC
             </span>
           )}
           {r.convertedToIssue && (
-            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 border border-amber-200 rounded text-[9px] font-bold flex items-center gap-1 shadow-sm shadow-amber-200/50 uppercase tracking-wider">
+            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 border border-amber-200 rounded font-mono text-[10px] font-medium flex items-center gap-1 shadow-sm shadow-amber-200/50 uppercase tracking-wide">
               <AlertTriangle className="w-2.5 h-2.5 fill-current" /> ISSUE
             </span>
           )}
@@ -802,7 +802,7 @@ export function RiskRegister() {
       key: "_age" as any,
       label: "Age",
       render: (_v, r) => (
-        <span className="text-slate-400 whitespace-nowrap font-medium">
+        <span className="text-slate-400 whitespace-nowrap font-mono text-[10px] font-medium tabular-nums">
           {ageCalc(r.dateAdded, r.status)}
         </span>
       ),
@@ -958,7 +958,7 @@ export function RiskRegister() {
                 <ArrowLeft className="w-3.5 h-3.5" /> Back to Project Initiation
               </Link>
             )}
-            <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight">
+            <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
               Risk Register
             </h1>
             <p className="text-sm text-slate-500 mt-0.5">{contextLabel}</p>
@@ -1063,7 +1063,7 @@ export function RiskRegister() {
         {/* Source Project filter — programme level only, unchanged logic*/}
         {!activeProjectId && scopedProjects.length > 0 && (
           <div className="flex items-center gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+            <span className="font-mono text-[11px] font-medium text-slate-500 uppercase tracking-wide">
               Source
             </span>
             <select

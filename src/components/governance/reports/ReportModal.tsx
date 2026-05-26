@@ -467,7 +467,7 @@ const inputCls =
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mb-4">
-      <h3 className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+      <h3 className="font-mono mb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
         {title}
       </h3>
       <div className="grid gap-3 sm:grid-cols-2">{children}</div>
@@ -486,7 +486,7 @@ function Field({
 }) {
   return (
     <label className="flex flex-col gap-1.5 text-left">
-      <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+      <span className="font-mono text-[10px] font-semibold uppercase tracking-wide text-slate-500">
         {label}
       </span>
       {children}

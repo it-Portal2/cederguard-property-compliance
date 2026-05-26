@@ -104,7 +104,7 @@ export function CorrectionHistory({
           >
             <header className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
               <div>
-                <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-rose-600">
+                <p className="font-mono flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-rose-600">
                   <ShieldCheck className="h-3.5 w-3.5" />
                   Correction history
                 </p>
@@ -177,7 +177,7 @@ export function CorrectionHistory({
                         </summary>
                         <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
                           <div className="overflow-hidden rounded border border-slate-200 bg-white">
-                            <p className="border-b border-slate-100 bg-slate-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                            <p className="font-mono border-b border-slate-100 bg-slate-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">
                               Before
                             </p>
                             <pre className="max-h-48 overflow-auto px-2 py-1.5 text-[10px] text-slate-700">
@@ -185,7 +185,7 @@ export function CorrectionHistory({
                             </pre>
                           </div>
                           <div className="overflow-hidden rounded border border-emerald-200 bg-white">
-                            <p className="border-b border-emerald-100 bg-emerald-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+                            <p className="font-mono border-b border-emerald-100 bg-emerald-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
                               After
                             </p>
                             <pre className="max-h-48 overflow-auto px-2 py-1.5 text-[10px] text-slate-700">

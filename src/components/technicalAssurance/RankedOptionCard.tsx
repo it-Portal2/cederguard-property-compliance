@@ -39,7 +39,7 @@ export function RankedOptionCard({ option, index }: RankedOptionCardProps) {
               {option.label}
             </h3>
             {option.recommended && (
-              <span className="inline-flex items-center rounded-full bg-indigo-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+              <span className="font-mono inline-flex items-center rounded-full bg-indigo-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
                 Recommended
               </span>
             )}

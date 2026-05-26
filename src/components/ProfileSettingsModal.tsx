@@ -112,7 +112,7 @@ export function ProfileSettingsModal({ isOpen, onClose }: ProfileSettingsModalPr
             <div className="bg-white rounded-lg shadow-2xl w-full md:max-w-2xl lg:max-w-3xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 self-center">
                 <div className="flex items-center justify-between p-6 border-b border-slate-100">
                     <div>
-                        <h2 className="text-xl font-bold text-slate-900">Profile Settings</h2>
+                        <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Profile Settings</h2>
                         <p className="text-sm text-slate-500 mt-0.5">Manage your personal and professional information</p>
                     </div>
                     <button
@@ -276,14 +276,14 @@ export function ProfileSettingsModal({ isOpen, onClose }: ProfileSettingsModalPr
                     <button
                         onClick={onClose}
                         disabled={isSaving}
-                        className="px-6 py-2.5 text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors disabled:opacity-50"
+                        className="px-6 py-2.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors disabled:opacity-50"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleSave}
                         disabled={isLoading || isSaving}
-                        className="px-8 py-2.5 bg-indigo-600 text-white text-sm font-black rounded-lg shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 flex items-center gap-2"
+                        className="px-8 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 flex items-center gap-2"
                     >
                         {isSaving ? (
                             <Loader2 className="w-4 h-4 animate-spin" />

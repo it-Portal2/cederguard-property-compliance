@@ -148,7 +148,7 @@ export function FrameworkExportMenu() {
                   )}
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                  <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                     {preview.kind === 'diagram' ? 'Framework diagram' : 'Constitution document'}
                   </p>
                   <h2 className="text-sm font-bold tracking-tight text-slate-900">

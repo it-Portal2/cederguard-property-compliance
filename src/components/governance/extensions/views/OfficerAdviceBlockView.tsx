@@ -23,7 +23,7 @@ export function OfficerAdviceBlockView({ node, updateAttributes, editor }: NodeV
           disabled={!isEditable}
           className={
             inlineInputCls +
-            ' text-xs font-semibold uppercase tracking-widest text-indigo-700'
+            'font-mono  text-xs font-semibold uppercase tracking-wide text-indigo-700'
           }
         />
         <input

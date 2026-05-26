@@ -125,7 +125,7 @@ export function GovernanceDashboardPage() {
             <LayoutDashboard className="h-5 w-5" strokeWidth={2.25} />
           </div>
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-400">
               Programme Governance
             </p>
             <h1 className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">
@@ -200,7 +200,7 @@ function BriefingCard({
           <Lightbulb className="h-4.5 w-4.5" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-indigo-600">
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-indigo-600">
             Morning briefing
           </p>
           <div className="mt-1 space-y-1 text-sm leading-relaxed text-slate-800">
@@ -209,7 +209,7 @@ function BriefingCard({
             ))}
           </div>
           {source === 'rule-based-stub' && (
-            <p className="mt-2 text-[11px] italic text-slate-400">
+            <p className="mt-2 text-[11px] text-slate-400">
               Counts only — AI-generated narrative lands with the chase engine.
             </p>
           )}

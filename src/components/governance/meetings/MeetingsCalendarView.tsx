@@ -125,7 +125,7 @@ export function MeetingsCalendarView({ items, onOpenItem }: Props) {
           {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => (
             <div
               key={d}
-              className="px-2 py-1.5 text-center text-[10px] font-semibold uppercase tracking-wider text-slate-500"
+              className="font-mono px-2 py-1.5 text-center text-[10px] font-semibold uppercase tracking-wider text-slate-500"
             >
               {d}
             </div>
@@ -212,7 +212,7 @@ export function MeetingsCalendarView({ items, onOpenItem }: Props) {
       {/* Selected day strip */}
       {selectedDay && (
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+          <p className="font-mono text-[10px] font-semibold uppercase tracking-wide text-slate-400">
             {format(selectedDay, 'EEEE, d MMMM yyyy')}
           </p>
           {selectedDayItems.length === 0 ? (

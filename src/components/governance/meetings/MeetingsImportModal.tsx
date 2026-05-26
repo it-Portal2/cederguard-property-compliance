@@ -218,7 +218,7 @@ export function MeetingsImportModal({ isOpen, onClose, onCommitted }: Props) {
               <FileSpreadsheet className="h-4 w-4" />
             </div>
             <div className="flex-1">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+              <p className="font-mono text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                 Import schedule
               </p>
               <h2 className="text-base font-bold text-slate-900">
@@ -472,7 +472,7 @@ function SummaryCard({
   }[tone];
   return (
     <div className={clsx('rounded-lg border px-3 py-2', cls)}>
-      <p className="text-[10px] font-semibold uppercase tracking-wider opacity-70">
+      <p className="font-mono text-[10px] font-semibold uppercase tracking-wider opacity-70">
         {label}
       </p>
       <p className="text-lg font-bold">{value}</p>

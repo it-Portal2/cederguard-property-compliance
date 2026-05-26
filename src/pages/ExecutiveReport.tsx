@@ -290,7 +290,7 @@ export function ExecutiveReport() {
             <div className="flex-1 space-y-8 min-w-0">
               <div>
                 <div className="flex items-center gap-3 mb-4">
-                  <span className="px-2.5 py-0.5 bg-indigo-500/20 text-indigo-300 text-xs font-medium uppercase tracking-wide rounded">
+                  <span className="px-2.5 py-0.5 bg-indigo-500/20 text-indigo-300 text-[11px] font-mono font-medium uppercase tracking-wide rounded">
                     AI analysis
                   </span>
                   <div className="h-px bg-white/10 flex-1" />
@@ -323,7 +323,7 @@ export function ExecutiveReport() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-3">
-                  <h3 className="text-emerald-300 text-xs font-medium uppercase tracking-wide flex items-center gap-2">
+                  <h3 className="text-emerald-300 text-[11px] font-mono font-medium uppercase tracking-wide flex items-center gap-2">
                     <TrendingUp className="w-4 h-4" /> Priority directives
                   </h3>
                   <ul className="space-y-3">
@@ -345,7 +345,7 @@ export function ExecutiveReport() {
                   </ul>
                 </div>
                 <div className="space-y-3">
-                  <h3 className="text-rose-300 text-xs font-medium uppercase tracking-wide flex items-center gap-2">
+                  <h3 className="text-rose-300 text-[11px] font-mono font-medium uppercase tracking-wide flex items-center gap-2">
                     <AlertCircle className="w-4 h-4" /> Volatility indicators
                   </h3>
                   <ul className="space-y-3">
@@ -386,7 +386,7 @@ export function ExecutiveReport() {
                   <span className="text-3xl font-semibold leading-none">{aiInsight?.healthScore || 75}%</span>
                 </div>
               </div>
-              <div className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-2">
+              <div className="text-[11px] font-mono font-medium text-slate-400 uppercase tracking-wide mb-2">
                 Health velocity
               </div>
               <p className="text-xs text-slate-400 leading-relaxed">
@@ -404,7 +404,7 @@ export function ExecutiveReport() {
               <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2.5">
                 <AlertCircle className="w-5 h-5 text-rose-500" /> Critical risk profile
               </h2>
-              <span className="text-xs font-medium text-slate-500">Top 5</span>
+              <span className="text-[11px] font-mono font-medium text-slate-500 uppercase tracking-wide">Top 5</span>
             </div>
 
             {highRisks.length === 0 ? (
@@ -457,7 +457,7 @@ export function ExecutiveReport() {
               <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2.5">
                 <ShieldCheck className="w-5 h-5 text-emerald-500" /> Compliance posture
               </h2>
-              <span className="text-xs font-medium text-slate-500">Aggregate</span>
+              <span className="text-[11px] font-mono font-medium text-slate-500 uppercase tracking-wide">Aggregate</span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -492,7 +492,7 @@ export function ExecutiveReport() {
                 <TrendingUp className="w-5 h-5 text-indigo-300" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-0.5">
+                <div className="text-[11px] font-mono font-medium text-slate-400 uppercase tracking-wide mb-0.5">
                   Regulatory trajectory
                 </div>
                 <div className="text-sm font-medium text-white">
@@ -507,18 +507,18 @@ export function ExecutiveReport() {
         <footer className="pt-6 border-t border-slate-200 flex flex-col md:flex-row md:items-end md:justify-between gap-4 print:break-inside-avoid">
           <div className="flex flex-wrap gap-x-8 gap-y-3">
             <div>
-              <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Master auditor</div>
+              <div className="text-[11px] font-mono font-medium text-slate-500 uppercase tracking-wide">Master auditor</div>
               <div className="text-sm font-semibold text-slate-900 mt-0.5">CedarGuard AI Engine</div>
             </div>
             <div>
-              <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Issued</div>
-              <div className="text-sm font-semibold text-slate-900 mt-0.5 tabular-nums">
+              <div className="text-[11px] font-mono font-medium text-slate-500 uppercase tracking-wide">Issued</div>
+              <div className="text-sm font-semibold text-slate-900 mt-0.5 tabular-nums font-mono">
                 {new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} ·{' '}
                 {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
               </div>
             </div>
           </div>
-          <p className="text-xs font-medium text-slate-400 uppercase tracking-wide md:text-right">
+          <p className="text-[11px] font-mono font-medium text-slate-400 uppercase tracking-wide md:text-right">
             Internal strategic assessment — Confidential
           </p>
         </footer>

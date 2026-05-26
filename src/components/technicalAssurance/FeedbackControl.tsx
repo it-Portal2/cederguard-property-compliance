@@ -69,7 +69,7 @@ export function FeedbackControl({
   return (
     <>
       <div className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2 py-1.5 shadow-xs">
-        <span className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+        <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-400">
           Helpful?
         </span>
         <button
@@ -234,7 +234,7 @@ function FeedbackDownDialog({
             </div>
             <div className="px-5 py-4 space-y-4">
               <fieldset>
-                <legend className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+                <legend className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                   Reason (optional)
                 </legend>
                 <ul className="mt-2 space-y-1.5">
@@ -260,7 +260,7 @@ function FeedbackDownDialog({
               <div>
                 <label
                   htmlFor="feedback-note"
-                  className="text-[11px] font-semibold uppercase tracking-widest text-slate-500"
+                  className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-500"
                 >
                   Note (optional)
                 </label>

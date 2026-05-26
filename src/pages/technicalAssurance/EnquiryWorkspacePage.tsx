@@ -103,7 +103,7 @@ function InsightGeneratingPanel() {
           <Loader2 className="h-5 w-5 animate-spin" strokeWidth={2.25} />
         </div>
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+          <p className="font-mono text-[11px] font-medium uppercase tracking-wide text-slate-400">
             Insight in progress
           </p>
           <h2 className="text-base font-bold text-slate-900">
@@ -577,7 +577,7 @@ export function TacEnquiryWorkspacePage() {
               <Layers className="h-5 w-5" strokeWidth={2.25} />
             </div>
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+              <p className="font-mono text-[11px] font-medium uppercase tracking-wide text-slate-400">
                 Technical Assurance · Enquiry
               </p>
               <h1 className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">
@@ -752,7 +752,7 @@ export function TacEnquiryWorkspacePage() {
           event with date, actor, and reason for FOI / scrutiny readers. */}
       {Array.isArray(enquiry.unlockHistory) && enquiry.unlockHistory.length > 0 && (
         <div className="rounded-lg border border-rose-200 bg-rose-50/40 p-3">
-          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-rose-700">
+          <div className="flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-wide text-rose-700">
             <History className="h-3.5 w-3.5" />
             Unlock history · {enquiry.unlockHistory.length}
           </div>

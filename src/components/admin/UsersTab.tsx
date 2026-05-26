@@ -148,12 +148,12 @@ export function UsersTab({ isAdmin }: { isAdmin: boolean }) {
                 <table className="w-full text-sm">
                     <thead className="bg-slate-50 border-b border-slate-200">
                         <tr>
-                            <th className="text-left px-4 py-3 font-semibold text-slate-600">User</th>
-                            <th className="text-left px-4 py-3 font-semibold text-slate-600">Role</th>
-                            <th className="text-left px-4 py-3 font-semibold text-slate-600">Joined</th>
-                            <th className="text-left px-4 py-3 font-semibold text-slate-600">Access Level</th>
-                            <th className="text-left px-4 py-3 font-semibold text-slate-600">Assigned Client</th>
-                            <th className="text-right px-4 py-3 font-semibold text-slate-600">Actions</th>
+                            <th className="text-left px-4 py-3 font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500">User</th>
+                            <th className="text-left px-4 py-3 font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500">Role</th>
+                            <th className="text-left px-4 py-3 font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500">Joined</th>
+                            <th className="text-left px-4 py-3 font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500">Access Level</th>
+                            <th className="text-left px-4 py-3 font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500">Assigned Client</th>
+                            <th className="text-right px-4 py-3 font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -220,11 +220,11 @@ export function UsersTab({ isAdmin }: { isAdmin: boolean }) {
                                 <td className="px-4 py-3 text-right">
                                     {userToDelete === u.uid ? (
                                         <div className="flex items-center justify-end gap-2 p-2 bg-red-50 rounded-lg border border-red-100 animate-in fade-in slide-in-from-right-2">
-                                            <p className="text-[10px] text-red-600 font-bold uppercase mr-2 text-wrap max-w-[100px] text-left leading-tight">Erase all data permanently?</p>
+                                            <p className="font-mono text-[10px] text-red-600 font-medium uppercase tracking-wide mr-2 text-wrap max-w-[100px] text-left leading-tight">Erase all data permanently?</p>
                                             <button
                                                 onClick={() => handleDeleteUser(u.uid)}
                                                 disabled={deletingUser === u.uid}
-                                                className="px-3 py-1 bg-red-600 text-white text-xs font-bold rounded shadow-sm hover:bg-red-700 disabled:opacity-50 flex items-center gap-1.5 transition-all shrink-0"
+                                                className="px-3 py-1 bg-red-600 text-white text-xs font-medium rounded shadow-sm hover:bg-red-700 disabled:opacity-50 flex items-center gap-1.5 transition-all shrink-0"
                                             >
                                                 {deletingUser === u.uid ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
                                                 Confirm
@@ -232,7 +232,7 @@ export function UsersTab({ isAdmin }: { isAdmin: boolean }) {
                                             <button
                                                 onClick={() => setUserToDelete(null)}
                                                 disabled={deletingUser === u.uid}
-                                                className="px-3 py-1 bg-white text-slate-600 border border-slate-200 text-xs font-bold rounded hover:bg-slate-50 disabled:opacity-50 transition-all shadow-sm shrink-0"
+                                                className="px-3 py-1 bg-white text-slate-600 border border-slate-200 text-xs font-medium rounded hover:bg-slate-50 disabled:opacity-50 transition-all shadow-sm shrink-0"
                                             >
                                                 Cancel
                                             </button>
@@ -353,14 +353,14 @@ function SupervisorPickerModal({
             <div className="bg-white rounded-lg shadow-2xl max-w-md w-full">
                 <fieldset disabled={saving} className="contents">
                     <div className="px-6 py-5 border-b border-slate-100">
-                        <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
                             <UserCog className="w-5 h-5 text-indigo-600" />
                             Reassign supervisor
                         </h3>
                         <p className="text-xs text-slate-500 mt-1">{user.displayName || user.email}</p>
                     </div>
                     <div className="px-6 py-5 space-y-3">
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Supervisor</label>
+                        <label className="block font-mono text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-2">Supervisor</label>
                         <select
                             className={inputCls}
                             value={selected}
@@ -376,10 +376,10 @@ function SupervisorPickerModal({
                         {err && <p className="text-xs text-red-600">{err}</p>}
                     </div>
                     <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-2">
-                        <button onClick={onClose} className="px-4 py-2 text-xs font-bold text-slate-600 rounded-lg hover:bg-slate-100">Cancel</button>
+                        <button onClick={onClose} className="px-4 py-2 text-xs font-medium text-slate-600 rounded-lg hover:bg-slate-100">Cancel</button>
                         <button
                             onClick={handleSave}
-                            className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2"
+                            className="px-4 py-2 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2"
                         >
                             {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                             Save
@@ -447,7 +447,7 @@ function RosterPickerModal({
             <div className="bg-white rounded-lg shadow-2xl max-w-lg w-full max-h-[85vh] flex flex-col">
                 <fieldset disabled={saving} className="contents">
                     <div className="px-6 py-5 border-b border-slate-100">
-                        <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
                             <FolderCog className="w-5 h-5 text-emerald-600" />
                             Manage programme rosters
                         </h3>
@@ -486,10 +486,10 @@ function RosterPickerModal({
                         {err && <p className="text-xs text-red-600 mt-3">{err}</p>}
                     </div>
                     <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-2">
-                        <button onClick={onClose} className="px-4 py-2 text-xs font-bold text-slate-600 rounded-lg hover:bg-slate-100">Cancel</button>
+                        <button onClick={onClose} className="px-4 py-2 text-xs font-medium text-slate-600 rounded-lg hover:bg-slate-100">Cancel</button>
                         <button
                             onClick={handleSave}
-                            className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2"
+                            className="px-4 py-2 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2"
                         >
                             {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                             Save changes
@@ -534,14 +534,14 @@ function PmLevelModal({
             <div className="bg-white rounded-lg shadow-2xl max-w-md w-full">
                 <fieldset disabled={saving} className="contents">
                     <div className="px-6 py-5 border-b border-slate-100">
-                        <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <h3 className="text-base font-semibold text-slate-900 tracking-tight flex items-center gap-2">
                             <BadgeCheck className="w-5 h-5 text-sky-600" />
                             Change PM level
                         </h3>
                         <p className="text-xs text-slate-500 mt-1">{user.displayName || user.email}</p>
                     </div>
                     <div className="px-6 py-5 space-y-3">
-                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">PM Level</label>
+                        <label className="block font-mono text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-2">PM Level</label>
                         <select
                             className={inputCls}
                             value={lvl}
@@ -554,10 +554,10 @@ function PmLevelModal({
                         {err && <p className="text-xs text-red-600">{err}</p>}
                     </div>
                     <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-2">
-                        <button onClick={onClose} className="px-4 py-2 text-xs font-bold text-slate-600 rounded-lg hover:bg-slate-100">Cancel</button>
+                        <button onClick={onClose} className="px-4 py-2 text-xs font-medium text-slate-600 rounded-lg hover:bg-slate-100">Cancel</button>
                         <button
                             onClick={handleSave}
-                            className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2"
+                            className="px-4 py-2 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2"
                         >
                             {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                             Save

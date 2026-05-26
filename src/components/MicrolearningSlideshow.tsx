@@ -147,7 +147,7 @@ export function MicrolearningSlideshow({ moduleId, onComplete }: Props) {
           <div className="w-24 h-24 bg-emerald-500/20 rounded-full flex items-center justify-center mb-6">
             <CheckCircle2 className="w-12 h-12 text-emerald-500" />
           </div>
-          <h2 className="text-3xl font-black text-white mb-4">Module Completed</h2>
+          <h2 className="text-3xl font-semibold text-white mb-4">Module Completed</h2>
           <p className="text-slate-400 text-lg max-w-md">
             You have successfully run through all slides in this microlearning session. Mark this task as completed!
           </p>
@@ -178,7 +178,7 @@ export function MicrolearningSlideshow({ moduleId, onComplete }: Props) {
                 <div className="p-3 bg-indigo-500/20 rounded-lg text-indigo-400 shrink-0">
                   <BookOpen className="w-8 h-8 md:w-10 md:h-10" />
                 </div>
-                <h2 className="text-2xl md:text-4xl font-black tracking-tight text-white leading-tight">
+                <h2 className="text-2xl md:text-4xl font-semibold tracking-tight text-white leading-tight">
                   {currentSlide.title}
                 </h2>
               </div>
@@ -222,7 +222,7 @@ export function MicrolearningSlideshow({ moduleId, onComplete }: Props) {
           
           <div className="relative">
              {/* Progress indicator text */}
-             <div className="absolute -top-10 right-0 text-slate-500 text-xs font-bold uppercase tracking-widest hidden md:block">
+             <div className="font-mono absolute -top-10 right-0 text-slate-500 text-xs font-bold uppercase tracking-wide hidden md:block">
                Slide {currentIndex + 1} of {slides.length}
              </div>
             <div className="flex items-center gap-3">

@@ -253,7 +253,7 @@ export function ForwardPlanCalendarView({ items, bodies, onOpenItem }: Props) {
       </header>
 
       {/* Weekday header */}
-      <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+      <div className="font-mono grid grid-cols-7 border-b border-slate-200 bg-slate-50 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
         {WEEKDAY_LABELS.map((w) => (
           <div key={w} className="px-2 py-1.5 text-center">
             {w}
@@ -298,7 +298,7 @@ export function ForwardPlanCalendarView({ items, bodies, onOpenItem }: Props) {
                   {format(day, 'd')}
                 </span>
                 {key === todayKey && horizon !== 'month' && (
-                  <span className="text-[9px] font-semibold uppercase tracking-wider text-indigo-600">
+                  <span className="font-mono text-[9px] font-semibold uppercase tracking-wider text-indigo-600">
                     today
                   </span>
                 )}

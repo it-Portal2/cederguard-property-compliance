@@ -137,7 +137,7 @@ export function MeetingPicker({ value, onChange, disabled, compact }: Props) {
       className={clsx('grid gap-2', compact ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2')}
     >
       <div>
-        <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+        <label className="font-mono block text-[10px] font-semibold uppercase tracking-wider text-slate-500">
           1. Board
         </label>
         <select
@@ -160,7 +160,7 @@ export function MeetingPicker({ value, onChange, disabled, compact }: Props) {
         </select>
       </div>
       <div>
-        <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+        <label className="font-mono block text-[10px] font-semibold uppercase tracking-wider text-slate-500">
           2. Date
         </label>
         <select

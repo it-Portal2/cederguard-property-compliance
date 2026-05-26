@@ -110,7 +110,7 @@ export function RescheduleMeetingDialog({
 
             <div className="space-y-3 px-5 pb-3">
               <div>
-                <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                <label className="font-mono block text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                   New date <span className="text-rose-500">*</span>
                 </label>
                 <input
@@ -124,7 +124,7 @@ export function RescheduleMeetingDialog({
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                  <label className="font-mono block text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                     Start time
                   </label>
                   <input
@@ -136,7 +136,7 @@ export function RescheduleMeetingDialog({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                  <label className="font-mono block text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                     End time
                   </label>
                   <input
@@ -149,7 +149,7 @@ export function RescheduleMeetingDialog({
                 </div>
               </div>
               <div>
-                <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                <label className="font-mono block text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                   Reason <span className="text-rose-500">*</span>
                 </label>
                 <textarea

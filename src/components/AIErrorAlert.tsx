@@ -36,7 +36,7 @@ export const AIErrorAlert: React.FC<AIErrorAlertProps> = ({ error, onRetry, clas
           </div>
           <div>
             <h3 className={clsx(
-              "font-black text-sm uppercase tracking-wider",
+              "font-mono font-semibold text-sm uppercase tracking-wider",
               isRateLimit ? "text-amber-900" : "text-red-900"
             )}>
               {isRateLimit ? "AI Engine Rate Limit" : "AI Analysis Error"}
@@ -77,13 +77,13 @@ export const AIErrorAlert: React.FC<AIErrorAlertProps> = ({ error, onRetry, clas
           isRateLimit ? "bg-amber-50/50 border-amber-100" : "bg-slate-50 border-slate-100"
         )}>
           <div className={clsx(
-            "w-10 h-10 shrink-0 rounded-full flex items-center justify-center font-black text-sm",
+            "w-10 h-10 shrink-0 rounded-full flex items-center justify-center font-semibold text-sm",
             isRateLimit ? "bg-amber-100 text-amber-700" : "bg-slate-200 text-slate-600"
           )}>
             !
           </div>
           <div className="space-y-1">
-            <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-widest">
+            <h4 className="font-mono text-[11px] font-semibold text-slate-900 uppercase tracking-wide">
               cedar Advisory
             </h4>
             <p className="text-xs text-slate-500 leading-tight">
@@ -97,7 +97,7 @@ export const AIErrorAlert: React.FC<AIErrorAlertProps> = ({ error, onRetry, clas
         <div className="pt-2 flex items-center gap-4">
           <a 
             href="/settings/profile" 
-            className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 text-xs font-black uppercase tracking-widest transition-colors"
+            className="font-mono flex items-center gap-2 text-indigo-600 hover:text-indigo-700 text-xs font-semibold uppercase tracking-wide transition-colors"
           >
             Go to Profile Settings
             <ExternalLink className="w-3.5 h-3.5" />

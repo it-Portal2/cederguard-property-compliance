@@ -426,7 +426,7 @@ export function TemplateEditorModal({
           <div className="flex items-start gap-3">
             <span
               className={clsx(
-                'mt-1 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest',
+                'font-mono mt-1 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
                 categoryStyle.badge,
               )}
             >
@@ -434,7 +434,7 @@ export function TemplateEditorModal({
               {CATEGORY_LABEL[form.category]}
             </span>
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+              <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                 {isCreating
                   ? 'New report template'
                   : `${CATEGORY_LABEL[template!.category]} template · v${template!.version} · ${template!.status}`}
@@ -555,7 +555,7 @@ export function TemplateEditorModal({
           {/* Left pane — section list */}
           <aside className="flex w-full shrink-0 flex-col border-b border-slate-100 md:w-72 md:border-b-0 md:border-r">
             <div className="flex items-center justify-between gap-2 px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+              <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                 Sections ({form.sections.length})
               </p>
               {canEdit && (
@@ -937,7 +937,7 @@ function SectionDetail({
       </MetaField>
 
       <div className="space-y-3 border-t border-slate-100 pt-4">
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+        <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-500">
           Access controls
         </p>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -987,7 +987,7 @@ function MetaField({
   return (
     <label
       className={clsx(
-        'block text-[11px] font-semibold uppercase tracking-widest text-slate-500',
+        'font-mono block text-[11px] font-semibold uppercase tracking-wide text-slate-500',
         full && 'md:col-span-3',
       )}
     >

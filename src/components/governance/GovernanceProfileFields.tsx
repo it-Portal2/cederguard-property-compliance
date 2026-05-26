@@ -252,7 +252,7 @@ export function GovernanceProfileFields({
             </option>
           ))}
         </select>
-        <p className="mt-1.5 text-[10px] italic text-slate-400">
+        <p className="mt-1.5 text-[10px] text-slate-400">
           Triggers mandatory governance.
           {values.riskRegulatoryProfile ===
             'Building Safety / Compliance-critical' && (
@@ -284,7 +284,7 @@ export function GovernanceProfileFields({
             </option>
           ))}
         </select>
-        <p className="mt-1.5 text-[10px] italic text-slate-400">
+        <p className="mt-1.5 text-[10px] text-slate-400">
           Sets escalation and approvals.
         </p>
       </FieldWrap>
@@ -332,7 +332,7 @@ function FrameworkLinkLine({
 }) {
   if (empty) {
     return (
-      <p className="mt-1.5 text-[10px] italic text-slate-400">{emptyText}</p>
+      <p className="mt-1.5 text-[10px] text-slate-400">{emptyText}</p>
     );
   }
   if (loading) {
@@ -345,7 +345,7 @@ function FrameworkLinkLine({
   }
   if (errored) {
     return (
-      <p className="mt-1.5 text-[10px] italic text-amber-700">
+      <p className="mt-1.5 text-[10px] text-amber-700">
         Couldn't load the Framework — saved as a label only.
       </p>
     );

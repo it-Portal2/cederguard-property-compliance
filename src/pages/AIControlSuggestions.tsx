@@ -145,7 +145,7 @@ export function AIControlSuggestions() {
                                     />
                                     <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-red-500" />
                                 </span>
-                                <span className="text-[11px] font-bold text-red-700 tabular-nums">
+                                <span className="text-[11px] font-mono font-medium text-red-700 uppercase tracking-wide tabular-nums">
                                     {highRisks.length} high-risk open
                                 </span>
                             </motion.div>
@@ -179,7 +179,7 @@ export function AIControlSuggestions() {
                                     <p className="text-[11px] text-slate-400 mt-0.5">Context-driven mitigation generation</p>
                                 </div>
                             </div>
-                            <span className="hidden sm:inline-block text-[9px] font-bold uppercase tracking-widest text-slate-300 border border-slate-200 rounded-md px-2 py-1 select-none">
+                            <span className="hidden sm:inline-block text-[9px] font-mono font-medium uppercase tracking-wide text-slate-300 border border-slate-200 rounded-md px-2 py-1 select-none">
                                 Manual
                             </span>
                         </div>
@@ -232,7 +232,7 @@ export function AIControlSuggestions() {
                                 whileTap={!isManualLoading && !!manualSentence.trim() ? { scale: 0.985 } : {}}
                                 transition={{ type: 'spring', stiffness: 500, damping: 28 }}
                                 className={clsx(
-                                    "mt-auto w-full inline-flex items-center justify-center gap-2.5 px-5 py-3 text-sm font-bold rounded-lg select-none transition-colors duration-200",
+                                    "mt-auto w-full inline-flex items-center justify-center gap-2.5 px-5 py-3 text-sm font-medium rounded-lg select-none transition-colors duration-200",
                                     isManualLoading || !manualSentence.trim()
                                         ? "bg-slate-200 text-slate-400 cursor-not-allowed"
                                         : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20"
@@ -269,7 +269,7 @@ export function AIControlSuggestions() {
                                     <p className="text-[11px] text-slate-400 mt-0.5">Full portfolio high-risk scan</p>
                                 </div>
                             </div>
-                            <span className="hidden sm:inline-block text-[9px] font-bold uppercase tracking-widest text-slate-500 border border-slate-700 rounded-md px-2 py-1 select-none">
+                            <span className="hidden sm:inline-block text-[9px] font-mono font-medium uppercase tracking-wide text-slate-500 border border-slate-700 rounded-md px-2 py-1 select-none">
                                 Auto
                             </span>
                         </div>
@@ -277,20 +277,20 @@ export function AIControlSuggestions() {
                         <div className="p-5 sm:p-6 flex flex-col gap-5 flex-1">
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="bg-slate-800 border border-slate-700 rounded-lg p-3.5">
-                                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1.5">Risks Queued</p>
+                                    <p className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide mb-1.5">Risks Queued</p>
                                     <motion.p
                                         key={highRisks.length}
                                         initial={{ opacity: 0, y: 6 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                                        className="text-2xl font-bold text-white tabular-nums leading-none"
+                                        className="text-2xl font-medium text-white tabular-nums leading-none"
                                     >
                                         {highRisks.length}
                                     </motion.p>
                                 </div>
                                 <div className="bg-slate-800 border border-slate-700 rounded-lg p-3.5">
-                                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1.5">Score Threshold</p>
-                                    <p className="text-2xl font-bold text-amber-400 tabular-nums leading-none">≥ 12</p>
+                                    <p className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide mb-1.5">Score Threshold</p>
+                                    <p className="text-2xl font-medium text-amber-400 tabular-nums leading-none">≥ 12</p>
                                 </div>
                             </div>
 
@@ -307,7 +307,7 @@ export function AIControlSuggestions() {
                                 whileTap={!isAutoLoading && highRisks.length > 0 ? { scale: 0.985 } : {}}
                                 transition={{ type: 'spring', stiffness: 500, damping: 28 }}
                                 className={clsx(
-                                    "mt-auto w-full inline-flex items-center justify-center gap-2.5 px-5 py-3 text-sm font-bold rounded-lg select-none transition-colors duration-200",
+                                    "mt-auto w-full inline-flex items-center justify-center gap-2.5 px-5 py-3 text-sm font-medium rounded-lg select-none transition-colors duration-200",
                                     isAutoLoading || highRisks.length === 0
                                         ? "bg-slate-700 text-slate-500 cursor-not-allowed"
                                         : "bg-indigo-500 hover:bg-indigo-400 text-white shadow-md shadow-indigo-500/20"
@@ -415,7 +415,7 @@ export function AIControlSuggestions() {
                                     initial={{ opacity: 0, x: 8 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: 0.1 }}
-                                    className="inline-flex items-center px-2 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-bold rounded-full tabular-nums"
+                                    className="inline-flex items-center px-2 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-mono font-medium uppercase tracking-wide rounded-full tabular-nums"
                                 >
                                     {manualIdeas.length} strategies
                                 </motion.span>
@@ -436,13 +436,13 @@ export function AIControlSuggestions() {
                                         >
                                             <div className="flex items-stretch">
                                                 <div className="w-10 shrink-0 bg-slate-50 border-r border-slate-100 flex flex-col items-center pt-3.5 gap-1">
-                                                    <span className="text-[11px] font-black text-slate-300 tabular-nums leading-none">
+                                                    <span className="text-[11px] font-mono font-medium text-slate-300 tabular-nums leading-none">
                                                         {String(idx + 1).padStart(2, '0')}
                                                     </span>
                                                     <div className="mt-2 w-px flex-1 max-h-6 rounded-full bg-slate-200" />
                                                 </div>
                                                 <div className="flex-1 min-w-0 p-4 space-y-1">
-                                                    <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest block mb-2">
+                                                    <span className="text-[10px] font-mono font-medium text-indigo-500 uppercase tracking-wide block mb-2">
                                                         Strategy {String(idx + 1).padStart(2, '0')}
                                                     </span>
                                                     <div className="divide-y divide-slate-100">
@@ -452,7 +452,7 @@ export function AIControlSuggestions() {
                                                                 part.label ? "py-2.5 first:pt-0 last:pb-0" : "pt-0"
                                                             )}>
                                                                 {part.label && (
-                                                                    <span className="shrink-0 w-12 text-[9px] font-black text-indigo-400 uppercase tracking-widest pt-0.5">
+                                                                    <span className="shrink-0 w-12 text-[9px] font-mono font-medium text-indigo-400 uppercase tracking-wide pt-0.5">
                                                                         {part.label}
                                                                     </span>
                                                                 )}
@@ -489,12 +489,12 @@ export function AIControlSuggestions() {
                         >
                             <div className="flex items-center gap-2.5 px-0.5">
                                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0" />
-                                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Automated Results</h3>
+                                <h3 className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide">Automated Results</h3>
                                 <motion.span
                                     initial={{ opacity: 0, x: 8 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: 0.1 }}
-                                    className="inline-flex items-center px-2 py-0.5 bg-indigo-50 border border-indigo-200 text-indigo-700 text-[11px] font-bold rounded-full tabular-nums"
+                                    className="inline-flex items-center px-2 py-0.5 bg-indigo-50 border border-indigo-200 text-indigo-700 text-[11px] font-mono font-medium uppercase tracking-wide rounded-full tabular-nums"
                                 >
                                     {suggestedControls.length} risks
                                 </motion.span>
@@ -525,9 +525,9 @@ export function AIControlSuggestions() {
                                                     <span className="text-sm font-bold text-slate-800 truncate">{riskDoc.title}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2 shrink-0">
-                                                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Residual</span>
+                                                    <span className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide">Residual</span>
                                                     <span className={clsx(
-                                                        'px-2 py-0.5 text-xs font-bold rounded-full border tabular-nums',
+                                                        'px-2 py-0.5 text-xs font-mono font-medium rounded-full border tabular-nums',
                                                         rating >= 16
                                                             ? 'bg-red-50 border-red-200 text-red-700'
                                                             : 'bg-amber-50 border-amber-200 text-amber-700'
@@ -557,7 +557,7 @@ export function AIControlSuggestions() {
                                                                         part.label ? "py-2 first:pt-0 last:pb-0" : "pt-0"
                                                                     )}>
                                                                         {part.label && (
-                                                                            <span className="shrink-0 w-12 text-[9px] font-black text-indigo-400 uppercase tracking-widest pt-0.5">
+                                                                            <span className="font-mono shrink-0 w-12 text-[9px] font-semibold text-indigo-400 uppercase tracking-wide pt-0.5">
                                                                                 {part.label}
                                                                             </span>
                                                                         )}

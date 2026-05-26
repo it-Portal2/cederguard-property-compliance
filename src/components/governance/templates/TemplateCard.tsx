@@ -42,7 +42,7 @@ export function TemplateCard({
             {template.code && (
               <span
                 className={clsx(
-                  'inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-black uppercase tracking-widest',
+                  'font-mono inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
                   style.badge,
                 )}
               >
@@ -51,7 +51,7 @@ export function TemplateCard({
             )}
             <span
               className={clsx(
-                'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest',
+                'font-mono inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
                 style.badge,
               )}
             >
@@ -69,7 +69,7 @@ export function TemplateCard({
 
       <dl className="mt-auto grid grid-cols-2 gap-2 text-[11px]">
         <div>
-          <dt className="font-semibold uppercase tracking-widest text-slate-400">Version</dt>
+          <dt className="font-mono font-semibold uppercase tracking-wide text-slate-400">Version</dt>
           <dd className="mt-0.5 flex items-center gap-1.5 text-slate-800">
             v{template.version}
             {template.status === 'published' && (
@@ -85,11 +85,11 @@ export function TemplateCard({
           </dd>
         </div>
         <div>
-          <dt className="font-semibold uppercase tracking-widest text-slate-400">Sections</dt>
+          <dt className="font-mono font-semibold uppercase tracking-wide text-slate-400">Sections</dt>
           <dd className="mt-0.5 text-slate-800">{sectionCount}</dd>
         </div>
         <div className="col-span-2">
-          <dt className="font-semibold uppercase tracking-widest text-slate-400">Route</dt>
+          <dt className="font-mono font-semibold uppercase tracking-wide text-slate-400">Route</dt>
           <dd className="mt-0.5 truncate text-slate-700" title={template.defaultRoute}>
             {template.defaultRoute || '—'}
           </dd>

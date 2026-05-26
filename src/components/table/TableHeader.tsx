@@ -62,7 +62,7 @@ export default function TableHeader<T extends Record<string, any>>({
 
   // Base header cell styles without borders
   const thBase = clsx(
-    'px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap',
+    'font-mono px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap',
     headerVariant === 'dark'
       ? 'bg-[#111827] text-slate-400'
       : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
@@ -105,7 +105,7 @@ export default function TableHeader<T extends Record<string, any>>({
                 key={i}
                 colSpan={cell.colSpan}
                 className={clsx(
-                  'px-3 py-2.5 text-center text-[10px] font-black uppercase tracking-widest whitespace-nowrap',
+                  'font-mono px-3 py-2.5 text-center text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap',
                   'border-x border-r-slate-200 border-b border-b-slate-300 dark:border-r-slate-700 dark:border-b-slate-700',
                   cell.className ?? (headerVariant === 'dark'
                     ? 'bg-[#111827] text-slate-400'

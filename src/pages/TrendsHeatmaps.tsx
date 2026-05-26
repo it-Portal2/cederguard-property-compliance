@@ -275,8 +275,8 @@ export function TrendsHeatmaps() {
       {/* Workstream Heatmap*/}
       <div className="bg-white rounded-lg md:rounded-lg border border-slate-200 shadow-sm overflow-hidden">
         <div className="px-6 md:px-8 py-4 md:py-5 border-b border-slate-100 flex items-center justify-between">
-          <span className="font-black text-slate-900 text-xs md:text-sm uppercase tracking-widest">Risk Heatmap — By Workstream</span>
-          <span className="hidden md:inline text-[10px] font-bold text-indigo-500 uppercase tracking-tighter bg-indigo-50 px-3 py-1 rounded-full">Live Analytics Layer</span>
+          <span className="font-mono font-semibold text-slate-900 text-xs md:text-sm uppercase tracking-wide">Risk Heatmap — By Workstream</span>
+          <span className="hidden md:inline text-[10px] font-mono font-medium text-indigo-500 uppercase tracking-wide bg-indigo-50 px-3 py-1 rounded-full">Live Analytics Layer</span>
         </div>
         <div className="p-6 md:p-10">
           {!hasData ? (
@@ -288,7 +288,7 @@ export function TrendsHeatmaps() {
               {heatmapData.map(row => (
                 <div key={row.ws} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 group">
                   <span
-                    className="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] sm:w-48 flex-shrink-0 group-hover:text-slate-900 transition-colors truncate"
+                    className="text-[11px] font-mono font-semibold text-slate-500 uppercase tracking-wide sm:w-48 flex-shrink-0 group-hover:text-slate-900 transition-colors truncate"
                     title={row.ws}
                   >
                     {row.ws}
@@ -296,7 +296,7 @@ export function TrendsHeatmaps() {
                   <div className="flex-1 flex items-center gap-3">
                     <div className="flex-1 bg-slate-50 rounded-lg overflow-hidden h-8 ring-1 ring-slate-100 group-hover:ring-indigo-100 transition-all">
                       <div
-                        className={`h-full flex items-center justify-center text-[10px] font-black transition-all ${cellColor(row.score)}`}
+                        className={`h-full flex items-center justify-center text-[11px] font-mono font-semibold tabular-nums transition-all ${cellColor(row.score)}`}
                         style={{
                           width: row.score > 0 ? `${(row.score / 25) * 100}%` : '4%',
                           minWidth: '1.5rem',
@@ -305,7 +305,7 @@ export function TrendsHeatmaps() {
                         {row.score > 0 ? row.score : ''}
                       </div>
                     </div>
-                    <span className="text-[10px] font-bold text-slate-400 tabular-nums w-14 text-right">
+                    <span className="text-[11px] font-mono font-medium text-slate-400 tabular-nums w-14 text-right">
                       {row.count} risk{row.count !== 1 ? 's' : ''}
                     </span>
                   </div>
@@ -316,13 +316,13 @@ export function TrendsHeatmaps() {
 
           {/* Score Legend — uses the same 4 bands as the calibrated matrix above*/}
           <div className="flex flex-wrap items-center gap-3 mt-10 p-5 bg-slate-50 rounded-lg border border-slate-100">
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-2">Score Legend:</span>
+            <span className="text-[11px] font-mono font-semibold text-slate-500 uppercase tracking-wide mr-2">Score Legend:</span>
             {BAND_RANGES.map(({ band, range }) => {
               const styles = BAND_STYLES[band];
               return (
                 <span
                   key={band}
-                  className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-transform hover:scale-105 ${styles.pill}`}
+                  className={`px-3 py-1 rounded-lg text-[10px] font-mono font-medium uppercase tracking-wide border transition-transform hover:scale-105 ${styles.pill}`}
                 >
                   {range} {styles.label}
                 </span>
@@ -344,14 +344,14 @@ export function TrendsHeatmaps() {
               <PoundSterling className="w-4 h-4 text-indigo-600" />
             </div>
             <div>
-              <span className="block font-black text-slate-900 text-xs md:text-sm uppercase tracking-widest">Financial Risk Exposure</span>
-              <span className="block text-[10px] text-slate-400 mt-0.5">
+              <span className="block font-mono font-semibold text-slate-900 text-xs md:text-sm uppercase tracking-wide">Financial Risk Exposure</span>
+              <span className="block text-[11px] text-slate-400 mt-0.5">
                 Gross / Residual ALE = Impact (£) × Likelihood probability · % shown against linked project / programme value
               </span>
             </div>
           </div>
           {escalatedCount > 0 && (
-            <span className="text-[10px] font-bold text-rose-600 uppercase tracking-tighter bg-rose-50 px-3 py-1 rounded-full border border-rose-100">
+            <span className="text-[10px] font-mono font-medium text-rose-600 uppercase tracking-wide bg-rose-50 px-3 py-1 rounded-full border border-rose-100">
               {escalatedCount} severe
             </span>
           )}
@@ -378,20 +378,20 @@ export function TrendsHeatmaps() {
                           <ArrowUpRight className="w-3.5 h-3.5 text-rose-600" aria-label="Severe impact — escalate" />
                         )}
                       </div>
-                      <div className="text-[11px] text-slate-500 mt-1 truncate" title={row.linkedTo}>
+                      <div className="text-[11px] font-mono text-slate-500 mt-1 truncate tabular-nums" title={row.linkedTo}>
                         {row.linkedTo} · L={row.grossL} I={row.grossI} · matrix score {row.matrixScore}
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                       <span
-                        className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${BAND_STYLES[row.baseBand].pill}`}
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-medium uppercase tracking-wide border ${BAND_STYLES[row.baseBand].pill}`}
                         title="Gross band from 5×5 matrix score"
                       >
                         Gross · {BAND_STYLES[row.baseBand].label}
                       </span>
                       <span className="text-slate-400 text-xs">→</span>
                       <span
-                        className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${BAND_STYLES[row.residualBaseBand].pill}`}
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-medium uppercase tracking-wide border ${BAND_STYLES[row.residualBaseBand].pill}`}
                         title="Residual band from 5×5 matrix score"
                       >
                         Residual · {BAND_STYLES[row.residualBaseBand].label}
@@ -400,18 +400,18 @@ export function TrendsHeatmaps() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-1">
                     <div className="bg-white rounded-lg px-3 py-2 border border-slate-100">
-                      <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Linked Value</div>
+                      <div className="text-[10px] font-mono font-semibold text-slate-400 uppercase tracking-wide">Linked Value</div>
                       <div className="text-sm font-bold text-slate-900 tabular-nums mt-0.5">{formatGBP(row.linkedValue)}</div>
                     </div>
                     <div className="bg-white rounded-lg px-3 py-2 border border-slate-100">
-                      <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Gross ALE</div>
+                      <div className="text-[10px] font-mono font-semibold text-slate-400 uppercase tracking-wide">Gross ALE</div>
                       <div className="flex items-baseline gap-2 mt-0.5 flex-wrap">
                         <span className="text-sm font-bold text-slate-900 tabular-nums">{formatGBP(row.grossALE)}</span>
                         <span className="text-[11px] font-medium text-slate-500 tabular-nums">{formatAlePercent(row.grossPct)}</span>
                       </div>
                     </div>
                     <div className="bg-white rounded-lg px-3 py-2 border border-slate-100">
-                      <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Residual ALE</div>
+                      <div className="text-[10px] font-mono font-semibold text-slate-400 uppercase tracking-wide">Residual ALE</div>
                       <div className="flex items-baseline gap-2 mt-0.5 flex-wrap">
                         <span className="text-sm font-bold text-slate-900 tabular-nums">{formatGBP(row.residualALE)}</span>
                         <span className="text-[11px] font-medium text-slate-500 tabular-nums">{formatAlePercent(row.residualPct)}</span>
@@ -434,7 +434,7 @@ export function TrendsHeatmaps() {
       {categoryBreakdown.length > 0 && (
         <div className="bg-white rounded-lg md:rounded-lg border border-slate-200 shadow-sm overflow-hidden">
           <div className="px-6 md:px-8 py-4 md:py-5 border-b border-slate-100">
-            <span className="font-black text-slate-900 text-xs md:text-sm uppercase tracking-widest">Risk Category Density</span>
+            <span className="font-mono font-semibold text-slate-900 text-xs md:text-sm uppercase tracking-wide">Risk Category Density</span>
           </div>
           <div className="p-6 md:p-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {categoryBreakdown.map(([cat, count]) => (
@@ -442,7 +442,7 @@ export function TrendsHeatmaps() {
                 key={cat}
                 className="group flex items-center justify-between bg-slate-50 hover:bg-white hover:ring-2 hover:ring-indigo-500/10 rounded-lg px-5 py-4 transition-all duration-300 border border-transparent hover:border-slate-100 shadow-sm hover:shadow-indigo-500/5"
               >
-                <span className="text-[11px] font-black text-slate-600 uppercase tracking-widest group-hover:text-slate-900 truncate mr-4" title={cat}>{cat}</span>
+                <span className="font-mono text-[11px] font-semibold text-slate-600 uppercase tracking-wide group-hover:text-slate-900 truncate mr-4" title={cat}>{cat}</span>
                 <div className="flex items-center gap-3">
                   <div className="h-1 w-8 bg-indigo-100 rounded-full overflow-hidden">
                     <div
@@ -450,7 +450,7 @@ export function TrendsHeatmaps() {
                       style={{ width: `${Math.min(100, (count / totalRisks) * 100)}%` }}
                     />
                   </div>
-                  <span className="text-lg font-black text-indigo-600 tabular-nums">{count}</span>
+                  <span className="text-lg font-semibold text-indigo-600 tabular-nums">{count}</span>
                 </div>
               </div>
             ))}

@@ -390,7 +390,7 @@ export function CostProgrammeTab({
       <div>
         <div className="mb-3 flex items-end justify-between gap-3">
           <div>
-            <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+            <div className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-400">
               Cost breakdown
             </div>
             <div className="text-sm font-bold text-slate-900">

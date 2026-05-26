@@ -521,7 +521,7 @@ export function RiskIssues() {
                 <ArrowLeft className="w-3.5 h-3.5" /> Back to Project Initiation
               </Link>
             )}
-            <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight">
+            <h1 className="text-2xl font-semibold text-slate-900 uppercase tracking-tight">
               Issues Register
             </h1>
             <p className="text-sm text-slate-500 mt-0.5">{contextLabel}</p>
@@ -614,7 +614,7 @@ export function RiskIssues() {
                 <div className="p-1.5 bg-indigo-500/30 rounded-lg">
                   <Lightbulb className="w-5 h-5 text-indigo-200" />
                 </div>
-                <h2 className="text-sm font-bold uppercase tracking-widest text-indigo-200">
+                <h2 className="font-mono text-[11px] font-medium uppercase tracking-wide text-indigo-200">
                   Issue Advisory
                 </h2>
               </div>
@@ -648,7 +648,7 @@ export function RiskIssues() {
           <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm">
             <div className="flex items-center gap-2 mb-3">
               <AlertCircle className="w-4 h-4 text-amber-500" />
-              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              <h3 className="font-mono text-[11px] font-medium text-slate-500 uppercase tracking-wide">
                 Attention Required
               </h3>
             </div>
@@ -673,7 +673,7 @@ export function RiskIssues() {
                 </div>
               ))}
               {openIssues.length === 0 && (
-                <p className="text-xs text-slate-400 italic">
+                <p className="text-xs text-slate-400">
                   No open issues requiring immediate action.
                 </p>
               )}

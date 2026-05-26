@@ -297,7 +297,7 @@ export function IssueModal({
         <div className="p-6 overflow-y-auto flex-1 space-y-8">
           {/* Section 1: Core Details */}
           <div>
-            <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">
+            <h3 className="font-mono text-sm font-medium text-slate-800 uppercase tracking-wide mb-4 border-b border-slate-100 pb-2">
               Core Details
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -401,7 +401,7 @@ export function IssueModal({
 
           {/* Section 2: Assessment */}
           <div>
-            <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">
+            <h3 className="font-mono text-sm font-medium text-slate-800 uppercase tracking-wide mb-4 border-b border-slate-100 pb-2">
               Assessment
             </h3>
             <div className="bg-slate-50 border border-slate-200 rounded-lg p-5 mb-6">
@@ -437,7 +437,7 @@ export function IssueModal({
                   />
                 </div>
                 <div className="flex flex-col items-center justify-center pt-5">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                  <span className="font-mono text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
                     Overall Score
                   </span>
                   <span
@@ -455,7 +455,7 @@ export function IssueModal({
 
           {/* Section 3: Response & Progress */}
           <div>
-            <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">
+            <h3 className="font-mono text-sm font-medium text-slate-800 uppercase tracking-wide mb-4 border-b border-slate-100 pb-2">
               Response & Progress
             </h3>
             <div className="grid grid-cols-1 gap-4">
@@ -520,7 +520,7 @@ export function IssueModal({
                 {showAddAction && (
                   <div className="mb-6 p-4 bg-white border border-indigo-100 rounded-lg shadow-sm space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">
+                      <span className="font-mono text-xs font-medium text-indigo-600 uppercase tracking-wide">
                         {editingActionId
                           ? "Edit Action"
                           : "New Resolution Action"}
@@ -702,7 +702,7 @@ export function IssueModal({
                               </span>
                               <span
                                 className={clsx(
-                                  "px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider",
+                                  "px-1.5 py-0.5 rounded font-mono text-[9px] font-medium uppercase tracking-wide",
                                   action.priority === "Critical"
                                     ? "bg-red-100 text-red-700"
                                     : action.priority === "High"
@@ -719,7 +719,7 @@ export function IssueModal({
                         </div>
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           {!initialData?.id && (
-                            <span className="text-[8px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full mr-2 uppercase tracking-tighter">
+                            <span className="font-mono text-[8px] font-medium bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full mr-2 uppercase tracking-wide">
                               Draft
                             </span>
                           )}
@@ -800,7 +800,7 @@ export function IssueModal({
 
           {/* Section 4: Tracking */}
           <div>
-            <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">
+            <h3 className="font-mono text-sm font-medium text-slate-800 uppercase tracking-wide mb-4 border-b border-slate-100 pb-2">
               Tracking
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

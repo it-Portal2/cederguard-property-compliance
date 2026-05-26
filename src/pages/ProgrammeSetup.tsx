@@ -9,7 +9,7 @@ import { Plus } from 'lucide-react';
 import { isAtLeastClientAdmin } from '../lib/roles';
 
 const inputCls = "w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white/80 backdrop-blur-sm placeholder:text-slate-400 shadow-sm hover:border-slate-300";
-const labelCls = "block text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] mb-2 ml-1";
+const labelCls = "block text-[10px] font-semibold text-slate-500 uppercase tracking-[0.15em] mb-2 ml-1";
 const textareaCls = `${inputCls} resize-none min-h-[100px]`;
 
 // ─── Lookup data (from client HTML reference) ───────────────────────────────
@@ -302,7 +302,7 @@ Use precise, formal language appropriate for a board-level risk register. Focus 
                                     useStore.getState().setActiveProgramme(null);
                                     navigate('/programmes/new');
                                 }}
-                                className="flex items-center gap-2 px-3 py-1 bg-white border border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-200 rounded-lg transition-all text-[11px] font-black uppercase tracking-wider"
+                                className="flex items-center gap-2 px-3 py-1 bg-white border border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-200 rounded-lg transition-all text-sm font-medium"
                             >
                                 <Plus className="w-3.5 h-3.5 text-indigo-500" />
                                 New Programme
@@ -333,7 +333,7 @@ Use precise, formal language appropriate for a board-level risk register. Focus 
                             {active && (
                                 <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 blur-2xl rounded-full translate-x-12 -translate-y-12" />
                             )}
-                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm font-black flex-shrink-0 transition-all ${active
+                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm font-semibold flex-shrink-0 transition-all ${active
                                     ? 'bg-white text-indigo-600 shadow-inner'
                                     : done
                                         ? 'bg-indigo-600 text-white'
@@ -342,7 +342,7 @@ Use precise, formal language appropriate for a board-level risk register. Focus 
                                 {done ? <CheckCircle2 className="w-5 h-5 stroke-[2.5px]" /> : s.id}
                             </div>
                             <div className="text-left">
-                                <p className={`text-[8px] uppercase tracking-[0.2em] font-black ${active ? 'text-indigo-100' : done ? 'text-indigo-400' : 'text-slate-400'}`}>Phase 0{s.id}</p>
+                                <p className={`text-[10px] font-mono font-medium uppercase tracking-wide ${active ? 'text-indigo-100' : done ? 'text-indigo-400' : 'text-slate-400'}`}>Phase 0{s.id}</p>
                                 <p className={`text-[13px] font-bold leading-none mt-1 ${active ? 'text-white' : done ? 'text-slate-900' : 'text-slate-500'}`}>{s.title}</p>
                             </div>
                         </button>
@@ -621,7 +621,7 @@ Use precise, formal language appropriate for a board-level risk register. Focus 
                                 placeholder="Supply chain constraints, regulatory change, funding shortfalls, political risks, capacity gaps…&#10;&#10;Or click 'Run AI Analysis' above to generate risks automatically."
                             />
                             {!form.knownStrategicRisks && !aiAnalyzing && (
-                                <p className="text-[11px] text-slate-400 mt-2 flex items-center gap-1.5 italic">
+                                <p className="text-[11px] text-slate-400 mt-2 flex items-center gap-1.5 ">
                                     <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
                                     Tip: Complete Strategic Objectives (Phase 1) for the most accurate AI risk identification.
                                 </p>
@@ -672,7 +672,7 @@ Use precise, formal language appropriate for a board-level risk register. Focus 
                             <button
                                 onClick={() => handleSave(false)}
                                 disabled={saving}
-                                className="w-full sm:w-auto flex items-center justify-center gap-2 px-10 py-3 bg-indigo-600 text-white text-sm font-black rounded-lg hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-all hover:scale-[1.05] active:scale-95 disabled:opacity-50"
+                                className="w-full sm:w-auto flex items-center justify-center gap-2 px-10 py-3 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 shadow-xl shadow-indigo-200 transition-all hover:scale-[1.05] active:scale-95 disabled:opacity-50"
                             >
                                 {saving ? (
                                     <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving…</>

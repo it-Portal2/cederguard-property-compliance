@@ -104,18 +104,18 @@ export function ActivityTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
 
                         return (
                             <div key={log.id} className="flex items-start gap-4 px-5 py-4 hover:bg-slate-50 transition-colors">
-                                <span className={`mt-0.5 px-2 py-1 rounded-md text-xs font-semibold whitespace-nowrap ${cfg.color}`}>{cfg.label}</span>
+                                <span className={`mt-0.5 px-2 py-1 rounded-md font-mono text-[10px] font-medium uppercase tracking-wide whitespace-nowrap ${cfg.color}`}>{cfg.label}</span>
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm text-slate-700 truncate">
                                         <span className="font-bold text-slate-900">{identity}</span>
                                         {updateDesc ? (
-                                            <span className="text-slate-500 font-medium italic ml-2">— {updateDesc}</span>
+                                            <span className="text-slate-500 font-medium ml-2">— {updateDesc}</span>
                                         ) : log.description ? (
                                             <span className="text-slate-500 ml-2">— {log.description}</span>
                                         ) : null}
                                     </p>
                                     <div className="flex items-center gap-3 mt-1 underline-none">
-                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                                        <p className="font-mono text-[10px] text-slate-500 font-medium tabular-nums">
                                             {log.timestamp ? new Date(log.timestamp).toLocaleString() : 'Just now'}
                                         </p>
                                         {log.targetUid && (

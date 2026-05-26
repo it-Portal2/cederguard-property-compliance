@@ -183,7 +183,7 @@ export function DrawingTab({ enquiry, drawing }: DrawingTabProps) {
             <ImageIcon className="h-5 w-5" strokeWidth={2.25} />
           </div>
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-400">
               Drawing markup
             </p>
             <h2 className="text-base font-bold tracking-tight text-slate-900">
@@ -231,7 +231,7 @@ export function DrawingTab({ enquiry, drawing }: DrawingTabProps) {
         >
           <div className="flex items-center gap-2">
             <FileStack className="h-3.5 w-3.5 text-slate-400" />
-            <span className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+            <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-400">
               Attached PDFs · {allPdfs.length}
             </span>
           </div>
@@ -259,7 +259,7 @@ export function DrawingTab({ enquiry, drawing }: DrawingTabProps) {
                   <FileText className="h-3.5 w-3.5 shrink-0" />
                   <span className="max-w-45 truncate">{p.fileName}</span>
                   {isAnnotated ? (
-                    <span className="ml-0.5 rounded bg-indigo-600 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white">
+                    <span className="font-mono ml-0.5 rounded bg-indigo-600 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white">
                       AI
                     </span>
                   ) : null}
@@ -270,7 +270,7 @@ export function DrawingTab({ enquiry, drawing }: DrawingTabProps) {
           {!isViewingAnnotatedPdf ? (
             <p className="mt-2 text-[11px] text-slate-500">
               Viewing a PDF the AI did not annotate. Switch to the
-              <span className="mx-1 inline-flex items-center rounded bg-indigo-600 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white">
+              <span className="font-mono mx-1 inline-flex items-center rounded bg-indigo-600 px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white">
                 AI
               </span>
               PDF to see the markup overlay.
@@ -318,7 +318,7 @@ export function DrawingTab({ enquiry, drawing }: DrawingTabProps) {
         <div className="lg:col-span-5">
           <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between">
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+              <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                 Numbered callouts
               </p>
               <p className="text-[11px] text-slate-400">

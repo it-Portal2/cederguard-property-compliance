@@ -38,7 +38,7 @@ import { BrandingTab } from '../components/governance/branding/BrandingTab';
 import { TacCostRatesTab } from '../components/technicalAssurance/TacCostRatesTab';
 
 const inputCls = "w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white/80 backdrop-blur-sm placeholder:text-slate-400 shadow-sm hover:border-slate-300";
-const labelCls = "block text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] mb-2 ml-1";
+const labelCls = "block text-[10px] font-semibold text-slate-500 uppercase tracking-[0.15em] mb-2 ml-1";
 
 interface TeamMember {
     uid: string;
@@ -241,7 +241,7 @@ export function WorkspaceSettings() {
             render: (_v, row) => (
                 <div className="flex items-center gap-3 min-w-0">
                     <div className={clsx(
-                        'w-9 h-9 rounded-lg flex items-center justify-center text-xs font-black ring-2 ring-white shrink-0',
+                        'w-9 h-9 rounded-lg flex items-center justify-center text-xs font-semibold ring-2 ring-white shrink-0',
                         row.status === 'pending'
                             ? 'bg-amber-100 text-amber-700'
                             : 'bg-gradient-to-br from-indigo-500 to-indigo-700 text-white',
@@ -482,7 +482,7 @@ export function WorkspaceSettings() {
         <div className="max-w-full mx-auto">
             {/* Page header — eyebrow breadcrumb, title, description */}
             <header className="px-2 pt-2 pb-6">
-                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 uppercase tracking-[0.12em]">
+                <div className="flex items-center gap-1.5 text-[11px] font-mono font-medium text-slate-500 uppercase tracking-wide">
                     <Settings2 className="w-3.5 h-3.5" strokeWidth={2.25} />
                     <span>Settings</span>
                     <span className="text-slate-300">/</span>
@@ -538,14 +538,14 @@ export function WorkspaceSettings() {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                         <div className="lg:col-span-2 bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                             <div className="px-5 sm:px-8 py-5 sm:py-6 border-b border-slate-100 flex items-center justify-between">
-                                <h2 className="font-black text-slate-900 text-base sm:text-lg tracking-tight flex items-center gap-3">
+                                <h2 className="font-semibold text-slate-900 text-base sm:text-lg tracking-tight flex items-center gap-3">
                                     <div className="p-2.5 rounded-lg bg-indigo-50 flex items-center justify-center border border-indigo-100">
                                         <Building2 className="w-5 h-5 text-indigo-600" />
                                     </div>
                                     Organisation Identity
                                 </h2>
                                 {orgSaved && (
-                                    <div className="flex items-center gap-1.5 text-emerald-600 text-xs font-black">
+                                    <div className="flex items-center gap-1.5 text-emerald-600 text-xs font-semibold">
                                         <CheckCircle2 className="w-4 h-4" /> Saved
                                     </div>
                                 )}
@@ -579,7 +579,7 @@ export function WorkspaceSettings() {
                                     <button
                                         onClick={handleSaveOrg}
                                         disabled={savingOrg}
-                                        className="flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3 bg-slate-900 text-white text-xs font-black rounded-lg hover:bg-slate-800 transition-all active:scale-95 shadow-sm disabled:opacity-50"
+                                        className="flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3 bg-slate-900 text-white text-xs font-semibold rounded-lg hover:bg-slate-800 transition-all active:scale-95 shadow-sm disabled:opacity-50"
                                     >
                                         {savingOrg ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                                         Save Changes
@@ -591,12 +591,12 @@ export function WorkspaceSettings() {
                         <div className="space-y-6">
                             <div className="bg-indigo-600 rounded-lg p-6 sm:p-8 text-white shadow-sm relative overflow-hidden">
                                 <ScanSearch className="absolute -top-10 -right-10 w-40 h-40 text-white/10 rotate-12" />
-                                <h3 className="text-lg sm:text-xl font-black mb-2 relative z-10 tracking-tight">Enterprise Tier</h3>
+                                <h3 className="text-lg sm:text-xl font-semibold mb-2 relative z-10 tracking-tight">Enterprise Tier</h3>
                                 <p className="text-indigo-100 text-xs font-medium relative z-10 leading-relaxed">
                                     Your workspace is currently operating on the strategic compliance package.
                                 </p>
                                 <div className="mt-6 pt-5 border-t border-white/10 relative z-10">
-                                    <div className="text-[10px] font-black uppercase tracking-widest text-indigo-200 mb-3">
+                                    <div className="text-[10px] font-mono font-medium uppercase tracking-wide text-indigo-200 mb-3">
                                         Features Included
                                     </div>
                                     <ul className="space-y-2.5">
@@ -619,7 +619,7 @@ export function WorkspaceSettings() {
                                 <Users className="w-4 h-4 text-white" />
                             </div>
                             <div>
-                                <h2 className="text-base font-black text-slate-900 tracking-tight">Team Members</h2>
+                                <h2 className="text-base font-semibold text-slate-900 tracking-tight">Team Members</h2>
                                 <p className="text-[11px] text-slate-500">
                                     {teamRows.filter(r => r.status === 'active').length} active
                                     {teamRows.filter(r => r.status === 'pending').length > 0 && ` · ${teamRows.filter(r => r.status === 'pending').length} pending`}
@@ -693,11 +693,11 @@ export function WorkspaceSettings() {
                         <div className="relative bg-rose-600 rounded-lg p-6 sm:p-8 text-white shadow-sm overflow-hidden">
                             <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                                 <div className="space-y-3 min-w-0">
-                                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-lg text-white text-[10px] font-black uppercase tracking-[0.2em] border border-white/20">
+                                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/15 rounded-lg text-white text-[10px] font-mono font-bold uppercase tracking-wide border border-white/25">
                                         <AlertTriangle className="w-3.5 h-3.5" />
                                         Critical Intervention
                                     </div>
-                                    <h3 className="text-xl sm:text-2xl font-black tracking-tight">Factory Reset Workspace</h3>
+                                    <h3 className="text-xl sm:text-2xl font-semibold tracking-tight">Factory Reset Workspace</h3>
                                     <p className="text-rose-100 text-xs sm:text-sm font-medium leading-relaxed w-full">
                                         Permanently decommission all projects, strategic programmes, and identified risks. This action wipes the database clean and is strictly irreversible.
                                     </p>
@@ -705,7 +705,7 @@ export function WorkspaceSettings() {
                                 <button
                                     onClick={() => setResetStep('confirm1')}
                                     disabled={resetting}
-                                    className="shrink-0 flex items-center justify-center gap-2 px-6 py-3 bg-white text-rose-600 text-xs sm:text-sm font-black rounded-lg hover:bg-rose-50 transition-all active:scale-95 shadow-sm disabled:opacity-50"
+                                    className="shrink-0 flex items-center justify-center gap-2 px-6 py-3 bg-white text-rose-600 text-xs sm:text-sm font-semibold rounded-lg hover:bg-rose-50 transition-all active:scale-95 shadow-sm disabled:opacity-50"
                                 >
                                     <RefreshCcw className={clsx("w-4 h-4", resetting && "animate-spin")} />
                                     Reset Workspace Data
@@ -715,7 +715,7 @@ export function WorkspaceSettings() {
                         </div>
 
                         <div className="bg-slate-900 rounded-lg p-6 sm:p-8 text-white shadow-sm relative overflow-hidden">
-                            <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em] mb-6 flex items-center gap-3">
+                            <h4 className="text-[10px] font-mono font-medium text-indigo-400 uppercase tracking-wide mb-6 flex items-center gap-3">
                                 <div className="w-6 h-6 rounded-lg bg-indigo-500/20 flex items-center justify-center">
                                     <Globe className="w-3.5 h-3.5" />
                                 </div>
@@ -729,7 +729,7 @@ export function WorkspaceSettings() {
                                     { label: 'Compliance Mesh', val: 'GCP Shielded Nodes' }
                                 ].map((item, i) => (
                                     <div key={i} className="space-y-2 border-l border-white/10 pl-4">
-                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{item.label}</p>
+                                        <p className="text-[10px] font-mono font-medium text-slate-500 uppercase tracking-wide">{item.label}</p>
                                         <p className="text-xs font-bold text-slate-200">{item.val}</p>
                                     </div>
                                 ))}
@@ -854,7 +854,7 @@ function EditMemberModal({
                 <fieldset disabled={saving} className="contents">
                     <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
                         <div>
-                            <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                            <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
                                 <Pencil className="w-5 h-5 text-indigo-600" />
                                 Edit {member.displayName || member.email}
                             </h3>
@@ -963,7 +963,7 @@ function ChangeRoleModal({
             <div className="bg-white rounded-lg shadow-2xl max-w-md w-full">
                 <fieldset disabled={saving} className="contents">
                     <div className="px-6 py-5 border-b border-slate-100">
-                        <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                        <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
                             <UserCog className="w-5 h-5 text-indigo-600" />
                             Change role for {member.displayName || member.email}
                         </h3>
@@ -1044,7 +1044,7 @@ function InviteTeamMemberModal({
                 <fieldset disabled={saving} className="contents">
                     <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
                         <div>
-                            <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                            <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
                                 {isEdit
                                     ? <><Pencil className="w-5 h-5 text-indigo-600" /> Edit Invitation</>
                                     : <><Mail className="w-5 h-5 text-indigo-600" /> Invite Team Member</>

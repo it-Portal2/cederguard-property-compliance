@@ -196,7 +196,7 @@ export function CostCalculator() {
           <div className="flex items-center gap-2 mb-1">
             <div className="p-2 bg-violet-50 rounded-lg"><Calculator className="w-5 h-5 text-violet-600" /></div>
             <h1 className="text-2xl font-bold text-slate-900">Platform Cost Calculator</h1>
-            <span className="text-[10px] font-bold px-2 py-0.5 bg-orange-100 text-orange-600 rounded-full uppercase tracking-wider">Internal Tool</span>
+            <span className="text-[10px] font-mono font-medium px-2 py-0.5 bg-orange-100 text-orange-600 rounded-full uppercase tracking-wide">Internal Tool</span>
           </div>
           <p className="text-slate-500 text-sm ml-11">
             Edit base infrastructure rates and see real-time cost projections. Changes here affect cost estimates across the platform. For client invoicing, go to <strong>Platform Admin → Quote Generator</strong>.
@@ -352,7 +352,7 @@ export function CostCalculator() {
 
             {/* Projection results */}
             <div className="space-y-2 text-sm">
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Monthly Cost Breakdown</div>
+              <div className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide mb-3">Monthly Cost Breakdown</div>
               {[
                 { label: 'Firestore DB', value: proj.firestoreGBP, color: 'bg-orange-100 text-orange-700' },
                 { label: 'Gemini AI', value: proj.geminiGBP, color: 'bg-purple-100 text-purple-700' },
@@ -415,14 +415,14 @@ export function CostCalculator() {
                   </div>
                   <div className="border-t border-black/5 pt-2 flex justify-between items-end">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest opacity-50">Gross Profit</p>
-                      <p className={clsx("text-2xl font-black", isLoss ? "text-red-600" : "text-emerald-600")}>
+                      <p className="text-[10px] font-mono font-medium uppercase tracking-wide opacity-50">Gross Profit</p>
+                      <p className={clsx("text-2xl font-semibold tabular-nums", isLoss ? "text-red-600" : "text-emerald-600")}>
                          {isLoss ? '-' : ''}£{Math.abs(grossProfit).toLocaleString()}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[10px] font-black uppercase tracking-widest opacity-50">Margin</p>
-                      <p className={clsx("text-xl font-black", isLoss ? "text-red-600" : "text-emerald-600")}>
+                      <p className="text-[10px] font-mono font-medium uppercase tracking-wide opacity-50">Margin</p>
+                      <p className={clsx("text-xl font-semibold tabular-nums", isLoss ? "text-red-600" : "text-emerald-600")}>
                         {margin.toFixed(1)}%
                       </p>
                     </div>
@@ -436,7 +436,7 @@ export function CostCalculator() {
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-xs text-amber-800 space-y-1.5">
             <p className="font-bold flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5" /> Usage Estimates Only</p>
             <p>Projections use activity assumptions (45 reads/user/day, 4 AI calls/project/month) to estimate costs. Actual costs will vary based on real usage patterns.</p>
-            <p className="pt-1 text-slate-500 italic opacity-80">To generate a client-facing invoice using these rates, go to <strong>Platform Admin → Invoice Creator</strong>.</p>
+            <p className="pt-1 text-slate-500 opacity-80">To generate a client-facing invoice using these rates, go to <strong>Platform Admin → Invoice Creator</strong>.</p>
           </div>
         </div>
       </div>

@@ -181,7 +181,7 @@ export function CostRateEditor({
               <div>
                 <label
                   htmlFor="rate-id"
-                  className="text-[11px] font-semibold uppercase tracking-widest text-slate-500"
+                  className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-500"
                 >
                   Rate ID
                 </label>
@@ -203,7 +203,7 @@ export function CostRateEditor({
               <div>
                 <label
                   htmlFor="rate-category"
-                  className="text-[11px] font-semibold uppercase tracking-widest text-slate-500"
+                  className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-500"
                 >
                   Category
                 </label>
@@ -226,7 +226,7 @@ export function CostRateEditor({
               <div>
                 <label
                   htmlFor="rate-description"
-                  className="text-[11px] font-semibold uppercase tracking-widest text-slate-500"
+                  className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-500"
                 >
                   Description
                 </label>
@@ -245,7 +245,7 @@ export function CostRateEditor({
                 <div>
                   <label
                     htmlFor="rate-unit"
-                    className="text-[11px] font-semibold uppercase tracking-widest text-slate-500"
+                    className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-500"
                   >
                     Unit
                   </label>
@@ -267,7 +267,7 @@ export function CostRateEditor({
                 <div>
                   <label
                     htmlFor="rate-value"
-                    className="text-[11px] font-semibold uppercase tracking-widest text-slate-500"
+                    className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-500"
                   >
                     Rate (£)
                   </label>

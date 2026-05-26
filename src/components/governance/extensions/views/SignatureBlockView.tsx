@@ -31,13 +31,13 @@ export function SignatureBlockView({ node, updateAttributes, editor, extension }
       }
     >
       <div className="mb-3 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+        <div className="font-mono flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
           <span>Signature</span>
           <select
             value={part}
             onChange={(e) => updateAttributes({ part: e.target.value as Part })}
             disabled={!isEditable}
-            className="rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold uppercase tracking-widest text-slate-700 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:cursor-not-allowed disabled:bg-slate-50"
+            className="font-mono rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-700 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:cursor-not-allowed disabled:bg-slate-50"
           >
             <option value="A">Part A</option>
             <option value="B">Part B</option>
@@ -59,7 +59,7 @@ export function SignatureBlockView({ node, updateAttributes, editor, extension }
       )}
 
       <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
-        <label className="block text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+        <label className="font-mono block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
           Signer name
           <input
             type="text"
@@ -70,7 +70,7 @@ export function SignatureBlockView({ node, updateAttributes, editor, extension }
             className={textInputCls + ' mt-1 normal-case tracking-normal text-slate-900'}
           />
         </label>
-        <label className="block text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+        <label className="font-mono block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
           Designation
           <input
             type="text"

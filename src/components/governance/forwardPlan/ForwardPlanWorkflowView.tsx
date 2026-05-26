@@ -207,7 +207,7 @@ export function ForwardPlanWorkflowView({ items, bodies, onOpenItem }: Props) {
             <thead>
               <tr>
                 <th
-                  className="sticky left-0 z-10 w-56 min-w-56 border-b border-r border-slate-200 bg-slate-50 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500"
+                  className="font-mono sticky left-0 z-10 w-56 min-w-56 border-b border-r border-slate-200 bg-slate-50 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500"
                 >
                   Body
                 </th>
@@ -218,7 +218,7 @@ export function ForwardPlanWorkflowView({ items, bodies, onOpenItem }: Props) {
                     <th
                       key={mKey}
                       className={clsx(
-                        'min-w-36 border-b border-r border-slate-200 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider last:border-r-0',
+                        'font-mono min-w-36 border-b border-r border-slate-200 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider last:border-r-0',
                         isCurrent
                           ? 'bg-indigo-50 text-indigo-700'
                           : 'bg-slate-50 text-slate-500',
@@ -251,7 +251,7 @@ export function ForwardPlanWorkflowView({ items, bodies, onOpenItem }: Props) {
                       <td
                         colSpan={months.length + 1}
                         className={clsx(
-                          'border-b border-slate-200 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest',
+                          'font-mono border-b border-slate-200 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide',
                           tierStyle.cls,
                         )}
                       >

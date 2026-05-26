@@ -37,7 +37,7 @@ import ConfirmDialog from '../../table/ConfirmDialog';
 const inputCls =
   'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 transition-colors hover:border-slate-300 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100';
 const labelCls =
-  'block text-[10px] font-semibold uppercase tracking-wider text-slate-500';
+  'font-mono block text-[10px] font-semibold uppercase tracking-wider text-slate-500';
 
 function makeMeetingId(title: string, body: string): string {
   const slug = `${title}-${body}`
@@ -358,7 +358,7 @@ export function MeetingModal({
           {/* Header*/}
           <header className="flex items-start gap-3 border-b border-slate-100 px-6 py-4">
             <div className="flex-1">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+              <p className="font-mono text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                 {meetingState ? 'Edit meeting' : 'New meeting'}
               </p>
               <h2 className="mt-0.5 text-base font-bold text-slate-900">
@@ -914,7 +914,7 @@ function AttendeesTab({
       {!readOnly && pickerOpen && (
         <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
           <header className="border-b border-slate-100 px-3 py-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+            <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-500">
               Add from workspace
             </p>
           </header>
@@ -982,7 +982,7 @@ function AttendeesTab({
             )}
           </div>
           <div className="border-t border-slate-100 bg-slate-50/40 p-3">
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+            <p className="font-mono mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
               Or add external attendee
             </p>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
@@ -1732,7 +1732,7 @@ function LinkPickerSection({
     <section className="rounded-lg border border-slate-200 bg-white">
       <header className="flex items-center gap-2 border-b border-slate-100 px-3 py-2">
         <Icon className="h-3.5 w-3.5 text-slate-500" />
-        <p className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+        <p className="font-mono text-xs font-semibold uppercase tracking-wider text-slate-700">
           {title}
         </p>
         <span className="ml-auto inline-flex items-center justify-center rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">

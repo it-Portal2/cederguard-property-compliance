@@ -142,7 +142,7 @@ export function SendToArchitectModal({
                 <Mail className="h-5 w-5" strokeWidth={2.25} />
               </div>
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                   Technical Assurance
                 </p>
                 <h2
@@ -172,7 +172,7 @@ export function SendToArchitectModal({
             </p>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500">
+              <label className="font-mono block text-xs font-semibold uppercase tracking-wide text-slate-500">
                 To
               </label>
               <input
@@ -185,13 +185,13 @@ export function SendToArchitectModal({
             </div>
 
             <div>
-              <label className="flex items-center justify-between text-xs font-semibold uppercase tracking-widest text-slate-500">
+              <label className="font-mono flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <span>Subject</span>
                 <button
                   type="button"
                   onClick={() => void copyToClipboard("subject")}
                   className={clsx(
-                    "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+                    "font-mono inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider",
                     copied === "subject"
                       ? "bg-emerald-50 text-emerald-700"
                       : "text-slate-500 hover:bg-slate-100 hover:text-slate-700",
@@ -214,13 +214,13 @@ export function SendToArchitectModal({
             </div>
 
             <div>
-              <label className="flex items-center justify-between text-xs font-semibold uppercase tracking-widest text-slate-500">
+              <label className="font-mono flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <span>Body</span>
                 <button
                   type="button"
                   onClick={() => void copyToClipboard("body")}
                   className={clsx(
-                    "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+                    "font-mono inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider",
                     copied === "body"
                       ? "bg-emerald-50 text-emerald-700"
                       : "text-slate-500 hover:bg-slate-100 hover:text-slate-700",
@@ -255,7 +255,7 @@ export function SendToArchitectModal({
                     target="_blank"
                     rel="noreferrer noopener"
                     download={drawing.basePdfFileName}
-                    className="ml-auto inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-600 hover:bg-indigo-50"
+                    className="font-mono ml-auto inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-600 hover:bg-indigo-50"
                   >
                     Download
                   </a>

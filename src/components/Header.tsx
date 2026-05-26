@@ -509,7 +509,7 @@ export function Header() {
               </span>
               <button
                 onClick={() => clearNotifications()}
-                className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 uppercase tracking-wider"
+                className="font-mono text-[10px] font-bold text-indigo-600 hover:text-indigo-700 uppercase tracking-wider"
               >
                 Clear All
               </button>

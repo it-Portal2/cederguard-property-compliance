@@ -35,10 +35,10 @@ export function BackgroundDocumentsTableView({ node, updateAttributes, editor }:
         <table className="w-full border-collapse overflow-hidden rounded-lg border border-slate-200">
           <thead className="bg-slate-50">
             <tr>
-              <th className="w-2/5 border-b border-slate-200 px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+              <th className="font-mono w-2/5 border-b border-slate-200 px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                 Title
               </th>
-              <th className="border-b border-slate-200 px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+              <th className="font-mono border-b border-slate-200 px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                 URL
               </th>
               <th className="w-14 border-b border-slate-200" />

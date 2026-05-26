@@ -530,11 +530,11 @@ export function ComplianceTracker() {
               
               <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
                 <div className="max-w-xl space-y-3">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/20">
+                  <div className="font-mono inline-flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full text-[10px] font-semibold uppercase tracking-wide border border-white/20">
                     <Target className="w-3.5 h-3.5 fill-white" />
                     Pending Verification
                   </div>
-                  <h2 className="text-3xl font-black tracking-tight leading-tight">
+                  <h2 className="text-3xl font-semibold tracking-tight leading-tight">
                     Review {pendingItems.length} New Compliance Requirements
                   </h2>
                   <p className="text-indigo-100 text-sm font-medium leading-relaxed">
@@ -543,8 +543,8 @@ export function ComplianceTracker() {
                 </div>
                 
                 <div className="bg-white/10 backdrop-blur-md rounded-lg border border-white/20 p-6 flex flex-col items-center justify-center text-center min-w-[200px]">
-                  <div className="text-4xl font-black mb-1">{pendingItems.length}</div>
-                  <div className="text-[10px] font-black uppercase tracking-widest text-indigo-100">Pending Review</div>
+                  <div className="text-4xl font-semibold mb-1">{pendingItems.length}</div>
+                  <div className="font-mono text-[10px] font-semibold uppercase tracking-wide text-indigo-100">Pending Review</div>
                 </div>
               </div>
 
@@ -561,11 +561,11 @@ export function ComplianceTracker() {
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 bg-white/20 rounded-md">{item.domain}</span>
-                          <span className="text-[10px] font-black text-indigo-200">{item.reg}</span>
+                          <span className="font-mono text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 bg-white/20 rounded-md">{item.domain}</span>
+                          <span className="text-[10px] font-semibold text-indigo-200">{item.reg}</span>
                         </div>
                         <p className="font-bold text-sm mt-0.5 line-clamp-1">{item.req}</p>
-                        <p className="text-[10px] text-indigo-200 mt-1 flex items-center gap-1 italic">
+                        <p className="text-[10px] text-indigo-200 mt-1 flex items-center gap-1">
                           <AlertCircle className="w-3 h-3" />
                           {item.condReason || 'Conditionally matched based on project profile.'}
                         </p>
@@ -574,13 +574,13 @@ export function ComplianceTracker() {
                     <div className="flex items-center gap-2.5">
                       <button 
                         onClick={() => handleDismiss(item.id)}
-                        className="px-4 py-2 bg-white/10 hover:bg-rose-500 text-white rounded-lg font-bold text-[10px] uppercase tracking-widest transition-all"
+                        className="font-mono px-4 py-2 bg-white/10 hover:bg-rose-500 text-white rounded-lg font-bold text-[10px] uppercase tracking-wide transition-all"
                       >
                         No
                       </button>
                       <button 
                         onClick={() => handleVerify(item.id)}
-                        className="px-6 py-2 bg-white text-indigo-600 rounded-lg font-bold text-[10px] uppercase tracking-widest hover:bg-indigo-50 transition-all shadow-lg"
+                        className="font-mono px-6 py-2 bg-white text-indigo-600 rounded-lg font-bold text-[10px] uppercase tracking-wide hover:bg-indigo-50 transition-all shadow-lg"
                       >
                         Yes, Apply
                       </button>
@@ -696,11 +696,11 @@ export function ComplianceTracker() {
         
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
           <div className="max-w-2xl space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/20 shadow-sm">
+            <div className="font-mono inline-flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full text-[10px] font-semibold uppercase tracking-wide border border-white/20 shadow-sm">
               <ScanSearch className="w-3.5 h-3.5 fill-white animate-pulse" />
               CedarGuard AI Assistant
             </div>
-            <h2 className="text-3xl font-black tracking-tight leading-tight italic">
+            <h2 className="text-3xl font-semibold tracking-tight leading-tight">
               Deep Compliance Inquiry
             </h2>
             <p className="text-indigo-100 text-sm font-medium leading-relaxed max-w-lg">
@@ -711,7 +711,7 @@ export function ComplianceTracker() {
           
           <button 
             onClick={() => setIsAIInquiryOpen(true)}
-            className="shrink-0 px-8 py-4 bg-white text-indigo-600 rounded-lg font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-slate-900 hover:text-white transition-all hover:scale-105 active:scale-95 flex items-center gap-3 group/btn"
+            className="shrink-0 px-8 py-4 bg-white text-indigo-600 rounded-lg font-semibold text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-slate-900 hover:text-white transition-all hover:scale-105 active:scale-95 flex items-center gap-3 group/btn"
           >
             <MessageSquare className="w-4 h-4 group-hover/btn:rotate-12 transition-transform" />
             Launch AI Advisor
@@ -758,7 +758,7 @@ export function ComplianceTracker() {
           <button
             onClick={() => setComplianceLocked(!isComplianceLocked)}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-lg border font-black text-[10px] uppercase tracking-widest transition-all shadow-sm shadow-slate-100/50",
+              "font-mono flex items-center gap-2 px-4 py-2 rounded-lg border font-semibold text-[10px] uppercase tracking-wide transition-all shadow-sm shadow-slate-100/50",
               isComplianceLocked 
                 ? "bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100" 
                 : "bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100"
@@ -773,7 +773,7 @@ export function ComplianceTracker() {
             <select
               value={activeRiskFilter || ''}
               onChange={(e) => setActiveRiskFilter(e.target.value || null)}
-              className="flex items-center gap-2 pl-4 pr-10 py-2 text-slate-600 hover:bg-slate-50 rounded-lg border border-slate-200 font-bold text-[10px] uppercase tracking-widest transition-all appearance-none cursor-pointer outline-none focus:ring-2 focus:ring-indigo-500/20"
+              className="font-mono flex items-center gap-2 pl-4 pr-10 py-2 text-slate-600 hover:bg-slate-50 rounded-lg border border-slate-200 font-bold text-[10px] uppercase tracking-wide transition-all appearance-none cursor-pointer outline-none focus:ring-2 focus:ring-indigo-500/20"
             >
               <option value="">All Risks</option>
               <option value="Critical">Critical</option>
@@ -809,7 +809,7 @@ export function ComplianceTracker() {
             <motion.div 
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-lg shadow-lg shadow-rose-100 font-bold text-[10px] uppercase tracking-widest hover:bg-rose-700 transition-all cursor-pointer select-none group active:scale-95"
+              className="font-mono flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-lg shadow-lg shadow-rose-100 font-bold text-[10px] uppercase tracking-wide hover:bg-rose-700 transition-all cursor-pointer select-none group active:scale-95"
               onClick={handleBulkDelete}
             >
               <Trash2 className="w-4 h-4 group-hover:animate-bounce" />
@@ -861,7 +861,7 @@ export function ComplianceTracker() {
                 <Plus className="w-4 h-4 text-white" />
               </div>
             </div>
-            <h3 className="text-xl font-black text-slate-900 mb-2 italic">No Requirements Found</h3>
+            <h3 className="text-xl font-semibold text-slate-900 mb-2">No Requirements Found</h3>
             <p className="text-slate-500 text-sm max-w-sm mx-auto leading-relaxed font-medium">
               We couldn't find any compliance items matching your current filters. 
               Try adjusting your search or add a new manual requirement.
@@ -869,7 +869,7 @@ export function ComplianceTracker() {
             <div className="flex flex-wrap items-center justify-center gap-4 mt-8">
               <button 
                 onClick={() => { setSearchTerm(''); setSelectedDomainId(null); }}
-                className="px-6 py-2.5 bg-slate-100 text-slate-600 rounded-lg font-bold text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all"
+                className="font-mono px-6 py-2.5 bg-slate-100 text-slate-600 rounded-lg font-bold text-[10px] uppercase tracking-wide hover:bg-slate-200 transition-all"
               >
                 Clear All Filters
               </button>
@@ -879,7 +879,7 @@ export function ComplianceTracker() {
                   setNewReq({ domain: DOMAINS[0]?.label || '', reg: '', auth: '', risk: 'Medium', req: '' });
                   setIsAddModalOpen(true);
                 }}
-                className="px-8 py-2.5 bg-indigo-600 text-white rounded-lg font-bold text-[10px] uppercase tracking-widest shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95"
+                className="font-mono px-8 py-2.5 bg-indigo-600 text-white rounded-lg font-bold text-[10px] uppercase tracking-wide shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95"
               >
                 Add Manual Requirement
               </button>
@@ -907,7 +907,7 @@ export function ComplianceTracker() {
                     </div>
                     <div className="text-right">
                       <span className="text-2xl font-bold text-slate-900">{domain.percent}%</span>
-                      <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Compliance</p>
+                      <p className="font-mono text-xs text-slate-500 font-medium uppercase tracking-wider">Compliance</p>
                     </div>
                   </div>
 
@@ -942,7 +942,7 @@ export function ComplianceTracker() {
                       </button>
                     )}
                     {domain.total === 0 && (
-                      <p className="text-slate-400 italic text-xs py-2">No requirements tracked yet</p>
+                      <p className="text-slate-400 text-xs py-2">No requirements tracked yet</p>
                     )}
                   </div>
                 </div>
@@ -987,7 +987,7 @@ export function ComplianceTracker() {
               <aside className="w-full lg:w-72 shrink-0 space-y-6 lg:sticky lg:top-24">
               <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Domains</h3>
+                  <h3 className="font-mono text-xs font-semibold text-slate-400 uppercase tracking-wide">Domains</h3>
                   <Badge variant="blue" className="px-1.5 py-0">{DOMAINS.length}</Badge>
                 </div>
                 <div className="space-y-1">
@@ -1036,7 +1036,7 @@ export function ComplianceTracker() {
                           <span>{domain.label}</span>
                         </div>
                         <span className={cn(
-                          "text-[10px] px-2 py-0.5 rounded-full font-black",
+                          "text-[10px] px-2 py-0.5 rounded-full font-semibold",
                           isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-400"
                         )}>
                           {counts.total}
@@ -1053,7 +1053,7 @@ export function ComplianceTracker() {
                       setNewReq({ domain: selectedDomainId ? (DOMAINS.find(d => d.id === selectedDomainId)?.label || 'Fire Safety') : 'Fire Safety', reg: '', auth: '', req: '', risk: 'Medium' });
                       setIsAddModalOpen(true);
                     }}
-                    className="w-full flex items-center justify-center gap-2 py-3.5 bg-indigo-600/10 text-indigo-600 rounded-lg font-black text-xs uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all shadow-sm active:scale-95"
+                    className="font-mono w-full flex items-center justify-center gap-2 py-3.5 bg-indigo-600/10 text-indigo-600 rounded-lg font-semibold text-xs uppercase tracking-wide hover:bg-indigo-600 hover:text-white transition-all shadow-sm active:scale-95"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     New Requirement
@@ -1069,7 +1069,7 @@ export function ComplianceTracker() {
                 <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200" style={{ maxWidth: '100%' }}>
                   <table className="w-full text-left min-w-[1000px]">
                     <thead>
-                      <tr className="bg-slate-50/50 text-slate-500 text-[10px] font-black uppercase tracking-widest border-b border-slate-100">
+                      <tr className="font-mono bg-slate-50/50 text-slate-500 text-[10px] font-semibold uppercase tracking-wide border-b border-slate-100">
                         <th className="px-6 py-4 w-12 text-center">
                           <input
                             type="checkbox"
@@ -1120,10 +1120,10 @@ export function ComplianceTracker() {
                                     {stripMarkdown(item.req)}
                                   </span>
                                   <div className="flex flex-wrap items-center gap-3 mt-2">
-                                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                                    <span className="font-mono text-[10px] text-slate-400 font-bold uppercase tracking-wider">
                                        Reg: {stripMarkdown(item.reg)}
                                     </span>
-                                    <Badge variant={item.risk === 'Critical' ? 'rose' : item.risk === 'High' ? 'orange' : 'blue'} className="text-[8px] py-0 px-1.5 font-black uppercase shrink-0">
+                                    <Badge variant={item.risk === 'Critical' ? 'rose' : item.risk === 'High' ? 'orange' : 'blue'} className="text-[8px] py-0 px-1.5 font-semibold uppercase shrink-0">
                                       {item.risk} Risk
                                     </Badge>
                                   </div>
@@ -1150,7 +1150,7 @@ export function ComplianceTracker() {
                                 <select
                                   disabled={!canEditCompliance()}
                                   className={cn(
-                                    "flex-1 px-3 py-2 rounded-lg text-[10px] font-black uppercase border border-transparent focus:ring-4 focus:ring-indigo-500/10 shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:border-indigo-200 outline-none appearance-none min-w-[120px]",
+                                    "flex-1 px-3 py-2 rounded-lg text-[10px] font-semibold uppercase border border-transparent focus:ring-4 focus:ring-indigo-500/10 shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:border-indigo-200 outline-none appearance-none min-w-[120px]",
                                     (item.stage || 'Information Gap') === 'Live' ? "bg-emerald-50 text-emerald-800" :
                                       (item.stage || 'Information Gap') === 'Risk Identified' ? "bg-rose-50 text-rose-800" :
                                         "bg-amber-50 text-amber-800"
@@ -1166,7 +1166,7 @@ export function ComplianceTracker() {
                                   }}
                                 >
                                   {STAGES.map(stage => (
-                                    <option key={stage} value={stage} className="bg-white text-slate-900 font-bold uppercase tracking-widest">{stage}</option>
+                                    <option key={stage} value={stage} className="font-mono bg-white text-slate-900 font-bold uppercase tracking-wide">{stage}</option>
                                   ))}
                                 </select>
                                 {!canEditCompliance() && (
@@ -1179,7 +1179,7 @@ export function ComplianceTracker() {
                             <td className="px-6 py-4 hidden md:table-cell">
                               <div className="flex items-center gap-2 text-slate-500">
                                 <Calendar className="w-3.5 h-3.5" />
-                                <span className={cn("text-[10px] font-bold", !item.dueDate && "text-slate-300 italic")}>
+                                <span className={cn("text-[10px] font-bold", !item.dueDate && "text-slate-300")}>
                                   {item.dueDate ? new Date(item.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : 'Set Date'}
                                 </span>
                               </div>
@@ -1236,19 +1236,19 @@ export function ComplianceTracker() {
                                       {/* Close/collapse expanded detail */}
                                       <button
                                         onClick={(e) => { e.stopPropagation(); setExpandedId(null); }}
-                                        className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-slate-200 hover:text-slate-700 transition-all z-10"
+                                        className="font-mono absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-bold uppercase tracking-wide hover:bg-slate-200 hover:text-slate-700 transition-all z-10"
                                       >
                                         <X className="w-3 h-3" /> Close
                                       </button>
                                       {/* Expanded content remains similar but styled better ... */}
                                       <div className="space-y-6">
-                                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                        <h4 className="font-mono text-[10px] font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-2">
                                           <List className="w-3 h-3" /> Step-by-Step Tasks
                                         </h4>
                                         <ul className="space-y-4">
                                           {(item.tasks || []).map((task: string, idx: number) => (
                                             <li key={idx} className="flex gap-4 text-xs text-slate-600 leading-relaxed font-medium">
-                                              <span className="text-indigo-600 font-black">{String(idx + 1).padStart(2, '0')}</span>
+                                              <span className="text-indigo-600 font-semibold">{String(idx + 1).padStart(2, '0')}</span>
                                               {stripMarkdown(task)}
                                             </li>
                                           ))}
@@ -1257,7 +1257,7 @@ export function ComplianceTracker() {
 
                                       <div className="space-y-6 border-x border-slate-100 px-8">
                                         <div>
-                                          <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                          <h4 className="font-mono text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-3 flex items-center gap-2">
                                             <SearchCheck className="w-3 h-3" /> Definition of Done
                                           </h4>
                                           <p className="text-xs text-slate-600 leading-relaxed font-medium bg-white p-3 rounded-lg border border-slate-100 shadow-sm">
@@ -1265,7 +1265,7 @@ export function ComplianceTracker() {
                                           </p>
                                         </div>
                                         <div>
-                                          <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                          <h4 className="font-mono text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-3 flex items-center gap-2">
                                             <History className="w-3 h-3 text-indigo-400" /> Historical Updates
                                           </h4>
                                           <div className="space-y-3 max-h-60 overflow-y-auto pr-2 scrollbar-thin">
@@ -1273,16 +1273,16 @@ export function ComplianceTracker() {
                                               item.updates.map((update: { id: string; date: string; content: string; author?: string }) => (
                                                 <div key={update.id} className="p-3 bg-white border border-slate-100 rounded-lg shadow-sm space-y-1">
                                                   <div className="flex justify-between items-center">
-                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
+                                                    <span className="font-mono text-[9px] font-bold text-slate-400 uppercase tracking-wide">
                                                       {isValid(new Date(update.date)) ? format(new Date(update.date), 'dd MMM yyyy HH:mm') : '—'}
                                                     </span>
-                                                    <span className="text-[9px] font-black text-indigo-600 uppercase italic">{update.author}</span>
+                                                    <span className="text-[9px] font-semibold text-indigo-600 uppercase">{update.author}</span>
                                                   </div>
                                                   <p className="text-[11px] text-slate-600 leading-normal">{update.content}</p>
                                                 </div>
                                               ))
                                             ) : (
-                                              <p className="text-[10px] text-slate-400 italic text-center py-4 bg-slate-50 rounded-lg border border-dashed border-slate-200">No history yet</p>
+                                              <p className="text-[10px] text-slate-400 text-center py-4 bg-slate-50 rounded-lg border border-dashed border-slate-200">No history yet</p>
                                             )}
                                           </div>
                                           <div className="mt-4 pt-4 border-t border-slate-100">
@@ -1319,7 +1319,7 @@ export function ComplianceTracker() {
 
                                       <div className="space-y-6">
                                         <div>
-                                          <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                          <h4 className="font-mono text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-2">
                                             <ExternalLink className="w-3 h-3" /> Evidence
                                           </h4>
                                           <div className="space-y-2">
@@ -1354,7 +1354,7 @@ export function ComplianceTracker() {
                                                 ))}
                                                 <Link
                                                   to={`/compliance/evidence${activeProjectId ? '?type=project' : activeProgrammeId ? '?type=programme' : ''}`}
-                                                  className="flex items-center gap-1.5 text-[10px] text-indigo-600 font-black hover:underline px-1 mt-1"
+                                                  className="flex items-center gap-1.5 text-[10px] text-indigo-600 font-semibold hover:underline px-1 mt-1"
                                                 >
                                                   <ExternalLink className="w-3 h-3" /> View in Evidence Vault
                                                 </Link>
@@ -1379,7 +1379,7 @@ export function ComplianceTracker() {
                                               }}
                                             />
                                             {item.evidence && item.evidence.startsWith('http') && (
-                                              <a href={item.evidence} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[10px] text-indigo-600 font-black hover:underline px-1">
+                                              <a href={item.evidence} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[10px] text-indigo-600 font-semibold hover:underline px-1">
                                                 <ExternalLink className="w-3 h-3" /> Open Manual Link
                                               </a>
                                             )}
@@ -1391,7 +1391,7 @@ export function ComplianceTracker() {
                                                 <Calendar className="w-3.5 h-3.5 text-slate-400" />
                                                 <input
                                                   type="date"
-                                                  className="bg-transparent text-[10px] font-black text-slate-900 focus:outline-none"
+                                                  className="bg-transparent text-[10px] font-semibold text-slate-900 focus:outline-none"
                                                   value={item.dueDate || ''}
                                                   onChange={async (e) => {
                                                     const val = e.target.value;
@@ -1407,7 +1407,7 @@ export function ComplianceTracker() {
                                               </div>
                                               <button
                                                 onClick={() => openEditModal(item)}
-                                                className="px-3 py-1.5 bg-indigo-600/10 text-indigo-600 border border-indigo-200 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
+                                                className="font-mono px-3 py-1.5 bg-indigo-600/10 text-indigo-600 border border-indigo-200 rounded-lg text-[10px] font-semibold uppercase tracking-wide hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
                                               >
                                                 Edit Full Entry
                                               </button>
@@ -1430,12 +1430,12 @@ export function ComplianceTracker() {
                                 <SearchCheck className="w-8 h-8 text-slate-200" />
                               </div>
                               <div className="space-y-1">
-                                <p className="text-sm font-black text-slate-900">No Requirements Found</p>
+                                <p className="text-sm font-semibold text-slate-900">No Requirements Found</p>
                                 <p className="text-xs text-slate-500 font-medium leading-relaxed">Adjust your filters or search term to find what you're looking for.</p>
                               </div>
                               <button
                                 onClick={() => { setSearchTerm(''); setSelectedDomainId(null); }}
-                                className="text-xs font-black text-indigo-600 uppercase tracking-widest hover:text-indigo-700"
+                                className="font-mono text-xs font-semibold text-indigo-600 uppercase tracking-wide hover:text-indigo-700"
                               >
                                 Reset All Filters
                               </button>
@@ -1457,7 +1457,7 @@ export function ComplianceTracker() {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
           <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg max-h-[calc(100dvh-2rem)] md:max-h-[90vh] overflow-hidden flex flex-col border border-slate-200">
             <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 shrink-0">
-              <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">
+              <h3 className="text-xl font-semibold text-slate-900 uppercase tracking-tight">
                 {editingItem ? 'Edit Requirement' : 'Add New Requirement'}
               </h3>
               <button 
@@ -1473,7 +1473,7 @@ export function ComplianceTracker() {
             <div className="p-8 space-y-5 overflow-y-auto flex-1">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Domain</label>
+                  <label className="font-mono text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Domain</label>
                   <select 
                     value={newReq.domain}
                     onChange={e => setNewReq({...newReq, domain: e.target.value})}
@@ -1483,7 +1483,7 @@ export function ComplianceTracker() {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Risk Level</label>
+                  <label className="font-mono text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Risk Level</label>
                   <select 
                     value={newReq.risk}
                     onChange={e => setNewReq({...newReq, risk: e.target.value})}
@@ -1497,7 +1497,7 @@ export function ComplianceTracker() {
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Regulation / Name</label>
+                <label className="font-mono text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Regulation / Name</label>
                 <input 
                   value={newReq.reg}
                   onChange={e => setNewReq({...newReq, reg: e.target.value})}
@@ -1507,7 +1507,7 @@ export function ComplianceTracker() {
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Requirement Detail</label>
+                  <label className="font-mono text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Requirement Detail</label>
                   <AIWriter
                     onSuggest={(content) => setNewReq({...newReq, req: content})}
                     context={[
@@ -1536,14 +1536,14 @@ export function ComplianceTracker() {
                     setIsAddModalOpen(false);
                     setEditingItem(null);
                   }}
-                  className="flex-1 py-4 px-6 bg-slate-100 text-slate-600 rounded-lg font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all"
+                  className="font-mono flex-1 py-4 px-6 bg-slate-100 text-slate-600 rounded-lg font-semibold text-xs uppercase tracking-wide hover:bg-slate-200 transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSaveRequirement}
                   disabled={!newReq.reg || !newReq.req || isSaving}
-                  className="flex-1 py-4 px-6 bg-indigo-600 text-white rounded-lg font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-xl shadow-indigo-200 flex items-center justify-center gap-2"
+                  className="font-mono flex-1 py-4 px-6 bg-indigo-600 text-white rounded-lg font-semibold text-xs uppercase tracking-wide hover:bg-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-xl shadow-indigo-200 flex items-center justify-center gap-2"
                 >
                   {isSaving ? (
                     <>
@@ -1567,7 +1567,7 @@ export function ComplianceTracker() {
         >
           <div className="bg-white rounded-lg shadow-2xl w-full max-w-sm border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-              <h3 className="text-base font-black text-slate-900 uppercase tracking-tight">
+              <h3 className="text-base font-semibold text-slate-900 uppercase tracking-tight">
                 {confirmDialog.title}
               </h3>
               <button
@@ -1584,7 +1584,7 @@ export function ComplianceTracker() {
               <div className="mt-6 flex gap-3">
                 <button
                   onClick={closeConfirm}
-                  className="flex-1 py-3 px-4 bg-slate-100 text-slate-600 rounded-lg font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all"
+                  className="font-mono flex-1 py-3 px-4 bg-slate-100 text-slate-600 rounded-lg font-semibold text-xs uppercase tracking-wide hover:bg-slate-200 transition-all"
                 >
                   Cancel
                 </button>
@@ -1593,7 +1593,7 @@ export function ComplianceTracker() {
                     confirmDialog.onConfirm();
                     closeConfirm();
                   }}
-                  className={`flex-1 py-3 px-4 rounded-lg font-black text-xs uppercase tracking-widest text-white transition-all shadow-lg ${
+                  className={`flex-1 py-3 px-4 rounded-lg font-semibold text-xs uppercase tracking-wide text-white transition-all shadow-lg ${
                     confirmDialog.isDanger
                       ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-200'
                       : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200'

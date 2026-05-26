@@ -88,7 +88,7 @@ function RegulationCard({ item, catIdx, regIdx }: { item: any; catIdx: number; r
         className="p-3 md:p-4 flex items-center gap-3 md:gap-4 cursor-pointer"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <div className="text-[9px] md:text-[10px] font-black text-indigo-600 bg-indigo-50 border border-indigo-200 rounded text-center px-2 py-1 whitespace-nowrap shrink-0">
+        <div className="text-[9px] md:text-[10px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded text-center px-2 py-1 whitespace-nowrap shrink-0">
           {catIdx}.{regIdx}
         </div>
         
@@ -104,7 +104,7 @@ function RegulationCard({ item, catIdx, regIdx }: { item: any; catIdx: number; r
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <span className={clsx("text-[9px] md:text-[11px] font-black px-1.5 md:px-2 py-0.5 rounded border uppercase tracking-wider", riskStyles[item.risk as keyof typeof riskStyles])}>
+          <span className={clsx("text-[9px] md:text-[11px] font-mono font-medium px-1.5 md:px-2 py-0.5 rounded border uppercase tracking-wide", riskStyles[item.risk as keyof typeof riskStyles])}>
             {item.risk}
           </span>
           <ChevronRight className={clsx("w-4 h-4 md:w-5 md:h-5 text-slate-300 transition-transform", isExpanded && "rotate-90 text-indigo-500")} />
@@ -143,12 +143,12 @@ function RegulationCard({ item, catIdx, regIdx }: { item: any; catIdx: number; r
               {activeTab === 'overview' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1.5">Requirement</div>
+                    <div className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide mb-1.5">Requirement</div>
                     <div className="text-[13px] text-slate-800 leading-relaxed">{item.req}</div>
                   </div>
                   <div>
                     <div className="bg-red-50/50 border border-red-200 rounded-lg p-3">
-                      <div className="text-[10px] font-semibold text-red-700 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                      <div className="text-[10px] font-mono font-medium text-red-700 uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
                         <AlertTriangle className="w-3.5 h-3.5" /> Penalty for Breach
                       </div>
                       <div className="text-[13px] text-red-900 leading-relaxed">{item.penalty}</div>
@@ -190,7 +190,7 @@ function RegulationCard({ item, catIdx, regIdx }: { item: any; catIdx: number; r
               {activeTab === 'owners' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2">Key Owners</div>
+                    <div className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide mb-2">Key Owners</div>
                     <div className="flex flex-wrap gap-1.5">
                       {item.owners.split(', ').map((owner: string, idx: number) => (
                         <div key={idx} className="text-[11px] bg-white border border-slate-200 text-slate-600 px-2 py-0.5 rounded shadow-sm">
@@ -202,9 +202,9 @@ function RegulationCard({ item, catIdx, regIdx }: { item: any; catIdx: number; r
                   <div className="bg-slate-100/50 rounded-lg p-4 border border-slate-200/50">
                     <div className="flex items-center gap-2 mb-2">
                        <ShieldCheck className="w-3.5 h-3.5 text-indigo-500" />
-                       <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Contextual AI Insight</div>
+                       <div className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide">Contextual AI Insight</div>
                     </div>
-                    <p className="text-[11px] text-slate-600 leading-relaxed italic">
+                    <p className="text-[11px] text-slate-600 leading-relaxed ">
                       "This regulation significantly impacts {item.cat} activities. Use the AI inquiry tool to explore specific implementation strategies for your current project scope."
                     </p>
                   </div>
@@ -216,7 +216,7 @@ function RegulationCard({ item, catIdx, regIdx }: { item: any; catIdx: number; r
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-indigo-500" />
-                    <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-900">Regulatory Update History</h4>
+                    <h4 className="text-[11px] font-mono font-medium uppercase tracking-wide text-slate-900">Regulatory Update History</h4>
                   </div>
                   <button 
                     onClick={() => setIsAddingUpdate(!isAddingUpdate)}
@@ -246,7 +246,7 @@ function RegulationCard({ item, catIdx, regIdx }: { item: any; catIdx: number; r
                       <button 
                         onClick={handleAddUpdate}
                         disabled={!updateContent.trim() || isSavingUpdate}
-                        className="px-4 py-1.5 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-wider rounded-lg hover:bg-indigo-700 transition-all shadow-sm disabled:opacity-50 flex items-center gap-1.5"
+                        className="font-mono px-4 py-1.5 bg-indigo-600 text-white text-[10px] font-semibold uppercase tracking-wider rounded-lg hover:bg-indigo-700 transition-all shadow-sm disabled:opacity-50 flex items-center gap-1.5"
                       >
                         {isSavingUpdate && <Loader2 className="w-3 h-3 animate-spin" />}
                         {isSavingUpdate ? 'Saving...' : 'Save Update'}
@@ -261,15 +261,15 @@ function RegulationCard({ item, catIdx, regIdx }: { item: any; catIdx: number; r
                       <div key={update.id} className="bg-white border border-slate-200 rounded-lg p-3 relative overflow-hidden group">
                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-100 group-hover:bg-indigo-500 transition-colors" />
                         <div className="flex justify-between items-start mb-1">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{format(new Date(update.date), 'dd MMM yyyy')}</span>
-                          <span className="text-[10px] font-medium text-slate-500 italic">By {update.author}</span>
+                          <span className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide tabular-nums">{format(new Date(update.date), 'dd MMM yyyy')}</span>
+                          <span className="text-[10px] font-medium text-slate-500 ">By {update.author}</span>
                         </div>
                         <p className="text-[12px] text-slate-700 leading-relaxed font-medium">{update.content}</p>
                       </div>
                     ))
                   ) : (
                     <div className="text-center py-4 bg-slate-100/50 rounded-lg border border-dashed border-slate-200">
-                      <p className="text-[10px] text-slate-400 font-medium italic">No recent updates recorded for this regulation.</p>
+                      <p className="text-[10px] text-slate-400 font-medium ">No recent updates recorded for this regulation.</p>
                     </div>
                   )}
                 </div>
@@ -293,7 +293,7 @@ function RegulationCard({ item, catIdx, regIdx }: { item: any; catIdx: number; r
                   e.stopPropagation();
                   setIsAIInquiryOpen(true);
                 }}
-                className="flex items-center gap-2 px-3 py-1.5 bg-white border border-indigo-200 text-indigo-600 text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-indigo-50 transition-all shadow-sm active:scale-95 shrink-0 self-end sm:self-auto"
+                className="font-mono flex items-center gap-2 px-3 py-1.5 bg-white border border-indigo-200 text-indigo-600 text-[10px] font-semibold uppercase tracking-wide rounded-lg hover:bg-indigo-50 transition-all shadow-sm active:scale-95 shrink-0 self-end sm:self-auto"
               >
                 <MessageSquare className="w-3 h-3" />
                 Ask AI
@@ -425,7 +425,7 @@ export function RegulationLibrary() {
                 <ShieldCheck className="w-5 h-5 text-white animate-pulse" />
               </div>
               <div className="text-left">
-                <p className="text-[10px] font-black text-indigo-100 uppercase tracking-widest leading-none mb-1">Knowledge AI</p>
+                <p className="text-[10px] font-mono font-medium text-indigo-100 uppercase tracking-wide leading-none mb-1">Knowledge AI</p>
                 <p className="text-xs font-bold text-white">Ask about Regs</p>
               </div>
             </div>
@@ -449,7 +449,7 @@ export function RegulationLibrary() {
 
         {/* Categories */}
         <div className="space-y-4">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Categories</p>
+          <p className="text-[10px] font-mono font-medium uppercase tracking-wide text-slate-400">Categories</p>
           <div className="space-y-1">
             <button 
               className={clsx(
@@ -492,7 +492,7 @@ export function RegulationLibrary() {
 
         {/* Legend / Info Block */}
         <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Compliance Key</p>
+          <p className="text-[10px] font-mono font-medium uppercase tracking-wide text-slate-400 mb-3">Compliance Key</p>
           <div className="space-y-2.5">
             {[
               { label: 'Critical', color: 'bg-red-500', desc: 'Immediate legal risk' },
@@ -502,7 +502,7 @@ export function RegulationLibrary() {
               <div key={item.label} className="flex items-start gap-2.5">
                 <div className={clsx("w-2 h-2 rounded-full mt-1 shrink-0", item.color)} />
                 <div>
-                  <p className="text-[10px] font-black text-slate-700 leading-none">{item.label}</p>
+                  <p className="text-[10px] font-semibold text-slate-700 leading-none">{item.label}</p>
                   <p className="text-[9px] text-slate-400 mt-0.5">{item.desc}</p>
                 </div>
               </div>
@@ -521,9 +521,9 @@ export function RegulationLibrary() {
         <div className="lg:hidden sticky top-[3.5rem] z-30 bg-slate-50/80 backdrop-blur-md -mx-4 px-4 py-3 border-b border-slate-200 space-y-3 mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-lg font-black text-slate-900 tracking-tight leading-none mb-1">Library</h1>
+              <h1 className="text-lg font-semibold text-slate-900 tracking-tight leading-none mb-1">Library</h1>
               <div className="flex items-center gap-2">
-                <div className="text-[9px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-1.5 py-0.5 rounded">
+                <div className="text-[9px] font-mono font-medium text-indigo-600 uppercase tracking-wide bg-indigo-50 px-1.5 py-0.5 rounded">
                   {filteredItems.length} REGS
                 </div>
               </div>
@@ -532,7 +532,7 @@ export function RegulationLibrary() {
               {isPM && (
                 <button
                   onClick={() => setIsAddModalOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-2.5 bg-indigo-600 text-white rounded-lg text-xs font-black shadow-sm transition-transform active:scale-95"
+                  className="flex items-center gap-1.5 px-3 py-2.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold shadow-sm transition-transform active:scale-95"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   Add
@@ -540,7 +540,7 @@ export function RegulationLibrary() {
               )}
               <button
                 onClick={() => setShowFilters(true)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-xs font-black text-slate-700 shadow-sm transition-transform active:scale-95"
+                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-sm transition-transform active:scale-95"
               >
                 <Filter className="w-3.5 h-3.5 text-indigo-500" />
                 Filters
@@ -550,7 +550,7 @@ export function RegulationLibrary() {
               </button>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2 px-1">
+          <div className="flex items-center gap-1.5 text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide mt-2 px-1">
             <Clock className="w-3 h-3" />
             Last Updated: {stats.lastUpdate ? format(stats.lastUpdate, 'dd/MM/yy') : format(new Date(), 'dd/MM/yy')}
           </div>
@@ -575,7 +575,7 @@ export function RegulationLibrary() {
                 className="fixed inset-y-0 left-0 w-[280px] bg-white z-[70] lg:hidden shadow-2xl flex flex-col"
               >
                 <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-                  <h3 className="font-black text-slate-900 uppercase tracking-tight text-sm">Filters</h3>
+                  <h3 className="font-semibold text-slate-900 uppercase tracking-tight text-sm">Filters</h3>
                   <button
                     onClick={() => setShowFilters(false)}
                     className="p-2 hover:bg-slate-50 rounded-lg transition-colors"
@@ -611,7 +611,7 @@ export function RegulationLibrary() {
               <button 
                 onClick={() => setActiveView('all')}
                 className={clsx(
-                  "pb-3 md:pb-4 px-1 text-xs md:text-sm font-black transition-all whitespace-nowrap",
+                  "pb-3 md:pb-4 px-1 text-xs md:text-sm font-semibold transition-all whitespace-nowrap",
                   activeView === 'all' ? "text-indigo-600 border-b-2 border-indigo-600" : "text-slate-400 hover:text-slate-600"
                 )}
               >
@@ -620,7 +620,7 @@ export function RegulationLibrary() {
               <button 
                 onClick={() => setActiveView('new')}
                 className={clsx(
-                  "pb-3 md:pb-4 px-1 text-xs md:text-sm font-black transition-all flex items-center gap-2 whitespace-nowrap",
+                  "pb-3 md:pb-4 px-1 text-xs md:text-sm font-semibold transition-all flex items-center gap-2 whitespace-nowrap",
                   activeView === 'new' ? "text-indigo-600 border-b-2 border-indigo-600" : "text-slate-400 hover:text-slate-600"
                 )}
               >
@@ -635,8 +635,8 @@ export function RegulationLibrary() {
           <div className="hidden lg:flex mb-8 items-start justify-between">
             <div>
               <div className="flex items-center gap-3 mb-1">
-                <h1 className="text-xl font-black text-slate-900 tracking-tight">Regulatory Reference</h1>
-                <div className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-xs font-black uppercase tracking-wider shadow-sm">
+                <h1 className="text-xl font-semibold text-slate-900 tracking-tight">Regulatory Reference</h1>
+                <div className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-xs font-mono font-medium uppercase tracking-wide shadow-sm">
                   {filteredItems.length} REGS
                 </div>
               </div>
@@ -644,14 +644,14 @@ export function RegulationLibrary() {
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-2 rounded-lg border border-slate-100">
+              <div className="flex items-center gap-1.5 text-[11px] font-mono font-medium text-slate-400 uppercase tracking-wide bg-slate-50 px-3 py-2 rounded-lg border border-slate-100">
                 <Clock className="w-3.5 h-3.5" />
                 Last Updated: {stats.lastUpdate ? format(stats.lastUpdate, 'dd/MM/yy') : format(new Date(), 'dd/MM/yy')}
               </div>
               {isPM && (
                  <button 
                    onClick={() => setIsAddModalOpen(true)}
-                   className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-[11px] font-black uppercase tracking-widest rounded-lg hover:bg-indigo-700 transition-all shadow-md active:scale-95"
+                   className="font-mono flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-[11px] font-semibold uppercase tracking-wide rounded-lg hover:bg-indigo-700 transition-all shadow-md active:scale-95"
                  >
                    <Plus className="w-3.5 h-3.5" />
                    Manual Entry
@@ -662,7 +662,7 @@ export function RegulationLibrary() {
 
           {/* Risk Filters Row */}
           <div className="flex items-center gap-2 py-4 border-b border-slate-100 mb-6 flex-wrap overflow-x-auto no-scrollbar">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest shrink-0 mr-2">Risk level:</span>
+            <span className="text-[11px] font-mono font-medium text-slate-400 uppercase tracking-wide shrink-0 mr-2">Risk level:</span>
             {riskFilters.map(r => (
               <button 
                 key={r.id}
@@ -742,8 +742,8 @@ export function RegulationLibrary() {
             >
               <div className="px-4 md:px-6 py-3 md:py-4 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
                 <div>
-                  <h3 className="text-lg font-black text-slate-900 tracking-tight">Manual Regulation Entry</h3>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Add custom compliance requirement</p>
+                  <h3 className="text-lg font-semibold text-slate-900 tracking-tight">Manual Regulation Entry</h3>
+                  <p className="text-[10px] text-slate-400 font-mono font-medium uppercase tracking-wide mt-0.5">Add custom compliance requirement</p>
                 </div>
                 <button onClick={() => setIsAddModalOpen(false)} className="p-2 hover:bg-slate-50 rounded-lg transition-colors">
                   <X className="w-5 h-5 text-slate-400" />
@@ -753,7 +753,7 @@ export function RegulationLibrary() {
               <div className="p-4 md:p-6 overflow-y-auto space-y-4 md:space-y-5">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Category</label>
+                    <label className="text-[10px] font-medium text-slate-500 ml-1">Category</label>
                     <select 
                       className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all"
                       value={newReg.cat}
@@ -764,7 +764,7 @@ export function RegulationLibrary() {
                     </select>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Risk Level</label>
+                    <label className="text-[10px] font-medium text-slate-500 ml-1">Risk Level</label>
                     <select 
                       className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all"
                       value={newReg.risk}
@@ -779,7 +779,7 @@ export function RegulationLibrary() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Regulation Name</label>
+                  <label className="font-mono text-[10px] font-semibold text-slate-400 uppercase tracking-wide ml-1">Regulation Name</label>
                   <input 
                     type="text"
                     placeholder="e.g. Building Safety Act 2022 Section 1"
@@ -790,7 +790,7 @@ export function RegulationLibrary() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Abbreviation / Tag</label>
+                  <label className="font-mono text-[10px] font-semibold text-slate-400 uppercase tracking-wide ml-1">Abbreviation / Tag</label>
                   <input 
                     type="text"
                     placeholder="e.g. BSA2022"
@@ -802,7 +802,7 @@ export function RegulationLibrary() {
 
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between px-1">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Requirement Details</label>
+                    <label className="text-[10px] font-medium text-slate-500">Requirement Details</label>
                     <AIWriter
                       onSuggest={(text) => setNewReg({ ...newReg, req: text })}
                       context={[
@@ -827,7 +827,7 @@ export function RegulationLibrary() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Penalty for Breach</label>
+                  <label className="font-mono text-[10px] font-semibold text-slate-400 uppercase tracking-wide ml-1">Penalty for Breach</label>
                   <input 
                     type="text"
                     placeholder="e.g. Fines up to £10m, stop notices"
@@ -878,7 +878,7 @@ export function RegulationLibrary() {
                     }
                   }}
                   disabled={isSavingEntry || !newReg.name || !newReg.req}
-                  className="px-6 py-2.5 bg-indigo-600 text-white text-xs font-black uppercase tracking-widest rounded-lg hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="font-mono px-6 py-2.5 bg-indigo-600 text-white text-xs font-semibold uppercase tracking-wide rounded-lg hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {isSavingEntry && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   {isSavingEntry ? 'Saving...' : 'Confirm Entry'}
@@ -907,7 +907,7 @@ export function RegulationLibrary() {
         whileHover={{ scale: 1.05, y: -2 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsAIInquiryOpen(true)}
-        className="fixed bottom-8 right-8 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-2xl flex items-center justify-center z-50 group hover:bg-slate-900 transition-all font-black text-xs uppercase tracking-widest"
+        className="font-mono fixed bottom-8 right-8 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-2xl flex items-center justify-center z-50 group hover:bg-slate-900 transition-all font-semibold text-xs uppercase tracking-wide"
         title="Ask CedarGuard AI"
       >
         <div className="absolute inset-0 rounded-full bg-indigo-400 animate-ping opacity-20 group-hover:hidden"></div>

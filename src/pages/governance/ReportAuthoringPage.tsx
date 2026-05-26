@@ -360,7 +360,7 @@ export function ReportAuthoringPage() {
             <ArrowLeft className="h-4 w-4" />
           </button>
           <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-400">
               Programme Governance · Report
             </p>
             <h1 className="truncate text-lg font-bold tracking-tight text-slate-900 md:text-xl">
@@ -427,7 +427,7 @@ export function ReportAuthoringPage() {
                       hour: '2-digit',
                       minute: '2-digit',
                     })}{' '}
-                    — <span className="italic">"{u.reason}"</span>
+                    — <span className="">"{u.reason}"</span>
                   </li>
                 ))}
               </ul>
@@ -529,7 +529,7 @@ export function ReportAuthoringPage() {
             {report.abandonmentReason && (
               <>
                 Reason:{' '}
-                <span className="italic">{report.abandonmentReason}</span>
+                <span className="">{report.abandonmentReason}</span>
               </>
             )}
           </span>
@@ -615,7 +615,7 @@ export function ReportAuthoringPage() {
       <div className="grid flex-1 gap-4 lg:grid-cols-[260px_1fr_280px]">
         {/* Left: TOC */}
         <aside className="rounded-lg border border-slate-200 bg-white p-2.5">
-          <p className="mb-1.5 px-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+          <p className="font-mono mb-1.5 px-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
             Sections ({sections.length})
           </p>
           {sections.length === 0 ? (
@@ -678,12 +678,12 @@ export function ReportAuthoringPage() {
                         </span>
                         <span className="mt-0.5 flex items-center gap-1 text-[9px] text-slate-500">
                           {s.mandatory && (
-                            <span className="inline-flex items-center rounded border border-slate-200 bg-slate-50 px-1 font-semibold uppercase tracking-wider">
+                            <span className="font-mono inline-flex items-center rounded border border-slate-200 bg-slate-50 px-1 font-semibold uppercase tracking-wider">
                               required
                             </span>
                           )}
                           {s.statutory && (
-                            <span className="inline-flex items-center rounded border border-slate-200 bg-slate-50 px-1 font-semibold uppercase tracking-wider">
+                            <span className="font-mono inline-flex items-center rounded border border-slate-200 bg-slate-50 px-1 font-semibold uppercase tracking-wider">
                               statutory
                             </span>
                           )}
@@ -732,17 +732,17 @@ export function ReportAuthoringPage() {
                 )}
                 <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[10px] text-slate-500">
                   {activeSection.mandatory && (
-                    <span className="inline-flex items-center rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-semibold uppercase tracking-wider">
+                    <span className="font-mono inline-flex items-center rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-semibold uppercase tracking-wider">
                       required
                     </span>
                   )}
                   {activeSection.statutory && (
-                    <span className="inline-flex items-center rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-semibold uppercase tracking-wider">
+                    <span className="font-mono inline-flex items-center rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-semibold uppercase tracking-wider">
                       statutory
                     </span>
                   )}
                   {activeSection.aiDraftAllowed && (
-                    <span className="inline-flex items-center gap-0.5 rounded border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 font-semibold uppercase tracking-wider text-indigo-700">
+                    <span className="font-mono inline-flex items-center gap-0.5 rounded border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 font-semibold uppercase tracking-wider text-indigo-700">
                       <Lightbulb className="h-2.5 w-2.5" />
                       AI draft allowed
                     </span>
@@ -773,7 +773,7 @@ export function ReportAuthoringPage() {
 
         {/* Right: side panel (minimal in 6b — full review surface in 6c)*/}
         <aside className="hidden rounded-lg border border-slate-200 bg-white p-3 lg:block">
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+          <p className="font-mono mb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
             Side panel
           </p>
           <div className="space-y-3 text-[11px] text-slate-600">
@@ -781,7 +781,7 @@ export function ReportAuthoringPage() {
               <p className="font-semibold text-slate-700">Reviewer</p>
               <p className="mt-0.5 text-slate-500">
                 {report.reviewerLabel || (
-                  <span className="italic text-slate-400">unassigned</span>
+                  <span className="text-slate-400">unassigned</span>
                 )}
               </p>
             </div>
@@ -795,13 +795,13 @@ export function ReportAuthoringPage() {
                       year: 'numeric',
                     })
                   : (
-                      <span className="italic text-slate-400">not set</span>
+                      <span className="text-slate-400">not set</span>
                     )}
               </p>
             </div>
             {/* state-aware actions*/}
             <div className="border-t border-slate-100 pt-3">
-              <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+              <p className="font-mono mb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
                 Actions
               </p>
               <div className="space-y-1.5">
@@ -1002,7 +1002,7 @@ export function ReportAuthoringPage() {
                   status === 'Sealed' ||
                   status === 'Abandoned' ||
                   status === 'Withdrawn') && (
-                  <p className="rounded-lg bg-slate-50 px-2 py-1.5 text-[10px] italic text-slate-500">
+                  <p className="rounded-lg bg-slate-50 px-2 py-1.5 text-[10px] text-slate-500">
                     No further actions available in {statusStyle.label}.
                   </p>
                 )}

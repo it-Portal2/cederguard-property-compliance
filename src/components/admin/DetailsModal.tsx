@@ -101,7 +101,7 @@ export function DetailsModal({
                 <div className="overflow-y-auto p-4 flex-1">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                            <tr className="font-mono text-xs font-bold text-slate-400 uppercase tracking-wide border-b border-slate-100">
                                 <th className="p-3">Name</th>
                                 <th className="p-3">Manager/Identity</th>
                                 <th className="p-3">Email Address</th>
@@ -170,8 +170,8 @@ export function DetailsModal({
                                         <td className="p-3 text-right">
                                             {confirmDeleteId === item.id ? (
                                                 <div className="flex items-center justify-end gap-2">
-                                                    <button onClick={() => handleDelete(item)} className="px-2 py-1 bg-red-600 text-white text-[10px] font-black uppercase rounded shadow-sm hover:bg-red-700">Confirm</button>
-                                                    <button onClick={() => setConfirmDeleteId(null)} className="px-2 py-1 bg-slate-200 text-slate-700 text-[10px] font-black uppercase rounded hover:bg-slate-300">No</button>
+                                                    <button onClick={() => handleDelete(item)} className="px-2 py-1 bg-red-600 text-white text-[10px] font-semibold uppercase rounded shadow-sm hover:bg-red-700">Confirm</button>
+                                                    <button onClick={() => setConfirmDeleteId(null)} className="px-2 py-1 bg-slate-200 text-slate-700 text-[10px] font-semibold uppercase rounded hover:bg-slate-300">No</button>
                                                 </div>
                                             ) : transferringId === item.id ? (
                                                 <div className="flex items-center justify-end gap-2">

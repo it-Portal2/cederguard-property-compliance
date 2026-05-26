@@ -384,7 +384,7 @@ export function ProjectDocModal({
             {/* History panel*/}
             {showHistory && (
               <aside className="hidden w-72 shrink-0 border-l border-slate-200 bg-slate-50 md:flex md:flex-col">
-                <div className="border-b border-slate-200 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <div className="font-mono border-b border-slate-200 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Version history
                 </div>
                 <div className="flex-1 overflow-y-auto px-4 py-3">

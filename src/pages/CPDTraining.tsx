@@ -57,7 +57,7 @@ export function CPDTraining() {
       {/* Header & Stats */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
+          <h1 className="text-2xl font-semibold text-slate-900 flex items-center gap-2">
             <BookOpen className="w-8 h-8 text-indigo-600" />
             CPD Training & Microlearning
           </h1>
@@ -70,8 +70,8 @@ export function CPDTraining() {
               <Award className="w-6 h-6" />
             </div>
             <div>
-              <div className="text-2xl font-black text-slate-900">{totalPoints}</div>
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">CPD Points</div>
+              <div className="text-2xl font-medium text-slate-900 tabular-nums">{totalPoints}</div>
+              <div className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide">CPD Points</div>
             </div>
           </div>
           <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex items-center gap-4">
@@ -79,8 +79,8 @@ export function CPDTraining() {
               <CheckCircle2 className="w-6 h-6" />
             </div>
             <div>
-              <div className="text-2xl font-black text-slate-900">{completedCount}/{cpdModules.length || 0}</div>
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Modules Done</div>
+              <div className="text-2xl font-medium text-slate-900 tabular-nums">{completedCount}/{cpdModules.length || 0}</div>
+              <div className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-wider">Modules Done</div>
             </div>
           </div>
         </div>
@@ -90,7 +90,7 @@ export function CPDTraining() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white p-6 rounded-lg border border-slate-200 shadow-sm">
           <div className="flex justify-between items-end mb-2">
-            <div className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Your Learning Progress</div>
+            <div className="text-[11px] font-mono font-medium text-slate-400 uppercase tracking-wide">Your Learning Progress</div>
             <div className="text-[13px] font-bold text-indigo-600">{Math.round(totalProgress)}%</div>
           </div>
           <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
@@ -108,7 +108,7 @@ export function CPDTraining() {
               <Rocket className="w-24 h-24 text-white" />
             </div>
             <div className="relative z-10">
-              <h3 className="text-white font-black text-sm mb-1">Recommended for {activeProject?.name}</h3>
+              <h3 className="text-white font-semibold text-sm mb-1">Recommended for {activeProject?.name}</h3>
               <p className="text-indigo-100 text-[11px] font-bold mb-3">Based on project risk profile</p>
               <div className="space-y-2">
                 {suggestedModules.map(m => (
@@ -179,7 +179,7 @@ export function CPDTraining() {
                     <PlayCircle className="w-12 h-12" />
                   </div>
                 )}
-                <div className="absolute top-3 left-3 px-2.5 py-1 bg-white/90 backdrop-blur-sm rounded-lg text-[10px] font-black text-indigo-600 uppercase tracking-wider shadow-sm">
+                <div className="absolute top-3 left-3 px-2.5 py-1 bg-white/90 backdrop-blur-sm rounded-lg text-[10px] font-mono font-medium text-indigo-600 uppercase tracking-wide shadow-sm">
                   {module.category}
                 </div>
                 {module.status === 'Completed' && (
@@ -190,7 +190,7 @@ export function CPDTraining() {
               </div>
               
               <div className="p-5 flex-1 flex flex-col">
-                <h3 className="text-base font-black text-slate-900 mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2">
+                <h3 className="text-base font-semibold text-slate-900 mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2">
                   {module.title}
                 </h3>
                 <p className="text-slate-500 text-sm font-medium line-clamp-2 mb-4 flex-1">
@@ -257,10 +257,10 @@ export function CPDTraining() {
               
               <div className="w-full md:w-[350px] p-6 md:p-8 flex flex-col bg-slate-50 border-l border-slate-100">
                 <div className="mb-6">
-                  <div className="px-2.5 py-1 bg-indigo-50 text-[10px] font-black text-indigo-600 uppercase tracking-wider rounded-lg inline-block mb-3">
+                  <div className="px-2.5 py-1 bg-indigo-50 text-[10px] font-mono font-medium text-indigo-600 uppercase tracking-wide rounded-lg inline-block mb-3">
                     {selectedModule.category}
                   </div>
-                  <h2 className="text-xl font-black text-slate-900 leading-tight mb-3">
+                  <h2 className="text-xl font-semibold text-slate-900 leading-tight mb-3">
                     {selectedModule.title}
                   </h2>
                   <p className="text-slate-500 text-sm font-medium leading-relaxed">
@@ -270,12 +270,12 @@ export function CPDTraining() {
 
                 <div className="space-y-4 mb-8">
                   <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Duration</span>
-                    <span className="text-sm font-black text-slate-900">{selectedModule.duration}</span>
+                    <span className="text-xs font-mono font-medium text-slate-400 uppercase tracking-wide">Duration</span>
+                    <span className="text-sm font-semibold text-slate-900">{selectedModule.duration}</span>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">CPD Points</span>
-                    <span className="text-sm font-black text-indigo-600">{selectedModule.points}</span>
+                    <span className="text-xs font-mono font-medium text-slate-400 uppercase tracking-wide">CPD Points</span>
+                    <span className="text-sm font-semibold text-indigo-600">{selectedModule.points}</span>
                   </div>
                 </div>
 
@@ -285,7 +285,7 @@ export function CPDTraining() {
                       onClick={() => handleComplete(selectedModule.id)}
                       disabled={!hasCompletedSlideshow && !selectedModule.videoUrl}
                       className={clsx(
-                        "w-full py-4 text-white font-black rounded-lg transition-all flex items-center justify-center gap-2",
+                        "w-full py-4 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2",
                         hasCompletedSlideshow || selectedModule.videoUrl
                           ? "bg-emerald-600 shadow-lg shadow-emerald-200 hover:bg-emerald-700 hover:scale-[1.02] active:scale-95"
                           : "bg-slate-300 shadow-none cursor-not-allowed"
@@ -297,7 +297,7 @@ export function CPDTraining() {
                   )}
                   <button
                     onClick={() => setSelectedModule(null)}
-                    className="w-full py-4 bg-white text-slate-600 font-black rounded-lg border-2 border-slate-200 hover:bg-slate-50 transition-all"
+                    className="w-full py-4 bg-white text-slate-600 font-semibold rounded-lg border-2 border-slate-200 hover:bg-slate-50 transition-all"
                   >
                     Close & Return
                   </button>

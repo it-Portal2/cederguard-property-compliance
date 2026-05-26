@@ -65,15 +65,15 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
             <div className="flex items-start gap-6">
               <div 
-                className="w-20 h-20 rounded-lg flex items-center justify-center text-4xl font-black shadow-2xl"
+                className="w-20 h-20 rounded-lg flex items-center justify-center text-4xl font-semibold shadow-2xl"
                 style={{ backgroundColor: categoryData.color }}
               >
                 {categoryData.category}
               </div>
               <div>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
-                  <h2 className="text-2xl sm:text-3xl font-black tracking-tight">{categoryData.label}</h2>
-                  <span className="px-3 py-1 bg-white/10 border border-white/20 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-indigo-300 w-fit">
+                  <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">{categoryData.label}</h2>
+                  <span className="font-mono px-3 py-1 bg-white/10 border border-white/20 rounded-lg text-[10px] sm:text-[11px] font-semibold uppercase tracking-wide text-indigo-300 w-fit">
                     Verified ID: {verifiedId}
                   </span>
                 </div>
@@ -85,9 +85,9 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
             
             <div className="flex flex-wrap gap-3">
               <div className="px-6 py-4 bg-white/5 border border-white/10 rounded-lg backdrop-blur-sm">
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Confidence</p>
+                <p className="font-mono text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1">Confidence</p>
                 <div className="flex items-center gap-2">
-                  <span className="text-xl font-black text-emerald-400">High</span>
+                  <span className="text-xl font-semibold text-emerald-400">High</span>
                   <Target className="w-4 h-4 text-amber-400 fill-amber-400" />
                 </div>
               </div>
@@ -100,7 +100,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
             <div className="p-6 bg-white/5 border border-white/10 rounded-lg">
               <div className="flex items-center gap-3 mb-4">
                 <ShieldCheck className="w-5 h-5 text-indigo-400" />
-                <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Governing Bodies</h4>
+                <h4 className="font-mono text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Governing Bodies</h4>
               </div>
               <div className="flex flex-wrap gap-2">
                 {lastAnalysisResults.regulatoryAuthorities?.length > 0 ? (
@@ -110,7 +110,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
                     </span>
                   ))
                 ) : (
-                  <span className="px-3 py-1.5 bg-slate-500/10 border border-slate-500/20 text-slate-400 text-[10px] font-bold rounded-lg italic">
+                  <span className="px-3 py-1.5 bg-slate-500/10 border border-slate-500/20 text-slate-400 text-[10px] font-bold rounded-lg ">
                     Internal Governance
                   </span>
                 )}
@@ -120,7 +120,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
             <div className="p-6 bg-white/5 border border-white/10 rounded-lg">
               <div className="flex items-center gap-3 mb-4">
                 <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Key Consents</h4>
+                <h4 className="font-mono text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Key Consents</h4>
               </div>
               <div className="flex flex-wrap gap-2">
                 {lastAnalysisResults.requiredApprovals?.length > 0 ? (
@@ -130,7 +130,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
                     </span>
                   ))
                 ) : (
-                  <span className="px-3 py-1.5 bg-slate-500/10 border border-slate-500/20 text-slate-400 text-[10px] font-bold rounded-lg italic">
+                  <span className="px-3 py-1.5 bg-slate-500/10 border border-slate-500/20 text-slate-400 text-[10px] font-bold rounded-lg ">
                     Self-Certification
                   </span>
                 )}
@@ -140,9 +140,9 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
             <div className="p-6 bg-white/5 border border-white/10 rounded-lg">
               <div className="flex items-center gap-3 mb-4">
                 <AlertCircle className="w-5 h-5 text-amber-400" />
-                <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Analysis Insight</h4>
+                <h4 className="font-mono text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Analysis Insight</h4>
               </div>
-              <p className="text-slate-300 text-xs leading-relaxed font-medium italic">
+              <p className="text-slate-300 text-xs leading-relaxed font-medium ">
                 "{stripMarkdown(lastAnalysisResults.summary?.substring(0, 120) || "")}..."
               </p>
             </div>
@@ -164,7 +164,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
                     key={t.id}
                     onClick={() => { setSubPhase(t.id as any); setSelectedIds([]); }}
                     className={clsx(
-                      "px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-wider transition-all shrink-0",
+                      "font-mono px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-[10px] sm:text-[11px] font-semibold uppercase tracking-wide transition-all shrink-0",
                       subPhase === t.id 
                         ? "bg-white text-slate-900 shadow-md border border-slate-100" 
                         : "text-slate-500 hover:text-slate-700"
@@ -184,7 +184,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
               {subPhase === 'additions' && selectedIds.length > 0 && (
                 <button 
                   onClick={() => handleBulkAdd(addableItems)}
-                  className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-200 animate-in zoom-in duration-300"
+                  className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-200 animate-in zoom-in duration-300"
                 >
                   <PlusCircle className="w-4 h-4" /> Add Selected ({selectedIds.length})
                 </button>
@@ -205,9 +205,9 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
                         />
                       </th>
                     )}
-                    <th className="px-4 sm:px-8 py-4 sm:py-5 font-black text-slate-400 uppercase tracking-[0.2em] text-[9px]">Requirement</th>
-                    <th className="px-4 sm:px-8 py-4 sm:py-5 font-black text-slate-400 uppercase tracking-[0.2em] text-[9px]">Domain</th>
-                    <th className="px-4 sm:px-8 py-4 sm:py-5 font-black text-slate-400 uppercase tracking-[0.2em] text-[9px] text-right">Actions</th>
+                    <th className="font-mono px-4 sm:px-8 py-4 sm:py-5 font-medium text-slate-500 uppercase tracking-wide text-[11px]">Requirement</th>
+                    <th className="font-mono px-4 sm:px-8 py-4 sm:py-5 font-medium text-slate-500 uppercase tracking-wide text-[11px]">Domain</th>
+                    <th className="font-mono px-4 sm:px-8 py-4 sm:py-5 font-medium text-slate-500 uppercase tracking-wide text-[11px] text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
@@ -220,7 +220,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
                               <div className="w-20 h-20 bg-slate-50 rounded-lg flex items-center justify-center border border-slate-100 shadow-inner">
                                 <ClipboardList className="w-10 h-10 text-slate-200" />
                               </div>
-                              <p className="font-black text-slate-300 uppercase tracking-widest text-[10px]">No requirements identified yet</p>
+                              <p className="font-mono font-semibold text-slate-300 uppercase tracking-wide text-[11px]">No requirements identified yet</p>
                             </div>
                           </td>
                         </tr>
@@ -229,12 +229,12 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
                           <tr key={item.id} className="group hover:bg-slate-50/50 transition-colors">
                             <td className="px-4 sm:px-8 py-4 sm:py-6">
                               <div className="flex flex-col gap-1.5">
-                                <span className="font-black text-slate-900 text-sm tracking-tight">{item.reg}</span>
+                                <span className="font-semibold text-slate-900 text-sm tracking-tight">{item.reg}</span>
                                 <span className="text-slate-500 text-xs leading-relaxed max-w-2xl font-medium">{stripMarkdown(item.req)}</span>
                               </div>
                             </td>
                             <td className="px-4 sm:px-8 py-4 sm:py-6">
-                              <span className="px-2 sm:px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-[8px] sm:text-[9px] font-black uppercase tracking-widest border border-slate-200/50">
+                              <span className="font-mono px-2 sm:px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] sm:text-[11px] font-medium uppercase tracking-wide border border-slate-200/50">
                                 {item.domain}
                               </span>
                             </td>
@@ -259,7 +259,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
                               <div className="w-20 h-20 bg-emerald-50 rounded-lg flex items-center justify-center border border-emerald-100 shadow-inner">
                                 <ShieldCheck className="w-10 h-10 text-emerald-200" />
                               </div>
-                              <p className="font-black text-emerald-400 uppercase tracking-widest text-[10px]">Framework fully optimized</p>
+                              <p className="font-mono font-semibold text-emerald-400 uppercase tracking-wide text-[11px]">Framework fully optimized</p>
                             </div>
                           </td>
                         </tr>
@@ -281,7 +281,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
                               </td>
                               <td className="px-8 py-6">
                                 <div className="flex flex-col gap-1.5">
-                                  <span className="font-black text-slate-900 text-sm tracking-tight">{item.reg}</span>
+                                  <span className="font-semibold text-slate-900 text-sm tracking-tight">{item.reg}</span>
                                   <span className="text-slate-500 text-xs leading-relaxed max-w-2xl font-medium mb-1">{stripMarkdown(item.req)}</span>
                                   <div className={clsx(
                                     "flex items-start gap-2 p-3 rounded-lg border mt-2 shadow-xs transition-all",
@@ -296,7 +296,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
                                       }
                                     </div>
                                     <div className="flex flex-col gap-0.5">
-                                      <span className="text-[9px] font-black uppercase tracking-wider opacity-60">
+                                      <span className="font-mono text-[11px] font-semibold uppercase tracking-wide opacity-60">
                                         {type === 'conditional' ? 'AI Suggestion Reason' : 'AI Exclusion Logic'}
                                       </span>
                                       <span className="text-[11px] leading-relaxed font-bold">
@@ -309,14 +309,14 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
                               <td className="px-8 py-6">
                                 <div className="flex flex-col gap-1.5">
                                   <span className={clsx(
-                                    'px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border w-fit shadow-xs',
+                                    'font-mono px-3 py-1 rounded-lg text-[11px] font-semibold uppercase tracking-wide border w-fit shadow-xs',
                                     type === 'conditional'
                                       ? 'bg-amber-100/50 text-amber-700 border-amber-200/50'
                                       : 'bg-slate-200/50 text-slate-500 border-slate-300/50'
                                   )}>
                                     {type === 'conditional' ? 'Conditional' : 'Excluded'}
                                   </span>
-                                  <span className="text-[9px] font-bold text-slate-400 pl-1 uppercase tracking-tighter italic">
+                                  <span className="font-mono text-[11px] font-medium text-slate-400 pl-1 uppercase tracking-wide ">
                                     Ref: {item.id}
                                   </span>
                                 </div>
@@ -341,7 +341,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
                                     }
                                   }}
                                   className={clsx(
-                                    'px-5 py-2.5 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all whitespace-nowrap inline-flex items-center gap-2',
+                                    'px-5 py-2.5 rounded-lg font-medium text-sm transition-all whitespace-nowrap inline-flex items-center gap-2',
                                     isAdded
                                       ? 'bg-emerald-100 text-emerald-700 hover:bg-rose-50 hover:text-rose-600'
                                       : 'bg-slate-900 text-white hover:bg-indigo-600 shadow-xl shadow-slate-200'
@@ -366,7 +366,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
         {/* ─── Sidebar Dashboard ─── */}
         <div className="lg:col-span-4 space-y-6">
           <div className="bg-white rounded-lg border border-slate-200 p-8 shadow-xl shadow-slate-200/20 sticky top-32">
-            <h3 className="text-xl font-black text-slate-900 mb-6 tracking-tight flex items-center gap-2">
+            <h3 className="text-xl font-semibold text-slate-900 mb-6 tracking-tight flex items-center gap-2">
               Regulation Coverage <Target className="w-4 h-4 text-amber-500" />
             </h3>
             
@@ -410,7 +410,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
 
                   if (top4.length === 0) {
                     return (
-                      <p className="text-[11px] text-slate-400 italic text-center py-4">
+                      <p className="text-[11px] text-slate-400 text-center py-4">
                         No compliance items added yet.
                       </p>
                     );
@@ -422,7 +422,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
                     const percent = count === 0 ? 0 : Math.min(100, Math.round((count / maxCount) * 100));
                     return (
                       <div key={code} className="space-y-2">
-                        <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-500">
+                        <div className="flex justify-between items-center font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                           <span>{DOMAIN_LABELS[code] ?? code.toUpperCase()}</span>
                           <span>{count} Items</span>
                         </div>
@@ -441,10 +441,10 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
               <div className="pt-6 border-t border-slate-100">
                 <div className="p-5 bg-indigo-50 rounded-lg border border-indigo-100">
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="w-6 h-6 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-[10px] font-black">AI</div>
-                    <span className="text-[10px] font-black text-indigo-900 uppercase tracking-widest italic">Verification Mode</span>
+                    <div className="w-6 h-6 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-[10px] font-semibold font-mono">AI</div>
+                    <span className="font-mono text-[11px] font-semibold text-indigo-900 uppercase tracking-wide ">Verification Mode</span>
                   </div>
-                  <p className="text-[11px] font-medium text-indigo-600 leading-relaxed italic">
+                  <p className="text-[11px] font-medium text-indigo-600 leading-relaxed ">
                     All items have been verified against current UK Building Regulations and CedarGuard AI analysis.
                   </p>
                 </div>
@@ -474,7 +474,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
           onClick={handleFinalise}
           disabled={loading}
           className={clsx(
-            "flex items-center gap-2 px-8 py-3.5 bg-emerald-500 text-white rounded-lg font-black text-[11px] md:text-xs uppercase tracking-widest hover:bg-emerald-600 transition-all active:scale-95 shadow-xl shadow-emerald-500/20 w-full md:w-auto justify-center",
+            "flex items-center gap-2 px-8 py-3.5 bg-emerald-500 text-white rounded-lg font-medium text-sm hover:bg-emerald-600 transition-all active:scale-95 shadow-xl shadow-emerald-500/20 w-full md:w-auto justify-center",
             loading && "opacity-70 cursor-not-allowed"
           )}
         >

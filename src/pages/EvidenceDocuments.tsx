@@ -279,7 +279,7 @@ export function EvidenceDocuments() {
                 {Object.entries(filteredGroupedReqs).length > 0 ? (
                   Object.entries(filteredGroupedReqs).map(([domain, items]) => (
                     <div key={domain} className="mt-3">
-                      <div className="px-3 py-1 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">{domain}</div>
+                      <div className="px-3 py-1 text-[11px] font-mono font-medium text-gray-400 uppercase tracking-wide">{domain}</div>
                       {items.map(item => (
                         <button key={item.id} onClick={() => { onChange(item.id); setOpen(false); }}
                           className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${value === item.id ? 'bg-indigo-50 text-indigo-700' : 'hover:bg-gray-50 text-gray-700'}`}>
@@ -359,7 +359,7 @@ export function EvidenceDocuments() {
       <div className="flex flex-col gap-4 border-b border-gray-200 pb-4 md:flex-row md:items-end md:justify-between">
         <div>
           <div className="flex items-center gap-2.5 mb-1">
-            <span className="inline-block rounded bg-gray-900 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">Repository</span>
+            <span className="inline-block rounded bg-gray-900 px-2 py-0.5 text-[10px] font-mono font-medium uppercase tracking-wide text-white">Repository</span>
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">Evidence &amp; Documents</h1>
           </div>
           <p className="text-sm text-gray-500">
@@ -441,7 +441,7 @@ export function EvidenceDocuments() {
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-sm text-left">
                 <thead>
-                  <tr className="border-b border-gray-100 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <tr className="font-mono border-b border-gray-100 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     <th className="px-5 py-3">Document</th>
                     <th className="px-5 py-3">Source</th>
                     <th className="px-5 py-3">Size</th>

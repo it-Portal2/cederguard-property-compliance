@@ -79,7 +79,7 @@ export function ProgrammeContext() {
                                 {activeProgramme.name}
                             </h1>
                             <div className="flex items-center gap-2 mt-0.5">
-                                <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-bold uppercase tracking-wider border border-slate-200">
+                                <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-mono font-medium uppercase tracking-wide border border-slate-200">
                                     {activeProgramme.reference}
                                 </span>
                                 <span className="text-xs font-medium text-slate-400">•</span>
@@ -124,12 +124,12 @@ export function ProgrammeContext() {
                 ].map((stat, i) => (
                     <div key={i} className="bg-white px-5 py-4 rounded-lg border border-slate-200 shadow-sm">
                         <div className="flex items-center justify-between mb-2">
-                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{stat.label}</p>
+                            <p className="text-xs font-mono font-medium text-slate-500 uppercase tracking-wide">{stat.label}</p>
                             <div className={`p-1.5 rounded-lg ${stat.bg} ${stat.color}`}>
                                 <stat.icon className="w-4 h-4" />
                             </div>
                         </div>
-                        <p className="text-lg font-black text-slate-900 truncate">{stat.value}</p>
+                        <p className="text-lg font-semibold text-slate-900 truncate tabular-nums">{stat.value}</p>
                     </div>
                 ))}
             </div>
@@ -161,15 +161,15 @@ export function ProgrammeContext() {
                             </div>
                             <div className="p-5 space-y-4">
                                 <div className="space-y-1">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">SRO</p>
+                                    <p className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide">SRO</p>
                                     <p className="text-sm font-semibold text-slate-800">{activeProgramme.sro}</p>
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Lead PM</p>
+                                    <p className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide">Lead PM</p>
                                     <p className="text-sm font-semibold text-slate-800">{activeProgramme.pm}</p>
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Reporting Cycle</p>
+                                    <p className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide">Reporting Cycle</p>
                                     <p className="text-sm font-semibold text-slate-800">{activeProgramme.reportingCycle || 'Monthly to Programme Board'}</p>
                                 </div>
                             </div>
@@ -183,7 +183,7 @@ export function ProgrammeContext() {
                             <div className="p-5">
                                 <p className="text-sm text-slate-600 mb-4">{activeProgramme.boardComposition}</p>
                                 <div className="space-y-2">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Board Members</p>
+                                    <p className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide mb-1">Board Members</p>
                                     <div className="flex flex-wrap gap-2">
                                         {(Array.isArray(activeProgramme.boardMembers) ? activeProgramme.boardMembers : ['Planning Lead', 'Finance Director', 'Commercial Head']).map((m, i) => (
                                             <span key={i} className="px-2 py-1 bg-slate-50 border border-slate-200 rounded text-[11px] font-medium text-slate-600">
@@ -211,16 +211,16 @@ export function ProgrammeContext() {
                             <table className="w-full text-left">
                                 <thead className="bg-slate-50 border-b border-slate-100">
                                     <tr>
-                                        <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Project Name</th>
-                                        <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Type</th>
-                                        <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Status</th>
-                                        <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Action</th>
+                                        <th className="px-6 py-3 text-[11px] font-mono font-medium text-slate-500 uppercase tracking-wide">Project Name</th>
+                                        <th className="px-6 py-3 text-[11px] font-mono font-medium text-slate-500 uppercase tracking-wide">Type</th>
+                                        <th className="px-6 py-3 text-[11px] font-mono font-medium text-slate-500 uppercase tracking-wide text-center">Status</th>
+                                        <th className="px-6 py-3 text-[11px] font-mono font-medium text-slate-500 uppercase tracking-wide text-right">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 text-[13px]">
                                     {linkedProjects.length === 0 ? (
                                         <tr>
-                                            <td colSpan={4} className="px-6 py-8 text-center text-slate-400 italic">
+                                            <td colSpan={4} className="px-6 py-8 text-center text-slate-400 ">
                                                 No projects linked to this programme yet.
                                             </td>
                                         </tr>
@@ -263,11 +263,11 @@ export function ProgrammeContext() {
                         </div>
                         <div className="p-5 space-y-4">
                             <div className="space-y-1">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Risk Appetite</p>
+                                <p className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide">Risk Appetite</p>
                                 <p className="text-sm text-slate-700 leading-snug">{activeProgramme.riskAppetite || 'Not explicitly defined.'}</p>
                             </div>
                             <div className="space-y-2">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Key Regulatory Obligations</p>
+                                <p className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide">Key Regulatory Obligations</p>
                                 <div className="space-y-1.5">
                                     {(Array.isArray(activeProgramme.regulatoryObligations)
                                         ? activeProgramme.regulatoryObligations
@@ -292,18 +292,18 @@ export function ProgrammeContext() {
                         <div className="p-5 space-y-4">
                             <div className="flex items-center justify-between gap-2">
                                 <div className="space-y-0.5 min-w-0">
-                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Start Date</p>
+                                    <p className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide">Start Date</p>
                                     <p className="text-sm font-semibold text-slate-800 whitespace-nowrap truncate">{activeProgramme.programmeStartDate || 'Jan 2024'}</p>
                                 </div>
                                 <div className="flex-1 h-px bg-slate-100 min-w-[20px]" />
                                 <div className="space-y-0.5 text-right min-w-0">
-                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest font-black">End Date</p>
+                                    <p className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide">End Date</p>
                                     <p className="text-sm font-semibold text-slate-800 whitespace-nowrap truncate">{activeProgramme.programmeEndDate || 'Dec 2027'}</p>
                                 </div>
                             </div>
                             <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-100">
                                 <div className="flex items-center justify-between mb-1">
-                                    <span className="text-[10px] font-bold text-indigo-700 uppercase">Elapsed</span>
+                                    <span className="text-[10px] font-mono font-medium text-indigo-700 uppercase tracking-wide">Elapsed</span>
                                     <span className="text-[10px] font-bold text-indigo-700">35%</span>
                                 </div>
                                 <div className="w-full h-1.5 bg-indigo-200 rounded-full overflow-hidden">
@@ -329,7 +329,7 @@ export function ProgrammeContext() {
                                         </div>
                                     ))
                                 ) : (
-                                    <p className="text-xs text-slate-400 italic">No key dependencies captured.</p>
+                                    <p className="text-xs text-slate-400 ">No key dependencies captured.</p>
                                 )}
                             </div>
                         </div>

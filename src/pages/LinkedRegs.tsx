@@ -53,7 +53,7 @@ export function LinkedRegs() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-black text-slate-900 tracking-tight italic">
+        <h1 className="text-3xl font-semibold text-slate-900 tracking-tight ">
           {activeProgramme?.name || projectInfo?.name || 'Programme'} Plan
         </h1>
         <p className="text-sm text-slate-500 mt-1 font-medium">
@@ -71,8 +71,8 @@ export function LinkedRegs() {
             { label: 'Delayed (all)', value: totalDelayed, color: totalDelayed > 0 ? 'text-rose-700' : 'text-emerald-700', bg: totalDelayed > 0 ? 'bg-rose-50' : 'bg-emerald-50', border: totalDelayed > 0 ? 'border-rose-200' : 'border-emerald-200' },
           ].map((s, i) => (
             <div key={i} className={clsx('rounded-lg border p-4 shadow-sm', s.bg, s.border)}>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{s.label}</p>
-              <p className={clsx('text-2xl font-black', s.color)}>{s.value}</p>
+              <p className="text-[10px] font-mono font-medium uppercase tracking-wide text-slate-400 mb-1">{s.label}</p>
+              <p className={clsx('text-2xl font-medium tabular-nums', s.color)}>{s.value}</p>
             </div>
           ))}
         </div>
@@ -89,7 +89,7 @@ export function LinkedRegs() {
             key={tab.key}
             onClick={() => setActiveTab(tab.key as any)}
             className={clsx(
-              'px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all',
+              'px-4 py-2 rounded-lg text-xs font-mono font-medium uppercase tracking-wide transition-all',
               activeTab === tab.key
                 ? 'bg-white text-slate-900 shadow-sm'
                 : 'text-slate-500 hover:text-slate-700'
@@ -115,7 +115,7 @@ export function LinkedRegs() {
           {linkedProjects.length === 0 ? (
             <div className="bg-slate-50/50 border-2 border-dashed border-slate-200 rounded-lg p-12 text-center">
               <FolderKanban className="w-10 h-10 text-slate-300 mx-auto mb-4 opacity-50" />
-              <h3 className="text-sm font-bold text-slate-600 mb-2 italic">Waiting for Portfolio Data</h3>
+              <h3 className="text-sm font-bold text-slate-600 mb-2 ">Waiting for Portfolio Data</h3>
               <p className="text-xs text-slate-400 font-medium max-w-xs mx-auto">No projects are currently linked to this programme. Once projects are added, their milestones will automatically aggregate here.</p>
             </div>
           ) : (
@@ -137,8 +137,8 @@ export function LinkedRegs() {
                         <FolderKanban className="w-4 h-4 text-indigo-600" />
                       </div>
                       <div>
-                        <h3 className="text-sm font-black text-slate-900">{proj.name}</h3>
-                        <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">{proj.type} · {proj.loc}</p>
+                        <h3 className="text-sm font-semibold text-slate-900">{proj.name}</h3>
+                        <p className="text-[10px] text-slate-400 font-mono font-medium uppercase tracking-wide">{proj.type} · {proj.loc}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -176,7 +176,7 @@ export function LinkedRegs() {
                               <div className="flex items-start justify-between mb-2">
                                 <div className="flex items-center gap-1.5">
                                   {m.isKey && <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />}
-                                  <span className={clsx('px-2 py-0.5 rounded text-[9px] font-bold uppercase border', getStatusColor(m.status))}>
+                                  <span className={clsx('px-2 py-0.5 rounded text-[9px] font-mono font-medium uppercase tracking-wide border', getStatusColor(m.status))}>
                                     {m.status}
                                   </span>
                                 </div>
@@ -187,8 +187,8 @@ export function LinkedRegs() {
                               {m.description && <p className="text-xs text-slate-500 mt-1 line-clamp-2">{m.description}</p>}
                               {m.history && m.history.length > 0 && (
                                 <div className="mt-2 pt-2 border-t border-slate-100">
-                                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-300 mb-1">{m.history.length} Date Change(s)</p>
-                                  <p className="text-[10px] text-slate-500 italic">"{m.history[m.history.length - 1].comment}"</p>
+                                  <p className="text-[9px] font-mono font-medium uppercase tracking-wide text-slate-300 mb-1">{m.history.length} Date Change(s)</p>
+                                  <p className="text-[10px] text-slate-500 ">"{m.history[m.history.length - 1].comment}"</p>
                                 </div>
                               )}
                             </div>
@@ -242,7 +242,7 @@ export function LinkedRegs() {
               return (
                 <div key={st.id} className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
                   <div className="flex items-center gap-5 p-5 cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => toggleStage(st.id)}>
-                    <div className="w-12 h-12 shrink-0 rounded-lg flex items-center justify-center text-xl font-black" style={{ color: st.color, borderColor: `${st.color}30`, backgroundColor: `${st.color}10`, border: '2px solid' }}>
+                    <div className="w-12 h-12 shrink-0 rounded-lg flex items-center justify-center text-xl font-semibold" style={{ color: st.color, borderColor: `${st.color}30`, backgroundColor: `${st.color}10`, border: '2px solid' }}>
                       {st.num}
                     </div>
                     <div className="flex-1">
@@ -269,15 +269,15 @@ export function LinkedRegs() {
                           <div key={idx} className="bg-white border border-slate-200 rounded-lg p-5 border-l-[6px] shadow-sm" style={{ borderLeftColor: dom?.color || '#cbd5e1' }}>
                             <div className="flex justify-between items-start mb-3">
                               <div>
-                                <span className="px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider mb-2.5 inline-block" style={{ backgroundColor: `${dom?.color}10`, color: dom?.color, border: `1px solid ${dom?.color}30` }}>
+                                <span className="px-2.5 py-1 rounded-md text-[10px] font-mono font-medium uppercase tracking-wide mb-2.5 inline-block" style={{ backgroundColor: `${dom?.color}10`, color: dom?.color, border: `1px solid ${dom?.color}30` }}>
                                   {dom?.abbr || r.domain}
                                 </span>
                                 <h4 className="text-sm font-bold text-slate-900 leading-tight pr-4">{r.name}</h4>
                               </div>
                               {relItems.length > 0 && (
                                 <div className="text-right shrink-0 ml-4 pl-4 border-l border-slate-100">
-                                  <div className="text-xl font-black tracking-tight" style={{ color: dom?.color }}>{pct}%</div>
-                                  <div className="text-[10px] font-semibold text-slate-400 mt-0.5 uppercase tracking-wide">{complete} / {relItems.length} Done</div>
+                                  <div className="text-xl font-semibold tracking-tight" style={{ color: dom?.color }}>{pct}%</div>
+                                  <div className="text-[10px] font-mono font-medium text-slate-400 mt-0.5 uppercase tracking-wide tabular-nums">{complete} / {relItems.length} Done</div>
                                 </div>
                               )}
                             </div>

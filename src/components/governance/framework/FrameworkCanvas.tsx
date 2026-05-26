@@ -92,7 +92,7 @@ export function FrameworkCanvas({ bodies, editMode, onOpenBody, onAddBody }: Fra
                     <span className={clsx('h-2 w-2 shrink-0 rounded-full', style.dot)} />
                   </div>
                   {body.cabinetMemberPortfolio && (
-                    <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+                    <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                       {body.cabinetMemberPortfolio}
                     </p>
                   )}

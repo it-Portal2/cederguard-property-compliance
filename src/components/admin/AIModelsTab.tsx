@@ -369,7 +369,7 @@ export function AIModelsTab({ isAdmin }: Props) {
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm">
                         <thead>
-                            <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                            <tr className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-wide border-b border-slate-100">
                                 <th className="p-3">Label</th>
                                 <th className="p-3">Group</th>
                                 <th className="p-3">Model string</th>
@@ -456,7 +456,7 @@ export function AIModelsTab({ isAdmin }: Props) {
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm">
                         <thead>
-                            <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                            <tr className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-wide border-b border-slate-100">
                                 <th className="p-3">#</th>
                                 <th className="p-3">Label</th>
                                 <th className="p-3">Model string</th>

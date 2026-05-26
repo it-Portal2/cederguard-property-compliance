@@ -156,7 +156,7 @@ export function TextInputDialog({
               </div>
             </div>
             <div className="px-5 pb-2">
-              <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+              <label className="font-mono block text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                 {inputLabel}
               </label>
               <input

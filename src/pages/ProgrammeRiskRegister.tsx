@@ -333,12 +333,12 @@ export function ProgrammeRiskRegister() {
             render: (_v, r) => {
                 const isEsc = r._source === 'project';
                 if (!isEsc) {
-                    return <span className="text-slate-400 italic text-[10px]">Programme Level</span>;
+                    return <span className="text-slate-400 text-[10px]">Programme Level</span>;
                 }
                 const projectName = safeProjects.find(p => p.id === r.projectId)?.name;
                 return (
                     <span className="flex flex-col">
-                        <span className="text-[10px] font-black text-orange-600 uppercase tracking-tighter">Escalated</span>
+                        <span className="font-mono text-[10px] font-semibold text-orange-600 uppercase tracking-wide">Escalated</span>
                         <span className="truncate text-[10px] text-slate-600">{projectName || '—'}</span>
                     </span>
                 );
@@ -366,14 +366,14 @@ export function ProgrammeRiskRegister() {
                             {isSevere && (
                                 <span
                                     title="Severe Impact (Band 5) — escalate to senior management immediately"
-                                    className="px-1.5 py-0.5 bg-rose-100 text-rose-700 text-[8px] font-black uppercase tracking-wider rounded border border-rose-200"
+                                    className="font-mono px-1.5 py-0.5 bg-rose-100 text-rose-700 text-[8px] font-semibold uppercase tracking-wider rounded border border-rose-200"
                                 >
                                     Escalate
                                 </span>
                             )}
                             {r.isNew !== false &&
                                 differenceInDays(new Date(), new Date(r.dateAdded || '')) < 1 && (
-                                    <span className="px-1.5 py-0.5 bg-indigo-600 text-white text-[7px] font-black uppercase rounded shadow-sm">
+                                    <span className="px-1.5 py-0.5 bg-indigo-600 text-white text-[7px] font-semibold uppercase rounded shadow-sm">
                                         New
                                     </span>
                                 )}
@@ -401,7 +401,7 @@ export function ProgrammeRiskRegister() {
             render: (v, r) => (
                 <div
                     className={clsx(
-                        'inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-black border',
+                        'inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-semibold border',
                         rsScore(r.grossRating || 0),
                     )}
                 >
@@ -419,7 +419,7 @@ export function ProgrammeRiskRegister() {
             render: (v, r) => (
                 <div
                     className={clsx(
-                        'inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-black border',
+                        'inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-semibold border',
                         rsScore(r.grossRating || 0),
                     )}
                 >
@@ -438,7 +438,7 @@ export function ProgrammeRiskRegister() {
             render: (v) => (
                 <div
                     className={clsx(
-                        'inline-flex items-center justify-center w-6 h-6 rounded text-[11px] font-black border shadow-sm',
+                        'inline-flex items-center justify-center w-6 h-6 rounded text-[11px] font-semibold border shadow-sm',
                         rsScore(v || 0),
                     )}
                 >
@@ -453,7 +453,7 @@ export function ProgrammeRiskRegister() {
             truncate: true,
             tooltip: true,
             render: (v) => (
-                <span className="text-slate-600 italic text-[10px]">
+                <span className="text-slate-600 text-[10px]">
                     {stripMarkdown(v || '—')}
                 </span>
             ),
@@ -486,7 +486,7 @@ export function ProgrammeRiskRegister() {
             render: (v, r) => (
                 <div
                     className={clsx(
-                        'inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-black border',
+                        'inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-semibold border',
                         rsScore(r.residualRating || 0),
                     )}
                 >
@@ -504,7 +504,7 @@ export function ProgrammeRiskRegister() {
             render: (v, r) => (
                 <div
                     className={clsx(
-                        'inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-black border',
+                        'inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-semibold border',
                         rsScore(r.residualRating || 0),
                     )}
                 >
@@ -523,7 +523,7 @@ export function ProgrammeRiskRegister() {
             render: (v) => (
                 <div
                     className={clsx(
-                        'inline-flex items-center justify-center w-6 h-6 rounded text-[11px] font-black border shadow-sm',
+                        'inline-flex items-center justify-center w-6 h-6 rounded text-[11px] font-semibold border shadow-sm',
                         rsScore(v || 0),
                     )}
                 >
@@ -553,7 +553,7 @@ export function ProgrammeRiskRegister() {
             key: 'appetite',
             label: 'Appetite',
             render: (v) => (
-                <span className="text-slate-600 whitespace-nowrap font-medium text-[10px] uppercase tracking-tighter">
+                <span className="font-mono text-slate-600 whitespace-nowrap font-medium text-[10px] uppercase tracking-wide">
                     {stripMarkdown(v || '—')}
                 </span>
             ),
@@ -686,12 +686,12 @@ export function ProgrammeRiskRegister() {
             render: (_v, r) => (
                 <div className="flex flex-col gap-1.5 items-center">
                     {r.escalated && (
-                        <span className="px-2 py-0.5 bg-rose-100 text-rose-700 border border-rose-200 rounded text-[9px] font-bold flex items-center gap-1 shadow-sm shadow-rose-200/50 uppercase tracking-wider">
+                        <span className="font-mono px-2 py-0.5 bg-rose-100 text-rose-700 border border-rose-200 rounded text-[9px] font-bold flex items-center gap-1 shadow-sm shadow-rose-200/50 uppercase tracking-wider">
                             <Flag className="w-2.5 h-2.5 fill-current" /> ESC
                         </span>
                     )}
                     {r.convertedToIssue && (
-                        <span className="px-2 py-0.5 bg-amber-100 text-amber-700 border border-amber-200 rounded text-[9px] font-bold flex items-center gap-1 shadow-sm shadow-amber-200/50 uppercase tracking-wider">
+                        <span className="font-mono px-2 py-0.5 bg-amber-100 text-amber-700 border border-amber-200 rounded text-[9px] font-bold flex items-center gap-1 shadow-sm shadow-amber-200/50 uppercase tracking-wider">
                             <AlertTriangle className="w-2.5 h-2.5 fill-current" /> ISSUE
                         </span>
                     )}
@@ -850,7 +850,7 @@ export function ProgrammeRiskRegister() {
  the user sees; the amber banner below appears once
  a past month is selected.*/}
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                    <div className="font-mono text-[11px] font-bold uppercase tracking-wide text-slate-400">
                         Risk Register · Programme Level
                     </div>
                     <MonthPicker
@@ -879,11 +879,11 @@ export function ProgrammeRiskRegister() {
 
                     <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
                         <div className="max-w-2xl space-y-4">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-white/20 shadow-sm">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[10px] font-semibold uppercase tracking-[0.2em] border border-white/20 shadow-sm">
                                 <ScanSearch className="w-3.5 h-3.5 fill-white animate-pulse" />
                                 CedarGuard AI Risk Advisor
                             </div>
-                            <h2 className="text-3xl font-black tracking-tight leading-tight">
+                            <h2 className="text-3xl font-semibold tracking-tight leading-tight">
                                 Predictive Risk Intelligence
                             </h2>
                             <p className="text-indigo-100/90 text-sm font-medium leading-relaxed max-w-lg">
@@ -897,7 +897,7 @@ export function ProgrammeRiskRegister() {
                                 setAiQuestion("Analyze the current programme risk profile and suggest top 3 mitigation strategies.");
                                 setIsAIInquiryOpen(true);
                             }}
-                            className="shrink-0 px-8 py-4 bg-white text-indigo-700 rounded-lg font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-slate-900 hover:text-white transition-all hover:scale-105 active:scale-95 flex items-center gap-3 group/btn"
+                            className="shrink-0 px-8 py-4 bg-white text-indigo-700 rounded-lg font-semibold text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-slate-900 hover:text-white transition-all hover:scale-105 active:scale-95 flex items-center gap-3 group/btn"
                         >
                             <MessageSquare className="w-4 h-4 group-hover/btn:rotate-12 transition-transform" />
                             Consult AI Advisor
@@ -919,11 +919,11 @@ export function ProgrammeRiskRegister() {
 
                                 <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
                                     <div className="max-w-xl space-y-3">
-                                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10">
+                                        <div className="font-mono inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-[10px] font-semibold uppercase tracking-wide border border-white/10">
                                             <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
                                             Pending Escalations
                                         </div>
-                                        <h2 className="text-3xl font-black tracking-tight leading-tight">
+                                        <h2 className="text-3xl font-semibold tracking-tight leading-tight">
                                             Review {pendingRisks.length} Project Escalations
                                         </h2>
                                         <p className="text-indigo-100/80 text-sm font-medium">
@@ -932,8 +932,8 @@ export function ProgrammeRiskRegister() {
                                     </div>
 
                                     <div className="bg-white/5 backdrop-blur-md rounded-lg border border-white/10 p-6 flex flex-col items-center justify-center text-center min-w-[200px]">
-                                        <div className="text-4xl font-black mb-1">{pendingRisks.length}</div>
-                                        <div className="text-[10px] font-black uppercase tracking-widest text-indigo-300">Awaiting Action</div>
+                                        <div className="text-4xl font-semibold mb-1">{pendingRisks.length}</div>
+                                        <div className="font-mono text-[10px] font-semibold uppercase tracking-wide text-indigo-300">Awaiting Action</div>
                                     </div>
                                 </div>
 
@@ -950,16 +950,16 @@ export function ProgrammeRiskRegister() {
                                                 </div>
                                                 <div>
                                                     <div className="flex items-center gap-2">
-                                                        <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 bg-indigo-500/30 text-indigo-200 rounded-md border border-indigo-500/20">{risk.project || 'Project'}</span>
-                                                        <span className="text-[10px] font-black text-white/50">{risk.id}</span>
+                                                        <span className="font-mono text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 bg-indigo-500/30 text-indigo-200 rounded-md border border-indigo-500/20">{risk.project || 'Project'}</span>
+                                                        <span className="text-[10px] font-semibold text-white/50">{risk.id}</span>
                                                     </div>
                                                     <p className="font-bold text-sm mt-0.5 text-white">{risk.title}</p>
                                                     <div className="flex items-center gap-3 mt-1">
                                                         {/*rating shown as "Severe · 24" format.*/}
-                                                        <span className={clsx("px-2 py-0.5 rounded text-[8px] font-black uppercase border", rLabel(risk.residualRating || 0).c)}>
+                                                        <span className={clsx("px-2 py-0.5 rounded text-[8px] font-semibold uppercase border", rLabel(risk.residualRating || 0).c)}>
                                                             {formatRatingDisplay(risk.residualRating || 0)}
                                                         </span>
-                                                        <span className="text-[10px] text-indigo-300 font-medium italic">Escalated by {risk.owner}</span>
+                                                        <span className="text-[10px] text-indigo-300 font-medium">Escalated by {risk.owner}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -967,7 +967,7 @@ export function ProgrammeRiskRegister() {
                                                 <button
                                                     disabled={isRowPending(risk.id)}
                                                     onClick={() => setDismissingRiskId(risk.id)}
-                                                    className="px-4 py-2 bg-white/5 hover:bg-rose-500/20 hover:text-rose-300 border border-white/10 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                                    className="font-mono px-4 py-2 bg-white/5 hover:bg-rose-500/20 hover:text-rose-300 border border-white/10 rounded-lg font-semibold text-[10px] uppercase tracking-wide transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                                                 >
                                                     {isRowPending(risk.id) ? 'Working…' : 'Dismiss'}
                                                 </button>
@@ -981,7 +981,7 @@ export function ProgrammeRiskRegister() {
                                                             toast.error(err?.message || 'Failed to approve escalation.');
                                                         }
                                                     }}
-                                                    className="px-6 py-2 bg-indigo-500 hover:bg-indigo-400 text-white rounded-lg font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-indigo-900/20 disabled:opacity-40 disabled:cursor-not-allowed"
+                                                    className="font-mono px-6 py-2 bg-indigo-500 hover:bg-indigo-400 text-white rounded-lg font-semibold text-[10px] uppercase tracking-wide transition-all shadow-lg shadow-indigo-900/20 disabled:opacity-40 disabled:cursor-not-allowed"
                                                 >
                                                     {isRowPending(risk.id) ? 'Working…' : 'Approve'}
                                                 </button>
@@ -992,7 +992,7 @@ export function ProgrammeRiskRegister() {
                                     {pendingRisks.length > 2 && (
                                         <button
                                             onClick={() => setShowFullQueue(!showFullQueue)}
-                                            className="w-full py-3 bg-white/5 border border-white/10 rounded-lg text-[10px] font-black uppercase tracking-[0.2em] text-indigo-300 hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+                                            className="w-full py-3 bg-white/5 border border-white/10 rounded-lg text-[10px] font-semibold uppercase tracking-[0.2em] text-indigo-300 hover:bg-white/10 transition-all flex items-center justify-center gap-2"
                                         >
                                             {showFullQueue ? 'Show Less' : `View ${pendingRisks.length - 2} More Escalations`}
                                             <ArrowRight className={clsx("w-3 h-3 transition-transform", showFullQueue && "-rotate-90")} />

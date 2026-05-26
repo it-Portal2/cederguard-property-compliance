@@ -292,7 +292,7 @@ export function ForwardPlanTimelineView({ items, bodies, onOpenItem }: Props) {
                       className="flex flex-col justify-center border-r border-slate-200 px-2"
                       style={{ width: w }}
                     >
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                      <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                         {format(m, 'MMM')}
                       </span>
                       <span className="text-[10px] text-slate-400">

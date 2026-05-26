@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScanSearch, Briefcase, Loader2, LucideIcon } from 'lucide-react';
+import { Briefcase, Loader2, LucideIcon } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -15,7 +15,6 @@ interface PremiumAIBannerProps {
   isLoading?: boolean;
   loadingText?: string;
   icon?: LucideIcon;
-  badgeText?: string;
   className?: string;
   variant?: 'indigo' | 'slate' | 'emerald';
 }
@@ -28,7 +27,6 @@ export function PremiumAIBanner({
   isLoading = false,
   loadingText = "Processing Signals...",
   icon: Icon = Briefcase,
-  badgeText = "Premium AI",
   className,
   variant = 'indigo'
 }: PremiumAIBannerProps) {
@@ -59,17 +57,9 @@ export function PremiumAIBanner({
       <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-1/3 -translate-x-1/4 blur-2xl" />
       
       <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-        <div className="max-w-2xl space-y-5">
-          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 bg-white/10 backdrop-blur-md rounded-full border border-white/20 shadow-xl overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer" />
-            <ScanSearch className="w-3.5 h-3.5 text-indigo-300 animate-pulse" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/90">
-              {badgeText}
-            </span>
-          </div>
-
+        <div className="max-w-2xl space-y-3">
           <div className="space-y-2">
-            <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight italic leading-tight">
+            <h2 className="text-3xl md:text-4xl font-semibold text-white tracking-tight leading-tight">
               {title}
             </h2>
             <p className="text-white/70 text-sm md:text-base font-medium leading-relaxed max-w-xl">
@@ -82,7 +72,7 @@ export function PremiumAIBanner({
           onClick={onAction}
           disabled={isLoading}
           className={cn(
-            "shrink-0 relative group/btn overflow-hidden px-10 py-5 rounded-lg font-black text-xs uppercase tracking-[0.2em] transition-all active:scale-95 shadow-2xl",
+            "shrink-0 relative group/btn overflow-hidden px-10 py-5 rounded-lg font-semibold text-xs uppercase tracking-[0.2em] transition-all active:scale-95 shadow-2xl",
             isLoading 
               ? "bg-white/10 text-white/40 cursor-not-allowed" 
               : "bg-white text-indigo-950 hover:bg-slate-900 hover:text-white"

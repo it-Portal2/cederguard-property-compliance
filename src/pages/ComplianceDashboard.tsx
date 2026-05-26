@@ -227,7 +227,7 @@ export function ComplianceDashboard() {
                 <div className="flex justify-start mb-6 -mt-2">
                     <Link 
                         to={activeProjectId ? '/initiate' : '/programmes/new'}
-                        className="flex items-center gap-2 px-3 py-2 md:px-4 bg-white border border-slate-200 text-slate-600 rounded-lg font-bold text-[10px] md:text-[11px] uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm group"
+                        className="flex items-center gap-2 px-3 py-2 md:px-4 bg-white border border-slate-200 text-slate-600 rounded-lg font-medium text-sm hover:bg-slate-50 transition-all shadow-sm group"
                     >
                         <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" /> Back
                     </Link>
@@ -275,14 +275,14 @@ export function ComplianceDashboard() {
             <div className="bg-white rounded-lg border border-slate-200 p-6 flex flex-col md:flex-row items-center gap-6 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200 hover:shadow-md transition-shadow">
                 <div className="flex-1 w-full">
                     <div className="flex justify-between text-sm mb-2">
-                        <span className="font-bold text-slate-700 uppercase tracking-widest text-[11px]">Overall Compliance Progress</span>
-                        <span className="font-bold text-slate-700">{compPct}%</span>
+                        <span className="font-mono font-medium text-slate-700 uppercase tracking-wide text-[11px]">Overall Compliance Progress</span>
+                        <span className="font-medium text-slate-700 tabular-nums">{compPct}%</span>
                     </div>
                     <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
                         <div className="h-full bg-indigo-500 transition-all duration-1000" style={{ width: `${compPct}%` }} />
                     </div>
                 </div>
-                <Link to={`/compliance/tracker${fromInitiation ? '?from=initiation' : ''}`} className="shrink-0 px-6 py-3 bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest rounded-lg hover:bg-slate-800 transition-all active:scale-95 shadow-lg shadow-slate-200">
+                <Link to={`/compliance/tracker${fromInitiation ? '?from=initiation' : ''}`} className="shrink-0 px-6 py-3 bg-slate-900 text-white font-medium text-sm rounded-lg hover:bg-slate-800 transition-all active:scale-95 shadow-lg shadow-slate-200">
                     View Tracker
                 </Link>
             </div>
@@ -295,7 +295,7 @@ export function ComplianceDashboard() {
                             <Calendar className="w-5 h-5 text-indigo-600" />
                             <h2 className="font-bold text-slate-900">Key Programme Milestones</h2>
                         </div>
-                        <Link to="/programmes/plan" className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:underline">
+                        <Link to="/programmes/plan" className="text-[10px] font-mono font-semibold text-indigo-600 uppercase tracking-wide hover:underline">
                             View Full Plan
                         </Link>
                     </div>
@@ -305,12 +305,12 @@ export function ComplianceDashboard() {
                                 <div key={m.id} className="min-w-[200px] p-4 rounded-lg border border-slate-100 bg-white shadow-sm flex flex-col justify-between">
                                     <div>
                                         <div className="flex justify-between items-start mb-1">
-                                            <span className="text-[9px] font-black text-slate-400">{m.date}</span>
+                                            <span className="text-[10px] font-mono font-medium text-slate-400 tabular-nums">{m.date}</span>
                                             <span className={`w-2 h-2 rounded-full ${m.status === 'Completed' ? 'bg-emerald-500' : m.status === 'Delayed' ? 'bg-rose-500' : 'bg-amber-500'}`} />
                                         </div>
                                         <h4 className="font-bold text-slate-900 text-xs truncate">{m.name}</h4>
                                     </div>
-                                    <div className="mt-3 text-[10px] font-bold text-slate-500 flex items-center gap-1">
+                                    <div className="mt-3 text-[10px] font-mono font-medium text-slate-500 uppercase tracking-wide flex items-center gap-1">
                                         <Clock className="w-3 h-3" /> {m.status}
                                     </div>
                                 </div>
@@ -327,11 +327,11 @@ export function ComplianceDashboard() {
                 
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
                     <div className="max-w-2xl space-y-4">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/20 shadow-sm">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 rounded-full text-[10px] font-mono font-semibold uppercase tracking-wide border border-white/20 shadow-sm">
                             <ScanSearch className="w-3.5 h-3.5 fill-white animate-pulse" />
                             CedarGuard AI Assistant
                         </div>
-                        <h2 className="text-3xl font-black tracking-tight leading-tight italic">
+                        <h2 className="text-3xl font-semibold tracking-tight leading-tight ">
                             Deep Compliance Inquiry
                         </h2>
                         <p className="text-indigo-100 text-sm font-medium leading-relaxed max-w-lg">
@@ -342,7 +342,7 @@ export function ComplianceDashboard() {
                     
                     <button 
                         onClick={() => setIsAIInquiryOpen(true)}
-                        className="shrink-0 px-8 py-4 bg-white text-indigo-600 rounded-lg font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-slate-900 hover:text-white transition-all hover:scale-105 active:scale-95 flex items-center gap-3 group/btn"
+                        className="shrink-0 px-8 py-4 bg-white text-indigo-600 rounded-lg font-medium text-sm shadow-xl hover:bg-slate-900 hover:text-white transition-all hover:scale-105 active:scale-95 flex items-center gap-3 group/btn"
                     >
                         <MessageSquare className="w-4 h-4 group-hover/btn:rotate-12 transition-transform" />
                         Ask CedarGuard
@@ -358,13 +358,13 @@ export function ComplianceDashboard() {
                                 <ScanSearch className="w-6 h-6 text-indigo-500 animate-pulse" />
                             </div>
                             <div>
-                                <h2 className="text-lg font-black text-slate-900 tracking-tight italic">AI Verification Queue</h2>
-                                <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em]">Action Required: Verify {pendingReview.length} New Requirements</p>
+                                <h2 className="text-lg font-semibold text-slate-900 tracking-tight ">AI Verification Queue</h2>
+                                <p className="text-[10px] font-mono font-semibold text-indigo-500 uppercase tracking-wide">Action Required: Verify {pendingReview.length} New Requirements</p>
                             </div>
                         </div>
                         <Link 
                             to={`/compliance/tracker${fromInitiation ? '?from=initiation' : ''}`}
-                            className="px-4 py-2 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-indigo-700 transition-all shadow-md active:scale-95 flex items-center gap-2 w-fit"
+                            className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-all shadow-md active:scale-95 flex items-center gap-2 w-fit"
                         >
                             Open Tracker <ArrowRight className="w-3 h-3" />
                         </Link>
@@ -375,10 +375,10 @@ export function ComplianceDashboard() {
                             <div key={item.id} className="bg-white rounded-lg border border-indigo-100 p-4 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
                                 <div>
                                     <div className="flex items-center justify-between mb-2">
-                                        <span className="text-[9px] font-black px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded uppercase tracking-wider border border-indigo-100">
+                                        <span className="text-[10px] font-mono font-medium px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded uppercase tracking-wide border border-indigo-100">
                                             {item.domain}
                                         </span>
-                                        <span className="text-[9px] font-bold text-slate-400">ID: {item.id.slice(0, 4)}</span>
+                                        <span className="text-[10px] font-mono font-medium text-slate-400 tabular-nums">ID: {item.id.slice(0, 4)}</span>
                                     </div>
                                     <p className="text-xs text-slate-700 font-medium line-clamp-2 leading-relaxed mb-4">
                                         {stripMarkdown(item.req)}
@@ -387,13 +387,13 @@ export function ComplianceDashboard() {
                                 <div className="flex gap-2">
                                     <button 
                                         onClick={() => updateComplianceItem(item.id, { status: 'applicable' })}
-                                        className="flex-1 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[9px] font-black uppercase tracking-widest rounded-lg transition-colors border border-emerald-200/50"
+                                        className="flex-1 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-medium rounded-lg transition-colors border border-emerald-200/50"
                                     >
                                         Verify
                                     </button>
                                     <button 
                                         onClick={() => updateComplianceItem(item.id, { status: 'dismissed' })}
-                                        className="flex-1 py-2 bg-slate-50 hover:bg-slate-100 text-slate-600 text-[9px] font-black uppercase tracking-widest rounded-lg transition-colors border border-slate-200/50"
+                                        className="flex-1 py-2 bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-medium rounded-lg transition-colors border border-slate-200/50"
                                     >
                                         Dismiss
                                     </button>
@@ -402,7 +402,7 @@ export function ComplianceDashboard() {
                         ))}
                     </div>
                     {pendingReview.length > 3 && (
-                        <p className="text-[10px] text-indigo-400 font-bold mt-4 italic text-center uppercase tracking-widest">
+                        <p className="text-[10px] text-indigo-400 font-mono font-medium mt-4 text-center uppercase tracking-wide">
                             + {pendingReview.length - 3} more items pending in tracker
                         </p>
                     )}
@@ -410,23 +410,23 @@ export function ComplianceDashboard() {
             )}
 
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
-                <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4 border-b border-slate-200 pb-2">Compliance by Domain</h2>
+                <h2 className="text-[11px] font-mono font-semibold text-slate-400 uppercase tracking-wide mb-4 border-b border-slate-200 pb-2">Compliance by Domain</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {activeDoms.map(dom => (
                         <div key={dom.id} className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm hover:border-indigo-200 hover:shadow-md transition-all group cursor-pointer flex flex-col gap-3" style={{ borderBottomWidth: 3, borderBottomColor: dom.color }}>
                             {/* Header: abbr + label + percentage*/}
                             <div className="flex justify-between items-start">
                                 <div className="flex items-center gap-2">
-                                    <span className="text-[10px] font-black px-2 py-0.5 rounded-md" style={{ backgroundColor: `${dom.color}15`, color: dom.color, border: `1px solid ${dom.color}30` }}>
+                                    <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-md uppercase tracking-wide" style={{ backgroundColor: `${dom.color}15`, color: dom.color, border: `1px solid ${dom.color}30` }}>
                                         {dom.abbr}
                                     </span>
-                                    <span className="font-bold text-slate-800 text-sm">{dom.label}</span>
+                                    <span className="font-semibold text-slate-800 text-sm">{dom.label}</span>
                                 </div>
-                                <span className="font-black text-slate-700 text-sm tracking-tighter">{dom.pct}%</span>
+                                <span className="font-medium text-slate-700 text-sm tabular-nums">{dom.pct}%</span>
                             </div>
 
                             {/* Total count*/}
-                            <p className="text-[10px] text-slate-400 font-bold -mt-1">{dom.total} total requirement{dom.total !== 1 ? 's' : ''}</p>
+                            <p className="text-[11px] text-slate-400 font-mono tabular-nums -mt-1">{dom.total} total requirement{dom.total !== 1 ? 's' : ''}</p>
 
                             {/* Progress bar*/}
                             <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -436,16 +436,16 @@ export function ComplianceDashboard() {
                             {/* Status breakdown with counts*/}
                             <div className="grid grid-cols-3 gap-2 text-center">
                                 <div className="bg-emerald-50 rounded-lg py-1.5 px-1">
-                                    <p className="text-base font-black text-emerald-700 leading-none">{dom.complete}</p>
-                                    <p className="text-[8px] font-black text-emerald-600/60 uppercase tracking-widest mt-0.5">Live</p>
+                                    <p className="text-base font-medium text-emerald-700 leading-none tabular-nums">{dom.complete}</p>
+                                    <p className="text-[10px] font-mono font-medium text-emerald-600/60 uppercase tracking-wide mt-0.5">Live</p>
                                 </div>
                                 <div className="bg-amber-50 rounded-lg py-1.5 px-1">
-                                    <p className="text-base font-black text-amber-700 leading-none">{dom.inProgress}</p>
-                                    <p className="text-[8px] font-black text-amber-600/60 uppercase tracking-widest mt-0.5">In Progress</p>
+                                    <p className="text-base font-medium text-amber-700 leading-none tabular-nums">{dom.inProgress}</p>
+                                    <p className="text-[10px] font-mono font-medium text-amber-600/60 uppercase tracking-wide mt-0.5">In Progress</p>
                                 </div>
                                 <div className="bg-slate-50 rounded-lg py-1.5 px-1">
-                                    <p className="text-base font-black text-slate-700 leading-none">{dom.notStarted}</p>
-                                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Open</p>
+                                    <p className="text-base font-medium text-slate-700 leading-none tabular-nums">{dom.notStarted}</p>
+                                    <p className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide mt-0.5">Open</p>
                                 </div>
                             </div>
 
@@ -453,7 +453,7 @@ export function ComplianceDashboard() {
                             {dom.highRisk > 0 && (
                                 <div className="flex items-center gap-1.5 px-2 py-1.5 bg-red-50 border border-red-100 rounded-lg">
                                     <FileWarning className="w-3 h-3 text-red-500 shrink-0" />
-                                    <span className="text-[9px] font-black text-red-600 uppercase tracking-widest">
+                                    <span className="text-[10px] font-mono font-semibold text-red-600 uppercase tracking-wide">
                                         {dom.highRisk} High Risk Open
                                     </span>
                                 </div>
@@ -465,7 +465,7 @@ export function ComplianceDashboard() {
 
             {criticalItems.length > 0 && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-400">
-                    <h2 className="text-[10px] font-black text-rose-600 uppercase tracking-[0.3em] mb-4 border-b border-rose-200 pb-2 flex items-center gap-2">
+                    <h2 className="text-[11px] font-mono font-semibold text-rose-600 uppercase tracking-wide mb-4 border-b border-rose-200 pb-2 flex items-center gap-2">
                         <FileWarning className="w-4 h-4" /> Immediate Action Required ({criticalItems.length})
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -475,16 +475,16 @@ export function ComplianceDashboard() {
                                 <div key={item.id} className="bg-red-50 rounded-lg border border-red-100 p-4 shadow-sm flex flex-col justify-between">
                                     <div>
                                         <div className="flex items-center justify-between mb-2">
-                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded" style={{ backgroundColor: `${dom?.color}20`, color: dom?.color, border: `1px solid ${dom?.color}40` }}>
+                                            <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded uppercase tracking-wide" style={{ backgroundColor: `${dom?.color}20`, color: dom?.color, border: `1px solid ${dom?.color}40` }}>
                                                 {dom?.abbr}
                                             </span>
-                                            <span className="text-[10px] font-bold text-red-600 tracking-wider">HIGH RISK</span>
+                                            <span className="text-[10px] font-mono font-medium text-red-600 uppercase tracking-wide">HIGH RISK</span>
                                         </div>
                                         <p className="text-xs text-slate-700 font-medium line-clamp-2 leading-relaxed mb-3" title={stripMarkdown(item.req)}>
                                             {stripMarkdown(item.req)}
                                         </p>
                                     </div>
-                                    <div className="text-[10px] text-red-600 font-black uppercase tracking-widest bg-white/60 p-2 rounded border border-red-50 flex items-center gap-1.5">
+                                    <div className="text-[10px] text-red-600 font-mono font-medium uppercase tracking-wide bg-white/60 p-2 rounded border border-red-50 flex items-center gap-1.5">
                                         <ScanSearch className="w-3 h-3 text-indigo-400 shrink-0" /> TRIGGER: {stripMarkdown(item.trigger)}
                                     </div>
                                 </div>
@@ -492,19 +492,19 @@ export function ComplianceDashboard() {
                         })}
                     </div>
                     {criticalItems.length > 6 && (
-                        <p className="text-xs text-slate-500 mt-3 italic">+ {criticalItems.length - 6} more critical items unaddressed.</p>
+                        <p className="text-xs text-slate-500 mt-3 ">+ {criticalItems.length - 6} more critical items unaddressed.</p>
                     )}
                 </div>
             )}
 
             {complianceAnalysis?.keyRisks?.length > 0 && (
                 <div>
-                    <h2 className="text-sm font-bold text-amber-600 uppercase tracking-wider mb-4 border-b border-amber-200 pb-2 flex items-center gap-2">
+                    <h2 className="text-xs font-mono font-semibold text-amber-600 uppercase tracking-wide mb-4 border-b border-amber-200 pb-2 flex items-center gap-2">
                         <TrendingUp className="w-4 h-4" /> AI Identified Key Compliance Risks
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                         {Array.isArray(complianceAnalysis.keyRisks) && complianceAnalysis.keyRisks.map((risk: string, i: number) => (
-                            <div key={i} className="text-[10px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-4 font-bold uppercase tracking-wide leading-relaxed shadow-sm flex items-start gap-2">
+                            <div key={i} className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-4 font-medium leading-relaxed shadow-sm flex items-start gap-2">
                                 <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
                                 {stripMarkdown(risk)}
                             </div>
@@ -516,12 +516,12 @@ export function ComplianceDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {complianceAnalysis?.regulatoryAuthorities?.length > 0 && (
                     <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-sm overflow-hidden">
-                        <h2 className="text-sm font-bold text-blue-600 uppercase tracking-wider mb-4 border-b border-blue-100 pb-2 flex items-center gap-2">
+                        <h2 className="text-xs font-mono font-semibold text-blue-600 uppercase tracking-wide mb-4 border-b border-blue-100 pb-2 flex items-center gap-2">
                             <ShieldCheck className="w-4 h-4" /> Governing Bodies & Authorities
                         </h2>
                         <div className="flex flex-wrap gap-2">
                             {Array.isArray(complianceAnalysis.regulatoryAuthorities) && complianceAnalysis.regulatoryAuthorities.map((auth: string, i: number) => (
-                                <span key={i} className="px-3 py-1.5 bg-blue-50 text-blue-700 text-[10px] font-black uppercase tracking-widest rounded-lg border border-blue-100">
+                                <span key={i} className="px-3 py-1.5 bg-blue-50 text-blue-700 text-[10px] font-mono font-medium uppercase tracking-wide rounded-lg border border-blue-100">
                                     {auth}
                                 </span>
                             ))}
@@ -531,12 +531,12 @@ export function ComplianceDashboard() {
 
                 {complianceAnalysis?.requiredApprovals?.length > 0 && (
                     <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-sm overflow-hidden">
-                        <h2 className="text-sm font-bold text-emerald-600 uppercase tracking-wider mb-4 border-b border-emerald-100 pb-2 flex items-center gap-2">
+                        <h2 className="text-xs font-mono font-semibold text-emerald-600 uppercase tracking-wide mb-4 border-b border-emerald-100 pb-2 flex items-center gap-2">
                             <CheckCircle2 className="w-4 h-4" /> Required Approvals & Consents
                         </h2>
                         <div className="flex flex-wrap gap-2">
                             {Array.isArray(complianceAnalysis.requiredApprovals) && complianceAnalysis.requiredApprovals.map((app: string, i: number) => (
-                                <span key={i} className="px-3 py-1.5 bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase tracking-widest rounded-lg border border-emerald-100">
+                                <span key={i} className="px-3 py-1.5 bg-emerald-50 text-emerald-700 text-[10px] font-mono font-medium uppercase tracking-wide rounded-lg border border-emerald-100">
                                     {app}
                                 </span>
                             ))}
@@ -547,14 +547,14 @@ export function ComplianceDashboard() {
 
             {complianceAnalysis?.criticalActions?.length > 0 && (
                 <div>
-                    <h2 className="text-sm font-bold text-indigo-600 uppercase tracking-wider mb-4 border-b border-indigo-200 pb-2 flex items-center gap-2">
+                    <h2 className="text-xs font-mono font-semibold text-indigo-600 uppercase tracking-wide mb-4 border-b border-indigo-200 pb-2 flex items-center gap-2">
                         <ScanSearch className="w-4 h-4" /> AI Recommended Actions
                     </h2>
                     <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                         <ol className="divide-y divide-slate-100">
                             {Array.isArray(complianceAnalysis.criticalActions) && complianceAnalysis.criticalActions.map((action: string, i: number) => (
                                 <li key={i} className="flex items-start gap-4 px-6 py-4 hover:bg-indigo-50/30 transition-colors">
-                                    <span className="shrink-0 w-7 h-7 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center text-xs font-black">
+                                    <span className="shrink-0 w-7 h-7 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center text-xs font-mono font-semibold tabular-nums">
                                         {i + 1}
                                     </span>
                                     <p className="text-sm text-slate-700 font-medium leading-relaxed pt-0.5">{stripMarkdown(action)}</p>

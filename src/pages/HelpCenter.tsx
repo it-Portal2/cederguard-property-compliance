@@ -522,7 +522,7 @@ export function HelpCenter() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <HelpCircle className="w-6 h-6 text-indigo-500" />
-            <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Help Centre</h1>
+            <h1 className="text-3xl font-semibold text-slate-900 dark:text-white tracking-tight">Help Centre</h1>
           </div>
           <p className="text-slate-500 dark:text-slate-400 text-sm">Step-by-step guides for every role. Select your role below to get started.</p>
         </div>

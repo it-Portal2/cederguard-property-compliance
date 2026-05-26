@@ -150,7 +150,7 @@ export function RiskTracker() {
         {/* Status Distribution */}
         <div className="bg-white/70 backdrop-blur-xl rounded-lg border border-white/40 shadow-xl p-4 sm:p-6 transition-all duration-300 hover:shadow-2xl hover:bg-white/80">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
-            <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Risk Status Distribution</h2>
+            <h2 className="font-mono text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Risk Status Distribution</h2>
             <PieChartIcon className="w-4 h-4 text-indigo-400" />
           </div>
           <div className="h-64">
@@ -176,9 +176,9 @@ export function RiskTracker() {
                       if (active && payload && payload.length) {
                         return (
                           <div className="bg-white/90 backdrop-blur-md border border-slate-200 p-4 rounded-lg shadow-2xl">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">{payload[0].name}</p>
+                            <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-2">{payload[0].name}</p>
                             <div className="flex items-baseline gap-2">
-                              <span className="text-2xl font-black text-slate-900">{payload[0].value}</span>
+                              <span className="text-2xl font-semibold text-slate-900">{payload[0].value}</span>
                               <span className="text-[10px] font-bold text-slate-500">Risks Identified</span>
                             </div>
                             <div className="mt-2 pt-2 border-t border-slate-100">
@@ -197,7 +197,7 @@ export function RiskTracker() {
                     verticalAlign="bottom" 
                     height={36} 
                     iconType="circle"
-                    formatter={(value) => <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tighter ml-1">{value}</span>}
+                    formatter={(value) => <span className="font-mono text-[11px] font-medium text-slate-600 uppercase tracking-wide ml-1">{value}</span>}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -210,7 +210,7 @@ export function RiskTracker() {
         {/* ALE by Workstream */}
         <div className="bg-white/70 backdrop-blur-xl rounded-lg border border-white/40 shadow-xl p-4 sm:p-6 transition-all duration-300 hover:shadow-2xl hover:bg-white/80">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
-            <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+            <h2 className="font-mono text-[11px] font-semibold text-slate-500 uppercase tracking-wide flex items-center gap-2">
               Financial Exposure ALE
             </h2>
             <BarChartIcon className="w-4 h-4 text-emerald-400" />
@@ -232,18 +232,18 @@ export function RiskTracker() {
                       if (active && payload && payload.length) {
                         return (
                           <div className="bg-white/90 backdrop-blur-md border border-slate-200 p-4 rounded-lg shadow-2xl min-w-[180px]">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">{label}</p>
+                            <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-3">{label}</p>
                             <div className="space-y-2">
                               {payload.map((p, i) => (
                                 <div key={i} className="flex justify-between items-center bg-slate-50/50 p-2 rounded-lg">
                                   <span className="text-[10px] font-bold text-slate-600">{p.name}</span>
-                                  <span className="text-xs font-black" style={{ color: p.fill }}>{fGBP(p.value as number)}</span>
+                                  <span className="text-xs font-semibold" style={{ color: p.fill }}>{fGBP(p.value as number)}</span>
                                 </div>
                               ))}
                             </div>
                             <div className="mt-3 pt-2 border-t border-slate-100 flex justify-between items-center">
-                              <span className="text-[9px] font-bold text-slate-400 italic">Reduction</span>
-                              <span className="text-[10px] font-black text-emerald-500">
+                              <span className="text-[9px] font-bold text-slate-400 ">Reduction</span>
+                              <span className="text-[10px] font-semibold text-emerald-500">
                                 {Math.round((1 - (payload[1]?.value as number / payload[0]?.value as number)) * 100)}%
                               </span>
                             </div>
@@ -253,7 +253,7 @@ export function RiskTracker() {
                       return null;
                     }}
                   />
-                  <Legend verticalAlign="top" height={36} align="right" iconType="rect" formatter={(value) => <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter ml-1">{value}</span>} />
+                  <Legend verticalAlign="top" height={36} align="right" iconType="rect" formatter={(value) => <span className="font-mono text-[11px] font-semibold text-slate-500 uppercase tracking-wide ml-1">{value}</span>} />
                   <Bar dataKey="Gross ALE" fill="#f43f5e" radius={[3, 3, 0, 0]} maxBarSize={25} />
                   <Bar dataKey="Residual ALE" fill="#10b981" radius={[3, 3, 0, 0]} maxBarSize={25} />
                 </BarChart>
@@ -270,7 +270,7 @@ export function RiskTracker() {
         {/* KRI Composite Trend */}
         <div className="lg:col-span-2 bg-white/70 backdrop-blur-xl rounded-lg border border-white/40 shadow-xl p-4 sm:p-6 transition-all duration-300 hover:shadow-2xl hover:bg-white/80">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
-            <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+            <h2 className="font-mono text-[11px] font-semibold text-slate-500 uppercase tracking-wide flex items-center gap-2">
               Mitigation Performance Trend (%)
             </h2>
             <TrendingUp className="w-4 h-4 text-indigo-400" />
@@ -292,9 +292,9 @@ export function RiskTracker() {
                     if (active && payload && payload.length) {
                       return (
                         <div className="bg-slate-900 border border-slate-700/50 backdrop-blur-xl p-4 rounded-lg shadow-2xl">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">{label} Review</p>
+                          <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-2">{label} Review</p>
                           <div className="flex flex-col items-start gap-1">
-                            <span className="text-white font-black text-2xl">{payload[0].value}%</span>
+                            <span className="text-white font-semibold text-2xl">{payload[0].value}%</span>
                             <span className="text-indigo-400 text-[10px] font-bold">Overall Mitigation</span>
                           </div>
                         </div>
@@ -313,8 +313,8 @@ export function RiskTracker() {
         <div className="space-y-4">
           <div className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 rounded-lg p-6 text-white shadow-xl shadow-indigo-200 overflow-hidden relative group">
             <div className="absolute top-0 right-0 -m-4 w-24 h-24 bg-white/10 rounded-full blur-2xl transition-all duration-700 group-hover:scale-150" />
-            <p className="text-[10px] font-black uppercase tracking-widest opacity-70">Average Risk Reduction</p>
-            <h3 className="text-4xl font-black mt-2 tracking-tighter">
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-wide opacity-70">Average Risk Reduction</p>
+            <h3 className="text-4xl font-semibold mt-2 tracking-tight tabular-nums">
               {kriData.length ? Math.round(kriData.reduce((s, k) => s + k.rPct, 0) / kriData.length) : 0}%
             </h3>
             <div className="mt-4 flex items-center gap-2">
@@ -323,25 +323,25 @@ export function RiskTracker() {
             </div>
           </div>
           <div className="bg-white/70 backdrop-blur-xl rounded-lg border border-white/40 p-6 shadow-xl">
-            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-6">KRI Priority Alerts</p>
+            <p className="font-mono text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-6">KRI Priority Alerts</p>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-red-500 shadow-lg shadow-red-500/50" />
-                  <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Critical Breaches</span>
+                  <span className="font-mono text-[11px] font-medium text-slate-600 uppercase tracking-wide">Critical Breaches</span>
                 </div>
-                <span className="text-lg font-black text-red-600">{kriData.filter(k => k.status === 'red').length}</span>
+                <span className="text-lg font-semibold text-red-600">{kriData.filter(k => k.status === 'red').length}</span>
               </div>
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-amber-500 shadow-lg shadow-amber-500/50" />
-                  <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Warning Level</span>
+                  <span className="font-mono text-[11px] font-medium text-slate-600 uppercase tracking-wide">Warning Level</span>
                 </div>
-                <span className="text-lg font-black text-amber-600">{kriData.filter(k => k.status === 'amber').length}</span>
+                <span className="text-lg font-semibold text-amber-600">{kriData.filter(k => k.status === 'amber').length}</span>
               </div>
               <div className="pt-4 border-t border-slate-100 flex justify-between items-center group cursor-pointer">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Monitors</span>
-                <span className="text-lg font-black text-slate-900 group-hover:text-indigo-600 transition-colors">{kriData.length}</span>
+                <span className="font-mono text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Active Monitors</span>
+                <span className="text-lg font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">{kriData.length}</span>
               </div>
             </div>
           </div>
@@ -350,11 +350,11 @@ export function RiskTracker() {
 
       <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-200 bg-slate-50">
-          <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">KRI Status — Programme Risk Tracker</h2>
+          <h2 className="font-mono text-[12px] font-semibold text-slate-800 uppercase tracking-wide">KRI Status — Programme Risk Tracker</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs whitespace-nowrap">
-            <thead className="bg-slate-800 text-slate-300 uppercase tracking-wider">
+            <thead className="bg-slate-800 text-slate-300 font-mono text-[11px] uppercase tracking-wide">
               <tr>
                 <th className="p-3 font-medium">KRI</th>
                 <th className="p-3 font-medium">Owner</th>

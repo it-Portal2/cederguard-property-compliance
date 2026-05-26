@@ -173,7 +173,7 @@ export function MappingManager() {
                                         <div className="flex items-start justify-between">
                                             <div>
                                                 <h4 className="text-sm font-bold text-slate-800">{m.description}</h4>
-                                                <p className="text-xs text-slate-500 mt-0.5 italic">Updated {m.updatedAt ? new Date(m.updatedAt).toLocaleDateString() : 'recently'}</p>
+                                                <p className="text-xs text-slate-500 mt-0.5 ">Updated {m.updatedAt ? new Date(m.updatedAt).toLocaleDateString() : 'recently'}</p>
                                             </div>
                                             <div className="flex items-center gap-1 opacity-10 group-hover:opacity-100 transition-opacity">
                                                 <button onClick={() => setEditingId(m.id!)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500"><Edit2 className="w-3.5 h-3.5" /></button>
@@ -204,7 +204,7 @@ export function MappingManager() {
                     </h3>
                     <div className="bg-slate-900 rounded-lg p-6 text-white space-y-4 shadow-xl">
                         <div className="space-y-2">
-                            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Simulation Prompt</label>
+                            <label className="font-mono text-[10px] uppercase tracking-wider text-slate-400 font-bold">Simulation Prompt</label>
                             <textarea
                                 className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 min-h-[80px]"
                                 value={testPrompt}
@@ -221,7 +221,7 @@ export function MappingManager() {
                         </button>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">AI Response</label>
+                            <label className="font-mono text-[10px] uppercase tracking-wider text-slate-400 font-bold">AI Response</label>
                             <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 min-h-[150px] text-xs font-mono whitespace-pre-wrap text-slate-300 leading-relaxed overflow-y-auto max-h-[300px]">
                                 {testing ? 'Analyzing...' : (testResult || 'Results will appear here. The AI will consider your mapping directives during this generation.')}
                             </div>

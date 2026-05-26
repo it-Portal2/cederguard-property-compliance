@@ -199,7 +199,7 @@ export function RiskAlerts() {
       {/* Web App Notification Routing */}
       <div className="bg-white p-5 rounded-lg border border-slate-200 flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
         <div>
-          <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+          <h3 className="text-sm font-mono font-medium text-slate-800 uppercase tracking-wide flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-indigo-500" /> Dispatch Push Notifications
           </h3>
           <p className="text-xs text-slate-500 mt-1">Send secure web app notifications to all KRI Owners with active alerts.</p>
@@ -241,12 +241,12 @@ export function RiskAlerts() {
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     {a.icon}
-                    <span className={clsx("text-[10px] font-bold uppercase tracking-wider",
+                    <span className={clsx("text-[10px] font-mono font-medium uppercase tracking-wide",
                       a.color === 'red' ? 'text-red-600' :
                         a.color === 'purple' ? 'text-purple-600' :
                           'text-amber-600'
                     )}>{a.group}</span>
-                    <span className="px-2 py-0.5 bg-slate-100 text-slate-600 border border-slate-200 rounded text-[10px] font-bold">
+                    <span className="px-2 py-0.5 bg-slate-100 text-slate-600 border border-slate-200 rounded text-[10px] font-medium">
                       {a.label}
                     </span>
                   </div>

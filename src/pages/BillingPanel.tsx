@@ -36,7 +36,7 @@ export function BillingPanel() {
       
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-black text-slate-900 flex items-center gap-3">
+        <h1 className="text-3xl font-semibold text-slate-900 flex items-center gap-3">
           <CreditCard className="w-8 h-8 text-indigo-600" />
           Billing & Subscriptions
         </h1>
@@ -58,16 +58,16 @@ export function BillingPanel() {
             
             <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
               <div>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-600 text-[11px] font-black uppercase tracking-wider rounded-lg mb-4">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-600 text-[11px] font-mono font-medium uppercase tracking-wide rounded-lg mb-4">
                   <ShieldCheck className="w-4 h-4" /> Active Subscription
                 </div>
-                <h2 className="text-3xl font-black text-slate-900 mb-1">Cedar Professional Suite</h2>
+                <h2 className="text-3xl font-semibold text-slate-900 mb-1">Cedar Professional Suite</h2>
                 <div className="text-slate-500 font-medium flex items-center gap-2">
                   <Calendar className="w-4 h-4" /> Next billing date: 01 Sep 2023
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-4xl font-black text-slate-900">£350<span className="text-lg text-slate-400 font-medium">/mo</span></div>
+                <div className="text-4xl font-semibold text-slate-900">£350<span className="text-lg text-slate-400 font-medium">/mo</span></div>
                 <button className="mt-4 px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg transition-all shadow-md active:scale-95 text-sm">
                   Upgrade Plan
                 </button>
@@ -98,7 +98,7 @@ export function BillingPanel() {
             
             <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-lg">
               <div className="flex items-center gap-4">
-                <div className="w-16 h-10 bg-white shadow-sm border border-slate-200 rounded-lg flex items-center justify-center font-black text-slate-900 italic text-xl">
+                <div className="w-16 h-10 bg-white shadow-sm border border-slate-200 rounded-lg flex items-center justify-center font-semibold text-slate-900 text-xl">
                   VISA
                 </div>
                 <div>
@@ -142,7 +142,7 @@ export function BillingPanel() {
                 <div>
                   <div className="font-bold text-slate-900 mb-1 flex items-center gap-2">
                     {inv.id}
-                    {inv.status === 'Paid' && <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-lg text-[10px] font-black uppercase tracking-wider">Paid</span>}
+                    {inv.status === 'Paid' && <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-lg text-[10px] font-mono font-medium uppercase tracking-wide">Paid</span>}
                   </div>
                   <div className="text-sm text-slate-500 font-medium">{inv.date} &middot; £{inv.amount}</div>
                 </div>

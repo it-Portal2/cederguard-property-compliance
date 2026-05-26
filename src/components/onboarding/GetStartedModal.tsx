@@ -269,7 +269,7 @@ export function GetStartedModal({
                     initial={{ opacity: 0, y: -6 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.15, duration: 0.4 }}
-                    className="inline-flex items-center rounded-lg bg-white/95 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-indigo-700 shadow-lg shadow-indigo-950/30 ring-1 ring-white/40 backdrop-blur"
+                    className="font-mono inline-flex items-center rounded-lg bg-white/95 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-indigo-700 shadow-lg shadow-indigo-950/30 ring-1 ring-white/40 backdrop-blur"
                   >
                     Welcome to CedarGuard
                   </motion.div>

@@ -156,7 +156,7 @@ export default function TableTooltip({
   const initialY = pos?.placement === 'top' ? 4 : -4;
 
   const classes = variant === 'action'
-    ? 'text-[10px] font-semibold uppercase tracking-wider rounded-md px-2.5 py-1.5 whitespace-nowrap'
+    ? 'font-mono text-[10px] font-semibold uppercase tracking-wider rounded-md px-2.5 py-1.5 whitespace-nowrap'
     : 'text-[11px] leading-relaxed rounded-lg px-3 py-2 max-w-xs whitespace-pre-wrap break-words';
 
   return (

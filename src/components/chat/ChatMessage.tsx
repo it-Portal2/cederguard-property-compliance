@@ -180,7 +180,7 @@ function renderInlineSection(text: string, baseKey: number): React.ReactNode[] {
     }
     if (line.startsWith("## ")) {
       result.push(
-        <p key={`h2-${i}`} className="font-black text-slate-900 mt-2 mb-0.5 text-base">
+        <p key={`h2-${i}`} className="font-semibold text-slate-900 mt-2 mb-0.5 text-base">
           {renderInline(line.slice(3))}
         </p>,
       );
@@ -189,7 +189,7 @@ function renderInlineSection(text: string, baseKey: number): React.ReactNode[] {
     }
     if (line.startsWith("# ")) {
       result.push(
-        <p key={`h1-${i}`} className="font-black text-slate-900 mt-2 mb-1 text-lg">
+        <p key={`h1-${i}`} className="font-semibold text-slate-900 mt-2 mb-1 text-lg">
           {renderInline(line.slice(2))}
         </p>,
       );
@@ -241,7 +241,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
           className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm"
           aria-hidden
         >
-          <span className="text-white text-[9px] font-black tracking-tight">AI</span>
+          <span className="text-white text-[9px] font-semibold tracking-tight">AI</span>
         </div>
       )}
 
@@ -342,7 +342,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
           className="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0 mt-0.5"
           aria-hidden
         >
-          <span className="text-slate-600 text-[9px] font-black">You</span>
+          <span className="text-slate-600 text-[9px] font-semibold">You</span>
         </div>
       )}
     </motion.div>

@@ -480,7 +480,7 @@ export function AIRiskID() {
                 <AlertTriangle className="w-6 h-6 text-rose-600" />
               </div>
               <div>
-                <h3 className="text-lg font-black text-slate-900 mb-1">Restart Risk Analysis?</h3>
+                <h3 className="text-lg font-semibold text-slate-900 mb-1 tracking-tight">Restart Risk Analysis?</h3>
                 <p className="text-sm text-slate-500 leading-relaxed">
                   This will clear the existing AI risk analysis results and re-run the discovery. Accepted risks already saved to your register will not be affected.
                 </p>
@@ -489,13 +489,13 @@ export function AIRiskID() {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowRestartConfirm(false)}
-                className="flex-1 px-4 py-3 bg-slate-100 text-slate-700 rounded-lg font-bold text-sm hover:bg-slate-200 transition-all"
+                className="flex-1 px-4 py-3 bg-slate-100 text-slate-700 rounded-lg font-medium text-sm hover:bg-slate-200 transition-all"
               >
                 Cancel
               </button>
               <button
                 onClick={handleRestartConfirmed}
-                className="flex-1 px-4 py-3 bg-rose-600 text-white rounded-lg font-bold text-sm hover:bg-rose-700 transition-all"
+                className="flex-1 px-4 py-3 bg-rose-600 text-white rounded-lg font-medium text-sm hover:bg-rose-700 transition-all"
               >
                 Yes, Restart
               </button>
@@ -508,7 +508,7 @@ export function AIRiskID() {
       {isRestarting && (
         <div className="fixed inset-0 z-[110] flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm">
           <Loader2 className="w-10 h-10 text-indigo-600 animate-spin mb-4" />
-          <p className="text-slate-700 font-bold text-sm uppercase tracking-widest">Clearing Analysis Data...</p>
+          <p className="text-slate-700 font-mono font-medium text-sm uppercase tracking-wide">Clearing Analysis Data...</p>
         </div>
       )}
 
@@ -521,7 +521,7 @@ export function AIRiskID() {
                 <AlertTriangle className="w-6 h-6 text-amber-600" />
               </div>
               <div>
-                <h3 className="text-lg font-black text-slate-900 mb-1">No Risks Accepted</h3>
+                <h3 className="text-lg font-semibold text-slate-900 mb-1 tracking-tight">No Risks Accepted</h3>
                 <p className="text-sm text-slate-500 leading-relaxed">
                   You haven't accepted any risks. Proceed with an empty risk register?
                 </p>
@@ -530,7 +530,7 @@ export function AIRiskID() {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowEmptyConfirm(false)}
-                className="flex-1 px-4 py-3 bg-slate-100 text-slate-700 rounded-lg font-bold text-sm hover:bg-slate-200 transition-all"
+                className="flex-1 px-4 py-3 bg-slate-100 text-slate-700 rounded-lg font-medium text-sm hover:bg-slate-200 transition-all"
               >
                 Go Back
               </button>
@@ -539,7 +539,7 @@ export function AIRiskID() {
                   setShowEmptyConfirm(false);
                   finalize(true);
                 }}
-                className="flex-1 px-4 py-3 bg-amber-600 text-white rounded-lg font-bold text-sm hover:bg-amber-700 transition-all"
+                className="flex-1 px-4 py-3 bg-amber-600 text-white rounded-lg font-medium text-sm hover:bg-amber-700 transition-all"
               >
                 Proceed Anyway
               </button>
@@ -617,7 +617,7 @@ export function AIRiskID() {
         <div className="flex justify-start mb-6 -mt-2">
           <Link
             to={activeProjectId ? "/initiate" : "/programmes/new"}
-            className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-lg font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-slate-200 hover:bg-emerald-600 transition-all active:scale-95 animate-in fade-in slide-in-from-right-4 duration-700"
+            className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-lg font-mono font-semibold text-[10px] uppercase tracking-wide shadow-xl shadow-slate-200 hover:bg-emerald-600 transition-all active:scale-95 animate-in fade-in slide-in-from-right-4 duration-700"
           >
             <ArrowLeft className="w-4 h-4 mr-1" /> Back to Initiation Flow
           </Link>
@@ -633,18 +633,18 @@ export function AIRiskID() {
               <CheckCircle2 className="w-6 h-6 sm:w-8 sm:h-8 text-emerald-400" />
             </div>
             <div>
-              <h1 className="text-lg sm:text-xl font-black text-white tracking-tight">
+              <h1 className="text-lg sm:text-xl font-semibold text-white tracking-tight">
                 {activeProjectId
                   ? "Project Risk Analysis complete"
                   : "AI analysis complete"}{" "}
                 — {activeName}
               </h1>
               <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1.5">
-                <span className="text-[10px] sm:text-xs font-bold text-emerald-400 uppercase tracking-widest">
+                <span className="text-[10px] sm:text-xs font-mono font-medium text-emerald-400 uppercase tracking-wide tabular-nums">
                   {safeSuggestedRisks.length} risks identified
                 </span>
                 <span className="hidden sm:block w-1 h-1 bg-emerald-700 rounded-full" />
-                <div className="flex flex-wrap items-center gap-2 text-[10px] text-emerald-500/80 font-bold uppercase tracking-wider">
+                <div className="flex flex-wrap items-center gap-2 text-[10px] text-emerald-500/80 font-mono font-medium uppercase tracking-wide">
                   {projectInfo.type && <span>{projectInfo.type}</span>}
                   {projectInfo.riba && (
                     <span>• RIBA Stage {projectInfo.riba}</span>
@@ -656,7 +656,7 @@ export function AIRiskID() {
           </div>
           <button
             onClick={runAnalysis}
-            className="w-full sm:w-auto justify-center px-4 sm:px-5 py-2.5 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-bold rounded-lg border border-white/10 transition-all flex items-center gap-2"
+            className="w-full sm:w-auto justify-center px-4 sm:px-5 py-2.5 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-medium rounded-lg border border-white/10 transition-all flex items-center gap-2"
           >
             <ScanSearch className="w-3.5 h-3.5" /> Run again
           </button>
@@ -674,16 +674,16 @@ export function AIRiskID() {
                 <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-indigo-500/10 transition-all" />
                 <div className="flex items-start justify-between mb-6">
                   <div>
-                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                    <h4 className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide mb-1">
                       Strategic Summary
                     </h4>
-                    <h3 className="text-xl font-black text-slate-900 tracking-tight">
+                    <h3 className="text-xl font-semibold text-slate-900 tracking-tight">
                       Programme Risk Profile
                     </h3>
                   </div>
                   <div
                     className={clsx(
-                      "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm",
+                      "px-4 py-1.5 rounded-full text-[10px] font-mono font-medium uppercase tracking-wide border shadow-sm",
                       strategicRiskAnalysis?.summary?.overallRating
                         ?.toLowerCase()
                         .includes("high")
@@ -698,11 +698,11 @@ export function AIRiskID() {
                     Rating: {strategicRiskAnalysis?.summary?.overallRating}
                   </div>
                 </div>
-                <p className="text-sm text-slate-600 leading-relaxed mb-6 italic">
+                <p className="text-sm text-slate-600 leading-relaxed mb-6 ">
                   "{strategicRiskAnalysis?.summary?.executiveOverview}"
                 </p>
                 <div>
-                  <h5 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                  <h5 className="text-[9px] font-mono font-medium text-slate-400 uppercase tracking-wide mb-2 flex items-center gap-2">
                     <Target className="w-3 h-3 text-indigo-500" /> Critical
                     Success Factors
                   </h5>
@@ -717,10 +717,10 @@ export function AIRiskID() {
                 <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-emerald-500/10 transition-all" />
                 <div className="flex items-start justify-between mb-6">
                   <div>
-                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                    <h4 className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide mb-1">
                       Heat Overview
                     </h4>
-                    <h3 className="text-xl font-black text-slate-900 tracking-tight">
+                    <h3 className="text-xl font-semibold text-slate-900 tracking-tight">
                       Risk Concentration
                     </h3>
                   </div>
@@ -733,7 +733,7 @@ export function AIRiskID() {
                 </p>
 
                 <div className="space-y-3">
-                  <h5 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 tracking-widest">
+                  <h5 className="text-[9px] font-mono font-medium text-slate-400 uppercase tracking-wide mb-2">
                     Domain Heat Exposure
                   </h5>
                   <div className="grid grid-cols-2 gap-2">
@@ -747,12 +747,12 @@ export function AIRiskID() {
                             className="flex flex-col gap-1.5 p-3 bg-slate-50 rounded-lg border border-slate-100 hover:border-indigo-200 transition-all group/item"
                           >
                             <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-bold text-slate-500 truncate">
+                              <span className="text-[10px] font-mono font-medium text-slate-500 uppercase tracking-wide truncate">
                                 {item.domain}
                               </span>
                               <span
                                 className={clsx(
-                                  "text-[10px] font-black",
+                                  "text-[10px] font-mono font-medium tabular-nums",
                                   item.score >= 80
                                     ? "text-rose-600"
                                     : item.score >= 50
@@ -788,36 +788,36 @@ export function AIRiskID() {
           <div className="bg-white rounded-lg border border-slate-200 p-4 sm:p-6 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-6 sm:gap-8 justify-center w-full sm:w-auto">
               <div className="flex flex-col items-center sm:items-start shrink-0">
-                <span className="text-xl sm:text-2xl font-black text-slate-900">
+                <span className="text-xl sm:text-2xl font-medium text-slate-900 tabular-nums">
                   {safeSuggestedRisks.length}
                 </span>
-                <span className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <span className="text-[9px] sm:text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide">
                   suggested
                 </span>
               </div>
               <div className="hidden sm:block w-px h-10 bg-slate-100" />
               <div className="flex flex-col items-center sm:items-start shrink-0 text-indigo-600">
-                <span className="text-xl sm:text-2xl font-black">
+                <span className="text-xl sm:text-2xl font-medium tabular-nums">
                   {safeSuggestedRisks.filter((r) => !r.exists).length}
                 </span>
-                <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest">
+                <span className="text-[9px] sm:text-[10px] font-mono font-medium uppercase tracking-wide">
                   New Identifications
                 </span>
               </div>
               <div className="flex flex-col items-center sm:items-start shrink-0 text-slate-400">
-                <span className="text-xl sm:text-2xl font-black">
+                <span className="text-xl sm:text-2xl font-medium tabular-nums">
                   {safeSuggestedRisks.filter((r) => r.exists).length}
                 </span>
-                <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest">
+                <span className="text-[9px] sm:text-[10px] font-mono font-medium uppercase tracking-wide">
                   Already Registered
                 </span>
               </div>
               <div className="hidden sm:block w-px h-10 bg-slate-100" />
               <div className="flex flex-col items-center sm:items-start shrink-0">
-                <span className="text-xl sm:text-2xl font-black text-emerald-600">
+                <span className="text-xl sm:text-2xl font-medium text-emerald-600 tabular-nums">
                   {acceptedIds.length}
                 </span>
-                <span className="text-[9px] sm:text-[10px] font-black text-emerald-500 uppercase tracking-widest">
+                <span className="text-[9px] sm:text-[10px] font-mono font-medium text-emerald-500 uppercase tracking-wide">
                   accepted
                 </span>
               </div>
@@ -846,7 +846,7 @@ export function AIRiskID() {
           <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center mx-auto mb-6 transform -rotate-6">
             <ScanSearch className="w-10 h-10" />
           </div>
-          <h2 className="text-2xl font-black text-slate-900 mb-2">
+          <h2 className="text-2xl font-semibold text-slate-900 mb-2 tracking-tight">
             Initialise AI Risk Inquiry?
           </h2>
           <p className="text-slate-500 mb-8 max-w-md mx-auto text-sm leading-relaxed">
@@ -855,7 +855,7 @@ export function AIRiskID() {
           </p>
           <button
             onClick={runAnalysis}
-            className="px-8 py-4 bg-indigo-600 text-white font-bold rounded-lg shadow-xl hover:bg-indigo-700 transition-all transform hover:-translate-y-1 active:scale-95"
+            className="px-8 py-4 bg-indigo-600 text-white font-medium rounded-lg shadow-xl hover:bg-indigo-700 transition-all transform hover:-translate-y-1 active:scale-95"
           >
             Run AI Risk Inquiry
           </button>
@@ -865,7 +865,7 @@ export function AIRiskID() {
       {loading && (
         <div className="bg-white border border-slate-200 rounded-lg p-16 flex flex-col items-center justify-center shadow-sm">
           <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-6" />
-          <h3 className="text-lg font-black text-slate-900">
+          <h3 className="text-lg font-semibold text-slate-900 tracking-tight">
             Identifying potential threats...
           </h3>
           <p className="text-sm text-slate-500 mt-1 animate-pulse">
@@ -923,14 +923,14 @@ export function AIRiskID() {
                   {/* Top Bar: Title & Primary Status */}
                   <div className="flex flex-col sm:flex-row items-start justify-between gap-4 sm:gap-6">
                     <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0 w-full">
-                      <span className="text-sm font-black text-slate-300 mt-1">
+                      <span className="text-sm font-mono font-medium text-slate-300 mt-1 tabular-nums">
                         {idx + 1}
                       </span>
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2 mb-2">
                           <h3
                             className={clsx(
-                              "text-lg font-black tracking-tight truncate",
+                              "text-lg font-semibold tracking-tight truncate",
                               isRejected
                                 ? "text-slate-400 line-through"
                                 : "text-slate-900",
@@ -939,23 +939,23 @@ export function AIRiskID() {
                             {stripMarkdown(r.title)}
                           </h3>
                           {r.exists ? (
-                            <span className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-600 text-[10px] font-black uppercase tracking-widest rounded-lg border border-amber-200/50">
+                            <span className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-600 text-[10px] font-mono font-medium uppercase tracking-wide rounded-lg border border-amber-200/50">
                               <AlertCircle className="w-3 h-3" /> Already
                               Registered
                             </span>
                           ) : (
-                            <span className="flex items-center gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase tracking-widest rounded-lg border border-indigo-200/50">
+                            <span className="flex items-center gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-mono font-medium uppercase tracking-wide rounded-lg border border-indigo-200/50">
                               <Target className="w-3 h-3 text-indigo-500" /> New
                               Identification
                             </span>
                           )}
                           {isAccepted && (
-                            <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-widest rounded-lg border border-emerald-200/50">
+                            <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-mono font-medium uppercase tracking-wide rounded-lg border border-emerald-200/50">
                               <CheckCircle2 className="w-3 h-3" /> Accepted
                             </span>
                           )}
                           {isRejected && (
-                            <span className="flex items-center gap-1.5 px-3 py-1 bg-rose-50 text-rose-600 text-[10px] font-black uppercase tracking-widest rounded-lg border border-rose-200/50">
+                            <span className="flex items-center gap-1.5 px-3 py-1 bg-rose-50 text-rose-600 text-[10px] font-mono font-medium uppercase tracking-wide rounded-lg border border-rose-200/50">
                               <XCircle className="w-3 h-3" /> Rejected
                             </span>
                           )}
@@ -963,34 +963,34 @@ export function AIRiskID() {
 
                         {/* Tags Bar */}
                         <div className="flex flex-wrap items-center gap-2 mb-3">
-                          <span className="px-2 py-1 bg-indigo-50 text-indigo-700 text-[9px] font-bold uppercase tracking-wider rounded border border-indigo-100 shadow-sm">
+                          <span className="px-2 py-1 bg-indigo-50 text-indigo-700 text-[9px] font-mono font-medium uppercase tracking-wide rounded border border-indigo-100 shadow-sm">
                             {stripMarkdown(r.category || "Risk")}
                           </span>
                           <span
                             className={clsx(
-                              "px-2 py-1 text-[9px] font-black uppercase tracking-widest rounded border shadow-sm",
+                              "px-2 py-1 text-[9px] font-mono font-medium uppercase tracking-wide rounded border shadow-sm",
                               ratingColor,
                             )}
                           >
                             Gross: {r.grossRating} ({ratingLabel})
                           </span>
-                          <span className="px-2 py-1 bg-slate-100 text-slate-500 text-[9px] font-bold uppercase tracking-wider rounded border border-slate-200">
+                          <span className="px-2 py-1 bg-slate-100 text-slate-500 text-[9px] font-mono font-medium uppercase tracking-wide rounded border border-slate-200">
                             {activeProjectId ? activeProjectId : "Shared"} •{" "}
                             {stripMarkdown(r.workstream || "Contractor")}
                           </span>
                           {r.exists ? (
-                            <span className="px-2 py-1 bg-amber-50 text-amber-700 text-[9px] font-black uppercase tracking-widest rounded border border-amber-200 flex items-center gap-1 shadow-sm ring-2 ring-amber-500/20">
+                            <span className="px-2 py-1 bg-amber-50 text-amber-700 text-[9px] font-mono font-medium uppercase tracking-wide rounded border border-amber-200 flex items-center gap-1 shadow-sm ring-2 ring-amber-500/20">
                               <AlertTriangle className="w-2.5 h-2.5 text-amber-500" />{" "}
                               Already Registered
                             </span>
                           ) : (
-                            <span className="px-2 py-1 bg-emerald-50 text-emerald-700 text-[9px] font-black uppercase tracking-widest rounded border border-emerald-200 flex items-center gap-1 shadow-sm ring-2 ring-emerald-500/20 animate-pulse">
+                            <span className="px-2 py-1 bg-emerald-50 text-emerald-700 text-[9px] font-mono font-medium uppercase tracking-wide rounded border border-emerald-200 flex items-center gap-1 shadow-sm ring-2 ring-emerald-500/20 animate-pulse">
                               <Plus className="w-2.5 h-2.5 text-emerald-500" />{" "}
                               New Identification
                             </span>
                           )}
                           {r.escalated && (
-                            <span className="px-2 py-1 bg-orange-50 text-orange-600 text-[9px] font-black uppercase tracking-widest rounded border border-orange-200 shadow-sm">
+                            <span className="px-2 py-1 bg-orange-50 text-orange-600 text-[9px] font-mono font-medium uppercase tracking-wide rounded border border-orange-200 shadow-sm">
                               Escalated
                             </span>
                           )}
@@ -1038,7 +1038,7 @@ export function AIRiskID() {
                               rejectedIds.filter((id) => id !== r.id),
                             );
                           }}
-                          className="px-6 py-2.5 bg-white border border-slate-200 text-slate-600 text-sm font-black rounded-lg hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm"
+                          className="px-6 py-2.5 bg-white border border-slate-200 text-slate-600 text-sm font-medium rounded-lg hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm"
                         >
                           <X className="w-4 h-4 text-slate-400" /> Reset
                           Selection
@@ -1062,7 +1062,7 @@ export function AIRiskID() {
                     <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-slate-100 animate-in fade-in slide-in-from-top-2 duration-300">
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                         <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                          <p className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide mb-1">
                             Likelihood
                           </p>
                           <p className="text-sm font-bold text-slate-800">
@@ -1070,7 +1070,7 @@ export function AIRiskID() {
                           </p>
                         </div>
                         <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                          <p className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide mb-1">
                             Impact
                           </p>
                           <p className="text-sm font-bold text-slate-800">
@@ -1078,12 +1078,12 @@ export function AIRiskID() {
                           </p>
                         </div>
                         <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                          <p className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide mb-1">
                             Gross Score
                           </p>
                           <p
                             className={clsx(
-                              "text-sm font-black",
+                              "text-sm font-semibold tabular-nums",
                               ratingColor.split(" ")[0],
                             )}
                           >
@@ -1091,7 +1091,7 @@ export function AIRiskID() {
                           </p>
                         </div>
                         <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                          <p className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide mb-1">
                             Risk Response
                           </p>
                           <p className="text-sm font-bold text-slate-800">
@@ -1099,7 +1099,7 @@ export function AIRiskID() {
                           </p>
                         </div>
                         <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                          <p className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide mb-1">
                             Owner
                           </p>
                           <p className="text-sm font-bold text-slate-800">
@@ -1107,7 +1107,7 @@ export function AIRiskID() {
                           </p>
                         </div>
                         <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                          <p className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide mb-1">
                             Workstream
                           </p>
                           <p className="text-sm font-bold text-slate-800">
@@ -1115,7 +1115,7 @@ export function AIRiskID() {
                           </p>
                         </div>
                         <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                          <p className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide mb-1">
                             Net Score (Est.)
                           </p>
                           <p className="text-sm font-bold text-indigo-600">
@@ -1124,7 +1124,7 @@ export function AIRiskID() {
                           </p>
                         </div>
                         <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                          <p className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide mb-1">
                             Review Freq.
                           </p>
                           <p className="text-sm font-bold text-slate-800">
@@ -1139,7 +1139,7 @@ export function AIRiskID() {
                             onClick={() =>
                               setAcceptedIds([...acceptedIds, r.id])
                             }
-                            className="w-full sm:w-auto justify-center px-4 sm:px-8 py-2.5 sm:py-3 bg-white border-2 border-slate-200 text-slate-900 text-sm font-black rounded-lg hover:bg-slate-50 transition-all flex items-center gap-2.5"
+                            className="w-full sm:w-auto justify-center px-4 sm:px-8 py-2.5 sm:py-3 bg-white border-2 border-slate-200 text-slate-900 text-sm font-medium rounded-lg hover:bg-slate-50 transition-all flex items-center gap-2.5"
                           >
                             <Check className="w-5 h-5 text-emerald-500" />{" "}
                             Accept
@@ -1148,7 +1148,7 @@ export function AIRiskID() {
                             onClick={() =>
                               setRejectedIds([...rejectedIds, r.id])
                             }
-                            className="w-full sm:w-auto justify-center px-4 sm:px-8 py-2.5 sm:py-3 bg-white border-2 border-slate-200 text-slate-900 text-sm font-black rounded-lg hover:bg-slate-50 transition-all flex items-center gap-2.5"
+                            className="w-full sm:w-auto justify-center px-4 sm:px-8 py-2.5 sm:py-3 bg-white border-2 border-slate-200 text-slate-900 text-sm font-medium rounded-lg hover:bg-slate-50 transition-all flex items-center gap-2.5"
                           >
                             <X className="w-5 h-5 text-rose-500" /> Reject
                           </button>
@@ -1157,7 +1157,7 @@ export function AIRiskID() {
                               setEditingRisk(r);
                               setIsModalOpen(true);
                             }}
-                            className="w-full sm:w-auto justify-center px-4 sm:px-8 py-2.5 sm:py-3 bg-white border-2 border-slate-200 text-slate-900 text-sm font-black rounded-lg hover:bg-slate-50 transition-all flex items-center gap-2.5"
+                            className="w-full sm:w-auto justify-center px-4 sm:px-8 py-2.5 sm:py-3 bg-white border-2 border-slate-200 text-slate-900 text-sm font-medium rounded-lg hover:bg-slate-50 transition-all flex items-center gap-2.5"
                           >
                             <Edit3 className="w-5 h-5 text-indigo-500" /> Edit
                             before accepting
@@ -1185,14 +1185,14 @@ export function AIRiskID() {
                       (fromInitiation ? "?from=initiation" : ""),
                   )
                 }
-                className="shrink-0 flex items-center gap-1 sm:gap-2 px-3 py-2 sm:px-4 hover:bg-slate-100 rounded-lg text-slate-600 text-[10px] sm:text-sm font-bold transition-all"
+                className="shrink-0 flex items-center gap-1 sm:gap-2 px-3 py-2 sm:px-4 hover:bg-slate-100 rounded-lg text-slate-600 text-[10px] sm:text-sm font-medium transition-all"
               >
                 <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />{" "}
                 <span className="hidden sm:inline">Back</span>
               </button>
               <div className="hidden sm:block w-px h-6 bg-slate-200" />
-              <p className="text-xs sm:text-sm font-bold text-slate-700 flex-1 min-w-0">
-                <span className="text-indigo-600 font-black">
+              <p className="text-xs sm:text-sm font-medium text-slate-700 flex-1 min-w-0">
+                <span className="text-indigo-600 font-mono font-semibold tabular-nums">
                   {acceptedIds.length}
                 </span>{" "}
                 <span className="hidden sm:inline">
@@ -1227,7 +1227,7 @@ export function AIRiskID() {
                   isAcceptingAll ||
                   isFinalizing
                 }
-                className="flex-1 sm:flex-none justify-center px-2 sm:px-6 py-2.5 sm:py-3 bg-white border-2 border-slate-200 text-slate-900 text-[10px] sm:text-sm font-black rounded-lg hover:bg-slate-50 transition-all flex items-center gap-1 sm:gap-2 disabled:opacity-50 disabled:cursor-not-allowed break-words text-center"
+                className="flex-1 sm:flex-none justify-center px-2 sm:px-6 py-2.5 sm:py-3 bg-white border-2 border-slate-200 text-slate-900 text-[10px] sm:text-sm font-medium rounded-lg hover:bg-slate-50 transition-all flex items-center gap-1 sm:gap-2 disabled:opacity-50 disabled:cursor-not-allowed break-words text-center"
               >
                 {isAcceptingAll ? (
                   <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-500 shrink-0 animate-spin" />
@@ -1242,7 +1242,7 @@ export function AIRiskID() {
               <button
                 onClick={() => finalize()}
                 disabled={isFinalizing || isAcceptingAll}
-                className="flex-1 sm:flex-none justify-center px-2 sm:px-8 py-2.5 sm:py-3 bg-slate-900 text-white text-[10px] sm:text-sm font-black rounded-lg hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/40 active:scale-95 flex items-center gap-1.5 sm:gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed break-words text-center leading-tight"
+                className="flex-1 sm:flex-none justify-center px-2 sm:px-8 py-2.5 sm:py-3 bg-slate-900 text-white text-[10px] sm:text-sm font-medium rounded-lg hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/40 active:scale-95 flex items-center gap-1.5 sm:gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed break-words text-center leading-tight"
               >
                 {isFinalizing ? (
                   <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-400 shrink-0 animate-spin" />

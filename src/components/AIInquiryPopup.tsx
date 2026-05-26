@@ -239,10 +239,10 @@ export function AIInquiryPopup({ isOpen: controlledIsOpen, onClose: controlledOn
               <ServerCog className="w-7 h-7 text-white" />
             </div>
             <div>
-              <h3 className="text-white font-black text-sm uppercase tracking-widest flex items-center gap-2">
+              <h3 className="text-white font-mono font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
                 CedarGuard AI <span className="bg-indigo-500/20 text-indigo-400 text-[9px] px-2 py-0.5 rounded-full border border-indigo-500/30">Assistant</span>
               </h3>
-              <p className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mt-0.5">
+              <p className="text-slate-400 font-mono text-[10px] uppercase font-medium tracking-wide mt-0.5">
                 Context: {isRiskContext ? 'Programme Risk Intelligence' : 'Compliance Intelligence'}
               </p>
             </div>
@@ -279,7 +279,7 @@ export function AIInquiryPopup({ isOpen: controlledIsOpen, onClose: controlledOn
               )}>
                 {msg.role === 'assistant' && (
                   <div className="flex items-center justify-between mb-2 pb-2 border-b border-indigo-100/50">
-                    <span className="text-[9px] font-black text-indigo-500 uppercase tracking-tighter flex items-center gap-1">
+                    <span className="font-mono text-[9px] font-medium text-indigo-500 uppercase tracking-wide flex items-center gap-1">
                       <ShieldCheck className="w-3 h-3" /> Intelligence Output
                     </span>
                     <button 
@@ -332,19 +332,19 @@ export function AIInquiryPopup({ isOpen: controlledIsOpen, onClose: controlledOn
               <>
                 <button 
                   onClick={() => handleSend("What are our highest priority ESCALATED risks?")}
-                  className="px-3 py-1.5 bg-rose-50 text-rose-700 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-rose-100 transition-colors border border-rose-100"
+                  className="px-3 py-1.5 bg-rose-50 text-rose-700 rounded-lg font-mono text-[10px] font-medium uppercase hover:bg-rose-100 transition-colors border border-rose-100"
                 >
                   Highest Priority?
                 </button>
                 <button 
                   onClick={() => handleSend("Summarize the risk reduction across the programme")}
-                  className="px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-amber-100 transition-colors border border-amber-100"
+                  className="px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg font-mono text-[10px] font-medium uppercase hover:bg-amber-100 transition-colors border border-amber-100"
                 >
                   Risk Reduction
                 </button>
                 <button 
                   onClick={() => handleSend("Suggest mitigations for commercial risks")}
-                  className="px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-indigo-100 transition-colors border border-indigo-100"
+                  className="px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg font-mono text-[10px] font-medium uppercase hover:bg-indigo-100 transition-colors border border-indigo-100"
                 >
                   Mitigations
                 </button>
@@ -353,19 +353,19 @@ export function AIInquiryPopup({ isOpen: controlledIsOpen, onClose: controlledOn
               <>
                 <button 
                   onClick={() => handleSend("What are the key HRB risks?")}
-                  className="px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-indigo-100 transition-colors border border-indigo-100"
+                  className="px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg font-mono text-[10px] font-medium uppercase hover:bg-indigo-100 transition-colors border border-indigo-100"
                 >
                   HRB Risks?
                 </button>
                 <button 
                   onClick={() => handleSend("BSA Gateway 2 requirements")}
-                  className="px-3 py-1.5 bg-violet-50 text-violet-700 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-violet-100 transition-colors border border-violet-100"
+                  className="px-3 py-1.5 bg-violet-50 text-violet-700 rounded-lg font-mono text-[10px] font-medium uppercase hover:bg-violet-100 transition-colors border border-violet-100"
                 >
                   BSA Gateway 2
                 </button>
                 <button 
                   onClick={() => handleSend("Golden Thread standards")}
-                  className="px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-emerald-100 transition-colors border border-emerald-100"
+                  className="px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg font-mono text-[10px] font-medium uppercase hover:bg-emerald-100 transition-colors border border-emerald-100"
                 >
                   Golden Thread
                 </button>

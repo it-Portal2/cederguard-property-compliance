@@ -28,7 +28,7 @@ export function CorrectionBadge({
   return (
     <span
       className={clsx(
-        "inline-flex items-center gap-1 rounded-full bg-rose-100 font-bold uppercase tracking-wider text-rose-800",
+        "font-mono inline-flex items-center gap-1 rounded-full bg-rose-100 font-bold uppercase tracking-wider text-rose-800",
         sizing,
         className,
       )}

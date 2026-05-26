@@ -105,7 +105,7 @@ export function ProjectReportTacSection({
             <ShieldCheck className="h-4 w-4" />
           </div>
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-400">
               Technical Assurance
             </p>
             <h2

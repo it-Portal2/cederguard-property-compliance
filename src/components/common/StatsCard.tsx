@@ -187,7 +187,7 @@ export function StatsCard({
         <div className="flex items-baseline gap-1.5">
           <span
             className={clsx(
-              'font-black leading-none tracking-tight tabular-nums',
+              'font-semibold leading-none tracking-tight tabular-nums',
               s.value,
               valueClassName
             )}

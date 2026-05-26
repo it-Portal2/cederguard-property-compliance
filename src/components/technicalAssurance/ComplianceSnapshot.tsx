@@ -34,7 +34,7 @@ export function ComplianceSnapshot({ checks }: ComplianceSnapshotProps) {
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex items-center justify-between">
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+        <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-400">
           Compliance snapshot
         </p>
         <p className="text-[11px] text-slate-400">

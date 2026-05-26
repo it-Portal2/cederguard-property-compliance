@@ -97,7 +97,7 @@ export function ProgrammeIssues() {
       label: 'Project Name',
       sortable: true,
       render: (v) => (
-        <span className="text-[11px] font-black text-slate-800">
+        <span className="text-[11px] font-semibold text-slate-800">
           {v || 'Untitled Project'}
         </span>
       ),
@@ -115,7 +115,7 @@ export function ProgrammeIssues() {
       align: 'right',
       sortable: true,
       render: (v) => (
-        <span className="text-[11px] font-black text-amber-600">{v ?? 0}</span>
+        <span className="text-[11px] font-semibold text-amber-600">{v ?? 0}</span>
       ),
     },
     {
@@ -124,7 +124,7 @@ export function ProgrammeIssues() {
       align: 'right',
       sortable: true,
       render: (v) => (
-        <span className="text-[11px] font-black text-rose-600">{v ?? 0}</span>
+        <span className="text-[11px] font-semibold text-rose-600">{v ?? 0}</span>
       ),
     },
   ];
@@ -161,12 +161,12 @@ export function ProgrammeIssues() {
  shows month-end totals, not live ones.*/}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           <div className="bg-white border-t-4 border-t-amber-500 border border-slate-200 rounded-lg p-4 shadow-sm">
-            <div className="text-2xl font-bold text-amber-600 mb-1">{loading || historicalView.loading ? '—' : totals.open}</div>
-            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total Open Issues</div>
+            <div className="text-2xl font-medium text-amber-600 mb-1 tabular-nums">{loading || historicalView.loading ? '—' : totals.open}</div>
+            <div className="text-[10px] font-mono font-medium text-slate-500 uppercase tracking-wide">Total Open Issues</div>
           </div>
           <div className="bg-white border-t-4 border-t-red-500 border border-slate-200 rounded-lg p-4 shadow-sm">
-            <div className="text-2xl font-bold text-red-600 mb-1">{loading || historicalView.loading ? '—' : totals.escalated}</div>
-            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Escalated Issues</div>
+            <div className="text-2xl font-medium text-red-600 mb-1 tabular-nums">{loading || historicalView.loading ? '—' : totals.escalated}</div>
+            <div className="text-[10px] font-mono font-medium text-slate-500 uppercase tracking-wide">Escalated Issues</div>
           </div>
         </div>
 

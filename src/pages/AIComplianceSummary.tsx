@@ -106,7 +106,7 @@ export function AIComplianceSummary() {
                 ].map(s => (
                     <div key={s.label} className={`bg-white rounded-lg border border-slate-200 border-l-4 ${s.border} p-4 shadow-sm`}>
                         <div className={`text-3xl font-extrabold ${s.color}`}>{s.value}</div>
-                        <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-1">{s.label}</div>
+                        <div className="font-mono text-xs text-slate-500 font-semibold uppercase tracking-wider mt-1">{s.label}</div>
                     </div>
                 ))}
             </div>

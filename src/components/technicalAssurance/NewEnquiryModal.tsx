@@ -335,7 +335,7 @@ export function NewEnquiryModal({
                 <FilePlus2 className="h-5 w-5" strokeWidth={2.25} />
               </div>
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                   Technical Assurance
                 </p>
                 <h2
@@ -359,7 +359,7 @@ export function NewEnquiryModal({
           {/* Body*/}
           <div className="space-y-5 px-6 py-5">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500">
+              <label className="font-mono block text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Title <span className="text-rose-500">*</span>
               </label>
               <input
@@ -374,7 +374,7 @@ export function NewEnquiryModal({
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500">
+                <label className="font-mono block text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Project <span className="text-rose-500">*</span>
                 </label>
                 <select
@@ -391,7 +391,7 @@ export function NewEnquiryModal({
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500">
+                <label className="font-mono block text-xs font-semibold uppercase tracking-wide text-slate-500">
                   RIBA stage <span className="text-rose-500">*</span>
                 </label>
                 <select
@@ -410,7 +410,7 @@ export function NewEnquiryModal({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500">
+              <label className="font-mono block text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Query
               </label>
               <textarea
@@ -427,7 +427,7 @@ export function NewEnquiryModal({
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-slate-500">
+              <label className="font-mono mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Attachments
               </label>
               <AttachmentDropzone

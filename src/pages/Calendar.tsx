@@ -376,13 +376,13 @@ export function Calendar() {
               <div className="p-2.5 md:p-3 bg-indigo-600 rounded-lg shadow-lg shadow-indigo-200/50 shrink-0">
                 <CalendarIcon className="w-6 h-6 md:w-8 md:h-8 text-white" />
               </div>
-              <h1 className="text-xl sm:text-2xl lg:text-4xl font-black text-slate-900 tracking-tight">
+              <h1 className="text-xl sm:text-2xl lg:text-4xl font-semibold text-slate-900 tracking-tight">
                 Project Calendar
               </h1>
             </div>
             <div className="flex items-center gap-3 ml-1">
               <div className="hidden sm:block h-1 w-12 bg-indigo-600 rounded-full shrink-0" />
-              <p className="text-[9px] sm:text-[11px] text-slate-500 font-bold uppercase tracking-[0.15em] sm:tracking-[0.2em] opacity-70">
+              <p className="font-mono text-[10px] sm:text-[11px] text-slate-500 font-medium uppercase tracking-wide opacity-70 tabular-nums">
                 {compareMode ? 'High-Level Timeline Comparison Mode' : `Tracking ${events.length} milestones across ${activeProjects.length} active projects`}
               </p>
             </div>
@@ -395,9 +395,9 @@ export function Calendar() {
                   if (!compareMode) setSplitView(false);
                 }}
                 className={clsx(
-                  "px-4 py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all shrink-0",
-                  compareMode 
-                    ? "bg-amber-100 text-amber-700 border-2 border-amber-200 shadow-lg shadow-amber-100" 
+                  "px-4 py-3 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-all shrink-0",
+                  compareMode
+                    ? "bg-amber-100 text-amber-700 border-2 border-amber-200 shadow-lg shadow-amber-100"
                     : "bg-white border-2 border-slate-100 text-slate-600 hover:bg-slate-50 shadow-sm"
                 )}
               >
@@ -408,9 +408,9 @@ export function Calendar() {
                 <button
                   onClick={() => setSplitView(!splitView)}
                   className={clsx(
-                    "px-4 py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all shrink-0",
-                    splitView 
-                      ? "bg-indigo-100 text-indigo-700 border-2 border-indigo-200" 
+                    "px-4 py-3 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-all shrink-0",
+                    splitView
+                      ? "bg-indigo-100 text-indigo-700 border-2 border-indigo-200"
                       : "bg-white border-2 border-slate-100 text-slate-600"
                   )}
                 >
@@ -420,7 +420,7 @@ export function Calendar() {
              {canAddEvents && (
                <button
                  onClick={() => setIsAddModalOpen(true)}
-                 className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-lg text-sm font-bold shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 transition-all shrink-0"
+                 className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-lg text-sm font-medium shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 transition-all shrink-0"
                >
                  <Plus className="w-4 h-4" />
                  Add Event
@@ -509,13 +509,13 @@ export function Calendar() {
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="text-sm font-bold tracking-tight">Split-View Configuration</h3>
-                      <span className="px-2 py-0.5 bg-indigo-500 text-[10px] font-black uppercase rounded-full tracking-widest">Active</span>
+                      <span className="px-2 py-0.5 bg-indigo-500 font-mono text-[10px] font-medium uppercase rounded-full tracking-wide">Active</span>
                     </div>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Select projects to compare side-by-side</p>
+                    <p className="font-mono text-[10px] text-slate-400 font-medium uppercase tracking-wide">Select projects to compare side-by-side</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative">
-                   <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-white text-[10px] font-black z-10 border-4 border-slate-900 hidden md:flex">
+                   <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-white font-mono text-[10px] font-medium z-10 border-4 border-slate-900 hidden md:flex">
                     VS
                    </div>
                    <ContextDropdown 
@@ -543,13 +543,13 @@ export function Calendar() {
                     <Layers className="w-5 h-5 text-indigo-600" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-indigo-900 uppercase tracking-widest">Merged Comparison Mode</h3>
-                    <p className="text-[10px] text-indigo-600/60 font-bold uppercase tracking-widest">Toggle multiple calendars to overlay them</p>
+                    <h3 className="font-mono text-sm font-semibold text-indigo-900 uppercase tracking-wide">Merged Comparison Mode</h3>
+                    <p className="font-mono text-[10px] text-indigo-600/60 font-medium uppercase tracking-wide">Toggle multiple calendars to overlay them</p>
                   </div>
                 </div>
                 <button 
                   onClick={() => setMergedCompareIds([])}
-                  className="px-4 py-2 bg-white border border-indigo-200 text-[10px] font-black text-indigo-600 uppercase tracking-widest rounded-lg hover:bg-indigo-50 transition-colors shadow-sm"
+                  className="px-4 py-2 bg-white border border-indigo-200 font-mono text-[10px] font-medium text-indigo-600 uppercase tracking-wide rounded-lg hover:bg-indigo-50 transition-colors shadow-sm"
                 >
                   Clear All Selections
                 </button>
@@ -557,7 +557,7 @@ export function Calendar() {
               
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div>
-                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 ml-2">Programmes</h4>
+                  <h4 className="font-mono text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-3 ml-2">Programmes</h4>
                   <div className="flex flex-wrap gap-2">
                     {activeProgrammes.map(prog => (
                       <button
@@ -569,7 +569,7 @@ export function Calendar() {
                           );
                         }}
                         className={clsx(
-                          "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 border-2",
+                          "px-4 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-2 border-2",
                           mergedCompareIds.includes(`programme:${prog.id}`)
                             ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-100"
                             : "bg-white border-slate-100 text-slate-600 hover:border-indigo-200 hover:bg-indigo-50/30"
@@ -582,7 +582,7 @@ export function Calendar() {
                   </div>
                 </div>
                 <div>
-                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 ml-2">Projects</h4>
+                  <h4 className="font-mono text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-3 ml-2">Projects</h4>
                   <div className="flex flex-wrap gap-2">
                     {activeProjects.map(proj => (
                       <button
@@ -594,7 +594,7 @@ export function Calendar() {
                           );
                         }}
                         className={clsx(
-                          "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 border-2",
+                          "px-4 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-2 border-2",
                           mergedCompareIds.includes(`project:${proj.id}`)
                             ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-100"
                             : "bg-white border-slate-100 text-slate-600 hover:border-indigo-200 hover:bg-indigo-100/30"
@@ -614,11 +614,11 @@ export function Calendar() {
         {/* Global Controls & Filtering Bar */}
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 p-3 sm:p-2 bg-white/50 backdrop-blur-md border border-slate-100 rounded-lg sm:rounded-lg shadow-xl shadow-slate-200/40">
           <div className="flex flex-nowrap sm:flex-wrap items-center gap-2 px-2 overflow-x-auto sm:overflow-visible scrollbar-none">
-             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-2 ml-2">Quick Filter:</span>
+             <span className="font-mono text-[10px] font-medium text-slate-400 uppercase tracking-wide mr-2 ml-2">Quick Filter:</span>
              <button
                onClick={() => setFilters(f => ({ ...f, milestone: !f.milestone }))}
                className={clsx(
-                 "flex items-center gap-2 px-4 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-300",
+                 "flex items-center gap-2 px-4 py-2.5 rounded-lg font-mono text-[10px] font-medium uppercase tracking-wide transition-all duration-300",
                  filters.milestone ? "bg-emerald-500 text-white shadow-lg shadow-emerald-200" : "bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                )}
              >
@@ -628,7 +628,7 @@ export function Calendar() {
              <button
                onClick={() => setFilters(f => ({ ...f, compliance: !f.compliance }))}
                className={clsx(
-                 "flex items-center gap-2 px-4 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-300",
+                 "flex items-center gap-2 px-4 py-2.5 rounded-lg font-mono text-[10px] font-medium uppercase tracking-wide transition-all duration-300",
                  filters.compliance ? "bg-blue-500 text-white shadow-lg shadow-blue-200" : "bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                )}
              >
@@ -638,7 +638,7 @@ export function Calendar() {
              <button
                onClick={() => setFilters(f => ({ ...f, risk: !f.risk }))}
                className={clsx(
-                 "flex items-center gap-2 px-4 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-300",
+                 "flex items-center gap-2 px-4 py-2.5 rounded-lg font-mono text-[10px] font-medium uppercase tracking-wide transition-all duration-300",
                  filters.risk ? "bg-red-500 text-white shadow-lg shadow-red-200" : "bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                )}
              >
@@ -648,7 +648,7 @@ export function Calendar() {
               <button
                 onClick={() => setFilters(f => ({ ...f, task: !f.task }))}
                 className={clsx(
-                  "flex items-center gap-2 px-4 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-300",
+                  "flex items-center gap-2 px-4 py-2.5 rounded-lg font-mono text-[10px] font-medium uppercase tracking-wide transition-all duration-300",
                   filters.task ? "bg-slate-500 text-white shadow-lg shadow-slate-200" : "bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                 )}
               >
@@ -658,7 +658,7 @@ export function Calendar() {
               <button
                 onClick={() => setFilters(f => ({ ...f, issue: !f.issue }))}
                 className={clsx(
-                  "flex items-center gap-2 px-4 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-300",
+                  "flex items-center gap-2 px-4 py-2.5 rounded-lg font-mono text-[10px] font-medium uppercase tracking-wide transition-all duration-300",
                   filters.issue ? "bg-orange-500 text-white shadow-lg shadow-orange-200" : "bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                 )}
               >
@@ -672,7 +672,7 @@ export function Calendar() {
               <button 
                 onClick={() => setViewMode('month')}
                 className={clsx(
-                  "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all",
+                  "px-4 py-2 rounded-lg font-mono text-[10px] font-medium uppercase tracking-wide transition-all",
                   viewMode === 'month' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
                 )}
               >
@@ -681,7 +681,7 @@ export function Calendar() {
               <button 
                 onClick={() => setViewMode('week')}
                 className={clsx(
-                  "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all",
+                  "px-4 py-2 rounded-lg font-mono text-[10px] font-medium uppercase tracking-wide transition-all",
                   viewMode === 'week' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
                 )}
               >
@@ -690,7 +690,7 @@ export function Calendar() {
               <button 
                 onClick={() => setViewMode('day')}
                 className={clsx(
-                  "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all",
+                  "px-4 py-2 rounded-lg font-mono text-[10px] font-medium uppercase tracking-wide transition-all",
                   viewMode === 'day' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700 hover:bg-white/50"
                 )}
               >
@@ -711,7 +711,7 @@ export function Calendar() {
               </button>
               
               <div className="bg-white px-3 sm:px-6 py-2 rounded-lg border border-slate-200/50 shadow-sm min-w-[120px] sm:min-w-[180px] text-center">
-                <span className="text-[11px] font-black text-slate-900 uppercase tracking-widest whitespace-nowrap">
+                <span className="font-mono text-[11px] font-medium text-slate-900 uppercase tracking-wide whitespace-nowrap tabular-nums">
                   {viewMode === 'month' 
                     ? format(currentMonth, 'MMMM yyyy') 
                     : viewMode === 'week'
@@ -744,7 +744,7 @@ export function Calendar() {
     return (
       <div className="grid grid-cols-7 mb-2">
         {days.map((day, idx) => (
-          <div key={day} className="text-center text-[10px] font-black text-slate-400 uppercase tracking-widest py-2">
+          <div key={day} className="text-center font-mono text-[10px] font-medium text-slate-400 uppercase tracking-wide py-2">
             <span className="hidden sm:inline">{day}</span>
             <span className="sm:hidden">{shortDays[idx]}</span>
           </div>
@@ -783,7 +783,7 @@ export function Calendar() {
             >
               <div className="flex justify-between items-start mb-2">
                 <span className={clsx(
-                  "text-xs font-black w-6 h-6 flex items-center justify-center rounded-lg transition-colors",
+                  "font-mono text-xs font-medium w-6 h-6 flex items-center justify-center rounded-lg transition-colors tabular-nums",
                   isSameDay(day, new Date())
                     ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200"
                     : isSameDay(day, selectedDate)
@@ -793,7 +793,7 @@ export function Calendar() {
                   {formattedDate}
                 </span>
                 {conflicts.includes(format(day, 'yyyy-MM-dd')) && (
-                  <div className="px-1.5 py-0.5 bg-red-100 text-[8px] font-black text-red-600 rounded uppercase tracking-tighter animate-pulse">
+                  <div className="px-1.5 py-0.5 bg-red-100 font-mono text-[9px] font-medium text-red-600 rounded uppercase tracking-wide animate-pulse">
                     Conflict
                   </div>
                 )}
@@ -827,7 +827,7 @@ export function Calendar() {
                   </div>
                 ))}
                 {dayEvents.length > 3 && (
-                  <div className="text-[9px] font-black text-slate-400 pl-1">+{dayEvents.length - 3} more</div>
+                  <div className="font-mono text-[10px] font-medium text-slate-400 pl-1 tabular-nums">+{dayEvents.length - 3} more</div>
                 )}
               </div>
             </div>
@@ -858,7 +858,7 @@ export function Calendar() {
           >
             <div className="flex justify-between items-start mb-4">
               <span className={clsx(
-                "text-sm font-black w-8 h-8 flex items-center justify-center rounded-lg transition-colors",
+                "font-mono text-sm font-medium w-8 h-8 flex items-center justify-center rounded-lg transition-colors tabular-nums",
                 isSameDay(currentDay, new Date())
                   ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200"
                   : isSameDay(currentDay, selectedDate)
@@ -867,7 +867,7 @@ export function Calendar() {
               )}>
                 {format(currentDay, 'd')}
               </span>
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{format(currentDay, 'EEE')}</span>
+              <span className="font-mono text-[10px] font-medium text-slate-400 uppercase tracking-wide">{format(currentDay, 'EEE')}</span>
             </div>
             <div className="space-y-2">
               {dayEvents.map(event => (
@@ -876,7 +876,7 @@ export function Calendar() {
                     onClick={(e) => { e.stopPropagation(); setSelectedEvent(event); }}
                     title={event.title}
                     className={clsx(
-                      "text-[11px] font-black px-3 py-2 rounded-lg text-white shadow-sm flex items-center gap-2 cursor-pointer hover:opacity-90",
+                      "text-[11px] font-semibold px-3 py-2 rounded-lg text-white shadow-sm flex items-center gap-2 cursor-pointer hover:opacity-90",
                       event.color
                     )}
                   >
@@ -903,14 +903,14 @@ export function Calendar() {
         >
           <div className="flex justify-between items-center border-b border-slate-100 pb-6">
             <div className="flex items-center gap-4">
-              <span className="text-4xl font-black text-indigo-600">{format(currentMonth, 'd')}</span>
+              <span className="font-mono text-4xl font-medium text-indigo-600 tabular-nums">{format(currentMonth, 'd')}</span>
               <div>
-                <span className="text-sm font-black text-slate-900 uppercase tracking-widest block">{format(currentMonth, 'EEEE')}</span>
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{format(currentMonth, 'MMMM yyyy')}</span>
+                <span className="font-mono text-sm font-semibold text-slate-900 uppercase tracking-wide block">{format(currentMonth, 'EEEE')}</span>
+                <span className="font-mono text-xs font-medium text-slate-400 uppercase tracking-wide tabular-nums">{format(currentMonth, 'MMMM yyyy')}</span>
               </div>
             </div>
             <div className="bg-indigo-50 px-4 py-2 rounded-lg">
-              <span className="text-xs font-black text-indigo-600 uppercase tracking-widest">
+              <span className="font-mono text-xs font-medium text-indigo-600 uppercase tracking-wide tabular-nums">
                 {dayEvents.length} Events Scheduled
               </span>
             </div>
@@ -926,12 +926,12 @@ export function Calendar() {
               >
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">{event.type}</span>
-                    {event.isKey && <span className="px-2 py-0.5 bg-white/20 rounded-full text-[8px] font-black uppercase tracking-widest">Key</span>}
+                    <span className="font-mono text-[10px] font-medium uppercase tracking-wide opacity-80">{event.type}</span>
+                    {event.isKey && <span className="px-2 py-0.5 bg-white/20 rounded-full font-mono text-[10px] font-medium uppercase tracking-wide">Key</span>}
                   </div>
                   <div className="w-2 h-2 bg-white rounded-full opacity-50" />
                 </div>
-                <h4 className="text-lg font-black leading-tight flex items-center gap-2">
+                <h4 className="text-lg font-semibold leading-tight flex items-center gap-2">
                   {event.isKey && <Rocket className="w-5 h-5 text-amber-200 shrink-0" />}
                   {event.projectName}
                 </h4>
@@ -939,7 +939,7 @@ export function Calendar() {
                 <div className="mt-2 pt-4 border-t border-white/20">
                   <button 
                     onClick={(e) => { e.stopPropagation(); setSelectedEvent(event); }}
-                    className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:underline"
+                    className="font-mono text-[10px] font-medium uppercase tracking-wide flex items-center gap-2 hover:underline"
                   >
                     View Details
                     <ChevronRight className="w-3 h-3" />
@@ -952,7 +952,7 @@ export function Calendar() {
                 <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6">
                   <Clock className="w-10 h-10 text-slate-200" />
                 </div>
-                <h4 className="text-lg font-black text-slate-900">Clear Schedule</h4>
+                <h4 className="text-lg font-semibold text-slate-900">Clear Schedule</h4>
                 <p className="text-sm text-slate-400 mt-2 font-medium">There are no events scheduled for this day.</p>
               </div>
             )}
@@ -973,8 +973,8 @@ export function Calendar() {
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
               <div className="space-y-4">
                 <div className="flex items-center justify-between px-4 mb-2">
-                  <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Focus View (A)</h3>
-                  <div className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">
+                  <h3 className="font-mono text-sm font-semibold text-slate-400 uppercase tracking-wide">Focus View (A)</h3>
+                  <div className="font-mono text-[10px] font-medium text-indigo-600 bg-indigo-50 px-2 py-1 rounded">
                     {compareIdA ? (activeProjects.find(p => `project:${p.id}` === compareIdA)?.name || activeProgrammes.find(p => `programme:${p.id}` === compareIdA)?.name || 'Select Context') : 'Select Context'}
                   </div>
                 </div>
@@ -983,8 +983,8 @@ export function Calendar() {
               </div>
               <div className="space-y-4">
                 <div className="flex items-center justify-between px-4 mb-2">
-                  <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Comparison View (B)</h3>
-                  <div className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded">
+                  <h3 className="font-mono text-sm font-semibold text-slate-400 uppercase tracking-wide">Comparison View (B)</h3>
+                  <div className="font-mono text-[10px] font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded">
                     {compareIdB ? (activeProjects.find(p => `project:${p.id}` === compareIdB)?.name || activeProgrammes.find(p => `programme:${p.id}` === compareIdB)?.name || 'Select Context') : 'Select Context'}
                   </div>
                 </div>
@@ -1004,8 +1004,8 @@ export function Calendar() {
         <div className="w-full lg:w-80 shrink-0">
           <div className="bg-white rounded-lg border border-slate-200 shadow-lg p-6 sticky top-6">
             <div className="mb-6">
-              <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] mb-1">Schedule for</p>
-              <h2 className="text-xl font-black text-slate-900">{format(selectedDate, 'EEEE, do MMMM')}</h2>
+              <p className="font-mono text-[10px] font-medium text-indigo-600 uppercase tracking-wide mb-1">Schedule for</p>
+              <h2 className="text-xl font-semibold text-slate-900">{format(selectedDate, 'EEEE, do MMMM')}</h2>
             </div>
 
             <div className="space-y-4">
@@ -1019,11 +1019,11 @@ export function Calendar() {
                     <div className="flex items-center justify-between mb-2">
                        <div className="flex items-center gap-2">
                         <div className={clsx("w-2 h-2 rounded-full", event.color)} />
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{event.type.replace('-', ' ')}</span>
+                        <span className="font-mono text-[10px] font-medium text-slate-400 uppercase tracking-wide">{event.type.replace('-', ' ')}</span>
                        </div>
                        {event.isKey && <Rocket className="w-3.5 h-3.5 text-amber-500" />}
                     </div>
-                    <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{event.projectName}</p>
+                    <p className="text-sm font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors tracking-tight">{event.projectName}</p>
                     <p className="text-xs text-slate-500 mt-1 font-medium">{event.title}</p>
                   </div>
                 ))
@@ -1037,7 +1037,7 @@ export function Calendar() {
             </div>
 
             <div className="mt-8 pt-8 border-t border-slate-100">
-               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Legend</h3>
+               <h3 className="font-mono text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-4">Legend</h3>
                 <div className="grid grid-cols-1 gap-y-3">
                   {[
                     { label: 'Milestones (Start/PC)', color: 'bg-emerald-500' },
@@ -1047,7 +1047,7 @@ export function Calendar() {
                   ].map(l => (
                     <div key={l.label} className="flex items-center gap-2">
                        <div className={clsx("w-2 h-2 rounded-full", l.color)} />
-                       <span className="text-[10px] font-bold text-slate-500">{l.label}</span>
+                       <span className="font-mono text-[10px] font-medium text-slate-500">{l.label}</span>
                     </div>
                   ))}
                 </div>
@@ -1063,7 +1063,7 @@ export function Calendar() {
             {/* Header */}
             <div className={`p-6 flex justify-between items-start text-white ${selectedEvent.color}`}>
               <div>
-                <div className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-1">{selectedEvent.type.replace('-', ' ')}</div>
+                <div className="font-mono text-[10px] font-medium uppercase tracking-wide opacity-80 mb-1">{selectedEvent.type.replace('-', ' ')}</div>
                 <h2 className="text-xl font-bold">{isEditMode ? (editForm.title || 'Editing…') : selectedEvent.title}</h2>
               </div>
               <button onClick={handleCloseEventModal} className="p-2 hover:bg-white/20 rounded-full transition-colors">
@@ -1106,7 +1106,7 @@ export function Calendar() {
                   <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
                     <X className="w-8 h-8 text-red-500" />
                   </div>
-                  <h3 className="text-lg font-black text-slate-900 mb-2">Delete this event?</h3>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">Delete this event?</h3>
                   <p className="text-sm text-slate-500">This action cannot be undone.</p>
                 </div>
               ) : (
@@ -1129,14 +1129,14 @@ export function Calendar() {
                               <div className="flex items-center gap-2 p-3 bg-indigo-50 rounded-lg border border-indigo-100">
                                 <Layers className="w-4 h-4 text-indigo-600" />
                                 <div>
-                                  <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-0.5">RIBA Stage</p>
-                                  <p className="text-xs font-bold text-indigo-900">{getRIBALabelFull(selectedEvent.originalItem.milestoneDetails.stage)}</p>
+                                  <p className="font-mono text-[10px] font-medium text-indigo-600 uppercase tracking-wide mb-0.5">RIBA Stage</p>
+                                  <p className="font-mono text-xs font-medium text-indigo-900">{getRIBALabelFull(selectedEvent.originalItem.milestoneDetails.stage)}</p>
                                 </div>
                               </div>
                             )}
                             {(selectedEvent.originalItem.description || selectedEvent.originalItem.milestoneDetails?.notes) && (
                               <div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Description & Notes</p>
+                                <p className="font-mono text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-1.5">Description & Notes</p>
                                 <p className="text-xs font-medium text-slate-700 leading-relaxed">
                                   {selectedEvent.originalItem.milestoneDetails?.notes || selectedEvent.originalItem.description}
                                 </p>
@@ -1144,7 +1144,7 @@ export function Calendar() {
                             )}
                             {selectedEvent.originalItem.milestoneDetails?.history && selectedEvent.originalItem.milestoneDetails.history.length > 0 && (
                               <div className="pt-4 border-t border-slate-200">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                <p className="font-mono text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-3 flex items-center gap-2">
                                   <Clock className="w-3 h-3" />
                                   Date Revision History
                                 </p>
@@ -1152,13 +1152,13 @@ export function Calendar() {
                                   {selectedEvent.originalItem.milestoneDetails.history.map((h: any, i: number) => (
                                     <div key={i} className="pl-4 border-l-2 border-slate-200 py-1">
                                       <div className="flex items-center justify-between mb-1">
-                                        <span className="text-[10px] font-bold text-slate-900">{h.updatedBy || 'System'}</span>
-                                        <span className="text-[10px] font-medium text-slate-400">
+                                        <span className="font-mono text-[10px] font-medium text-slate-900">{h.updatedBy || 'System'}</span>
+                                        <span className="font-mono text-[10px] font-medium text-slate-400 tabular-nums">
                                           {h.updatedAt && isValid(parseISO(h.updatedAt)) ? format(parseISO(h.updatedAt), 'dd MMM yyyy') : 'Unknown date'}
                                         </span>
                                       </div>
-                                      <p className="text-[10px] text-slate-600 italic mb-1">"{h.comment}"</p>
-                                      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-tighter">
+                                      <p className="text-[10px] text-slate-600 mb-1">"{h.comment}"</p>
+                                      <div className="flex items-center gap-2 font-mono text-[10px] font-medium uppercase tracking-wide">
                                         <ChevronRight className="w-2 h-2 text-indigo-500" />
                                         <span className="text-indigo-600">Moved to {h.date}</span>
                                       </div>
@@ -1210,20 +1210,20 @@ export function Calendar() {
             <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-between items-center gap-3">
               {isEditMode ? (
                 <>
-                  <button onClick={() => { setIsEditMode(false); setEditTitleError(''); }} className="px-5 py-2.5 rounded-lg font-bold text-slate-600 hover:bg-slate-200 transition-colors">
+                  <button onClick={() => { setIsEditMode(false); setEditTitleError(''); }} className="px-5 py-2.5 rounded-lg font-medium text-slate-600 hover:bg-slate-200 transition-colors">
                     Cancel
                   </button>
-                  <button onClick={handleEditEvent} disabled={isEditSaving} className="px-5 py-2.5 rounded-lg font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 transition-all flex items-center gap-2 disabled:opacity-60">
+                  <button onClick={handleEditEvent} disabled={isEditSaving} className="px-5 py-2.5 rounded-lg font-medium bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 transition-all flex items-center gap-2 disabled:opacity-60">
                     {isEditSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                     {isEditSaving ? 'Saving…' : 'Save Changes'}
                   </button>
                 </>
               ) : showDeleteConfirm ? (
                 <>
-                  <button onClick={() => setShowDeleteConfirm(false)} className="px-5 py-2.5 rounded-lg font-bold text-slate-600 hover:bg-slate-200 transition-colors">
+                  <button onClick={() => setShowDeleteConfirm(false)} className="px-5 py-2.5 rounded-lg font-medium text-slate-600 hover:bg-slate-200 transition-colors">
                     Cancel
                   </button>
-                  <button onClick={handleDeleteEvent} disabled={isDeleting} className="px-5 py-2.5 rounded-lg font-bold bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-200 transition-all flex items-center gap-2 disabled:opacity-60">
+                  <button onClick={handleDeleteEvent} disabled={isDeleting} className="px-5 py-2.5 rounded-lg font-medium bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-200 transition-all flex items-center gap-2 disabled:opacity-60">
                     {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
                     {isDeleting ? 'Deleting…' : 'Yes, Delete'}
                   </button>
@@ -1233,16 +1233,16 @@ export function Calendar() {
                   <div className="flex items-center gap-2">
                     {selectedEvent.type === 'task' && (
                       <>
-                        <button onClick={() => setIsEditMode(true)} className="px-4 py-2.5 rounded-lg font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors text-sm">
+                        <button onClick={() => setIsEditMode(true)} className="px-4 py-2.5 rounded-lg font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors text-sm">
                           Edit
                         </button>
-                        <button onClick={() => setShowDeleteConfirm(true)} className="px-4 py-2.5 rounded-lg font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors text-sm">
+                        <button onClick={() => setShowDeleteConfirm(true)} className="px-4 py-2.5 rounded-lg font-medium text-red-600 bg-red-50 hover:bg-red-100 transition-colors text-sm">
                           Delete
                         </button>
                       </>
                     )}
                   </div>
-                  <button onClick={handleCloseEventModal} className="px-5 py-2.5 rounded-lg font-bold text-slate-600 hover:bg-slate-200 transition-colors">Close</button>
+                  <button onClick={handleCloseEventModal} className="px-5 py-2.5 rounded-lg font-medium text-slate-600 hover:bg-slate-200 transition-colors">Close</button>
                 </>
               )}
             </div>
@@ -1263,7 +1263,7 @@ export function Calendar() {
                 <Building2 className="w-4 h-4 text-indigo-500 shrink-0" />
                 <p className="text-xs font-semibold text-indigo-700">
                   Saving to:{' '}
-                  <span className="font-black">
+                  <span className="font-semibold">
                     {activeProjectId
                       ? (safeProjects.find(p => p.id === activeProjectId)?.name ?? 'Selected Project')
                       : activeProgrammeId
@@ -1305,11 +1305,11 @@ export function Calendar() {
               </div>
             </div>
             <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
-              <button onClick={() => setIsAddModalOpen(false)} className="px-6 py-3 rounded-lg font-bold text-slate-600 hover:bg-slate-200 transition-colors">Cancel</button>
+              <button onClick={() => setIsAddModalOpen(false)} className="px-6 py-3 rounded-lg font-medium text-slate-600 hover:bg-slate-200 transition-colors">Cancel</button>
               <button
                 onClick={handleAddEvent}
                 disabled={isSaving}
-                className="px-6 py-3 rounded-lg font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 transition-all flex items-center gap-2 disabled:opacity-60"
+                className="px-6 py-3 rounded-lg font-medium bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 transition-all flex items-center gap-2 disabled:opacity-60"
               >
                 {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                 {isSaving ? 'Adding…' : 'Add Event'}

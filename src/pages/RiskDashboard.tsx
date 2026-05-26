@@ -39,7 +39,7 @@ const PIE_COLORS: Record<string, string> = {
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <div className="bg-slate-800 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 mb-3">
+    <div className="bg-slate-800 text-white text-[11px] font-mono font-semibold uppercase tracking-wide px-4 py-2 mb-3">
       {children}
     </div>
   );
@@ -48,7 +48,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 function TableHeader({ cols }: { cols: string[] }) {
   return (
     <thead>
-      <tr className="bg-slate-700 text-white text-[9px] font-bold uppercase tracking-wider">
+      <tr className="bg-slate-700 text-white text-[11px] font-mono font-medium uppercase tracking-wide">
         {cols.map(c => <th key={c} className="px-3 py-2 text-left">{c}</th>)}
       </tr>
     </thead>
@@ -93,7 +93,7 @@ function RiskBadge({ label }: { label: string }) {
     Pending: 'bg-slate-200 text-slate-600 border-slate-300',
   };
   return (
-    <span className={clsx('px-2 py-0.5 rounded text-[9px] font-black uppercase border', cls[label] || 'bg-slate-100 text-slate-600 border-slate-200')}>
+    <span className={clsx('px-2 py-0.5 rounded text-[10px] font-mono font-medium uppercase tracking-wide border', cls[label] || 'bg-slate-100 text-slate-600 border-slate-200')}>
       {label}
     </span>
   );
@@ -130,7 +130,7 @@ function StrategicInsightCard({ title, icon: Icon, children, delay = '0' }: { ti
           <div className="p-2.5 bg-indigo-600/10 text-indigo-600 rounded-lg group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500">
             <Icon size={20} />
           </div>
-          <h3 className="text-xs font-black text-slate-800 uppercase tracking-[0.2em]">{title}</h3>
+          <h3 className="text-xs font-mono font-semibold text-slate-800 uppercase tracking-wide">{title}</h3>
         </div>
         <div className="w-1.5 h-1.5 rounded-full bg-indigo-400/30 animate-pulse" />
       </div>
@@ -419,7 +419,7 @@ export function RiskDashboard() {
       <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex flex-col items-center justify-center gap-6">
         <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-500 rounded-full animate-spin shadow-xl" />
         <div className="text-center space-y-1">
-          <p className="text-white font-black text-sm uppercase tracking-widest">Generating Strategic Outlook</p>
+          <p className="text-white font-mono font-semibold text-xs uppercase tracking-wide">Generating Strategic Outlook</p>
           <p className="text-slate-400 text-xs font-medium">Analysing all risks, issues and compliance posture…</p>
         </div>
       </div>
@@ -465,14 +465,14 @@ export function RiskDashboard() {
       />
 
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-2">
+        <h2 className="text-[11px] font-mono font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-2">
           <Target size={14} className="text-amber-500 fill-amber-500" />
           Strategic Intelligence
         </h2>
         {strategicInsights && (
           <button 
             onClick={handleResetInsights}
-            className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:text-indigo-800 transition-colors flex items-center gap-1.5 group"
+            className="text-[11px] font-mono font-semibold text-indigo-600 uppercase tracking-wide hover:text-indigo-800 transition-colors flex items-center gap-1.5 group"
           >
             <RefreshCcw size={12} className="group-hover:rotate-180 transition-transform duration-500" />
             Reset Analysis
@@ -488,7 +488,6 @@ export function RiskDashboard() {
         isLoading={generatingAI}
         icon={Briefcase}
         variant="slate"
-        badgeText="Neural Analysis"
       />
 
       {/* Strategic Insights Results*/}
@@ -507,11 +506,11 @@ export function RiskDashboard() {
                   />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-4xl font-black text-slate-800">{strategicInsights.healthScore}</span>
-                  <span className="text-[10px] font-bold text-slate-400">INDEX</span>
+                  <span className="text-4xl font-medium text-slate-800 tabular-nums">{strategicInsights.healthScore}</span>
+                  <span className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide">INDEX</span>
                 </div>
               </div>
-              <p className="text-xs text-slate-500 leading-relaxed italic font-medium">
+              <p className="text-xs text-slate-500 leading-relaxed font-medium">
                 "{stripMarkdown(strategicInsights.healthRationale)}"
               </p>
             </div>
@@ -540,12 +539,12 @@ export function RiskDashboard() {
                   <div className="absolute -top-3 -left-3 p-2 bg-indigo-600 text-white rounded-lg shadow-lg">
                     <Target size={16} />
                   </div>
-                  <p className="text-sm text-slate-700 leading-relaxed font-semibold italic">
+                  <p className="text-sm text-slate-700 leading-relaxed font-semibold ">
                     {stripMarkdown(strategicInsights.outlook)}
                   </p>
                 </div>
                 <div className="space-y-4">
-                  <h4 className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em]">Detailed Implementation Roadmap</h4>
+                  <h4 className="text-[11px] font-mono font-semibold text-indigo-500 uppercase tracking-wide">Detailed Implementation Roadmap</h4>
                   <div className="space-y-3">
                     {strategicInsights.detailedSuggestions.slice(0, 4).map((s, i) => (
                       <div key={i} className="flex gap-3 items-start group">
@@ -637,8 +636,8 @@ export function RiskDashboard() {
                   {severityRows.map(r => (
                     <tr key={r.label} className="hover:bg-slate-50">
                       <td className="px-3 py-2"><RiskBadge label={r.label} /></td>
-                      <td className="px-3 py-2 font-bold text-slate-800">{r.count}</td>
-                      <td className="px-3 py-2 text-slate-400 text-[10px]">Risks in this category</td>
+                      <td className="px-3 py-2 font-medium text-slate-800 tabular-nums">{r.count}</td>
+                      <td className="px-3 py-2 text-slate-400 text-[11px]">Risks in this category</td>
                     </tr>
                   ))}
                 </tbody>
@@ -659,7 +658,7 @@ export function RiskDashboard() {
                   {Object.entries(statusBuckets).map(([status, count]) => (
                     <tr key={status} className="hover:bg-slate-50">
                       <td className="px-3 py-2">
-                        <span className="px-2 py-0.5 rounded text-[9px] font-black border"
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-medium uppercase tracking-wide border"
                           style={{ background: (PIE_COLORS[status] || '#6366f1') + '20', color: PIE_COLORS[status] || '#6366f1', borderColor: (PIE_COLORS[status] || '#6366f1') + '40' }}>
                           {status}
                         </span>
@@ -685,17 +684,17 @@ export function RiskDashboard() {
                   <tr className="hover:bg-slate-50">
                     <td className="px-3 py-2"><RiskBadge label="MISALIGNED" /></td>
                     <td className="px-3 py-2 font-bold text-slate-800">{appetiteGroups.MISALIGNED}</td>
-                    <td className="px-3 py-2 text-[10px] text-slate-400">Risk exceeds stated appetite</td>
+                    <td className="px-3 py-2 text-[11px] text-slate-400">Risk exceeds stated appetite</td>
                   </tr>
                   <tr className="hover:bg-slate-50">
                     <td className="px-3 py-2"><RiskBadge label="ALIGNED" /></td>
                     <td className="px-3 py-2 font-bold text-slate-800">{appetiteGroups.ALIGNED}</td>
-                    <td className="px-3 py-2 text-[10px] text-slate-400">Risk within appetite level</td>
+                    <td className="px-3 py-2 text-[11px] text-slate-400">Risk within appetite level</td>
                   </tr>
                   <tr className="hover:bg-slate-50">
                     <td className="px-3 py-2"><RiskBadge label="Pending" /></td>
                     <td className="px-3 py-2 font-bold text-slate-800">{appetiteGroups.Pending}</td>
-                    <td className="px-3 py-2 text-[10px] text-slate-400">Appetite not yet determined</td>
+                    <td className="px-3 py-2 text-[11px] text-slate-400">Appetite not yet determined</td>
                   </tr>
                 </tbody>
               </table>
@@ -729,9 +728,9 @@ export function RiskDashboard() {
                   {Object.entries(issueBuckets).map(([status, count]) => (
                     <tr key={status} className="hover:bg-slate-50">
                       <td className="px-3 py-1.5">
-                        <span className="text-[10px] font-bold text-slate-700">{status}</span>
+                        <span className="text-[11px] font-medium text-slate-700">{status}</span>
                       </td>
-                      <td className="px-3 py-1.5 font-bold text-slate-800">{count}</td>
+                      <td className="px-3 py-1.5 font-medium text-slate-800 tabular-nums">{count}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -755,7 +754,7 @@ export function RiskDashboard() {
                     {ageOrder.map(b => (
                       <tr key={b} className="hover:bg-slate-50">
                         <td className="px-3 py-1.5 font-medium text-slate-700">{b}</td>
-                        <td className="px-3 py-1.5 font-bold text-slate-800">{ageBuckets[b]}</td>
+                        <td className="px-3 py-1.5 font-medium text-slate-800 tabular-nums">{ageBuckets[b]}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -794,8 +793,8 @@ export function RiskDashboard() {
                   {healthRows.map(r => (
                     <tr key={r.label} className="hover:bg-slate-50">
                       <td className="px-3 py-1.5 font-medium text-slate-700">{r.label}</td>
-                      <td className="px-3 py-1.5 font-bold text-slate-900">{r.count}</td>
-                      <td className="px-3 py-1.5 text-[10px] text-slate-400">{r.notes}</td>
+                      <td className="px-3 py-1.5 font-medium text-slate-900 tabular-nums">{r.count}</td>
+                      <td className="px-3 py-1.5 text-[11px] text-slate-400">{r.notes}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -816,7 +815,7 @@ export function RiskDashboard() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs mb-3 min-w-[350px]">
                     <thead>
-                      <tr className="bg-slate-700 text-white text-[9px] font-bold uppercase tracking-wider">
+                      <tr className="bg-slate-700 text-white text-[11px] font-mono font-medium uppercase tracking-wide">
                         <th className="px-3 py-2 text-left">Risk Category</th>
                         <th className="px-3 py-2 text-center bg-red-700">Red</th>
                         <th className="px-3 py-2 text-center bg-amber-600">Amber</th>
@@ -827,9 +826,9 @@ export function RiskDashboard() {
                       {catPerf.map(c => (
                         <tr key={c.name} className="hover:bg-slate-50">
                           <td className="px-3 py-1.5 font-medium text-slate-700 truncate max-w-[150px]" title={c.name}>{c.name}</td>
-                          <td className="px-3 py-1.5 text-center font-bold text-red-600">{c.red || 0}</td>
-                          <td className="px-3 py-1.5 text-center font-bold text-amber-600">{c.amber || 0}</td>
-                          <td className="px-3 py-1.5 text-center font-bold text-emerald-600">{c.green || 0}</td>
+                          <td className="px-3 py-1.5 text-center font-medium text-red-600 tabular-nums">{c.red || 0}</td>
+                          <td className="px-3 py-1.5 text-center font-medium text-amber-600 tabular-nums">{c.amber || 0}</td>
+                          <td className="px-3 py-1.5 text-center font-medium text-emerald-600 tabular-nums">{c.green || 0}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -860,8 +859,8 @@ export function RiskDashboard() {
         <DashCard>
         <div className="p-6">
           <div className="flex justify-between items-end mb-6">
-            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">ALE BY WORKSTREAM (IN GBP £)</h3>
-            <div className="flex gap-4 text-[10px] font-bold">
+            <h3 className="text-[11px] font-mono font-semibold text-slate-400 uppercase tracking-wide">ALE BY WORKSTREAM (IN GBP £)</h3>
+            <div className="flex gap-4 text-[11px] font-mono font-medium uppercase tracking-wide">
               <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-rose-500" /> Gross ALE</div>
               <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-indigo-500" /> Residual ALE</div>
             </div>
@@ -902,8 +901,8 @@ export function RiskDashboard() {
                 {filteredRisks.filter(r => (r.residualRating || 0) >= 12).sort((a, b) => (b.residualRating || 0) - (a.residualRating || 0)).slice(0, 6).map(r => (
                   <div key={r.id} className="border border-slate-200 rounded-lg p-3 hover:shadow-md transition-all bg-slate-50 hover:bg-white">
                     <div className="flex justify-between items-start mb-1.5">
-                      <span className="text-[10px] font-bold text-slate-400 whitespace-nowrap">{r.id}</span>
-                      <span className={clsx('px-2 py-0.5 rounded text-[9px] font-black', (r.residualRating || 0) >= 16 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700')}>
+                      <span className="text-[11px] font-mono font-medium text-slate-400 whitespace-nowrap tabular-nums">{r.id}</span>
+                      <span className={clsx('px-2 py-0.5 rounded text-[10px] font-mono font-medium tabular-nums', (r.residualRating || 0) >= 16 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700')}>
                         Score: {r.residualRating || 0}
                       </span>
                     </div>
@@ -918,11 +917,11 @@ export function RiskDashboard() {
                       <span className="text-[9px] text-slate-400">{r.category}</span>
                       <div className="flex items-center gap-1.5">
                         {(r.status === 'Escalated' || r.escalated) && (
-                          <span className="text-[8px] font-black text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded uppercase tracking-tighter border border-purple-100">
+                          <span className="text-[10px] font-mono font-medium text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded uppercase tracking-wide border border-purple-100">
                             Escalated
                           </span>
                         )}
-                        <span className="text-[9px] font-bold text-slate-500">{r.status}</span>
+                        <span className="text-[10px] font-mono font-medium text-slate-500 uppercase tracking-wide">{r.status}</span>
                       </div>
                     </div>
                   </div>

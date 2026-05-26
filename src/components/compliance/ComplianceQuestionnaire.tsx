@@ -98,11 +98,11 @@ export const ComplianceQuestionnaire: React.FC<ComplianceQuestionnaireProps> = (
                   "w-12 h-12 rounded-lg flex items-center justify-center transition-all duration-500 shadow-sm border",
                   isExpanded ? "bg-indigo-600 border-indigo-500 text-white" : "bg-white border-slate-100 text-slate-400"
                 )}>
-                  <span className="text-lg font-black">{idx + 1}</span>
+                  <span className="text-lg font-semibold tabular-nums">{idx + 1}</span>
                 </div>
                 <div className="text-left">
                   <h3 className="text-xl font-bold text-slate-900 tracking-tight">{qPhase.title}</h3>
-                  <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">Section {idx + 1} &bull; {qPhase.num}</p>
+                  <p className="font-mono text-slate-400 text-[11px] font-semibold uppercase tracking-wide mt-1">Section {idx + 1} &bull; {qPhase.num}</p>
                 </div>
               </div>
               <div className={clsx(
@@ -121,7 +121,7 @@ export const ComplianceQuestionnaire: React.FC<ComplianceQuestionnaireProps> = (
             >
               <div className="p-8 pt-0 space-y-8">
                 <div className="h-px bg-gradient-to-r from-transparent via-slate-100 to-transparent mb-8"></div>
-                <p className="text-slate-500 text-sm font-medium italic border-l-4 border-indigo-100 pl-4">{qPhase.hint}</p>
+                <p className="text-slate-500 text-sm font-medium border-l-4 border-indigo-100 pl-4">{qPhase.hint}</p>
                 
                 <div className="grid grid-cols-1 gap-6">
                   {qPhase.questions.map((q, qIndex) => {
@@ -157,7 +157,7 @@ export const ComplianceQuestionnaire: React.FC<ComplianceQuestionnaireProps> = (
                               <div className="pl-11 animate-in slide-in-from-left-4 duration-500">
                                 <div className="p-4 bg-amber-50 rounded-lg border border-amber-100/50 flex items-start gap-3">
                                   <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                                  <span className="text-xs font-bold text-amber-700 leading-relaxed italic">{q.trigger}</span>
+                                  <span className="text-xs font-bold text-amber-700 leading-relaxed ">{q.trigger}</span>
                                 </div>
                               </div>
                             )}
@@ -171,7 +171,7 @@ export const ComplianceQuestionnaire: React.FC<ComplianceQuestionnaireProps> = (
                                     key={option}
                                     onClick={() => onQuestionAnswered(q.id, option)}
                                     className={clsx(
-                                      "flex-1 py-3.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all",
+                                      "font-mono flex-1 py-3.5 rounded-lg text-[11px] font-semibold uppercase tracking-wide transition-all",
                                       projectInfo[q.id] === option 
                                         ? "bg-slate-900 text-white shadow-lg shadow-slate-200" 
                                         : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"

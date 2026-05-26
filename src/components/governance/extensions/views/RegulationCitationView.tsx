@@ -48,7 +48,7 @@ export function RegulationCitationView({ node, updateAttributes, editor }: NodeV
           ref={popoverRef}
           className="absolute left-0 top-6 z-40 w-72 space-y-2 rounded-lg border border-slate-200 bg-white p-3 shadow-lg"
         >
-          <label className="block text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+          <label className="font-mono block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
             Code
             <input
               type="text"
@@ -58,7 +58,7 @@ export function RegulationCitationView({ node, updateAttributes, editor }: NodeV
               className={textInputCls + ' mt-1 normal-case tracking-normal'}
             />
           </label>
-          <label className="block text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+          <label className="font-mono block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
             Title
             <input
               type="text"
@@ -68,7 +68,7 @@ export function RegulationCitationView({ node, updateAttributes, editor }: NodeV
               className={textInputCls + ' mt-1 normal-case tracking-normal'}
             />
           </label>
-          <label className="block text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+          <label className="font-mono block text-[11px] font-semibold uppercase tracking-wide text-slate-500">
             URL
             <input
               type="url"

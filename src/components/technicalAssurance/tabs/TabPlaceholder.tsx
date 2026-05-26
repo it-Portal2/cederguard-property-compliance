@@ -31,7 +31,7 @@ export function TabPlaceholder({
           <Icon className="h-6 w-6" strokeWidth={2.25} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-400">
             Technical Assurance · Coming in {phaseLabel}
           </p>
           <h2 className="mt-1 text-lg font-bold tracking-tight text-slate-900 md:text-xl">

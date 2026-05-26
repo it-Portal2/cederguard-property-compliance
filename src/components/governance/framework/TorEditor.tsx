@@ -179,7 +179,7 @@ export function TorEditor({
       {showHistory && (
         <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-4">
           <div className="mb-3 flex items-center justify-between">
-            <h4 className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+            <h4 className="font-mono text-xs font-semibold uppercase tracking-wide text-slate-500">
               Version history
             </h4>
             <button
@@ -385,7 +385,7 @@ function VersionReadout({ tor }: { tor: TermsOfReference }) {
     <dl className="space-y-2.5">
       {rows.map((r) => (
         <div key={r.label}>
-          <dt className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+          <dt className="font-mono text-[10px] font-semibold uppercase tracking-wide text-slate-500">
             {r.label}
           </dt>
           <dd className="mt-0.5 whitespace-pre-wrap text-xs text-slate-800">

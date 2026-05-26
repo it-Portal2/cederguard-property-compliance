@@ -79,7 +79,7 @@ export function ProjectPlan() {
                 <div className="w-16 h-16 rounded-lg bg-indigo-100 flex items-center justify-center mb-5">
                     <FolderKanban className="w-8 h-8 text-indigo-600" />
                 </div>
-                <h2 className="text-xl font-black text-slate-900 mb-2">No Project Selected</h2>
+                <h2 className="text-xl font-semibold text-slate-900 mb-2">No Project Selected</h2>
                 <p className="text-slate-500 mb-6 text-sm leading-relaxed">
                     Please select a project from the header or create a new one to manage its milestone plan.
                 </p>
@@ -103,7 +103,7 @@ export function ProjectPlan() {
                         <Map className="w-5 h-5" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-black text-slate-900 italic tracking-tight">
+                        <h1 className="text-xl font-semibold text-slate-900 tracking-tight">
                             {activeProject.name} — Project Plan
                         </h1>
                         <p className="text-xs text-slate-500 font-medium mt-0.5">
@@ -138,8 +138,8 @@ export function ProjectPlan() {
                         { label: 'Due in 30 Days', value: upcoming.length, color: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200' },
                     ].map((s, i) => (
                         <div key={i} className={clsx('rounded-lg border p-4 shadow-sm', s.bg, s.border)}>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{s.label}</p>
-                            <p className={clsx('text-2xl font-black', s.color)}>{s.value}</p>
+                            <p className="font-mono text-[10px] font-medium uppercase tracking-wide text-slate-400 mb-1">{s.label}</p>
+                            <p className={clsx('text-2xl font-medium tabular-nums', s.color)}>{s.value}</p>
                         </div>
                     ))}
                 </div>
@@ -150,14 +150,14 @@ export function ProjectPlan() {
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-3">
                         <AlertTriangle className="w-4 h-4 text-amber-600" />
-                        <h3 className="text-sm font-black text-amber-800 uppercase tracking-wider">Key Milestones</h3>
+                        <h3 className="font-mono text-sm font-semibold text-amber-800 uppercase tracking-wide">Key Milestones</h3>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                         {keyMilestones.map(km => (
                             <div key={km.id} className="bg-white rounded-lg border border-amber-200 p-3 shadow-sm">
                                 <div className="flex items-center justify-between mb-1">
                                     <span className={clsx(
-                                        'px-1.5 py-0.5 rounded text-[9px] font-bold uppercase',
+                                        'px-1.5 py-0.5 rounded font-mono text-[10px] font-medium uppercase tracking-wide',
                                         km.status === 'Completed' ? 'bg-emerald-100 text-emerald-700' :
                                         km.status === 'Delayed' ? 'bg-rose-100 text-rose-700' :
                                         'bg-amber-100 text-amber-700'
@@ -188,7 +188,7 @@ export function ProjectPlan() {
                             key={tab.key}
                             onClick={() => setActiveTab(tab.key as any)}
                             className={clsx(
-                                'px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all',
+                                'font-mono px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all',
                                 activeTab === tab.key
                                     ? 'bg-white text-slate-900 shadow-sm'
                                     : 'text-slate-500 hover:text-slate-700'
@@ -271,7 +271,7 @@ export function ProjectPlan() {
                                         onClick={() => toggleStage(st.id)}
                                     >
                                         <div
-                                            className="w-12 h-12 shrink-0 rounded-lg flex items-center justify-center text-xl font-black border-2"
+                                            className="w-12 h-12 shrink-0 rounded-lg flex items-center justify-center text-xl font-semibold border-2"
                                             style={{ color: st.color, borderColor: `${st.color}30`, backgroundColor: `${st.color}10` }}
                                         >
                                             {st.num}
@@ -307,7 +307,7 @@ export function ProjectPlan() {
                                                         <div className="flex justify-between items-start mb-3">
                                                             <div>
                                                                 <span
-                                                                    className="px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider mb-2.5 inline-block"
+                                                                    className="font-mono px-2.5 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider mb-2.5 inline-block"
                                                                     style={{ backgroundColor: `${dom?.color}10`, color: dom?.color, border: `1px solid ${dom?.color}30` }}
                                                                 >
                                                                     {dom?.abbr || r.domain}
@@ -316,8 +316,8 @@ export function ProjectPlan() {
                                                             </div>
                                                             {relItems.length > 0 && (
                                                                 <div className="text-right shrink-0 ml-4 pl-4 border-l border-slate-100">
-                                                                    <div className="text-xl font-black tracking-tight" style={{ color: dom?.color }}>{pct}%</div>
-                                                                    <div className="text-[10px] font-semibold text-slate-400 mt-0.5 uppercase tracking-wide">{complete} / {relItems.length} Done</div>
+                                                                    <div className="text-xl font-semibold tracking-tight" style={{ color: dom?.color }}>{pct}%</div>
+                                                                    <div className="font-mono text-[10px] font-semibold text-slate-400 mt-0.5 uppercase tracking-wide">{complete} / {relItems.length} Done</div>
                                                                 </div>
                                                             )}
                                                         </div>
@@ -351,9 +351,9 @@ export function ProjectPlan() {
                     <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <BarChart3 className="w-4 h-4 text-indigo-600" />
-                            <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">Milestone Gantt Chart</h3>
+                            <h3 className="font-mono text-sm font-semibold text-slate-900 uppercase tracking-wider">Milestone Gantt Chart</h3>
                         </div>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{milestones.length} Milestones</span>
+                        <span className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-wide">{milestones.length} Milestones</span>
                     </div>
                     {milestones.length === 0 ? (
                         <div className="p-16 flex flex-col items-center text-center">
@@ -391,8 +391,8 @@ export function ProjectPlan() {
                             <div className="p-6 space-y-1 overflow-x-auto">
                                 {/* Header row */}
                                 <div className="flex items-center gap-3 mb-4 pb-3 border-b border-slate-100">
-                                    <div className="w-48 shrink-0 text-[10px] font-black text-slate-400 uppercase tracking-widest">Milestone</div>
-                                    <div className="flex-1 flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                    <div className="font-mono w-48 shrink-0 text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Milestone</div>
+                                    <div className="font-mono flex-1 flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                                         <span>{format(minDate, 'dd MMM yyyy')}</span>
                                         <span>{format(maxDate, 'dd MMM yyyy')}</span>
                                     </div>
@@ -430,7 +430,7 @@ export function ProjectPlan() {
                                                         opacity: m.status === 'Completed' ? 0.9 : 0.75,
                                                     }}
                                                 >
-                                                    <span className="text-[9px] font-black text-white/90 whitespace-nowrap drop-shadow-sm">
+                                                    <span className="text-[9px] font-semibold text-white/90 whitespace-nowrap drop-shadow-sm">
                                                         {format(mDate, 'dd MMM')}
                                                     </span>
                                                 </div>
@@ -450,12 +450,12 @@ export function ProjectPlan() {
                                     {Object.entries(statusColors).map(([label, color]) => (
                                         <div key={label} className="flex items-center gap-1.5">
                                             <div className="w-3 h-3 rounded" style={{ backgroundColor: color, opacity: 0.75 }} />
-                                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{label}</span>
+                                            <span className="font-mono text-[10px] font-bold text-slate-500 uppercase tracking-wider">{label}</span>
                                         </div>
                                     ))}
                                     <div className="flex items-center gap-1.5">
                                         <div className="w-3 h-0.5 bg-amber-500 rounded" />
-                                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Key Milestone</span>
+                                        <span className="font-mono text-[10px] font-bold text-slate-500 uppercase tracking-wider">Key Milestone</span>
                                     </div>
                                 </div>
                             </div>

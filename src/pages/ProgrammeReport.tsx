@@ -462,9 +462,9 @@ Provide at least 10 detailed points.`;
                                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                             <div className="lg:col-span-1 space-y-4">
                                                 <div className="bg-white p-6 rounded-lg border border-slate-200 text-center space-y-3">
-                                                    <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">Confidence score</div>
+                                                    <div className="text-[11px] font-mono font-medium text-slate-500 uppercase tracking-wide">Confidence score</div>
                                                     <div className={clsx(
-                                                        "text-4xl md:text-5xl font-semibold tabular-nums",
+                                                        "text-4xl md:text-5xl font-medium tabular-nums",
                                                         sentimentResults.confidenceScore > 70 ? "text-emerald-600" :
                                                         sentimentResults.confidenceScore > 40 ? "text-amber-600" : "text-rose-600"
                                                     )}>
@@ -475,7 +475,7 @@ Provide at least 10 detailed points.`;
                                                     </div>
                                                 </div>
                                                 <div className="bg-slate-900 p-5 rounded-lg text-white">
-                                                    <h4 className="text-xs font-medium text-indigo-300 uppercase tracking-wide mb-2">Programme note</h4>
+                                                    <h4 className="text-[11px] font-mono font-medium text-indigo-300 uppercase tracking-wide mb-2">Programme note</h4>
                                                     <p className="text-sm leading-relaxed text-slate-200">{sentimentResults.auditorNote}</p>
                                                 </div>
                                             </div>

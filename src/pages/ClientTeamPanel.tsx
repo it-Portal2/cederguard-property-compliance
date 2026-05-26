@@ -293,10 +293,10 @@ export function ClientTeamPanel() {
             <table className="w-full text-sm">
               <thead className="bg-slate-50 border-b border-slate-100">
                 <tr>
-                  <th className="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wide">Member</th>
-                  <th className="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wide">Role</th>
-                  <th className="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wide">Joined</th>
-                  {isClientAdminUser && <th className="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wide">Actions</th>}
+                  <th className="text-left px-5 py-3 font-mono font-medium text-slate-500 text-[11px] uppercase tracking-wide">Member</th>
+                  <th className="text-left px-5 py-3 font-mono font-medium text-slate-500 text-[11px] uppercase tracking-wide">Role</th>
+                  <th className="text-left px-5 py-3 font-mono font-medium text-slate-500 text-[11px] uppercase tracking-wide">Joined</th>
+                  {isClientAdminUser && <th className="text-left px-5 py-3 font-mono font-medium text-slate-500 text-[11px] uppercase tracking-wide">Actions</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -369,11 +369,11 @@ export function ClientTeamPanel() {
             <table className="w-full text-sm">
               <thead className="bg-slate-50 border-b border-slate-100">
                 <tr>
-                  <th className="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wide">Email</th>
-                  <th className="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wide">Name</th>
-                  <th className="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wide">Role</th>
-                  <th className="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wide">Sent</th>
-                  <th className="text-left px-5 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wide">Status</th>
+                  <th className="text-left px-5 py-3 font-mono font-medium text-slate-500 text-[11px] uppercase tracking-wide">Email</th>
+                  <th className="text-left px-5 py-3 font-mono font-medium text-slate-500 text-[11px] uppercase tracking-wide">Name</th>
+                  <th className="text-left px-5 py-3 font-mono font-medium text-slate-500 text-[11px] uppercase tracking-wide">Role</th>
+                  <th className="text-left px-5 py-3 font-mono font-medium text-slate-500 text-[11px] uppercase tracking-wide">Sent</th>
+                  <th className="text-left px-5 py-3 font-mono font-medium text-slate-500 text-[11px] uppercase tracking-wide">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">

@@ -171,14 +171,14 @@ export function AIComplianceOutlook() {
             {contextName ? (
               <div className="hidden sm:flex items-center gap-1.5 pl-2.5 pr-3 py-1 rounded-full bg-indigo-50 border border-indigo-200">
                 <Layers className="w-3 h-3 text-indigo-500 shrink-0" />
-                <span className="text-[11px] font-bold text-indigo-700 truncate max-w-[160px]">
+                <span className="text-[11px] font-mono font-medium text-indigo-700 uppercase tracking-wide truncate max-w-[160px]">
                   {contextName}
                 </span>
               </div>
             ) : (
               <div className="hidden sm:flex items-center gap-1.5 pl-2.5 pr-3 py-1 rounded-full bg-amber-50 border border-amber-200">
                 <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0" />
-                <span className="text-[11px] font-bold text-amber-700">No project selected</span>
+                <span className="text-[11px] font-mono font-medium text-amber-700 uppercase tracking-wide">No project selected</span>
               </div>
             )}
 
@@ -199,7 +199,7 @@ export function AIComplianceOutlook() {
                     />
                     <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
                   </span>
-                  <span className="text-[11px] font-bold text-emerald-700 tabular-nums">
+                  <span className="text-[11px] font-mono font-medium text-emerald-700 uppercase tracking-wide tabular-nums">
                     {suggestions.length} items
                   </span>
                 </motion.div>
@@ -230,7 +230,7 @@ export function AIComplianceOutlook() {
                 <p className="text-[11px] text-slate-400 mt-0.5">Natural language → statutory framework mapping</p>
               </div>
             </div>
-            <span className="hidden sm:inline-block text-[9px] font-bold uppercase tracking-widest text-slate-300 border border-slate-200 rounded-md px-2 py-1 select-none">
+            <span className="hidden sm:inline-block text-[9px] font-mono font-medium uppercase tracking-wide text-slate-300 border border-slate-200 rounded-md px-2 py-1 select-none">
               NLP Engine
             </span>
           </div>
@@ -282,7 +282,7 @@ export function AIComplianceOutlook() {
               whileTap={!loading && !!sentence.trim() ? { scale: 0.985 } : {}}
               transition={{ type: "spring", stiffness: 500, damping: 28 }}
               className={clsx(
-                "w-full inline-flex items-center justify-center gap-2.5 px-5 py-3 text-sm font-bold rounded-lg select-none transition-colors duration-200",
+                "w-full inline-flex items-center justify-center gap-2.5 px-5 py-3 text-sm font-medium rounded-lg select-none transition-colors duration-200",
                 loading || !sentence.trim()
                   ? "bg-slate-200 text-slate-400 cursor-not-allowed"
                   : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20",
@@ -381,14 +381,14 @@ export function AIComplianceOutlook() {
             >
               <div className="flex items-center gap-2 px-0.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                <span className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide">
                   Identified Compliance Requirements
                 </span>
                 <motion.span
                   initial={{ opacity: 0, x: 8 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1 }}
-                  className="ml-auto inline-flex items-center px-2 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-bold rounded-full tabular-nums"
+                  className="ml-auto inline-flex items-center px-2 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-mono font-medium uppercase tracking-wide rounded-full tabular-nums"
                 >
                   {suggestions.length} items
                 </motion.span>
@@ -421,7 +421,7 @@ export function AIComplianceOutlook() {
                             : "bg-slate-50 border-slate-100 group-hover:bg-emerald-50 group-hover:border-emerald-100"
                         )}>
                           <span className={clsx(
-                            "text-[11px] font-black tabular-nums leading-none transition-colors duration-300",
+                            "text-[11px] font-semibold tabular-nums leading-none transition-colors duration-300",
                             isAdded ? "text-emerald-500" : "text-slate-300 group-hover:text-emerald-500"
                           )}>
                             {String(idx + 1).padStart(2, "0")}
@@ -442,17 +442,17 @@ export function AIComplianceOutlook() {
                                 isAdded ? "text-emerald-500" : "text-slate-300 group-hover:text-emerald-500"
                               )} />
                               {item.reg && (
-                                <span className="text-[9px] font-black px-2 py-0.5 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-md uppercase tracking-widest">
+                                <span className="text-[9px] font-mono font-medium px-2 py-0.5 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-md uppercase tracking-wide">
                                   {item.reg}
                                 </span>
                               )}
                             </div>
                             {isAdded ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase tracking-widest rounded-lg shrink-0">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-mono font-medium uppercase tracking-wide rounded-lg shrink-0">
                                 <CheckCircle2 className="w-3 h-3" /> Added
                               </span>
                             ) : addingIndex === idx ? (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-100 text-indigo-600 text-[10px] font-black uppercase tracking-widest rounded-lg shrink-0">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-100 text-indigo-600 text-[10px] font-mono font-medium uppercase tracking-wide rounded-lg shrink-0">
                                 <motion.span
                                   animate={{ rotate: 360 }}
                                   transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
@@ -465,7 +465,7 @@ export function AIComplianceOutlook() {
                                 onClick={() => addOne(idx)}
                                 disabled={!hasContext || addingIndex !== null || addingAll}
                                 title={hasContext ? "Add to compliance tracker" : "Select a project or programme first"}
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-[10px] font-black uppercase tracking-widest rounded-lg shrink-0 transition-colors shadow-sm shadow-indigo-200"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-[10px] font-mono font-medium uppercase tracking-wide rounded-lg shrink-0 transition-colors shadow-sm shadow-indigo-200"
                               >
                                 <Plus className="w-3 h-3" /> Add
                               </button>
@@ -485,7 +485,7 @@ export function AIComplianceOutlook() {
                               { label: "HOW",  value: item.how  },
                             ].map(({ label, value }) => value ? (
                               <div key={label} className="flex gap-4 py-2 first:pt-0 last:pb-0 items-baseline">
-                                <span className="shrink-0 w-10 text-[9px] font-black text-indigo-400 uppercase tracking-widest pt-0.5">
+                                <span className="shrink-0 w-10 text-[9px] font-mono font-medium text-indigo-400 uppercase tracking-wide pt-0.5">
                                   {label}
                                 </span>
                                 <p className="flex-1 text-xs text-slate-600 leading-relaxed min-w-0">{value}</p>
@@ -513,7 +513,7 @@ export function AIComplianceOutlook() {
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-bold text-white">Integrate with Compliance Tracker</p>
-                      <p className="text-[10px] text-slate-400 font-medium uppercase tracking-widest mt-0.5">
+                      <p className="text-[10px] text-slate-400 font-mono font-medium uppercase tracking-wide mt-0.5">
                         {hasContext
                           ? contextName
                             ? `Adding to: ${contextName}`
@@ -529,7 +529,7 @@ export function AIComplianceOutlook() {
                     whileHover={hasContext && remainingCount > 0 ? { scale: 1.03, backgroundColor: "#f1f5f9" } : {}}
                     whileTap={hasContext && remainingCount > 0 ? { scale: 0.97 } : {}}
                     transition={{ type: "spring", stiffness: 500, damping: 28 }}
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 bg-white disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed text-slate-900 text-xs font-bold rounded-lg shrink-0 uppercase tracking-widest shadow-sm transition-colors"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 bg-white disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed text-slate-900 text-xs font-mono font-medium rounded-lg shrink-0 uppercase tracking-wide shadow-sm transition-colors"
                   >
                     {addingAll ? (
                       <>

@@ -85,11 +85,11 @@ function ImpactBandReference({
   return (
     <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50/60 p-2">
       <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+        <span className="font-mono text-[10px] font-medium uppercase tracking-wide text-slate-500">
           Impact £ bands
         </span>
         <span
-          className="text-[9px] font-medium text-slate-400 italic truncate max-w-full"
+          className="text-[9px] font-medium text-slate-400 truncate max-w-full"
           title={contextLabel}
         >
           {contextLabel}
@@ -104,13 +104,13 @@ function ImpactBandReference({
               className={clsx(
                 "flex items-center gap-2 px-2 py-1 rounded text-[10px] transition-all",
                 isSelected
-                  ? "bg-indigo-50 ring-1 ring-indigo-300 text-indigo-900 font-bold"
+                  ? "bg-indigo-50 ring-1 ring-indigo-300 text-indigo-900 font-semibold"
                   : "text-slate-600 hover:bg-white",
               )}
             >
               <span
                 className={clsx(
-                  "w-4 h-4 rounded inline-flex items-center justify-center text-[9px] font-black shrink-0",
+                  "w-4 h-4 rounded inline-flex items-center justify-center font-mono text-[9px] font-semibold shrink-0 tabular-nums",
                   isSelected
                     ? "bg-indigo-600 text-white"
                     : "bg-slate-200 text-slate-600",
@@ -451,13 +451,13 @@ overflow-hidden on the shell prevents any internal element bleeding out
         <div className="flex items-start justify-between gap-3 p-4 sm:p-6 border-b border-slate-100 shrink-0">
           <div className="min-w-0 flex-1">
             <div className="flex items-center flex-wrap gap-2">
-              <h2 className="text-base sm:text-xl font-black text-slate-900 tracking-tight uppercase truncate">
+              <h2 className="text-base sm:text-xl font-semibold text-slate-900 tracking-tight truncate">
                 {initialData ? "Refine Risk Intelligence" : "Register New Risk"}
               </h2>
               {formData.escalated && (
                 <div className="flex items-center gap-1.5 px-2 py-0.5 bg-purple-600 text-white rounded-full animate-pulse shadow-lg shadow-purple-200 shrink-0">
                   <ShieldAlert className="w-3 h-3" />
-                  <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap">
+                  <span className="font-mono text-[10px] font-medium uppercase tracking-wide whitespace-nowrap">
                     Escalated
                   </span>
                 </div>
@@ -498,8 +498,8 @@ We removed the disabled <fieldset> wrapping (it killed scrolling while saving)
                 {formData.escalated && (
                   <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800">
                     <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5" />
-                    <div className="text-xs font-bold leading-tight min-w-0">
-                      <span className="uppercase tracking-widest block mb-0.5">
+                    <div className="text-xs font-semibold leading-tight min-w-0">
+                      <span className="font-mono uppercase tracking-wide block mb-0.5 text-[11px] font-medium">
                         Escalated to Programme
                       </span>
                       <span className="font-medium">
@@ -513,14 +513,14 @@ We removed the disabled <fieldset> wrapping (it killed scrolling while saving)
                 {formData.convertedToIssue && (
                   <div className="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-lg text-red-800">
                     <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
-                    <div className="text-xs font-bold leading-tight min-w-0">
-                      <span className="uppercase tracking-widest block mb-0.5">
+                    <div className="text-xs font-semibold leading-tight min-w-0">
+                      <span className="font-mono uppercase tracking-wide block mb-0.5 text-[11px] font-medium">
                         Converted to Issue
                       </span>
                       <span className="font-medium">
                         This risk has been closed and converted to a live issue.
                         Manage the resolution in the{" "}
-                        <span className="underline italic">Issue Registry</span>
+                        <span className="underline ">Issue Registry</span>
                         .
                       </span>
                     </div>
@@ -531,7 +531,7 @@ We removed the disabled <fieldset> wrapping (it killed scrolling while saving)
 
             {/* Section 1: Core Details*/}
             <div>
-              <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">
+              <h3 className="font-mono text-xs font-medium text-slate-800 uppercase tracking-wide mb-4 border-b border-slate-100 pb-2">
                 Core Details
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -676,7 +676,7 @@ We removed the disabled <fieldset> wrapping (it killed scrolling while saving)
                       ))}
                     </select>
                   ) : (
-                    <div className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-[11px] text-slate-400 italic">
+                    <div className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-[11px] text-slate-400 ">
                       KRI not applicable for programme-level risks
                     </div>
                   )}
@@ -686,7 +686,7 @@ We removed the disabled <fieldset> wrapping (it killed scrolling while saving)
 
             {/* Section 2: Assessment & Controls*/}
             <div>
-              <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">
+              <h3 className="font-mono text-xs font-medium text-slate-800 uppercase tracking-wide mb-4 border-b border-slate-100 pb-2">
                 Assessment & Controls
               </h3>
 
@@ -695,7 +695,7 @@ We removed the disabled <fieldset> wrapping (it killed scrolling while saving)
                 {Object.entries(L_TO_PCT).map(([l, pct]) => (
                   <span
                     key={l}
-                    className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-bold border border-slate-200"
+                    className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded font-mono text-[10px] font-medium border border-slate-200 tabular-nums"
                   >
                     L{l} = {pct}%
                   </span>
@@ -708,13 +708,13 @@ We removed the disabled <fieldset> wrapping (it killed scrolling while saving)
               {/* Exposure derivation context — tells PMs WHY the £ values look the way they do*/}
               <div className="mb-4">
                 {ctx.isProgrammeLevel ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold uppercase tracking-wider">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 font-mono text-[10px] font-medium uppercase tracking-wide">
                     Context: Programme Bands
                   </span>
                 ) : activeFormProject ? (
                   <span
                     className={clsx(
-                      "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[10px] font-bold uppercase tracking-wider",
+                      "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border font-mono text-[10px] font-medium uppercase tracking-wide",
                       (activeFormProject as any)?.numberOfUnits
                         ? "bg-slate-100 text-slate-700 border-slate-200"
                         : "bg-amber-50 text-amber-800 border-amber-200",
@@ -725,7 +725,7 @@ We removed the disabled <fieldset> wrapping (it killed scrolling while saving)
                       " (default — set unit count in Project Initiation to refine)"}
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold uppercase tracking-wider">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50 text-amber-800 border border-amber-200 font-mono text-[10px] font-medium uppercase tracking-wide">
                     Context: Project Size — {DEFAULT_PROJECT_SIZE} (default)
                   </span>
                 )}
@@ -739,7 +739,7 @@ We removed the disabled <fieldset> wrapping (it killed scrolling while saving)
                       <span className="truncate">Gross Score (Inherent)</span>
                       <span
                         className={clsx(
-                          "px-2 py-0.5 rounded text-xs border font-bold shrink-0",
+                          "px-2 py-0.5 rounded font-mono text-xs border font-semibold shrink-0 tabular-nums",
                           scoreColor(currGross),
                         )}
                       >
@@ -858,7 +858,7 @@ We removed the disabled <fieldset> wrapping (it killed scrolling while saving)
                       <span className="truncate">Residual Risk Score</span>
                       <span
                         className={clsx(
-                          "px-2 py-0.5 rounded text-xs border font-bold shrink-0",
+                          "px-2 py-0.5 rounded font-mono text-xs border font-semibold shrink-0 tabular-nums",
                           scoreColor(currResidual),
                         )}
                       >
@@ -1038,7 +1038,7 @@ We removed the disabled <fieldset> wrapping (it killed scrolling while saving)
 
             {/* Section 3: Management*/}
             <div>
-              <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">
+              <h3 className="font-mono text-xs font-medium text-slate-800 uppercase tracking-wide mb-4 border-b border-slate-100 pb-2">
                 Management
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1132,7 +1132,7 @@ We removed the disabled <fieldset> wrapping (it killed scrolling while saving)
                     {isAddingAction && (
                       <div className="bg-white border-2 border-indigo-100 p-4 rounded-lg shadow-md animate-in slide-in-from-top-2 duration-200">
                         <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
-                          <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">
+                          <span className="font-mono text-xs font-bold text-indigo-600 uppercase tracking-wider">
                             New Action
                           </span>
                           <AIWriter

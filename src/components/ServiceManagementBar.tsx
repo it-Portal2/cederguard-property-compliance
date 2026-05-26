@@ -554,7 +554,7 @@ export const ServiceManagementBar: React.FC<{ className?: string }> = ({
               </div>
               <span
                 className={clsx(
-                  "px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase shrink-0",
+                  "px-1.5 py-0.5 rounded font-mono text-[10px] font-medium uppercase shrink-0",
                   isProject
                     ? "bg-indigo-600 text-white"
                     : "bg-emerald-600 text-white",
@@ -610,7 +610,7 @@ export const ServiceManagementBar: React.FC<{ className?: string }> = ({
                             )}
                           >
                             <div className="px-3 mb-1.5">
-                              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
+                              <p className="font-mono text-[11px] font-medium text-slate-400 uppercase tracking-wide">
                                 {category}
                               </p>
                             </div>

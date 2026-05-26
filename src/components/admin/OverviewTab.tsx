@@ -242,17 +242,17 @@ export function OverviewTab({
                     <table className="w-full text-left text-sm">
                         <thead className="bg-slate-50 border-b border-slate-100">
                             <tr>
-                                <th className="px-6 py-3 font-semibold text-slate-700">Organization</th>
-                                <th className="px-6 py-3 font-semibold text-slate-700">Client Admins</th>
-                                <th className="px-6 py-3 font-semibold text-slate-700">PMs / Projs</th>
-                                <th className="px-6 py-3 font-semibold text-slate-700">AI Cost</th>
-                                <th className="px-6 py-3 font-semibold text-slate-700">Infra Cost</th>
-                                <th className="px-6 py-3 font-semibold text-slate-700 text-right">Est. Cost</th>
+                                <th className="px-6 py-3 font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500">Organization</th>
+                                <th className="px-6 py-3 font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500">Client Admins</th>
+                                <th className="px-6 py-3 font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500">PMs / Projs</th>
+                                <th className="px-6 py-3 font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500">AI Cost</th>
+                                <th className="px-6 py-3 font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500">Infra Cost</th>
+                                <th className="px-6 py-3 font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500 text-right">Est. Cost</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {(loadingUsers || loadingProjects) ? (
-                                <tr><td colSpan={6} className="px-6 py-12 text-center text-slate-400 italic">Processing data...</td></tr>
+                                <tr><td colSpan={6} className="px-6 py-12 text-center text-slate-400 ">Processing data...</td></tr>
                             ) : clientInsights.map(ci => {
                                 const costs = ci.costs || {};
                                 const totalInfra = (costs.firestoreGBP || 0) + (costs.vercelGBP || 0) + (costs.storageGBP || 0);
@@ -261,14 +261,14 @@ export function OverviewTab({
                                     <tr key={ci.domain} className="hover:bg-slate-50 transition-colors group">
                                         <td className="px-6 py-4">
                                             <div className="flex flex-col">
-                                                <span className="font-bold text-slate-800 lowercase">{ci.domain}</span>
-                                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{ci.programmes.size} Programmes</span>
+                                                <span className="font-semibold text-slate-800 lowercase">{ci.domain}</span>
+                                                <span className="font-mono text-[10px] text-slate-400 font-medium uppercase tracking-wide tabular-nums">{ci.programmes.size} Programmes</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-1.5">
                                                 <Users className="w-3.5 h-3.5 text-slate-400" />
-                                                <span className="text-slate-600 font-medium">{ci.clientAdmins}</span>
+                                                <span className="text-slate-600 font-medium tabular-nums">{ci.clientAdmins}</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
@@ -278,23 +278,23 @@ export function OverviewTab({
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="flex items-center gap-1 text-violet-600 font-semibold">
+                                            <div className="flex items-center gap-1 text-violet-600 font-semibold tabular-nums">
                                                 <Briefcase className="w-3.5 h-3.5" />
                                                 £{(costs.geminiGBP || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="flex items-center gap-1 text-slate-500 font-medium">
+                                            <div className="flex items-center gap-1 text-slate-500 font-medium tabular-nums">
                                                 <Server className="w-3.5 h-3.5 opacity-50" />
                                                 £{totalInfra.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex flex-col items-end">
-                                                <span className="font-black text-indigo-600 text-base">
+                                                <span className="font-medium text-indigo-600 text-base tabular-nums">
                                                     £{(costs.infraCostGBP || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                                                 </span>
-                                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">per month</span>
+                                                <span className="font-mono text-[10px] text-slate-400 font-medium uppercase tracking-wide">per month</span>
                                             </div>
                                         </td>
                                     </tr>

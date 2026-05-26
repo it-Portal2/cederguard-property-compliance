@@ -29,7 +29,7 @@ const EmptyState = ({ title, onAdd }: { title: string; onAdd?: () => void }) => 
       <Info className="w-8 h-8 text-slate-300" />
     </div>
     <div className="text-center">
-      <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{title}</p>
+      <p className="font-mono text-[11px] font-medium text-slate-500 uppercase tracking-wide">{title}</p>
       {onAdd && (
         <button
           onClick={onAdd}
@@ -528,7 +528,7 @@ export function MyTasks() {
       <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
           <div className="flex items-center gap-4">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+            <span className="font-mono text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
               Active Action Register
             </span>
             {selectedIds.length > 0 && (
@@ -541,7 +541,7 @@ export function MyTasks() {
                 ) && (
                   <button
                     onClick={handleBulkDelete}
-                    className="text-rose-600 hover:text-rose-700 text-[10px] font-black uppercase tracking-widest flex items-center gap-1"
+                    className="font-mono text-rose-600 hover:text-rose-700 text-[11px] font-semibold uppercase tracking-wide flex items-center gap-1"
                   >
                     <Trash2 className="w-3 h-3" /> Bulk Delete
                   </button>
@@ -553,7 +553,7 @@ export function MyTasks() {
 
         {allItems.length > 0 ? (
           <table className="w-full text-sm">
-            <thead className="bg-slate-50/80 border-b border-slate-200 text-[10px] uppercase font-black tracking-widest text-slate-400">
+            <thead className="bg-slate-50/80 border-b border-slate-200 font-mono text-[11px] uppercase font-medium tracking-wide text-slate-500">
               <tr>
                 <th className="p-4 text-left">
                   <input
@@ -599,7 +599,7 @@ export function MyTasks() {
                       ) : (
                         <CheckSquare className="w-4 h-4 text-indigo-500 shrink-0" />
                       )}
-                      <div className="text-[10px] font-bold text-slate-500 uppercase truncate max-w-[120px]">
+                      <div className="font-mono text-[11px] font-medium text-slate-500 uppercase tracking-wide truncate max-w-[120px]">
                         {item.projectName || "Programme"}
                       </div>
                     </div>
@@ -616,7 +616,7 @@ export function MyTasks() {
                     </div>
                     {item.description && (
                       <div
-                        className="text-[11px] text-slate-400 mt-0.5 line-clamp-1 italic"
+                        className="text-[11px] text-slate-400 mt-0.5 line-clamp-1 "
                         title={item.description}
                       >
                         {item.description}
@@ -632,7 +632,7 @@ export function MyTasks() {
                   <td className="p-4">
                     <span
                       className={clsx(
-                        "px-2 py-0.5 rounded-full text-[9px] font-black uppercase border",
+                        "font-mono px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide border",
                         item.priority === "High"
                           ? "bg-rose-50 text-rose-700 border-rose-200"
                           : item.priority === "Medium"
@@ -653,7 +653,7 @@ export function MyTasks() {
                       return (
                         <span
                           className={clsx(
-                            "px-2 py-0.5 rounded-full text-[9px] font-black uppercase border whitespace-nowrap",
+                            "font-mono px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide border whitespace-nowrap",
                             item.status === "In Progress"
                               ? "bg-blue-50 text-blue-700 border-blue-200"
                               : item.status === "Completed"
@@ -753,7 +753,7 @@ export function MyTasks() {
                   <Trash2 className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-black text-slate-800 uppercase tracking-tighter text-lg">
+                  <h3 className="font-semibold text-slate-800 tracking-tight text-lg">
                     Confirm Bulk Delete
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
@@ -776,14 +776,14 @@ export function MyTasks() {
                 <button
                   type="button"
                   onClick={() => setShowBulkDeleteModal(false)}
-                  className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-lg text-xs font-black uppercase hover:bg-slate-50 transition-colors tracking-widest"
+                  className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={confirmBulkDelete}
-                  className="flex-1 px-4 py-2.5 bg-rose-600 text-white rounded-lg text-xs font-black uppercase hover:bg-rose-700 transition-all shadow-lg shadow-rose-200 tracking-widest"
+                  className="flex-1 px-4 py-2.5 bg-rose-600 text-white rounded-lg text-sm font-medium hover:bg-rose-700 transition-all shadow-lg shadow-rose-200"
                 >
                   Delete All
                 </button>
@@ -798,7 +798,7 @@ export function MyTasks() {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-300">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <h3 className="font-black text-slate-800 uppercase tracking-tighter text-lg">
+              <h3 className="font-semibold text-slate-800 tracking-tight text-lg">
                 {modalMode === "add" ? "Create Workspace Task" : "Edit Task"}
               </h3>
               <button
@@ -810,7 +810,7 @@ export function MyTasks() {
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-5">
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">
                   Task Title
                 </label>
                 <input
@@ -826,7 +826,7 @@ export function MyTasks() {
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">
                   Description / Notes
                 </label>
                 <textarea
@@ -844,7 +844,7 @@ export function MyTasks() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+                  <label className="block text-xs font-medium text-slate-500 mb-1.5">
                     Priority Level
                   </label>
                   <select
@@ -863,7 +863,7 @@ export function MyTasks() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+                  <label className="block text-xs font-medium text-slate-500 mb-1.5">
                     Due Date
                   </label>
                   <input
@@ -884,13 +884,13 @@ export function MyTasks() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-lg text-xs font-black uppercase hover:bg-slate-50 transition-colors tracking-widest"
+                  className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-lg text-xs font-black uppercase hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 tracking-widest"
+                  className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200"
                 >
                   {modalMode === "add" ? "Add To Workspace" : "Update Task"}
                 </button>

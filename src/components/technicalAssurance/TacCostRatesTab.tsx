@@ -183,8 +183,8 @@ export function TacCostRatesTab() {
             <span
               className={
                 isCustom
-                  ? "inline-flex items-center rounded-md bg-indigo-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-700"
-                  : "inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-600"
+                  ? "font-mono inline-flex items-center rounded-md bg-indigo-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-700"
+                  : "font-mono inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-600"
               }
             >
               {isCustom ? "Custom" : "Seed"}

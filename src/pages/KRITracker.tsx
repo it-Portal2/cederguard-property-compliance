@@ -350,7 +350,7 @@ export function KRITracker() {
       render: (_v, row) => (
         <span
           className={clsx(
-            'inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase border',
+            'font-mono inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide border',
             row.stats.status === 'Red'
               ? 'bg-rose-50 text-rose-600 border-rose-100'
               : row.stats.status === 'Yellow'
@@ -533,20 +533,20 @@ export function KRITracker() {
       {/* ─── STRATEGIC SUMMARY ─── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6">
         <div className="bg-[#111827] p-10 rounded-lg text-white space-y-4">
-          <h3 className="text-xl font-black uppercase tracking-tighter flex items-center gap-3">
+          <h3 className="text-xl font-semibold tracking-tight flex items-center gap-3">
             <ShieldCheck className="w-6 h-6 text-indigo-400" /> Compliance Delta
           </h3>
-          <p className="text-sm text-slate-400 font-bold leading-relaxed italic">
-            Portfolio health is <strong className={clsx("font-black", stats.redCount > 0 ? "text-rose-400" : "text-emerald-400")}>{stats.redCount > 0 ? "Critical" : "Stable"}</strong>. 
+          <p className="text-sm text-slate-400 font-bold leading-relaxed ">
+            Portfolio health is <strong className={clsx("font-semibold", stats.redCount > 0 ? "text-rose-400" : "text-emerald-400")}>{stats.redCount > 0 ? "Critical" : "Stable"}</strong>. 
             We are actively tracking {stats.totalRisks} mitigations with {stats.totalHighRisks} high-priority exposures affecting the current context.
           </p>
         </div>
         <div className="bg-indigo-600 p-10 rounded-lg text-white space-y-4">
-          <h3 className="text-xl font-black uppercase tracking-tighter flex items-center gap-3">
+          <h3 className="text-xl font-semibold tracking-tight flex items-center gap-3">
             <TrendingUp className="w-6 h-6 text-white" /> Performance Insight
           </h3>
-          <p className="text-sm text-indigo-100 font-bold leading-relaxed italic">
-            Average overdue delay across all tracked risks is currently reading at <strong className="font-black text-white">{stats.avgDelay} days</strong>.
+          <p className="text-sm text-indigo-100 font-bold leading-relaxed ">
+            Average overdue delay across all tracked risks is currently reading at <strong className="font-semibold text-white">{stats.avgDelay} days</strong>.
             Next statutory review cycle is scheduled for the end of Q1.
           </p>
         </div>

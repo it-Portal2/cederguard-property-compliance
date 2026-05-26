@@ -103,14 +103,14 @@ export function HistoricalBanner({
           <div className="min-w-0">
             <p className="text-sm font-bold text-amber-900">
               Viewing: {formatted}
-              <span className="ml-2 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-800">
+              <span className="font-mono ml-2 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-800">
                 Read-only
               </span>
               {corrected && (
                 <button
                   type="button"
                   onClick={() => setHistoryOpen(true)}
-                  className="ml-2 inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-rose-800 transition-colors hover:bg-rose-200"
+                  className="font-mono ml-2 inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-rose-800 transition-colors hover:bg-rose-200"
                   title="One or more snapshot rows have been corrected by an admin — click to see history"
                 >
                   <ShieldCheck className="h-3 w-3" aria-hidden />
