@@ -158,6 +158,11 @@ AIWriter.tsx                        AI content generation interface (drafting te
 ```
 NotificationWrapper.tsx             react-hot-toast provider wrapper
 InfoTooltip.tsx                     Hover tooltip component
+UserAvatar.tsx                      Shared user avatar: renders <img src={photoURL}> with onError
+                                    fallback to a gradient initials badge. Three sizes (sm/md/lg).
+                                    SINGLE SOURCE OF TRUTH for avatar rendering — Header, Sidebar,
+                                    MobileHeader all consume this. Never inline an <img photoURL>
+                                    in new code; always use <UserAvatar/>.
 ```
 
 #### `/src/components/dashboard/` — Dashboard primitives (v4-calibrated)
@@ -676,6 +681,7 @@ Auth: Firebase ID token in Authorization header
 | `PremiumAIBanner` | components/common/PremiumAIBanner.tsx | Upgrade banner shown when AI feature requires higher tier |
 | `NotificationWrapper` | components/NotificationWrapper.tsx | react-hot-toast `<Toaster>` provider |
 | `InfoTooltip` | components/InfoTooltip.tsx | `?` icon with hover tooltip text |
+| `UserAvatar` | components/UserAvatar.tsx | Shared avatar — `<img src={photoURL}>` with `onError` fallback to gradient initials badge. Three sizes (sm/md/lg). Used by Header, Sidebar, MobileHeader; required for any new avatar rendering. |
 
 ### Pages — Compliance
 | Component | File | What it does |
@@ -831,6 +837,12 @@ export const authRoutes = {
 - `tailwind-merge` used where conflicting utility classes need resolution
 - Dark mode via `isDarkMode` store flag + `dark:` variant classes
 - Colour palette mostly Tailwind's `indigo-*`, `slate-*`, `emerald-*`, `red-*`
+- **Scoped CSS exception**: [`src/pages/Login.tsx`](src/pages/Login.tsx) ships a custom OKLCH-palette design under a `.cg-login-root` scope (CSS embedded as a `<style>` block in the component). This is a deliberate exception — Login is on the typography exclusion list and the design uses features (custom OKLCH operations, scoped CSS variables, keyframe animations) that don't translate cleanly to Tailwind. **Do not extend this pattern to other pages** — Tailwind remains the rule everywhere else.
+
+### Page wrapper convention
+- The app shell wraps every authenticated page with `<main className="flex-1 overflow-y-auto p-4 md:p-6 ...">` containing `<div className="max-w-[1600px] mx-auto">` ([`src/App.tsx:181-182`](src/App.tsx#L181)). Pages should **not** add their own page-level padding (`p-2 sm:p-4 lg:p-6`), `max-w-*`, or `mx-auto` — that double-wraps the layout.
+- Canonical page root: `<div className="space-y-6 sm:space-y-8">` (as used in [`src/pages/ComplianceTracker.tsx`](src/pages/ComplianceTracker.tsx)). The matching tighter variant `space-y-5 sm:space-y-6` is reserved for sub-sections inside a page, not page roots.
+- `ServiceManagementBar` (when used) renders as a sibling **before** the `space-y-*` page root, not inside it.
 
 ### Typography — v4 calibration (load-bearing across the authenticated app)
 **Geist (sans) + Geist Mono** loaded globally via Google Fonts import in [`src/index.css:1`](src/index.css#L1); Tailwind `@theme` maps `--font-sans` and `--font-mono` ([`src/index.css:7-8`](src/index.css)). `font-sans` cascades from the authenticated root in [`src/App.tsx:174`](src/App.tsx#L174).
@@ -906,6 +918,13 @@ User action → Component handler → useStore method → api.ts → /api endpoi
 
 ### AI inquiry / StrictMode
 - `<React.StrictMode>` is enabled in [`src/main.tsx`](src/main.tsx). Any effect that calls a side-effectful function (API call, navigation) must be **idempotent** or **guarded with a ref**. See [`src/components/AIInquiryPopup.tsx`](src/components/AIInquiryPopup.tsx) — `autoSentRef` prevents StrictMode from firing two AI requests for the same prefilled prompt.
+
+### Auth / avatar conventions
+- **Avatar rendering**: always use [`<UserAvatar/>`](src/components/UserAvatar.tsx). Never inline `<img src={user.photoURL}/>` — the component handles the `onError` → gradient initials fallback, so stale or revoked URLs never leave a broken-image icon. Three sizes (`sm`/`md`/`lg`) cover all current call sites (Header, Sidebar, MobileHeader).
+- **`photoURL` is the canonical avatar field** on the user profile (set in [`api/routes/profile.ts`](api/routes/profile.ts) whitelist). Do **not** introduce a parallel `avatarUrl` field.
+- **Profile keys are always initialized on first sign-in**: [`src/store/useStore.ts initStore`](src/store/useStore.ts) writes `photoURL` and `displayName` to the Firestore profile doc on first init, even for magic-link sign-ups where Firebase Auth supplies neither (the values may be `null`, but the keys always exist). Downstream code can assume those keys are present on every loaded profile.
+- **Friendly auth errors**: when surfacing Firebase auth failures to the UI, map known error codes to safe copy and fall back to a generic message — never echo raw `err.message`. See `FRIENDLY_AUTH_ERRORS` + `friendlyAuthError()` in [`src/pages/Login.tsx`](src/pages/Login.tsx) for the current mapping.
+- **Magic-link throttle**: client-side throttle for repeated magic-link submissions is **5 seconds** (`MAGIC_LINK_THROTTLE_MS`), enforced via a `useRef` timestamp in `Login.tsx`. Backend rate limits are layered on top, but the client guard keeps the UX honest.
 
 ### Standing rules for sweeps / refactors
 - **Never run regex passes on backtick template literals.** A pattern like `(["'`])((?:[^\\]|\\.)*?)\1` matches across newlines inside backticks and corrupts JSX inside `${...}`. Always restrict regex find/replace to single-line `'...'` or `"..."` strings unless the pattern is anchored on a definite per-line attribute.
