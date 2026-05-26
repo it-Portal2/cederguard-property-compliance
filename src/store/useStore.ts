@@ -738,6 +738,7 @@ export interface AppState {
   // Missing properties used in components
   lessonsLearned: any[];
   addLessonLearned: (lesson: any) => Promise<void>;
+  deleteLessonLearned: (id: string) => Promise<void>;
   addRisks: (risks: RiskItem[]) => Promise<void>;
   convertToIssue: (riskId: string) => Promise<void>;
   escalateRisk: (riskId: string, projectId: string) => Promise<void>;
@@ -2505,6 +2506,13 @@ export const useStore = create<AppState>((set, get) => {
   addLessonLearned: async (lesson) => {
     const { lessonsLearned } = get();
     const next = [lesson, ...lessonsLearned];
+    set({ lessonsLearned: next });
+    const contextId = get().activeProjectId || get().activeProgrammeId;
+    await api.saveData("lessonsLearned", next, contextId);
+  },
+  deleteLessonLearned: async (id) => {
+    const { lessonsLearned } = get();
+    const next = lessonsLearned.filter((l) => l.id !== id);
     set({ lessonsLearned: next });
     const contextId = get().activeProjectId || get().activeProgrammeId;
     await api.saveData("lessonsLearned", next, contextId);
