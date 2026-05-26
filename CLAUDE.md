@@ -213,6 +213,35 @@ PremiumAIBanner.tsx                 Upgrade prompt banner for AI features
 PublicLayout.tsx      (281 lines)   Layout wrapper for all public-facing pages
 ```
 
+#### `/src/components/table/` — Canonical table primitives
+```
+DynamicTable.tsx                    SINGLE SOURCE OF TRUTH for tabular list pages.
+                                    Built-in search, filters, sort, pagination,
+                                    selection, bulk + row actions, ConfirmDialog,
+                                    skeleton, CSV/XLSX export, sticky header,
+                                    column-visibility, virtualization.
+ConfirmDialog.tsx                   Confirmation modal — invoked automatically by
+                                    DynamicTable when a RowAction / BulkAction
+                                    sets `requireConfirm`. Do NOT roll your own
+                                    confirm modal in a page.
+TableToolbar.tsx                    Toolbar: search input, filter dropdowns,
+                                    column visibility, export, inline bulk
+                                    actions, custom `toolbarActions` slot.
+TableHeader.tsx / TableBody.tsx /
+TableRow.tsx / TableCell.tsx        Internal renderers used by DynamicTable.
+TableActions.tsx                    Per-row action menu (uses RowAction defs).
+TableBulkBar.tsx                    Floating selection bar (style: 'bar' actions).
+TablePagination.tsx                 Page controls + page-size selector.
+TableSkeleton.tsx                   Loading state placeholder.
+TableTooltip.tsx                    Tooltip used for truncated cells.
+types.ts                            Public types: ColumnDef, RowAction,
+                                    BulkAction, FilterDef, ConfirmConfig,
+                                    PaginationConfig, DynamicTableProps.
+useTableState.ts                    Hooks: useTableFilter, useTableSort,
+                                    useTablePagination, useTableSelection,
+                                    useTableColumns. Internal to DynamicTable.
+```
+
 ---
 
 ### `/src/pages/` — Route-level page components
@@ -749,10 +778,10 @@ Auth: Firebase ID token in Authorization header
 |---|---|---|
 | `RegulationLibrary` | pages/RegulationLibrary.tsx | Searchable regulations reference library |
 | `CPDTraining` | pages/CPDTraining.tsx | CPD training module viewer |
-| `LessonsLearned` | pages/LessonsLearned.tsx | Log and browse lessons learned |
+| `LessonsLearned` | pages/LessonsLearned.tsx | Lessons-learned repository on `DynamicTable` (category filter, search on title/problem/resolution, delete-with-confirm). Preserves the Capture modal (with AIWriter suggestions) and the rich View modal (Problem / Resolution / Prevention). |
 | `HelpCenter` | pages/HelpCenter.tsx | In-app help documentation |
 | `Calendar` | pages/Calendar.tsx | Event calendar with compliance/milestone deadlines |
-| `MyTasks` | pages/MyTasks.tsx | Personal task list for logged-in user |
+| `MyTasks` | pages/MyTasks.tsx | Personal action register on `DynamicTable`. Merges manual tasks + actionable compliance items + risk reviews + issue deadlines into one feed. Three filters (timeline / source / context), bulk delete with confirm, pagination. |
 
 ### Pages — AI
 | Component | File | What it does |
@@ -918,6 +947,17 @@ User action → Component handler → useStore method → api.ts → /api endpoi
 
 ### AI inquiry / StrictMode
 - `<React.StrictMode>` is enabled in [`src/main.tsx`](src/main.tsx). Any effect that calls a side-effectful function (API call, navigation) must be **idempotent** or **guarded with a ref**. See [`src/components/AIInquiryPopup.tsx`](src/components/AIInquiryPopup.tsx) — `autoSentRef` prevents StrictMode from firing two AI requests for the same prefilled prompt.
+
+### Table conventions
+- **`DynamicTable` is canonical** for any list page that needs search, filters, pagination, selection, or row/bulk actions. Do not hand-roll `<table>` markup, do not introduce a separate table library, and do not build a page-level confirm modal — DynamicTable ships all of that. Component: [`src/components/table/DynamicTable.tsx`](src/components/table/DynamicTable.tsx); public types: [`src/components/table/types.ts`](src/components/table/types.ts).
+- **Reference patterns** (copy from these when migrating a new page):
+  - Minimal (no actions, just search + columns): [`src/pages/ProgrammeIssues.tsx:174-189`](src/pages/ProgrammeIssues.tsx#L174)
+  - Full (row actions + bulk actions + filters + `requireConfirm`): [`src/pages/RiskRegister.tsx:843-941`](src/pages/RiskRegister.tsx#L843)
+  - Merged-source feed with cross-field filters: [`src/pages/MyTasks.tsx`](src/pages/MyTasks.tsx)
+- **Confirm dialog**: route destructive actions through `requireConfirm: ConfirmConfig` on the relevant `RowAction` / `BulkAction`. DynamicTable mounts [`ConfirmDialog`](src/components/table/ConfirmDialog.tsx) automatically and awaits the handler with a spinner. Never `window.confirm()`, never build a parallel modal.
+- **Cross-field filter pattern**: `FilterDef.match(rowValue, filterValue)` only receives one row field. When a filter needs multiple fields (e.g. a "timeline" bucket derived from both `status` and `dueDate`), **flatten the bucket onto the row** as a derived `_underscorePrefixed` field at the `useMemo` that builds the data array, then point the filter at that synthetic key. See `_timeline` / `_contextId` / `_isOverdue` in [`src/pages/MyTasks.tsx`](src/pages/MyTasks.tsx). Do not subclass DynamicTable or move filter logic outside it.
+- **Pagination default**: `pagination: { enabled: true, pageSize: 25, pageSizeOptions: [10, 25, 50] }` for any list that can plausibly exceed ~50 rows.
+- **Page-level toolbar buttons** (e.g. "Add task", "Capture lesson") belong in DynamicTable's `toolbarActions` slot, not as a sibling above the table. The empty-state CTA is a separate `emptyState.action` slot.
 
 ### Auth / avatar conventions
 - **Avatar rendering**: always use [`<UserAvatar/>`](src/components/UserAvatar.tsx). Never inline `<img src={user.photoURL}/>` — the component handles the `onError` → gradient initials fallback, so stale or revoked URLs never leave a broken-image icon. Three sizes (`sm`/`md`/`lg`) cover all current call sites (Header, Sidebar, MobileHeader).
