@@ -2079,10 +2079,17 @@ export const useStore = create<AppState>((set, get) => {
 
         // Persist missing fields to Firestore non-blocking so future loads
         // also carry them (fixes "image gone after refresh" for new users).
-        if ((!firestoreProfile.photoURL && photoURL) || (!firestoreProfile.displayName && displayName)) {
-          const toSave: Record<string, string> = {};
-          if (!firestoreProfile.photoURL && photoURL) toSave.photoURL = photoURL;
-          if (!firestoreProfile.displayName && displayName) toSave.displayName = displayName;
+        // Always initialize photoURL and displayName keys on the doc — even
+        // for magic-link sign-ups where Firebase Auth supplies neither —
+        // so the variables always exist alongside the user data.
+        const photoURLMissing = !('photoURL' in firestoreProfile);
+        const displayNameMissing = !('displayName' in firestoreProfile);
+        const photoURLNeedsBackfill = !firestoreProfile.photoURL && !!photoURL;
+        const displayNameNeedsBackfill = !firestoreProfile.displayName && !!displayName;
+        if (photoURLMissing || displayNameMissing || photoURLNeedsBackfill || displayNameNeedsBackfill) {
+          const toSave: Record<string, string | null> = {};
+          if (photoURLMissing || photoURLNeedsBackfill) toSave.photoURL = photoURL;
+          if (displayNameMissing || displayNameNeedsBackfill) toSave.displayName = displayName;
           api.saveProfile(toSave).catch(console.error);
         }
       }
