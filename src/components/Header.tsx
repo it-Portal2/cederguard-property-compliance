@@ -21,6 +21,7 @@ import { SinceLastVisitBadge } from "./SinceLastVisitBadge";
 import { logout } from "../lib/firebase";
 import { useNavigate, useLocation } from "react-router";
 import { ProfileSettingsModal } from "./ProfileSettingsModal";
+import UserAvatar from "./UserAvatar";
 import { api } from "../lib/api";
 import {
   isAtLeastClientAdmin,
@@ -177,19 +178,6 @@ export function Header() {
     }
   };
 
-  const getInitials = (name?: string, email?: string) => {
-    if (name)
-      return name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .substring(0, 2)
-        .toUpperCase();
-    if (email) return email.substring(0, 2).toUpperCase();
-    return "U";
-  };
-
-  const initials = getInitials(user?.displayName, user?.email);
   const activeProject = (Array.isArray(projects) ? projects : []).find(
     (p) => p.id === activeProjectId,
   );
@@ -577,17 +565,14 @@ export function Header() {
       >
         <button
           onClick={() => setShowUserDropdown(!showUserDropdown)}
-          className="w-8 h-8 rounded-full bg-indigo-100 ring-2 ring-transparent hover:ring-indigo-300 text-indigo-700 flex items-center justify-center text-sm font-bold transition-all"
+          className="w-8 h-8 rounded-full ring-2 ring-transparent hover:ring-indigo-300 flex items-center justify-center transition-all"
         >
-          {user?.photoURL ? (
-            <img
-              src={user.photoURL}
-              alt="Profile"
-              className="w-8 h-8 rounded-full object-cover"
-            />
-          ) : (
-            initials
-          )}
+          <UserAvatar
+            photoURL={user?.photoURL}
+            displayName={user?.displayName}
+            email={user?.email}
+            size="sm"
+          />
         </button>
 
         {showUserDropdown && (
