@@ -1,7 +1,32 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { loginWithGoogle, sendMagicLink, confirmMagicLink, isMagicLink } from '../lib/firebase';
 import { Building2, ShieldCheck, Mail, AlertCircle, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router';
+
+// Map Firebase auth error codes to safe, user-facing copy so we never
+// leak raw SDK strings (which can hint at internal service state).
+const FRIENDLY_AUTH_ERRORS: Record<string, string> = {
+    'auth/invalid-email': 'That email address doesn’t look right.',
+    'auth/missing-email': 'Please enter your email address.',
+    'auth/too-many-requests': 'Too many attempts. Please wait a moment and try again.',
+    'auth/network-request-failed': 'Network error. Check your connection and try again.',
+    'auth/popup-closed-by-user': 'Sign-in was cancelled.',
+    'auth/popup-blocked': 'Your browser blocked the sign-in popup. Please allow popups and retry.',
+    'auth/cancelled-popup-request': 'Sign-in was cancelled.',
+    'auth/user-disabled': 'This account has been disabled. Please contact support.',
+    'auth/invalid-action-code': 'This sign-in link has expired or already been used. Please request a new one.',
+    'auth/expired-action-code': 'This sign-in link has expired. Please request a new one.',
+};
+
+const GENERIC_AUTH_ERROR = 'Something went wrong. Please try again.';
+
+function friendlyAuthError(err: unknown): string {
+    const code = (err as { code?: string })?.code;
+    if (code && FRIENDLY_AUTH_ERRORS[code]) return FRIENDLY_AUTH_ERRORS[code];
+    return GENERIC_AUTH_ERROR;
+}
+
+const MAGIC_LINK_THROTTLE_MS = 5000;
 
 export const Login: React.FC = () => {
     const [email, setEmail] = useState('');
@@ -10,6 +35,7 @@ export const Login: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [verifyingLink, setVerifyingLink] = useState(false);
     const [requireEmailConfirm, setRequireEmailConfirm] = useState(false);
+    const lastMagicLinkAt = useRef<number>(0);
     const navigate = useNavigate();
 
     // Effect to handle sign-in link returning
@@ -35,8 +61,8 @@ export const Login: React.FC = () => {
             setError('');
             setLoading(true);
             await loginWithGoogle();
-        } catch (err: any) {
-            setError(err.message || "Failed to log in with Google");
+        } catch (err: unknown) {
+            setError(friendlyAuthError(err));
         } finally {
             setLoading(false);
         }
@@ -49,13 +75,22 @@ export const Login: React.FC = () => {
             return;
         }
 
+        const now = Date.now();
+        const sinceLast = now - lastMagicLinkAt.current;
+        if (sinceLast < MAGIC_LINK_THROTTLE_MS) {
+            const waitSecs = Math.ceil((MAGIC_LINK_THROTTLE_MS - sinceLast) / 1000);
+            setError(`Please wait ${waitSecs}s before resending the link.`);
+            return;
+        }
+
         try {
             setLoading(true);
             setError('');
+            lastMagicLinkAt.current = now;
             await sendMagicLink(email);
             setIsLinkSent(true);
-        } catch (err: any) {
-            setError(err.message || "Failed to send login link.");
+        } catch (err: unknown) {
+            setError(friendlyAuthError(err));
         } finally {
             setLoading(false);
         }
@@ -72,8 +107,8 @@ export const Login: React.FC = () => {
         try {
             await confirmMagicLink(email, window.location.href);
             navigate('/dashboard');
-        } catch (err: any) {
-            setError('Error confirming magic link: ' + err.message);
+        } catch (err: unknown) {
+            setError(friendlyAuthError(err));
         } finally {
             setVerifyingLink(false);
         }
