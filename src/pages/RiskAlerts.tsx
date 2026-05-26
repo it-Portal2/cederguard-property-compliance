@@ -5,6 +5,7 @@ import { useStore } from '../store/useStore';
 import { StatsCard } from '../components/common/StatsCard';
 import { format, differenceInDays } from 'date-fns';
 import { KRI_LIST, KRI_OWNERS } from '../data/riskData';
+import { getGrossScore } from '../lib/riskMetrics';
 import { clsx } from 'clsx';
 
 export function RiskAlerts() {
@@ -45,17 +46,18 @@ export function RiskAlerts() {
 
   // Rules
   filteredRisks.forEach(r => {
-    if (r.grossRating >= 20 && r.status === "Open") {
-      allAlerts.push({ id: `sev_open::${r.id}`, group: 'Critical', color: 'red', icon: <ShieldAlert className="w-4 h-4 text-red-500" />, label: 'Severe Risk — Open & Unmitigated', item: r, msg: `${r.id} is rated Severe (${r.grossRating}) and remains Open. Immediate action required.`, action: 'Escalate to Programme Board and assign immediate mitigation owner.' });
+    const score = getGrossScore(r);
+    if (score >= 20 && r.status === "Open") {
+      allAlerts.push({ id: `sev_open::${r.id}`, group: 'Critical', color: 'red', icon: <ShieldAlert className="w-4 h-4 text-red-500" />, label: 'Severe Risk — Open & Unmitigated', item: r, msg: `${r.id} is rated Severe (${score}) and remains Open. Immediate action required.`, action: 'Escalate to Programme Board and assign immediate mitigation owner.' });
     }
-    if (r.grossRating >= 16 && r.status === "Open" && !r.dueDate) {
-      allAlerts.push({ id: `high_open::${r.id}`, group: 'Critical', color: 'red', icon: <AlertTriangle className="w-4 h-4 text-red-500" />, label: 'Major Risk — Open with No Due Date', item: r, msg: `${r.id} is Major/Severe (${r.grossRating}) with no due date set.`, action: 'Assign a due date and mitigation owner immediately.' });
+    if (score >= 16 && r.status === "Open" && !r.dueDate) {
+      allAlerts.push({ id: `high_open::${r.id}`, group: 'Critical', color: 'red', icon: <AlertTriangle className="w-4 h-4 text-red-500" />, label: 'Major Risk — Open with No Due Date', item: r, msg: `${r.id} is Major/Severe (${score}) with no due date set.`, action: 'Assign a due date and mitigation owner immediately.' });
     }
     if (r.dueDate && new Date(r.dueDate) < new Date() && r.status !== "Closed" && r.status !== "Mitigated") {
       allAlerts.push({ id: `overdue::${r.id}`, group: 'Critical', color: 'red', icon: <Clock className="w-4 h-4 text-red-500" />, label: 'Risk Overdue — Past Due Date', item: r, msg: `${r.id} was due ${format(new Date(r.dueDate), 'dd MMM yy')} — now ${differenceInDays(new Date(), new Date(r.dueDate))} days overdue.`, action: 'Review risk status and either update due date with justification or close.' });
     }
-    if (r.escalated && r.status === "Open" && r.grossRating >= 12) {
-      allAlerts.push({ id: `esc_open::${r.id}`, group: 'Critical', color: 'red', icon: <ShieldAlert className="w-4 h-4 text-red-500" />, label: 'Escalated Risk — Still Open', item: r, msg: `${r.id} has been escalated to Programme Register but remains Open (score ${r.grossRating}).`, action: 'Programme Board to review and agree action or tolerance decision.' });
+    if (r.escalated && r.status === "Open" && score >= 12) {
+      allAlerts.push({ id: `esc_open::${r.id}`, group: 'Critical', color: 'red', icon: <ShieldAlert className="w-4 h-4 text-red-500" />, label: 'Escalated Risk — Still Open', item: r, msg: `${r.id} has been escalated to Programme Register but remains Open (score ${score}).`, action: 'Programme Board to review and agree action or tolerance decision.' });
     }
     if (r.category === "Legal / Regulatory" && (r.title || '').toLowerCase().includes("damp") && r.status === "Open") {
       allAlerts.push({ id: `awaabs::${r.id}`, group: 'Statutory', color: 'purple', icon: <Scale className="w-4 h-4 text-purple-600" />, label: "Awaab's Law — Statutory Response Deadline", item: r, msg: `${r.id} relates to damp & mould. Awaab's Law (Section 10A) requires 14-day investigation and 7-day works start.`, action: 'Confirm triage process is active. Escalate if any complaint exceeds 14-day investigation window.' });
@@ -65,7 +67,7 @@ export function RiskAlerts() {
   // KRI Breach Rules
   KRI_LIST.forEach(kri => {
     const kriRisks = filteredRisks.filter(r => r.kri === kri);
-    const criticalRisks = kriRisks.filter(r => r.grossRating >= 16 && r.status === "Open");
+    const criticalRisks = kriRisks.filter(r => getGrossScore(r) >= 16 && r.status === "Open");
     const overdueRisks = kriRisks.filter(r => r.dueDate && new Date(r.dueDate) < new Date() && r.status !== "Closed");
 
     if (criticalRisks.length > 0) {

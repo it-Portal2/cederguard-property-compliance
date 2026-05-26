@@ -509,7 +509,7 @@ export function RiskIssues() {
   return (
     <>
       <ServiceManagementBar />
-      <div className="max-w-[98%] mx-auto space-y-6 sm:space-y-8 p-2 sm:p-4 lg:p-6">
+      <div className="space-y-6 sm:space-y-8">
         {/* Page Header*/}
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -521,7 +521,7 @@ export function RiskIssues() {
                 <ArrowLeft className="w-3.5 h-3.5" /> Back to Project Initiation
               </Link>
             )}
-            <h1 className="text-2xl font-semibold text-slate-900 uppercase tracking-tight">
+            <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
               Issues Register
             </h1>
             <p className="text-sm text-slate-500 mt-0.5">{contextLabel}</p>

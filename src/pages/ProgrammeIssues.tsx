@@ -134,7 +134,7 @@ export function ProgrammeIssues() {
   return (
     <>
       <ServiceManagementBar />
-      <div className="space-y-5 sm:space-y-6">
+      <div className="space-y-6 sm:space-y-8">
 
         {/* month picker for historical view.*/}
         <div className="flex justify-end">

@@ -5,6 +5,31 @@ Project: `cedarguard-compliance-suite` — a compliance and risk management SaaS
 
 ---
 
+## Working Protocol — read before doing anything
+
+### `tasks.md` is the source of truth for progress
+- All multi-step work is tracked in `tasks.md` in the repo root (a checklist + a log).
+- ALWAYS read `tasks.md` before starting work, and resume from the first unchecked `[ ]` item.
+- You have NO memory between sessions — `tasks.md` is your memory. A task is not "done" until it is written there. Do not rely on conversation history surviving; assume it won't.
+
+### Work one task at a time
+For each task in `tasks.md`, in order:
+1. Implement ONLY that task. Do not start the next one.
+2. Run the verification gate: `npx tsc --noEmit` AND `npm run build`. Both must exit clean.
+3. Commit locally per the Standing Rules below (no push, no `--no-verify`, no model names / co-authored-by footer).
+4. Mark the task `[x]` in `tasks.md` and add a one-line entry under `## Log`: what changed + which files.
+5. Only then move to the next task.
+If anything is blocking or ambiguous, STOP and ask — do not guess.
+
+### Plan before non-trivial work
+- Anything touching 3+ files, `useStore.ts`, `api.ts`, `aiService.ts`, or `riskMetrics.ts` → propose a plan first (plan mode) and wait for approval before editing.
+- One-sentence-diff rule: if you can describe the change in a single sentence, skip the plan and just do it.
+
+### Context hygiene
+- After finishing a task or milestone, expect the session to `/compact` or `/clear`. Keep `tasks.md` current at all times so a fresh session with zero context can pick up exactly where you stopped.
+
+---
+
 ## Tech Stack
 
 ### Frontend
@@ -56,6 +81,17 @@ Project: `cedarguard-compliance-suite` — a compliance and risk management SaaS
 - **Firebase**: Auth, Firestore (database), Firebase Cloud Messaging (push notifications)
 - **Vercel**: Deployment (`vercel.json` present)
 - **PWA**: Service worker via vite-plugin-pwa
+
+### Key commands
+| Command | Purpose |
+|---|---|
+| `npm install` | Install deps |
+| `npm run dev` | Dev server on port 3000 |
+| `npx tsc --noEmit` | Type-check (the canonical "is it broken" gate — runs in ~1-2s) |
+| `npm run build` | Production build (~6s; chunk-size warning on `index-*.js` is pre-existing and accepted) |
+| `npm run test` | Vitest — only `api/__tests__/context.test.ts` + `dispatcher.test.ts` exist; no UI tests |
+
+**Verification gate** for any non-trivial change: run `npx tsc --noEmit` AND `npm run build` before committing. Both must exit clean.
 
 ### Config Files
 | File | Purpose |
@@ -123,6 +159,24 @@ AIWriter.tsx                        AI content generation interface (drafting te
 NotificationWrapper.tsx             react-hot-toast provider wrapper
 InfoTooltip.tsx                     Hover tooltip component
 ```
+
+#### `/src/components/dashboard/` — Dashboard primitives (v4-calibrated)
+```
+ActivityTimeline.tsx                Recent activity feed with All/Risks/Issues tabs
+AIFollowUpPrompts.tsx               AI follow-up chip strip below the AI panel
+AnimatedCounter.tsx                 motion-driven count-up for KPI bignums
+ComplianceVelocityChart.tsx         Recharts stacked bar + trend line; range pills 7/30/90;
+                                    buckets by `stage` (live/archived/in progress)
+MiniSparkline.tsx                   38px sparkline used in KPI cards
+RibaTimeline.tsx                    Horizontal stage rail (S0..S5) for project view
+RiskBurnDown.tsx                    "Risk outlook · next 90 days" — data-driven projection
+                                    using top-3 risks + tolerance line + real milestones
+RiskCallout.tsx                     Critical-risk callout (uses calculateMatrixScore +
+                                    SEVERE_SCORE_THRESHOLD from riskMetrics.ts)
+ShimmerSkeleton.tsx                 Animated shimmer placeholder
+```
+These are the canonical typography references. Match their class strings when porting KPI
+tiles / status chips / table headers / sparklines to other pages.
 
 #### `/src/components/admin/` — Admin-only sub-components
 ```
@@ -273,6 +327,10 @@ api.ts                (188 lines)  API client: all frontend→backend calls via 
 firebase.ts           (81 lines)   Firebase client init, auth helpers (signIn, signOut, onAuthChange)
 roles.ts              (119 lines)  Role hierarchy helpers (isAtLeastClientAdmin, isSuperAdmin, etc.)
 utils.ts                           Utility functions: ID generation, date formatting, markdown stripping
+riskMetrics.ts                     Shared risk-score / ALE helpers + thresholds — SINGLE SOURCE OF TRUTH for
+                                   getGrossScore / getResidualScore / getGrossALE / getResidualALE /
+                                   SEVERE_SCORE_THRESHOLD (= 19) / MAJOR_SCORE_THRESHOLD (= 12). Used by
+                                   Dashboard, RiskBurnDown, RiskCallout, AIInquiryPopup.
 ```
 
 ### `/src/services/`
@@ -768,11 +826,37 @@ export const authRoutes = {
 - Authorization always checked at start of handler via `ctx.*` helpers
 
 ### Styling
-- Pure **Tailwind CSS** — no CSS modules, no styled-components, no SCSS
+- Pure **Tailwind CSS v4** (Vite plugin; no `tailwind.config.js`) — no CSS modules, no styled-components, no SCSS
 - `clsx()` for conditional class names: `clsx('base-class', condition && 'extra-class')`
 - `tailwind-merge` used where conflicting utility classes need resolution
 - Dark mode via `isDarkMode` store flag + `dark:` variant classes
 - Colour palette mostly Tailwind's `indigo-*`, `slate-*`, `emerald-*`, `red-*`
+
+### Typography — v4 calibration (load-bearing across the authenticated app)
+**Geist (sans) + Geist Mono** loaded globally via Google Fonts import in [`src/index.css:1`](src/index.css#L1); Tailwind `@theme` maps `--font-sans` and `--font-mono` ([`src/index.css:7-8`](src/index.css)). `font-sans` cascades from the authenticated root in [`src/App.tsx:174`](src/App.tsx#L174).
+
+**Canonical class strings** (lifted from [`src/pages/Dashboard.tsx`](src/pages/Dashboard.tsx) `KpiCard` at line 2349-2459):
+- **Eyebrow labels** (small UPPERCASE headings): `font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500`
+- **KPI big-numbers** (stat values): sans Geist + `font-medium ... tabular-nums` — NOT mono
+- **Status chips / badges** (uppercase pills): `font-mono uppercase tracking-wide font-medium` + colour utilities
+- **Table column headers** (`<th>`): `font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500`
+- **Inline numeric badges + IDs**: `font-mono tabular-nums`
+- **Kbd hints**: `font-mono text-[10px]`
+- **Sub-line / footer metadata with numeric content**: `font-mono text-[11px] text-slate-500 tabular-nums`
+
+**Bans across the authenticated app:**
+- ❌ `font-black` (weight 900) — looks wrong in Geist Mono. Use `font-semibold` (600) max.
+- ❌ `tracking-widest` / `tracking-tighter` on small uppercase labels. Use `tracking-wide`.
+- ❌ `italic` on regular text. **PRESERVED only on**: PDF/report pages (`ExecutiveReport`, `ProjectReport`, `ProgrammeReport`, `ClientProgrammeReport`, `InvoiceManager`, `Invoices`) and rich-text editor tooling (`src/components/governance/{editor,extensions,templates,meetings,forwardPlan,framework,reports}/`, `src/components/technicalAssurance/`). Default-exclude any file using `jspdf` / `html2canvas`.
+- ❌ Hardcoded score thresholds (`>= 16`, `>= 22`, etc.). Import `SEVERE_SCORE_THRESHOLD` / `MAJOR_SCORE_THRESHOLD` from [`src/lib/riskMetrics.ts`](src/lib/riskMetrics.ts).
+
+**Stay sans (Rule 7):**
+- H1 / H2 / H3 page or modal titles: `font-semibold tracking-tight`
+- Body paragraphs, descriptions, helper text
+- Action buttons (primary / secondary CTAs): `font-medium` — drop any inherited uppercase + tracking + bold
+- Form input labels and input fields
+
+**Exclusion list** (never touch for typography sweeps): `src/pages/Landing.tsx`, `src/pages/Login.tsx`, everything under `src/pages/public/`, `src/components/public/`, governance `.ts` extension files (HTML template strings).
 
 ### Form Handling
 - **No form library** (React Hook Form, Formik, etc. not used)
@@ -805,3 +889,27 @@ User action → Component handler → useStore method → api.ts → /api endpoi
 - `strict` mode not explicitly enabled — `noEmit` lint only via `tsc --noEmit`
 - Many `any` types in store and component state (especially around Firebase user and AI responses)
 - Interfaces/types defined inline in files that use them (no shared `types/` directory)
+
+### Risk-metric conventions
+- **Always import score / ALE helpers from [`src/lib/riskMetrics.ts`](src/lib/riskMetrics.ts).** Never re-derive scores inline.
+  - `getGrossScore(risk)` → prefers stored `grossRating`, falls back to `calculateMatrixScore(grossL, grossI)`, then raw `L × I`.
+  - `getResidualScore(risk)` → same precedence for residual.
+  - `getGrossALE(risk)` / `getResidualALE(risk)` → use stored ALE if present, else recompute from `impact × probability` (handles probability as decimal or percentage).
+  - `SEVERE_SCORE_THRESHOLD = 19`, `MAJOR_SCORE_THRESHOLD = 12`.
+- Risk matrix cell colour bands always use `calculateMatrixScore(L, I)` from [`src/data/riskScoringMatrix.ts`](src/data/riskScoringMatrix.ts), never raw `L × I`.
+- `normalizeRisk` in [`src/store/useStore.ts`](src/store/useStore.ts) backfills missing `residualALE` / `grossALE` from `impact × probability` on every risk load — downstream KPI math relies on this.
+
+### Refresh / skeleton conventions (dashboard surfaces)
+- During `isRefreshing` (or context-switch loaders `isLoadingContent` / `loadingOverview`), every visible content surface should render a skeleton, not freeze with stale data.
+- Setup-pending CTAs (`!isComplianceSetup || !isRiskSetup`) must be **gated on `!isLoadingContent && !loadingOverview && !isRefreshing`** — otherwise they flash during the gap between previous-context-clear and new-context-load.
+- Available skeleton helpers in [`src/pages/Dashboard.tsx`](src/pages/Dashboard.tsx): `SkeletonStatCards`, `SkeletonBar`, `SkeletonTable`, `SkeletonMatrix`, `SkeletonCriticalList`, `SkeletonSidePanel`, `SkeletonProjectsGrid`, `SkeletonRiskSummary`, `SkeletonIssueSummary`.
+
+### AI inquiry / StrictMode
+- `<React.StrictMode>` is enabled in [`src/main.tsx`](src/main.tsx). Any effect that calls a side-effectful function (API call, navigation) must be **idempotent** or **guarded with a ref**. See [`src/components/AIInquiryPopup.tsx`](src/components/AIInquiryPopup.tsx) — `autoSentRef` prevents StrictMode from firing two AI requests for the same prefilled prompt.
+
+### Standing rules for sweeps / refactors
+- **Never run regex passes on backtick template literals.** A pattern like `(["'`])((?:[^\\]|\\.)*?)\1` matches across newlines inside backticks and corrupts JSX inside `${...}`. Always restrict regex find/replace to single-line `'...'` or `"..."` strings unless the pattern is anchored on a definite per-line attribute.
+- **Never commit with `--no-verify`, never push with `--force` to `main` / `master`.** No model names, no co-authored-by footer in commit messages.
+- **Never push without explicit user instruction.** Commit locally; wait for "push".
+- **`api/routes/ai.ts` is out of bounds** — standing project rule. Do not edit.
+- **5×5 risk matrix is user-locked** — do not change the layout shape.

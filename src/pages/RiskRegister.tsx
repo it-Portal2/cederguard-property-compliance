@@ -945,7 +945,7 @@ export function RiskRegister() {
   return (
     <>
       <ServiceManagementBar />
-      <div className="max-w-[98%] mx-auto space-y-6 sm:space-y-8 p-2 sm:p-4 lg:p-6">
+      <div className="space-y-6 sm:space-y-8">
 
         {/* Page Header*/}
         <div className="flex flex-wrap items-start justify-between gap-4">
