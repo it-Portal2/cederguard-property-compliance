@@ -154,20 +154,12 @@ export const Login: React.FC = () => {
                 <section className="form-pane">
                     <header>
                         <Link className="brand" to="/">
-                            <div className="brand-mark">
-                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                                    <path d="M8 1.5L13 4v3.5L8 9.5 3 7.5V4l5-2.5z" stroke="#fff" strokeWidth="1.4" strokeLinejoin="round" />
-                                    <path d="M3 8.5L8 10.5l5-2M3 11L8 13l5-2" stroke="#fff" strokeWidth="1.2" strokeLinejoin="round" opacity="0.85" />
-                                </svg>
-                            </div>
-                            <div className="brand-text">
-                                <span className="brand-name">CedarGuard</span>
-                                <span className="brand-sub">Risk Intelligence</span>
-                            </div>
+                            <img
+                                src="/logo.png"
+                                alt="Cedar – Risk Intelligence & Compliance Platform"
+                                className="brand-logo"
+                            />
                         </Link>
-                        <div className="helpline">
-                            Need help? <a href="mailto:support@cedarguard.co.uk">Contact support</a>
-                        </div>
                     </header>
 
                     <div className="form-body">
@@ -300,14 +292,6 @@ export const Login: React.FC = () => {
                         </div>
                     </div>
 
-                    <footer className="form-foot">
-                        <span>© 2026 CedarGuard Risk Intelligence</span>
-                        <div className="legal-chips">
-                            <span>SOC 2 Type II</span>
-                            <span>ISO 27001</span>
-                            <span>GDPR</span>
-                        </div>
-                    </footer>
                 </section>
 
                 {/* Marketing pane */}
@@ -352,7 +336,7 @@ export const Login: React.FC = () => {
                             </div>
                             <div className="mk-chart">
                                 <div className="mk-chart-head">
-                                    <span>Risk burn-down · next 90 days</span>
+                                    <span>Risk outlook · next 90 days</span>
                                     <span className="legend">
                                         <span><i style={{ background: 'oklch(0.66 0.21 25)' }}></i>Do nothing</span>
                                         <span><i style={{ background: 'oklch(0.62 0.24 278)' }}></i>Mitigated</span>
@@ -393,15 +377,6 @@ export const Login: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="mk-logos">
-                        <div className="label">Trusted by housing providers &amp; PMOs across the UK</div>
-                        <div className="mk-logos-row">
-                            <div>◆ Northwood</div>
-                            <div>⬢ Bermondsey</div>
-                            <div>▲ Salisbury Co.</div>
-                            <div>★ Harlow Living</div>
-                        </div>
-                    </div>
                 </aside>
             </div>
         </div>
@@ -523,19 +498,17 @@ const CSS = `
   gap: 16px;
 }
 .cg-login-root .brand {
-  display: inline-flex; align-items: center; gap: 10px;
+  display: inline-flex; align-items: center;
   text-decoration: none;
   color: var(--fg);
 }
-.cg-login-root .brand-mark {
-  width: 30px; height: 30px; border-radius: 8px;
-  background: linear-gradient(135deg, var(--accent), oklch(from var(--accent) calc(l - 0.10) c calc(h - 16)));
-  display: grid; place-items: center; color: #fff;
-  box-shadow: 0 8px 20px -8px var(--accent-glow);
+.cg-login-root .brand-logo {
+  height: 44px;
+  width: auto;
+  max-width: 200px;
+  object-fit: contain;
+  display: block;
 }
-.cg-login-root .brand-text { display: flex; flex-direction: column; line-height: 1.1; }
-.cg-login-root .brand-name { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
-.cg-login-root .brand-sub { font-size: 10px; color: var(--muted); font-family: var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; margin-top: 2px; }
 
 .cg-login-root .helpline {
   font-size: 12.5px; color: var(--muted);
