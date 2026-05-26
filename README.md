@@ -7,6 +7,18 @@ CedarGuard is a multi-tenant SaaS platform that helps UK social housing provider
 
 ---
 
+## Product preview
+
+**Sign-in — two-pane auth with live portfolio preview**
+
+![CedarGuard sign-in page](./docs/screenshots/auth.png)
+
+**Executive dashboard — portfolio KPIs, risk heatmap, 90-day outlook**
+
+![CedarGuard executive dashboard](./docs/screenshots/dashboard.png)
+
+---
+
 ## Who it's for
 
 | Persona | What CedarGuard does for them |
