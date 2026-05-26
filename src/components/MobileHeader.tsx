@@ -1,12 +1,13 @@
 import React from 'react';
 import { useStore } from '../store/useStore';
 import { Menu, Bell, BellDot, User } from 'lucide-react';
+import UserAvatar from './UserAvatar';
 
 export function MobileHeader() {
-  const { 
-    user, 
-    notifications, 
-    isMobileMenuOpen, 
+  const {
+    user,
+    notifications,
+    isMobileMenuOpen,
     setMobileMenuOpen,
     activeProjectId,
     projects,
@@ -14,9 +15,6 @@ export function MobileHeader() {
   } = useStore();
 
   const activeProject = projects.find(p => p.id === activeProjectId);
-  const initials = user?.displayName 
-    ? user.displayName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
-    : user?.email?.substring(0, 2).toUpperCase() || 'U';
 
   const hasUnread = notifications.some(n => !n.read);
 
@@ -51,15 +49,16 @@ export function MobileHeader() {
             <span className="absolute top-3 right-3 w-2 h-2 bg-red-500 rounded-full border border-white animate-pulse" />
           )}
         </button>
-        <button 
+        <button
           onClick={() => setProfileSettingsOpen(true)}
-          className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold border border-indigo-200 shadow-sm overflow-hidden hover:ring-2 hover:ring-indigo-500 transition-all ml-1 touch-target"
+          className="w-8 h-8 rounded-full flex items-center justify-center hover:ring-2 hover:ring-indigo-500 transition-all ml-1 touch-target"
         >
-          {user?.photoURL ? (
-            <img src={user.photoURL} alt="Profile" className="w-8 h-8 object-cover" />
-          ) : (
-            initials
-          )}
+          <UserAvatar
+            photoURL={user?.photoURL}
+            displayName={user?.displayName}
+            email={user?.email}
+            size="sm"
+          />
         </button>
       </div>
     </header>
