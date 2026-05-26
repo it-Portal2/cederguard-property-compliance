@@ -1,12 +1,9 @@
 import React, { useState, useMemo } from "react";
 import {
   Plus,
-  Search,
-  Filter,
   Clock,
   CheckCircle2,
   AlertCircle,
-  MoreVertical,
   Calendar,
   CheckSquare,
   Pencil,
@@ -14,34 +11,43 @@ import {
   X,
   Info,
   ShieldCheck,
-  AlertTriangle,
   ExternalLink,
 } from "lucide-react";
 import { useNavigate } from "react-router";
-import { useStore, TaskItem, ComplianceItem } from "../store/useStore";
+import { useStore, TaskItem } from "../store/useStore";
 import { clsx } from "clsx";
 import toast from "react-hot-toast";
 import { StatsCard } from "../components/common/StatsCard";
+import DynamicTable from "../components/table/DynamicTable";
+import type {
+  ColumnDef,
+  RowAction,
+  BulkAction,
+  FilterDef,
+} from "../components/table/types";
 
-const EmptyState = ({ title, onAdd }: { title: string; onAdd?: () => void }) => (
-  <div className="flex flex-col items-center justify-center py-12 text-slate-400 space-y-4 opacity-60">
-    <div className="bg-slate-50 p-4 rounded-full">
-      <Info className="w-8 h-8 text-slate-300" />
-    </div>
-    <div className="text-center">
-      <p className="font-mono text-[11px] font-medium text-slate-500 uppercase tracking-wide">{title}</p>
-      {onAdd && (
-        <button
-          onClick={onAdd}
-          className="mt-4 flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 mx-auto"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Add Your First Task
-        </button>
-      )}
-    </div>
-  </div>
-);
+type TaskType = "task" | "compliance" | "risk_review" | "issue_deadline";
+
+interface TaskRow {
+  id: string;
+  title: string;
+  description?: string;
+  status: TaskItem["status"];
+  priority: TaskItem["priority"];
+  dueDate: string;
+  completedAt?: string;
+  projectName?: string;
+  projectId?: string;
+  isProgrammeLevel?: boolean;
+  programmeId?: string;
+  type: TaskType;
+  original?: any;
+  // Derived for DynamicTable filters — the filter `match` callback only
+  // receives one field value, so we flatten the cross-field bucket logic.
+  _contextId: string;
+  _timeline: "overdue" | "today" | "week" | "upcoming" | "completed";
+  _isOverdue: boolean;
+}
 
 export function MyTasks() {
   const navigate = useNavigate();
@@ -59,61 +65,30 @@ export function MyTasks() {
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState<"add" | "edit">("add");
   const [currentTask, setCurrentTask] = useState<Partial<TaskItem>>({});
-  const [search, setSearch] = useState("");
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
 
-  // Filters
-  const [typeFilter, setTypeFilter] = useState<
-    "all" | "task" | "compliance" | "risk_review" | "issue_deadline"
-  >("all");
-  const [statusFilter, setStatusFilter] = useState<
-    "all" | "overdue" | "today" | "week" | "upcoming" | "completed"
-  >("all");
-  const [contextFilter, setContextFilter] = useState<string>("all");
-
-  const toggleSelectAll = () => {
-    if (selectedIds.length === allItems.length) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(allItems.map((i) => i.id));
-    }
-  };
-
-  const toggleSelectOne = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
-  };
-
-  const handleBulkDelete = () => {
-    const tasksToDelete = allItems.filter(
-      (i) => i.type === "task" && selectedIds.includes(i.id),
-    );
-    if (tasksToDelete.length === 0) return;
-    setShowBulkDeleteModal(true);
-  };
-
-  const confirmBulkDelete = () => {
-    const tasksToDelete = allItems.filter(
-      (i) => i.type === "task" && selectedIds.includes(i.id),
-    );
-    tasksToDelete.forEach((t) => deleteTask(t.id));
-    setSelectedIds((prev) =>
-      prev.filter((id) => !tasksToDelete.find((t) => t.id === id)),
-    );
-    setShowBulkDeleteModal(false);
-    toast.success(`${tasksToDelete.length} tasks deleted successfully`);
-  };
-
-  // Merge manual tasks, actionable compliance items, risk reviews, and issue deadlines
-  const allItems = useMemo(() => {
+  // Merge manual tasks, actionable compliance items, risk reviews, and issue deadlines.
+  const allItems: TaskRow[] = useMemo(() => {
     const userId = user?.id || user?.uid || user?.email;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // 1. Manual tasks - strict owner filter
+    const bucketFor = (
+      status: TaskItem["status"],
+      dueDate: string,
+    ): TaskRow["_timeline"] => {
+      if (status === "Completed") return "completed";
+      if (!dueDate || dueDate === "No date set") return "upcoming";
+      const due = new Date(dueDate);
+      const diffDays = Math.ceil(
+        (due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+      );
+      if (diffDays < 0) return "overdue";
+      if (diffDays === 0) return "today";
+      if (diffDays <= 7) return "week";
+      return "upcoming";
+    };
+
+    // 1. Manual tasks — strict owner filter.
     const manualTasks = (Array.isArray(tasks) ? tasks : [])
       .filter((t) => {
         const isOwner =
@@ -121,55 +96,72 @@ export function MyTasks() {
           (t.owner === userId ||
             t.owner === user?.email ||
             t.owner === user?.uid);
-        return isOwner;
+        return !!isOwner;
       })
-      .map((t) => ({ ...t, type: "task" as const }));
+      .map<TaskRow>((t) => ({
+        ...t,
+        type: "task",
+        _contextId: (t as any).projectId || (t as any).programmeId || "",
+        _timeline: bucketFor(t.status, t.dueDate),
+        _isOverdue:
+          t.status !== "Completed" &&
+          !!t.dueDate &&
+          t.dueDate !== "No date set" &&
+          new Date(t.dueDate) < today,
+      }));
 
-    // 2. Compliance Tracker Items
+    // 2. Compliance Tracker items — only actionable, owned by user.
     const compActions = (Array.isArray(complianceItems) ? complianceItems : [])
       .filter((c) => {
-        // Only show if user is owner / PM
         const isOwner =
           !userId ||
           c.owners?.includes(userId) ||
           c.pmId === userId ||
           c.userId === userId;
         if (!isOwner) return false;
-
-        // Only show actionable items (not Live or Archived)
         return (
           (c.dueDate || c.stage === "In Progress") &&
           c.stage !== "Live" &&
           c.stage !== "Archived"
         );
       })
-      .map((c) => ({
-        id: c.id,
-        title: c.req || c.name || "Compliance Action",
-        description: `${c.reg || "General Regulation"} - ${c.auth || "Authority"}`,
-        status: (c.stage === "In Progress"
+      .map<TaskRow>((c) => {
+        const status: TaskItem["status"] = (c.stage === "In Progress"
           ? "In Progress"
           : c.status === "applicable"
             ? "Pending"
             : c.status === "closed" || c.stage === "Live"
               ? "Completed"
-              : c.status) as TaskItem["status"],
-        priority: (c.risk === "Critical" || c.risk === "High"
-          ? "High"
-          : c.risk === "Low"
-            ? "Low"
-            : "Medium") as TaskItem["priority"],
-        dueDate: c.dueDate || "No date set",
-        completedAt: c.completedAt,
-        projectName: c.projectName,
-        projectId: c.projectId,
-        isProgrammeLevel: c.isProgrammeLevel,
-        programmeId: c.programmeId,
-        type: "compliance" as const,
-        original: c,
-      }));
+              : c.status) as TaskItem["status"];
+        const dueDate = c.dueDate || "No date set";
+        return {
+          id: c.id,
+          title: c.req || c.name || "Compliance Action",
+          description: `${c.reg || "General Regulation"} - ${c.auth || "Authority"}`,
+          status,
+          priority: (c.risk === "Critical" || c.risk === "High"
+            ? "High"
+            : c.risk === "Low"
+              ? "Low"
+              : "Medium") as TaskItem["priority"],
+          dueDate,
+          completedAt: c.completedAt,
+          projectName: c.projectName,
+          projectId: c.projectId,
+          isProgrammeLevel: c.isProgrammeLevel,
+          programmeId: c.programmeId,
+          type: "compliance",
+          original: c,
+          _contextId: c.projectId || c.programmeId || "",
+          _timeline: bucketFor(status, dueDate),
+          _isOverdue:
+            status !== "Completed" &&
+            dueDate !== "No date set" &&
+            new Date(dueDate) < today,
+        };
+      });
 
-    // 3. Risk Review Dates
+    // 3. Risk Reviews due.
     const { risks, issues } = useStore.getState();
     const riskReviews = (Array.isArray(risks) ? risks : [])
       .filter((r) => {
@@ -177,24 +169,31 @@ export function MyTasks() {
           !userId || r.owner === userId || r.owner === user?.email;
         return isOwner && r.nextReview && r.status !== "Closed";
       })
-      .map((r) => ({
-        id: `REV-${r.id}`,
-        title: `Risk Review needed: ${r.title || r.desc}`,
-        description: `ID: ${r.id} - ${r.category}`,
-        status: "Pending" as TaskItem["status"],
-        priority: (r.priority === "High" || r.impact === "Critical"
-          ? "High"
-          : "Medium") as TaskItem["priority"],
-        dueDate: r.nextReview!,
-        projectName: r.projectName,
-        projectId: r.projectId,
-        isProgrammeLevel: r.isProgrammeLevel,
-        programmeId: r.programmeId,
-        type: "risk_review" as const,
-        original: r,
-      }));
+      .map<TaskRow>((r) => {
+        const dueDate = r.nextReview!;
+        const status: TaskItem["status"] = "Pending";
+        return {
+          id: `REV-${r.id}`,
+          title: `Risk Review needed: ${r.title || r.desc}`,
+          description: `ID: ${r.id} - ${r.category}`,
+          status,
+          priority: (r.priority === "High" || r.impact === "Critical"
+            ? "High"
+            : "Medium") as TaskItem["priority"],
+          dueDate,
+          projectName: r.projectName,
+          projectId: r.projectId,
+          isProgrammeLevel: r.isProgrammeLevel,
+          programmeId: r.programmeId,
+          type: "risk_review",
+          original: r,
+          _contextId: r.projectId || r.programmeId || "",
+          _timeline: bucketFor(status, dueDate),
+          _isOverdue: !!dueDate && new Date(dueDate) < today,
+        };
+      });
 
-    // 4. Issue Deadlines
+    // 4. Issue deadlines.
     const issueDeadlines = (Array.isArray(issues) ? issues : [])
       .filter((i) => {
         const isOwner =
@@ -204,102 +203,51 @@ export function MyTasks() {
           i.controlOwner === userId;
         return isOwner && i.deadline && i.status !== "4. Resolved";
       })
-      .map((i) => ({
-        id: `DL-${i.id}`,
-        title: `Issue Deadline: ${i.title || i.desc}`,
-        description: `ID: ${i.id} - ${i.category || "General"}`,
-        status: (i.status === "Resolved" || i.status === "4. Resolved"
+      .map<TaskRow>((i) => {
+        const status: TaskItem["status"] = (i.status === "Resolved" ||
+        i.status === "4. Resolved"
           ? "Completed"
           : i.status === "2. Escalated"
             ? "In Progress"
-            : "Pending") as TaskItem["status"],
-        priority: (i.severity === "Critical" ||
-        i.severity === "High" ||
-        i.priority >= 4
-          ? "High"
-          : "Medium") as TaskItem["priority"],
-        dueDate: i.deadline!,
-        completedAt: i.completedAt, // Use if available
-        projectName: i.projectName,
-        projectId: i.projectId,
-        isProgrammeLevel: i.isProgrammeLevel,
-        programmeId: (i as any).programmeId,
-        type: "issue_deadline" as const,
-        original: i,
-      }));
+            : "Pending") as TaskItem["status"];
+        const dueDate = i.deadline!;
+        return {
+          id: `DL-${i.id}`,
+          title: `Issue Deadline: ${i.title || i.desc}`,
+          description: `ID: ${i.id} - ${i.category || "General"}`,
+          status,
+          priority: (i.severity === "Critical" ||
+          i.severity === "High" ||
+          i.priority >= 4
+            ? "High"
+            : "Medium") as TaskItem["priority"],
+          dueDate,
+          completedAt: i.completedAt,
+          projectName: i.projectName,
+          projectId: i.projectId,
+          isProgrammeLevel: i.isProgrammeLevel,
+          programmeId: (i as any).programmeId,
+          type: "issue_deadline",
+          original: i,
+          _contextId: i.projectId || (i as any).programmeId || "",
+          _timeline: bucketFor(status, dueDate),
+          _isOverdue:
+            status !== "Completed" && !!dueDate && new Date(dueDate) < today,
+        };
+      });
 
-    const combined = [
-      ...manualTasks,
-      ...compActions,
-      ...riskReviews,
-      ...issueDeadlines,
-    ];
-
-    // Apply filters
-    return combined
-      .filter((item) => {
-        // Search filter
-        const matchesSearch =
-          item.title.toLowerCase().includes(search.toLowerCase()) ||
-          item.description?.toLowerCase().includes(search.toLowerCase()) ||
-          item.projectName?.toLowerCase().includes(search.toLowerCase());
-        if (!matchesSearch) return false;
-
-        // Type filter
-        if (typeFilter !== "all" && item.type !== typeFilter) return false;
-
-        // Context filter (Project/Programme)
-        if (
-          contextFilter !== "all" &&
-          item.projectId !== contextFilter &&
-          item.programmeId !== contextFilter
-        )
-          return false;
-
-        // Status/Timeline filter
-        if (statusFilter !== "all") {
-          if (statusFilter === "completed") return item.status === "Completed";
-          if (item.status === "Completed") return false; // Hide completed in other timeline views
-
-          const itemDate =
-            item.dueDate !== "No date set" ? new Date(item.dueDate) : null;
-          if (!itemDate) return statusFilter === "upcoming"; // Or show in upcoming if no date
-
-          const diffDays = Math.ceil(
-            (itemDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
-          );
-
-          if (statusFilter === "overdue") return diffDays < 0;
-          if (statusFilter === "today") return diffDays === 0;
-          if (statusFilter === "week") return diffDays >= 0 && diffDays <= 7;
-          if (statusFilter === "upcoming") return diffDays > 7;
-        }
-
-        return true;
-      })
-      .sort((a, b) => {
-        // Completed at the bottom
+    return [...manualTasks, ...compActions, ...riskReviews, ...issueDeadlines].sort(
+      (a, b) => {
+        // Completed at the bottom.
         if (a.status === "Completed" && b.status !== "Completed") return 1;
         if (a.status !== "Completed" && b.status === "Completed") return -1;
-
-        // Then by due date
         if (a.dueDate === "No date set") return 1;
         if (b.dueDate === "No date set") return -1;
         return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-      });
-  }, [
-    tasks,
-    complianceItems,
-    search,
-    typeFilter,
-    statusFilter,
-    contextFilter,
-    user,
-    projects,
-    programmes,
-  ]);
+      },
+    );
+  }, [tasks, complianceItems, user, projects, programmes]);
 
-  // KPI Calculation
   const kpis = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -315,32 +263,17 @@ export function MyTasks() {
         i.dueDate !== "No date set" &&
         new Date(i.dueDate).toDateString() === today.toDateString(),
     );
-
     const completedThisWeek = allItems.filter((i) => {
       if (i.status !== "Completed") return false;
-      if (!(i as any).completedAt) return true; // Fallback for old data: count all completed if no date
-      const date = new Date((i as any).completedAt);
+      if (!i.completedAt) return true;
+      const date = new Date(i.completedAt);
       return date >= lastWeek;
     });
-
     return {
       overdue: overdue.length,
       dueToday: dueToday.length,
       completed: completedThisWeek.length,
     };
-  }, [allItems]);
-
-  const criticalAlerts = useMemo(() => {
-    const today = new Date();
-    const nextWeek = new Date();
-    nextWeek.setDate(today.getDate() + 7);
-
-    return allItems.filter((item) => {
-      if (item.status === "Completed") return false;
-      if (item.dueDate === "No date set") return false;
-      const due = new Date(item.dueDate);
-      return due <= nextWeek;
-    });
   }, [allItems]);
 
   const openAddModal = () => {
@@ -355,10 +288,10 @@ export function MyTasks() {
     setShowModal(true);
   };
 
-  const openEditModal = (task: any) => {
-    if (task.type === "compliance") return; // Compliance items edited in tracker
+  const openEditModal = (task: TaskRow) => {
+    if (task.type !== "task") return; // Compliance / reviews / issues edit elsewhere.
     setModalMode("edit");
-    setCurrentTask(task);
+    setCurrentTask(task as Partial<TaskItem>);
     setShowModal(true);
   };
 
@@ -386,10 +319,8 @@ export function MyTasks() {
     setCurrentTask({});
   };
 
-  const toggleComplete = (item: any, e?: React.MouseEvent) => {
-    e?.stopPropagation();
+  const toggleComplete = (item: TaskRow) => {
     const isCompleting = item.status !== "Completed";
-
     if (item.type === "compliance") {
       updateComplianceItem(item.id, {
         stage: isCompleting ? "Live" : "In Progress",
@@ -412,8 +343,226 @@ export function MyTasks() {
     }
   };
 
+  // ── Columns ────────────────────────────────────────────────────────────────
+  const columns: ColumnDef<TaskRow>[] = [
+    {
+      key: "type",
+      label: "Source",
+      width: "160px",
+      render: (_v, r) => (
+        <div className="flex items-center gap-2">
+          {r.type === "compliance" ? (
+            <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+          ) : (
+            <CheckSquare className="w-4 h-4 text-indigo-500 shrink-0" />
+          )}
+          <span className="font-mono text-[11px] font-medium text-slate-500 uppercase tracking-wide truncate">
+            {r.projectName || "Programme"}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: "title",
+      label: "Action Item",
+      sortable: true,
+      render: (_v, r) => (
+        <div>
+          <div
+            className={clsx(
+              "font-semibold text-slate-800 text-[12px]",
+              r.status === "Completed" && "line-through opacity-50",
+            )}
+          >
+            {r.title}
+          </div>
+          {r.description && (
+            <div
+              className="text-[11px] text-slate-400 mt-0.5 line-clamp-1"
+              title={r.description}
+            >
+              {r.description}
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "dueDate",
+      label: "Due Date",
+      width: "140px",
+      sortable: true,
+      render: (v) => (
+        <div className="flex items-center gap-1.5 text-slate-600 text-[11px] font-medium whitespace-nowrap">
+          <Calendar className="w-3.5 h-3.5 text-indigo-400" />
+          {v}
+        </div>
+      ),
+    },
+    {
+      key: "priority",
+      label: "Priority",
+      width: "100px",
+      render: (v) => (
+        <span
+          className={clsx(
+            "font-mono px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide border",
+            v === "High"
+              ? "bg-rose-50 text-rose-700 border-rose-200"
+              : v === "Medium"
+                ? "bg-amber-50 text-amber-700 border-amber-200"
+                : "bg-slate-50 text-slate-600 border-slate-200",
+          )}
+        >
+          {v}
+        </span>
+      ),
+    },
+    {
+      key: "status",
+      label: "Status",
+      width: "120px",
+      render: (_v, r) => (
+        <span
+          className={clsx(
+            "font-mono px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide border whitespace-nowrap",
+            r.status === "In Progress"
+              ? "bg-blue-50 text-blue-700 border-blue-200"
+              : r.status === "Completed"
+                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                : r._isOverdue
+                  ? "bg-rose-50 text-rose-700 border-rose-200"
+                  : "bg-slate-50 text-slate-400 border-slate-200",
+          )}
+        >
+          {r._isOverdue ? "Overdue" : r.status}
+        </span>
+      ),
+    },
+  ];
+
+  // ── Filters ────────────────────────────────────────────────────────────────
+  const filters: FilterDef<TaskRow>[] = [
+    {
+      key: "_timeline",
+      label: "Timeline",
+      type: "select",
+      placeholder: "All timelines",
+      options: [
+        { value: "overdue", label: "Overdue" },
+        { value: "today", label: "Due today" },
+        { value: "week", label: "Due this week" },
+        { value: "upcoming", label: "Upcoming" },
+        { value: "completed", label: "Completed" },
+      ],
+    },
+    {
+      key: "type",
+      label: "Source",
+      type: "select",
+      placeholder: "All sources",
+      options: [
+        { value: "task", label: "Manual tasks" },
+        { value: "compliance", label: "Compliance" },
+        { value: "risk_review", label: "Risk reviews" },
+        { value: "issue_deadline", label: "Issue deadlines" },
+      ],
+    },
+    {
+      key: "_contextId",
+      label: "Project / Programme",
+      type: "select",
+      placeholder: "All contexts",
+      options: [
+        ...programmes.map((p) => ({ value: p.id, label: p.name })),
+        ...projects.map((p) => ({ value: p.id, label: p.name })),
+      ],
+    },
+  ];
+
+  // ── Row actions ────────────────────────────────────────────────────────────
+  const rowActions: RowAction<TaskRow>[] = [
+    {
+      key: "toggle-complete",
+      label: (r) => (r.status === "Completed" ? "Re-open" : "Complete"),
+      icon: CheckCircle2,
+      isActive: (r) => r.status === "Completed",
+      onClick: (r) => toggleComplete(r),
+    },
+    {
+      key: "edit",
+      label: "Edit",
+      icon: Pencil,
+      isVisible: (r) => r.type === "task",
+      onClick: (r) => openEditModal(r),
+    },
+    {
+      key: "open-tracker",
+      label: "Go to Compliance Tracker",
+      icon: ExternalLink,
+      isVisible: (r) => r.type === "compliance",
+      onClick: () => navigate("/compliance"),
+    },
+    {
+      key: "delete",
+      label: "Delete",
+      icon: Trash2,
+      isDanger: true,
+      isVisible: (r) => r.type === "task",
+      requireConfirm: {
+        icon: Trash2,
+        variant: "danger" as const,
+        title: "Delete task",
+        message: (r: TaskRow) =>
+          `Permanently delete "${r.title}"? This cannot be undone.`,
+        confirmLabel: "Delete",
+        isDanger: true,
+      },
+      onClick: (r) => {
+        deleteTask(r.id);
+        toast.success(`Task "${r.title}" deleted`);
+      },
+    },
+  ];
+
+  // ── Bulk actions ───────────────────────────────────────────────────────────
+  const bulkActions: BulkAction<TaskRow>[] = [
+    {
+      key: "bulk-delete",
+      label: "Delete selected",
+      icon: Trash2,
+      isDanger: true,
+      style: "bar",
+      requireConfirm: {
+        icon: Trash2,
+        variant: "danger" as const,
+        title: (rows: TaskRow[]) => {
+          const deletable = rows.filter((r) => r.type === "task").length;
+          return `Delete ${deletable} task${deletable === 1 ? "" : "s"}`;
+        },
+        message: (rows: TaskRow[]) => {
+          const deletable = rows.filter((r) => r.type === "task").length;
+          const skipped = rows.length - deletable;
+          const skippedNote = skipped
+            ? ` ${skipped} non-task row${skipped === 1 ? "" : "s"} will be skipped.`
+            : "";
+          return `Permanently delete ${deletable} selected task${deletable === 1 ? "" : "s"}?${skippedNote} This cannot be undone.`;
+        },
+        confirmLabel: "Delete all",
+        isDanger: true,
+      },
+      onClick: (rows) => {
+        const deletable = rows.filter((r) => r.type === "task");
+        deletable.forEach((r) => deleteTask(r.id));
+        toast.success(
+          `${deletable.length} task${deletable.length === 1 ? "" : "s"} deleted`,
+        );
+      },
+    },
+  ];
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 sm:space-y-8">
       {/* KPI Header */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatsCard
@@ -442,65 +591,41 @@ export function MyTasks() {
         />
       </div>
 
-      {/* Filter Bar */}
-      <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg">
-          <Filter className="w-3.5 h-3.5 text-slate-400" />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="bg-transparent text-xs font-bold text-slate-600 outline-none cursor-pointer"
-          >
-            <option value="all">All Timelines</option>
-            <option value="overdue">Overdue</option>
-            <option value="today">Due Today</option>
-            <option value="week">Due This Week</option>
-            <option value="upcoming">Upcoming</option>
-            <option value="completed">Completed</option>
-          </select>
-        </div>
-
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg">
-          <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value as any)}
-            className="bg-transparent text-xs font-bold text-slate-600 outline-none cursor-pointer"
-          >
-            <option value="all">All Sources</option>
-            <option value="task">Manual Tasks</option>
-            <option value="compliance">Compliance</option>
-            <option value="risk_review">Risk Reviews</option>
-            <option value="issue_deadline">Issue Deadlines</option>
-          </select>
-        </div>
-
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg">
-          <Plus className="w-3.5 h-3.5 text-slate-400" />
-          <select
-            value={contextFilter}
-            onChange={(e) => setContextFilter(e.target.value)}
-            className="bg-transparent text-xs font-bold text-slate-600 outline-none cursor-pointer max-w-[150px]"
-          >
-            <option value="all">Project/Programme</option>
-            <optgroup label="Programmes">
-              {programmes.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </optgroup>
-            <optgroup label="Projects">
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </optgroup>
-          </select>
-        </div>
-
-        <div className="ml-auto flex items-center">
+      <DynamicTable<TaskRow>
+        data={allItems}
+        columns={columns}
+        filters={filters}
+        rowActions={rowActions}
+        bulkActions={bulkActions}
+        searchable
+        searchPlaceholder="Search workspace..."
+        searchFields={["title", "description", "projectName"]}
+        selectable
+        getRowId={(r) => r.id}
+        onRowClick={(r) => openEditModal(r)}
+        pagination={{
+          enabled: true,
+          pageSize: 25,
+          pageSizeOptions: [10, 25, 50],
+        }}
+        headerVariant="light"
+        stickyHeader
+        emptyState={{
+          icon: Info,
+          title: "No active items in your workspace",
+          description:
+            "Add a new task or review compliance requirements to get started.",
+          action: (
+            <button
+              onClick={openAddModal}
+              className="mt-4 flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 mx-auto"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Add Your First Task
+            </button>
+          ),
+        }}
+        toolbarActions={
           <button
             onClick={openAddModal}
             className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-all flex items-center gap-2"
@@ -508,290 +633,8 @@ export function MyTasks() {
             <Plus className="w-4 h-4" />
             Add Task
           </button>
-        </div>
-
-        <div className="h-6 w-px bg-slate-200 ml-auto hidden md:block"></div>
-
-        <div className="relative w-full md:w-64">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search workspace..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-          />
-        </div>
-      </div>
-
-      {/* Task List */}
-      <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <div className="flex items-center gap-4">
-            <span className="font-mono text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
-              Active Action Register
-            </span>
-            {selectedIds.length > 0 && (
-              <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left duration-300">
-                <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">
-                  {selectedIds.length} Selected
-                </span>
-                {allItems.some(
-                  (i) => i.type === "task" && selectedIds.includes(i.id),
-                ) && (
-                  <button
-                    onClick={handleBulkDelete}
-                    className="font-mono text-rose-600 hover:text-rose-700 text-[11px] font-semibold uppercase tracking-wide flex items-center gap-1"
-                  >
-                    <Trash2 className="w-3 h-3" /> Bulk Delete
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {allItems.length > 0 ? (
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50/80 border-b border-slate-200 font-mono text-[11px] uppercase font-medium tracking-wide text-slate-500">
-              <tr>
-                <th className="p-4 text-left">
-                  <input
-                    type="checkbox"
-                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                    checked={
-                      selectedIds.length > 0 &&
-                      selectedIds.length === allItems.length
-                    }
-                    onChange={toggleSelectAll}
-                  />
-                </th>
-                <th className="p-4 text-left">Source</th>
-                <th className="p-4 text-left">Action Item</th>
-                <th className="p-4 text-left w-32">Due Date</th>
-                <th className="p-4 text-left w-24">Priority</th>
-                <th className="p-4 text-left w-32">Status</th>
-                <th className="p-4 text-right w-32">Manage</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {allItems.map((item) => (
-                <tr
-                  key={item.id}
-                  className="hover:bg-slate-50 transition-colors group cursor-pointer"
-                  onClick={() =>
-                    item.type === "task" ? openEditModal(item) : null
-                  }
-                >
-                  <td className="p-4" onClick={(e) => e.stopPropagation()}>
-                    <input
-                      type="checkbox"
-                      className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                      checked={selectedIds.includes(item.id)}
-                      onClick={(e) => toggleSelectOne(item.id, e)}
-                      onChange={() => {}}
-                    />
-                  </td>
-                  <td className="p-4">
-                    <div className="flex items-center gap-2">
-                      {item.type === "compliance" ? (
-                        <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
-                      ) : (
-                        <CheckSquare className="w-4 h-4 text-indigo-500 shrink-0" />
-                      )}
-                      <div className="font-mono text-[11px] font-medium text-slate-500 uppercase tracking-wide truncate max-w-[120px]">
-                        {item.projectName || "Programme"}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <div
-                      className={clsx(
-                        "font-semibold text-slate-800",
-                        item.status === "Completed" &&
-                          "line-through opacity-50",
-                      )}
-                    >
-                      {item.title}
-                    </div>
-                    {item.description && (
-                      <div
-                        className="text-[11px] text-slate-400 mt-0.5 line-clamp-1 "
-                        title={item.description}
-                      >
-                        {item.description}
-                      </div>
-                    )}
-                  </td>
-                  <td className="p-4 text-slate-600 text-[11px] font-medium text-nowrap">
-                    <div className="flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-indigo-400" />
-                      {item.dueDate}
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <span
-                      className={clsx(
-                        "font-mono px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide border",
-                        item.priority === "High"
-                          ? "bg-rose-50 text-rose-700 border-rose-200"
-                          : item.priority === "Medium"
-                            ? "bg-amber-50 text-amber-700 border-amber-200"
-                            : "bg-slate-50 text-slate-600 border-slate-200",
-                      )}
-                    >
-                      {item.priority}
-                    </span>
-                  </td>
-                  <td className="p-4 w-32">
-                    {(() => {
-                      const isOverdue =
-                        item.status !== "Completed" &&
-                        item.dueDate !== "No date set" &&
-                        new Date(item.dueDate) <
-                          new Date(new Date().setHours(0, 0, 0, 0));
-                      return (
-                        <span
-                          className={clsx(
-                            "font-mono px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide border whitespace-nowrap",
-                            item.status === "In Progress"
-                              ? "bg-blue-50 text-blue-700 border-blue-200"
-                              : item.status === "Completed"
-                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                : isOverdue
-                                  ? "bg-rose-50 text-rose-700 border-rose-200 shadow-[0_0_10px_rgba(225,29,72,0.1)]"
-                                  : "bg-slate-50 text-slate-400 border-slate-200",
-                          )}
-                        >
-                          {isOverdue ? "Overdue" : item.status}
-                        </span>
-                      );
-                    })()}
-                  </td>
-                  <td className="p-4">
-                    <div className="flex items-center justify-end gap-2 pr-2">
-                      <button
-                        onClick={(e) => toggleComplete(item, e)}
-                        className={clsx(
-                          "p-2 rounded-lg transition-all border shadow-sm",
-                          item.status === "Completed"
-                            ? "text-emerald-700 bg-emerald-50 border-emerald-200"
-                            : "text-slate-400 bg-white border-slate-200 hover:text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200",
-                        )}
-                        title={
-                          item.status === "Completed" ? "Re-open" : "Complete"
-                        }
-                      >
-                        <CheckCircle2 className="w-4 h-4" />
-                      </button>
-                      {item.type === "task" && (
-                        <>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openEditModal(item);
-                            }}
-                            className="p-2 text-slate-400 bg-white border border-slate-200 rounded-lg hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 transition-all shadow-sm"
-                            title="Edit task"
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteTask(item.id);
-                              toast.success(`Task "${item.title}" deleted`);
-                            }}
-                            className="p-2 text-slate-400 bg-white border border-slate-200 rounded-lg hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all shadow-sm"
-                            title="Delete task"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </>
-                      )}
-                      {item.type === "compliance" && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate("/compliance");
-                          }}
-                          className="p-2 text-slate-400 bg-white border border-slate-200 rounded-lg hover:text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200 transition-all shadow-sm"
-                          title="Go to Compliance Tracker"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <EmptyState 
-            title="No active items in your workspace. Add a new task or review compliance requirements to get started." 
-            onAdd={() => {
-              setModalMode('add');
-              setCurrentTask({
-                owner: user?.id || user?.uid || user?.email || '',
-                status: 'Pending',
-                priority: 'Medium'
-              });
-              setShowModal(true);
-            }}
-          />
-        )}
-      </div>
-
-      {/* Bulk Delete Confirmation Modal */}
-      {showBulkDeleteModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-300">
-            <div className="px-6 py-5 border-b border-slate-100 bg-rose-50/50">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-600">
-                  <Trash2 className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-slate-800 tracking-tight text-lg">
-                    Confirm Bulk Delete
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {selectedIds.length} selected items
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="p-6">
-              <p className="text-sm text-slate-600">
-                Are you sure you want to permanently delete{" "}
-                <span className="font-bold text-rose-600">
-                  {selectedIds.filter((id) =>
-                    allItems.find((i) => i.id === id && i.type === "task"),
-                  )?.length || 0}
-                </span>{" "}
-                selected tasks? This action cannot be undone.
-              </p>
-              <div className="pt-5 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowBulkDeleteModal(false)}
-                  className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={confirmBulkDelete}
-                  className="flex-1 px-4 py-2.5 bg-rose-600 text-white rounded-lg text-sm font-medium hover:bg-rose-700 transition-all shadow-lg shadow-rose-200"
-                >
-                  Delete All
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+        }
+      />
 
       {/* Add/Edit Task Modal */}
       {showModal && (
