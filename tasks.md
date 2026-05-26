@@ -2,7 +2,7 @@
 
 ## To do (work top-down, one at a time)
 
-- [ ] **Task 1 — Create `src/components/UserAvatar.tsx`.** New reusable component takes `photoURL?: string | null`, `displayName?: string | null`, `email?: string | null`, `size?: 'sm' | 'md' | 'lg'`, `className?: string`. Renders `<img src={photoURL}>` when a non-empty URL is supplied; falls back to initials badge (extracted from displayName → email → "U") on `onError` and on missing/empty URL. Uses gradient background matching the current Sidebar footer style (`oklch(0.7 0.13 60), oklch(0.55 0.17 25)`). No store reads — pure props. Done = file exists, exports default, `tsc --noEmit` + `build` clean.
+- [x] **Task 1 — Create `src/components/UserAvatar.tsx`.** New reusable component takes `photoURL?: string | null`, `displayName?: string | null`, `email?: string | null`, `size?: 'sm' | 'md' | 'lg'`, `className?: string`. Renders `<img src={photoURL}>` when a non-empty URL is supplied; falls back to initials badge (extracted from displayName → email → "U") on `onError` and on missing/empty URL. Uses gradient background matching the current Sidebar footer style (`oklch(0.7 0.13 60), oklch(0.55 0.17 25)`). No store reads — pure props. Done = file exists, exports default, `tsc --noEmit` + `build` clean.
 
 - [ ] **Task 2 — Wire `UserAvatar` into `src/components/Header.tsx`.** Replace the inline avatar rendering at lines 582-590 with `<UserAvatar photoURL={user?.photoURL} displayName={user?.displayName} email={user?.email} size="sm" />`. Drop the inline `getInitials` helper if no other call site uses it (it's at lines 180-190 — check first). Done = Header renders avatar with onError fallback, gate clean.
 
@@ -22,3 +22,5 @@
 ## Log (filled in as tasks complete)
 
 <!-- entries get added here as each task finishes -->
+
+- **Task 1** (commit `a22878b`) — added `src/components/UserAvatar.tsx`: photoURL → onError → initials gradient badge, three sizes (sm/md/lg), pure props.
