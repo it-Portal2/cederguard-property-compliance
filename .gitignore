@@ -81,3 +81,7 @@ regulations.html
 # Temporary directories
 tmp/
 .env*.local
+
+# Claude Code working files (local only)
+handoff.md
+tasks.md
