@@ -76,20 +76,39 @@ If anything is blocking or ambiguous, STOP and ask — do not guess.
 | @vitest/ui | Vitest browser UI |
 | tsx ^4.21.0 | TypeScript execution for scripts |
 | autoprefixer ^10.4.21 | PostCSS autoprefixer |
+| electron ^33 | macOS arm64 desktop binary runtime |
+| electron-builder ^25 | DMG packaging + (dormant) code-sign + notarytool config |
+| electron-log ^5.4 | JSON-first log file at `app.getPath('logs')/main.log`; renderer→main IPC bridge |
+| electron-updater ^6.8 | Auto-update foundation (pinned ≥6.3.x for CVE-2024-39698; dormant until update feed exists) |
+| concurrently ^9 | Drives multi-process dev scripts (`electron:dev`, `electron:dev:full`) |
+| cross-env ^7 | Cross-platform env-var setting in npm scripts |
+| wait-on ^8 | Waits for Vite dev server to be reachable before starting Electron |
 
 ### Infrastructure
-- **Firebase**: Auth, Firestore (database), Firebase Cloud Messaging (push notifications)
-- **Vercel**: Deployment (`vercel.json` present)
-- **PWA**: Service worker via vite-plugin-pwa
+- **Firebase**: Auth, Firestore (database), Firebase Cloud Messaging (push notifications). Storage bucket is `cedar-risk-compliance-suite.firebasestorage.app` (post-Oct-2024 default; NOT the legacy `.appspot.com`).
+- **Vercel**: Deployment (`vercel.json` present). Serverless function body limit is 4.5 MB on all plans (drives the 3 MB per-file upload cap — see Storage conventions below).
+- **PWA**: Service worker via vite-plugin-pwa. Skipped on desktop bundle (guarded by `isDesktop` in `src/main.tsx`).
+- **Desktop**: Electron 33 binary at `apps/desktop/main.cjs`. Single-source codebase — same React + Vite renderer, web auth-bridge swapped for desktop OAuth via Google PKCE + loopback HTTP + Firebase REST `signInWithIdp`. Tokens encrypted with `safeStorage` at `<userData>/auth.bin`. See `apps/desktop/` section below + `~/.claude/plans/cuddly-watching-lantern.md` for the full M1.x narrative.
 
 ### Key commands
+
+**Web:**
 | Command | Purpose |
 |---|---|
 | `npm install` | Install deps |
-| `npm run dev` | Dev server on port 3000 |
+| `npm run dev` | Vite dev server on port 3000 (web only — no API) |
 | `npx tsc --noEmit` | Type-check (the canonical "is it broken" gate — runs in ~1-2s) |
 | `npm run build` | Production build (~6s; chunk-size warning on `index-*.js` is pre-existing and accepted) |
 | `npm run test` | Vitest — only `api/__tests__/context.test.ts` + `dispatcher.test.ts` exist; no UI tests |
+| `vercel dev` | Vite + serverless API together on port 3000 |
+
+**Desktop (three legitimate dev flows — pick by what you're iterating on):**
+| Command | Renderer | API target | When to use |
+|---|---|---|---|
+| `npm run electron:dev` | Vite (HMR) | **production** API via dev-only webRequest CORS rewrite in `apps/desktop/main.cjs` | Fastest inner loop with real Firestore data; no vercel dev startup overhead |
+| `npm run electron:dev:full` | vercel dev (Vite + API on :3000) | localhost (same-origin) | Full-stack iteration when changing API routes + UI together |
+| `npm run dev:install` / `dev:install:fast` | packaged `.app` rsync'd into `~/Applications/CedarGuard.app` (NOT `/Applications` — Gatekeeper/TCC reasons) | production (file://) | Verify packaged-only behaviour (deep links, `app.isPackaged` branches). Fast variant repacks asar only (~5-10s); full rebuilds via `electron-builder --dir`. |
+| `npm run dist:mac` | builds DMG | n/a | Produces `dist-electron/CedarGuard-*-arm64.dmg` for distribution. Unsigned until Apple Dev cert lands. |
 
 **Verification gate** for any non-trivial change: run `npx tsc --noEmit` AND `npm run build` before committing. Both must exit clean.
 
@@ -99,11 +118,16 @@ If anything is blocking or ambiguous, STOP and ask — do not guess.
 | `tsconfig.json` | Target ES2022, `@/*` path alias pointing to repo root, bundler resolution |
 | `vite.config.ts` | React + Tailwind + PWA plugins; manual chunk splits (vendor/firebase/utils/viz/docs/ai) |
 | `vitest.config.ts` | Node env, globals, v8 coverage, tests in `api/__tests__/**` and `src/__tests__/**` |
-| `firebase.json` | Firebase deployment config |
-| `firestore.rules` | Firestore security rules |
+| `firebase.json` | Firebase deployment config — wires `firestore.rules` AND `storage.rules` |
+| `firestore.rules` | Firestore security rules (defence-in-depth — all production access via Admin SDK) |
+| `storage.rules` | Firebase Storage rules — **deny-all-client** (defence-in-depth). No client ever touches Storage Web SDK; uploads go through `uploadAsset()` server-side. Deploy via `firebase deploy --only storage`. |
 | `firestore.indexes.json` | Custom composite index definitions |
 | `.firebaserc` | Firebase project reference |
 | `vercel.json` | Vercel deployment config |
+| `electron-builder.yml` | DMG packaging config; dormant `hardenedRuntime` + `notarize.teamId` block (lights up when Apple Dev cert + env vars present) |
+| `build/entitlements.mac.plist` | macOS hardened-runtime entitlements (`allow-jit` for V8, `network.client`, `disable-library-validation` for native modules) |
+| `RELEASE.md` | Cut-a-release runbook: `npm version` → `git push --follow-tags` → CI |
+| `.github/workflows/build-desktop.yml` | CI: lint+build on push to `main`; full DMG (signed if cert secrets present) on tag `v*`. Uses `apple-actions/import-codesign-certs` for temporary keychain. |
 
 ---
 
@@ -112,8 +136,63 @@ If anything is blocking or ambiguous, STOP and ask — do not guess.
 ### Root
 ```
 /src/main.tsx                         Bootstrap: React root, PWA registration, global error handler
-/src/App.tsx                          Router: authenticated vs public layout, all route definitions
+/src/App.tsx                          Router: HashRouter on desktop / BrowserRouter on web;
+                                      auth + setup-wizard branching for desktop
 /src/index.css                        Global CSS resets and Tailwind base
+```
+
+### `/apps/desktop/` — Electron main-process code (.cjs because main runs CJS)
+```
+main.cjs              (~500 lines)  Electron entry. Single-instance lock, BrowserWindow setup with
+                                    show:false + ready-to-show (no white flash), native macOS menu
+                                    (CedarGuard/File/Edit/View/Window/Help) via Menu.buildFromTemplate,
+                                    About panel via app.setAboutPanelOptions, dev-mode CORS rewrite for
+                                    the `electron:dev` flow (intentional — see comment block in file),
+                                    all IPC handlers (auth:*, config:*, setup:*, log:write,
+                                    diagnostics:get, update:*).
+preload.cjs                         contextBridge: exposes `window.cedar = { isDesktop, isDev,
+                                    apiBaseUrl, auth, config, setup, log, diagnostics, update, menu }`
+                                    via contextIsolation: true + sandbox: true. NEVER exposes raw
+                                    process.env or full ipcRenderer — only the specific resolved
+                                    values + the auth/IPC channels the renderer needs.
+googleOAuth.cjs                     Full Google OAuth implementation: PKCE S256, one-shot HTTP server
+                                    on `127.0.0.1:0` (loopback per RFC 8252; binds to 127.0.0.1 NOT
+                                    0.0.0.0 — AppAuth-JS#93 was a CVE-class issue), code exchange,
+                                    Firebase REST signInWithIdp exchange, refresh-token middleware,
+                                    sign-out with Google /revoke. Cancel-in-flight via `cancelSignIn()`.
+secureStore.cjs                     `safeStorage`-wrapped read/write for `<userData>/config.bin`
+                                    (backend chooser + setup timestamp), 0o600 perms.
+logger.cjs                          electron-log wrapper. JSON format from day one (switching format
+                                    mid-flight invalidates historical analysis). File sink at
+                                    `app.getPath('logs')/main.log`, 5MB rotation. Defensive against
+                                    electron-log v5's variable message shape — format function must
+                                    NEVER throw. Convention: dot-notation event names + structured
+                                    payloads, e.g. `log('info', 'auth.signin.start', { method: 'google' })`.
+windowState.cjs                     Inline window position/size persistence (~75 LOC, no dep).
+                                    Reads/writes `<userData>/window-state.json` with multi-monitor
+                                    safety (drops saved x/y if the saved display is no longer attached).
+                                    Pattern direct from Electron BrowserWindow docs.
+updater.cjs                         electron-updater wrapper. autoDownload only when packaged + non-dev.
+                                    Structured event listeners through electron-log. 10s + 4h check
+                                    cadence. Dormant until publish URL hosts `latest-mac.yml`.
+built-env.cjs                       **GITIGNORED.** Build-time bake of VITE_* env vars (Firebase API
+                                    key, Google Desktop OAuth client + secret, prod API URL) into
+                                    the packaged binary. Generated by `scripts/buildDesktopEnv.cjs`
+                                    before each `dist:mac`. Contains the OAuth client_secret — never
+                                    commit.
+```
+
+### `/scripts/` — Build + dev workflow helpers
+```
+buildDesktopEnv.cjs                 Reads `.env.local` and writes the 4 desktop-needed VITE_* vars to
+                                    `apps/desktop/built-env.cjs` so the packaged binary has them at
+                                    runtime (dotenv path doesn't work inside an asar). Wired into
+                                    `dist:mac` npm script.
+devInstall.cjs                      Fast `dev:install` + `dev:install:fast` workflows. Full mode:
+                                    build:desktop-web → buildDesktopEnv → electron-builder --dir →
+                                    rsync into ~/Applications/CedarGuard.app → ad-hoc codesign.
+                                    Fast mode: skip --dir, repack asar in place. ~30-40s vs ~5-10s.
+                                    User data in ~/Library/Application Support/ survives both.
 ```
 
 ### `/src/components/` — Shared UI components
@@ -163,6 +242,22 @@ UserAvatar.tsx                      Shared user avatar: renders <img src={photoU
                                     SINGLE SOURCE OF TRUTH for avatar rendering — Header, Sidebar,
                                     MobileHeader all consume this. Never inline an <img photoURL>
                                     in new code; always use <UserAvatar/>.
+```
+
+#### `/src/components/desktop/` — Desktop-only renderer components
+```
+FirstRunWizard.tsx                  Multi-step backend chooser shown on first launch when no
+                                    `setupCompletedAt` is present in `<userData>/config.bin`.
+                                    Step 1 = Firebase (enabled) / Microsoft Azure (disabled,
+                                    "Coming soon"). When Azure milestone lands, just flip the
+                                    disabled flag and add the Azure-specific step components.
+BackendChooserCard.tsx              Two-state card primitive used inside FirstRunWizard.
+HealthBanner.tsx                    Non-blocking offline indicator. Fires `?action=ping` async on
+                                    mount; renders null on success, fixed-position red banner with
+                                    Retry on failure. Treats <500 as "server reachable" (so 401 from
+                                    a deployment without the pre-auth ping bypass doesn't trigger
+                                    a false outage banner). NEVER blocks first paint —
+                                    Slack/VS Code/GitHub Desktop reference pattern.
 ```
 
 #### `/src/components/dashboard/` — Dashboard primitives (v4-calibrated)
@@ -357,14 +452,50 @@ useStore.ts           (2000+ lines) Single Zustand store: all app state, API cal
 
 ### `/src/lib/`
 ```
-api.ts                (188 lines)  API client: all frontend→backend calls via action-dispatch pattern
-firebase.ts           (81 lines)   Firebase client init, auth helpers (signIn, signOut, onAuthChange)
-roles.ts              (119 lines)  Role hierarchy helpers (isAtLeastClientAdmin, isSuperAdmin, etc.)
+api.ts                             API client: all frontend→backend calls via action-dispatch pattern.
+                                   `addEvidence(projectId, document, file?)` accepts optional
+                                   `{ base64, mime }` file payload (server uploads via uploadAsset).
+                                   API_URL resolves: desktop → `window.cedar.apiBaseUrl`; web → `/api`.
+firebase.ts                        Firebase client init. Exports `auth`, `db`, `messaging`,
+                                   `googleProvider`, `loginWithGoogle`, `logout`, `sendMagicLink`,
+                                   `confirmMagicLink`, `isMagicLink`. Does NOT export `storage` —
+                                   no client code uses the Storage Web SDK (would break on desktop).
+roles.ts                           Role hierarchy helpers (isAtLeastClientAdmin, isSuperAdmin, etc.)
 utils.ts                           Utility functions: ID generation, date formatting, markdown stripping
+chatTransport.ts                   AI chat streaming transport. Uses `authBridge.getIdToken()` +
+                                   `window.cedar.apiBaseUrl` (mirrors api.ts) so it works on web AND
+                                   desktop. Never reads `auth.currentUser` directly.
 riskMetrics.ts                     Shared risk-score / ALE helpers + thresholds — SINGLE SOURCE OF TRUTH for
                                    getGrossScore / getResidualScore / getGrossALE / getResidualALE /
                                    SEVERE_SCORE_THRESHOLD (= 19) / MAJOR_SCORE_THRESHOLD (= 12). Used by
                                    Dashboard, RiskBurnDown, RiskCallout, AIInquiryPopup.
+```
+
+#### `/src/lib/auth/` — Platform-agnostic auth bridge
+```
+authBridge.ts                      `IAuthBridge` interface + `Account` type. Selects implementation
+                                   at module-load via `isDesktop`. SINGLE SOURCE OF TRUTH for "what
+                                   account is signed in?" + "give me a Firebase ID token". All
+                                   consumers (useStore, api.ts, AuthProvider, chatTransport, Header,
+                                   Sidebar, ProfileSettingsModal, Dashboard) read from here, NEVER
+                                   from `auth.currentUser` directly. The `Account` type carries:
+                                   `{ uid, email, displayName, photoURL, creationTime }`.
+                                   `creationTime` is ISO 8601 string or null (web: from
+                                   user.metadata.creationTime; desktop: converted from Firebase
+                                   signInWithIdp's createdAt ms epoch).
+firebaseWebBridge.ts               Web implementation — thin wrapper around Firebase Web SDK.
+desktopIpcBridge.ts                Desktop implementation — wraps `window.cedar.auth.*` IPC with a
+                                   renderer-side account cache + listener set. `normalize()` helper
+                                   defends against accounts persisted by older builds missing the
+                                   `creationTime` field.
+```
+
+#### `/src/lib/desktop/` — Desktop detection
+```
+isDesktop.ts                       `export const isDesktop = !!(window.cedar ?? VITE_DESKTOP_BUILD)`.
+                                   Checked at module-load by authBridge.ts to pick the right
+                                   implementation; checked at render by HealthBanner, App.tsx,
+                                   Login.tsx, NotificationWrapper to gate desktop-only behaviour.
 ```
 
 ### `/src/services/`
@@ -393,21 +524,58 @@ ribaStages.ts                      RIBA project stage definitions (0–7)
 complianceCategorization.ts        Logic for categorising compliance items by domain/type
 ```
 
+### `/src/hooks/` — Custom React hooks
+```
+useChatStream.ts                   AI-chat streaming hook. Wraps `openChatStream` from
+                                   [src/lib/chatTransport.ts](src/lib/chatTransport.ts) with
+                                   stateful render-loop, abort support, tool-call + sources
+                                   event handling. Consumed by ChatPage.
+useFocusTrap.ts                    Modal/dialog focus trap.
+useHistoricalView.ts               Historical reporting view-state hook.
+useHistoricalMonthMulti.ts         Multi-month picker state for historical reporting.
+```
+
 ### `/api/` — Backend (Vercel serverless)
 ```
-index.ts                           Express entry point: CORS, auth header extraction, action dispatcher
-lib/context.ts        (345 lines)  Firebase Admin init, ApiContext creation, multi-tenancy authZ
+index.ts                           Express entry point: CORS, auth header extraction, action dispatcher.
+                                   Pre-auth `?action=ping` bypass for HealthBanner (returns 200
+                                   without going through createContext).
+lib/context.ts                     Firebase Admin init, ApiContext creation, multi-tenancy authZ.
+                                   Exposes `getStorageBucket()` which delegates to
+                                   `resolveBucketName()` from `lib/storage.ts` — single source of
+                                   truth for bucket-name resolution.
+lib/storage.ts                     SINGLE SOURCE OF TRUTH for file uploads. `uploadAsset(path,
+                                   buffer, contentType, { makePublic?: boolean })` is the canonical
+                                   server-side upload helper. `deleteAsset(path)` is the canonical
+                                   delete. `readAssetAsDataUri(path)` for PDF embedding. Also
+                                   exports `resolveBucketName()` (env → service-account projectId
+                                   fallback) + `assetPaths` (canonical path builders). Used by
+                                   governance branding, evidence, TAC, report PDF sealing.
+lib/tacFileUpload.ts               TAC attachment helpers. `decodeBase64TacFile`, `tacAttachmentPath`,
+                                   `uploadTacAttachment` (thin wrapper around uploadAsset with
+                                   `makePublic: true`), `deleteTacAttachment`. `TAC_MAX_FILE_BYTES`
+                                   = 3 MB (Vercel body limit / base64 inflation); per-enquiry
+                                   `TAC_MAX_ENQUIRY_BYTES` = 200 MB.
 routes/index.ts                    Aggregates all route handler maps
 routes/auth.ts                     API key generate/revoke, user account deletion
-routes/ai.ts          (165 lines)  Gemini calls with retry, dual-key fallback, quota handling
-routes/compliance.ts  (62 lines)   Compliance library CRUD (admin-only writes)
+routes/ai.ts                       Gemini calls with retry, dual-key fallback, quota handling.
+                                   **OUT OF BOUNDS** — standing project rule, do not edit.
+routes/compliance.ts               Compliance library CRUD (admin-only writes)
 routes/projects.ts                 Project CRUD with multi-tenancy authorization
-routes/programmes.ts  (47 lines)   Programme CRUD with ownership checks
+routes/programmes.ts               Programme CRUD with ownership checks
 routes/admin.ts                    Super-admin operations: stats, users, activity, invoices
-routes/data.ts                     Generic save/getData for all Firestore collections
+routes/data.ts                     Generic save/getData + evidence CRUD. `addEvidence` accepts
+                                   optional `{ file: { base64, mime } }` payload → uploads via
+                                   `uploadAsset` with makePublic, stores URL on Firestore record.
+                                   `deleteEvidence` also removes the GCS object (closes orphan).
 routes/profile.ts                  User profile get/save, preferences
 routes/team.ts                     Team member management, role assignment, PM invites
 routes/notifications.ts            FCM push notification registration
+routes/technicalAssurance.ts       TAC enquiry CRUD + attachments. `tacAttachFile` takes base64,
+                                   uploads via `uploadTacAttachment` (→ uploadAsset makePublic:true),
+                                   stores URL on the enquiry's attachments array.
+                                   `tacRemoveAttachment` deletes the GCS object then the Firestore
+                                   entry.
 __tests__/context.test.ts          Tests for API context creation
 __tests__/dispatcher.test.ts       Tests for action route dispatching
 ```
@@ -443,7 +611,7 @@ __tests__/dispatcher.test.ts       Tests for action route dispatching
 - **URL ↔ store sync**: At least 4 pages manually sync `searchParams.get('projectId')` with `setActiveProjectId` in separate `useEffect` calls — identical pattern repeated, could be one hook.
 
 ### Other Issues
-- No `/src/hooks/` directory — custom hooks are either non-existent or embedded in components.
+- `/src/hooks/` exists but is sparsely populated (4 hooks for chat-stream + focus-trap + historical reporting). Most cross-page repeated logic (URL↔store sync, filter state, etc.) is still inlined in components instead of factored into hooks.
 - AI prompt strings (~100 lines each) hardcoded in `aiService.ts` with manual JSON healing (`parseAIResponse`) — fragile and untestable.
 - Only 2 test files exist for the entire application (`context.test.ts`, `dispatcher.test.ts`) — no component tests, no store tests, no utility tests.
 - Magic numbers and status strings scattered (e.g., timeout `120000`, statuses `'Verified'`/`'Pending'`/`'Open'`) instead of named constants.
@@ -966,9 +1134,93 @@ User action → Component handler → useStore method → api.ts → /api endpoi
 - **Friendly auth errors**: when surfacing Firebase auth failures to the UI, map known error codes to safe copy and fall back to a generic message — never echo raw `err.message`. See `FRIENDLY_AUTH_ERRORS` + `friendlyAuthError()` in [`src/pages/Login.tsx`](src/pages/Login.tsx) for the current mapping.
 - **Magic-link throttle**: client-side throttle for repeated magic-link submissions is **5 seconds** (`MAGIC_LINK_THROTTLE_MS`), enforced via a `useRef` timestamp in `Login.tsx`. Backend rate limits are layered on top, but the client guard keeps the UX honest.
 
+### Auth-bridge enforcement (load-bearing for desktop)
+The desktop binary signs in via Electron main-process OAuth, NOT the Firebase Web SDK. That means `auth.currentUser` is **always `null` on desktop** and the Web SDK's `signOut(auth)` is a no-op there. Any code reading those directly will silently break on desktop.
+
+- **Never read `auth.currentUser` directly.** Read `useStore().user` (which is an `Account` from the bridge) or call `authBridge.getCurrentAccount()`. The `Account` type carries `{ uid, email, displayName, photoURL, creationTime }`.
+- **Never call `logout()` from [`src/lib/firebase.ts`](src/lib/firebase.ts) directly.** Call [`authBridge.signOut()`](src/lib/auth/authBridge.ts) — on desktop it propagates to the main process and revokes the Google refresh token; on web it wraps the same `signOut(auth)`. Same for `loginWithGoogle` → `authBridge.signInGoogle()`.
+- **Never use `firebase/storage` Web SDK.** It would fail on desktop (no auth session). All file ops go through the storage convention below.
+- **`onAuthStateChanged(auth, ...)` direct subscriptions are forbidden** outside [`src/lib/auth/firebaseWebBridge.ts`](src/lib/auth/firebaseWebBridge.ts). Use `authBridge.onAuthChange(cb)`.
+- **The five files that consume the bridge correctly** (use as templates): [api.ts](src/lib/api.ts), [chatTransport.ts](src/lib/chatTransport.ts), [Header.tsx](src/components/Header.tsx), [Sidebar.tsx](src/components/Sidebar.tsx), [ProfileSettingsModal.tsx](src/components/ProfileSettingsModal.tsx), [Dashboard.tsx](src/pages/Dashboard.tsx) (reads `user.creationTime` for the onboarding modal — does NOT read `auth.currentUser.metadata.creationTime`).
+
+### Storage / file uploads — SINGLE PATTERN (load-bearing)
+**Every file upload in the codebase uses the same pattern.** No exceptions. Adding a different pattern means adding a class of bugs we've already fought through and rolled back.
+
+**The canonical pattern: base64 → API → `uploadAsset()` → store URL on Firestore.**
+
+```ts
+// CLIENT (any feature that uploads)
+const base64 = await readAsBase64(file);                     // data URI ok; server strips prefix
+await api.someUploadAction({ ..., file: { base64, mime } }); // single API call
+
+// SERVER (the action handler)
+import { uploadAsset } from '../lib/storage.js';
+const { url } = await uploadAsset(storagePath, buffer, mime, { makePublic: true });
+// store `url` + `storagePath` on the Firestore record
+```
+
+**Why this is the only pattern:**
+- Works identically on web AND desktop (no Firebase Web SDK auth dependency).
+- Same pattern governance branding has used in production for months.
+- V4 signed PUT/GET URLs from `@google-cloud/storage@7.19` against `.firebasestorage.app` buckets return `SignatureDoesNotMatch` reproducibly; **do not attempt to re-introduce them** (M1.8 documented the dead-end in the plan file).
+
+**Rules:**
+- **`uploadAsset()` in [api/lib/storage.ts](api/lib/storage.ts)** is the ONLY upload helper. Don't write a new one. Don't import `firebase-admin/storage` directly in route handlers. `uploadAsset` takes `{ makePublic?: boolean }` — defaults `true` (returns stable public URL); pass `false` if you need a private object (no current feature does — see M-PrivateDownloads in `handoff.md` if/when one arises).
+- **`resolveBucketName()` in [api/lib/storage.ts](api/lib/storage.ts)** is the ONLY bucket resolver. [api/lib/context.ts](api/lib/context.ts) `getStorageBucket()` delegates to it.
+- **3 MB per-file cap, enforced at all three layers**: client picker (UI feedback), client-side picker validator (early reject), server-side post-decode check (source of truth). Driven by Vercel's 4.5 MB serverless body limit minus ~33% base64 inflation. **Do not raise this without also raising Vercel's body limit (it's not raisable — pick Firebase Storage SDK + custom token OR Vercel Blob first; see M-LargeUploads in `handoff.md`).**
+- **Downloads = open the stored `url` directly.** No API call, no signing. URLs are stable public-but-unguessable (path includes random IDs + 13-digit timestamps). Same security posture as governance branding.
+- **Deletes that involve a file MUST clean up the GCS object server-side** (see `deleteEvidence` in [api/routes/data.ts](api/routes/data.ts) and `tacRemoveAttachment` in [api/routes/technicalAssurance.ts](api/routes/technicalAssurance.ts) for the pattern).
+- **External-link records** (where `storagePath === 'external-link'`) skip upload entirely; just store the user-pasted URL on the Firestore record.
+- **No `firebase/storage` import anywhere in `src/`.** [src/lib/firebase.ts](src/lib/firebase.ts) deliberately does not export `storage`. Defence-in-depth: [storage.rules](storage.rules) is `allow read, write: if false` so any future direct Web SDK access fails closed.
+
+### Desktop bridge convention (`window.cedar`)
+The renderer talks to the Electron main process through a single namespaced object exposed via `contextBridge` in [apps/desktop/preload.cjs](apps/desktop/preload.cjs):
+
+```ts
+window.cedar = {
+  isDesktop: true,
+  isDev: boolean,                   // computed in main from !app.isPackaged || CEDAR_DEV
+  apiBaseUrl: string,               // already-resolved (localhost in dev, prod in packaged)
+  auth: { signInGoogle, cancelSignIn, signOut, getIdToken, getAccount },
+  config: { get, set },
+  setup: { complete, reset },
+  log: (level, event, payload) => void,
+  diagnostics: { get },
+  menu: { onSignOut },
+  update: { check, install },
+};
+```
+
+- **Never expose raw `process.env` or full `ipcRenderer`** via contextBridge — only specific resolved values + the auth/IPC channels the renderer actually needs (DeepStrike Electron pen-test rule #1).
+- **`window.cedar.apiBaseUrl` is the source of truth for the API host on desktop.** [src/lib/api.ts](src/lib/api.ts) + [src/lib/chatTransport.ts](src/lib/chatTransport.ts) read it directly. Do not duplicate the resolution logic.
+- **`isDesktop` check at module-load** via [src/lib/desktop/isDesktop.ts](src/lib/desktop/isDesktop.ts) — checks `window.cedar` (preload) OR `import.meta.env.VITE_DESKTOP_BUILD` (build-time fallback for edge cases where preload runs after first render).
+- **The dev-against-prod CORS rewrite in [apps/desktop/main.cjs](apps/desktop/main.cjs)** is intentional architecture, not tech debt. Three dev flows coexist by design (see Key commands table above + the comment block in main.cjs).
+- **Renderer logging:** call `window.cedar.log(level, event, payload)` so renderer errors land in the same `main.log` as main-process events.
+
+### Observability convention (electron-log)
+Configured JSON-first in [apps/desktop/logger.cjs](apps/desktop/logger.cjs). File sink at `app.getPath('logs')/main.log` (macOS: `~/Library/Logs/CedarGuard/main.log`) with 5MB rotation.
+
+- **Format: dot-notation event name + structured payload object.** Never freeform strings.
+  ```ts
+  // ✅
+  log('info', 'auth.signin.start', { method: 'google', desktop: true });
+  log('error', 'api.call.error', { action: 'getProfile', status: 500 });
+
+  // ❌
+  log('info', 'auth.signin.start for user X via google on desktop');
+  ```
+- **Established event namespaces:** `auth.signin.{start,success,error,cancelled}`, `auth.signout`, `auth.refresh.{success,error}`, `auth.revoke.{success,error}`, `oauth.loopback.{listening,callback,timeout,error}`, `lifecycle.boot`, `lifecycle.react.crash`, `update.check.*`.
+- **The format function MUST NEVER throw.** electron-log v5 has variable message shapes; the formatter in `logger.cjs` is defensive (try/catch + fallback to `new Date().toISOString()` if `msg.date` is undefined). Don't simplify it.
+- **`ErrorBoundary` Copy Diagnostics** ([src/components/ErrorBoundary.tsx](src/components/ErrorBoundary.tsx) + `diagnostics:get` IPC) bundles the last ~200 lines of `main.log` + sysinfo + React error stack — that's the support payload. Don't add a parallel error-reporting path on desktop.
+
 ### Standing rules for sweeps / refactors
 - **Never run regex passes on backtick template literals.** A pattern like `(["'`])((?:[^\\]|\\.)*?)\1` matches across newlines inside backticks and corrupts JSX inside `${...}`. Always restrict regex find/replace to single-line `'...'` or `"..."` strings unless the pattern is anchored on a definite per-line attribute.
 - **Never commit with `--no-verify`, never push with `--force` to `main` / `master`.** No model names, no co-authored-by footer in commit messages.
 - **Never push without explicit user instruction.** Commit locally; wait for "push".
 - **`api/routes/ai.ts` is out of bounds** — standing project rule. Do not edit.
 - **5×5 risk matrix is user-locked** — do not change the layout shape.
+- **Never re-introduce V4 signed PUT/GET URLs against the Storage bucket.** Migration tried + failed in M1.8 with reproducible `SignatureDoesNotMatch` — see plan file. Use base64 → API → `uploadAsset()` per the Storage convention above.
+- **Never import `firebase/storage` in `src/`.** [`src/lib/firebase.ts`](src/lib/firebase.ts) deliberately omits the `storage` export. Defence-in-depth via [`storage.rules`](storage.rules) deny-all is in place too. Server-side: only [`api/lib/storage.ts`](api/lib/storage.ts) `uploadAsset` / `deleteAsset` / `readAssetAsDataUri` may touch Storage.
+- **Never read `auth.currentUser` or call `signOut(auth)` directly in app code.** Use [`authBridge`](src/lib/auth/authBridge.ts) — breaks silently on desktop otherwise.
+- **`apps/desktop/built-env.cjs` must stay gitignored.** It contains the Google OAuth client secret baked at build time. Never commit, never `git add` it.
+- **Never raise the 3 MB upload cap by editing constants alone.** It's bounded by Vercel's 4.5 MB serverless body limit (not configurable). Raising it requires switching pattern entirely (M-LargeUploads in `handoff.md`).
