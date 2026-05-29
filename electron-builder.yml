@@ -1,0 +1,20 @@
+appId: com.cedarguard.desktop
+productName: CedarGuard
+directories:
+  output: dist-electron
+files:
+  - dist/**
+  - apps/desktop/**
+  - package.json
+asar: true
+mac:
+  target:
+    - target: dmg
+      arch: arm64
+  icon: public/logo_2.png
+  category: public.app-category.business
+  identity: null
+  hardenedRuntime: false
+  gatekeeperAssess: false
+dmg:
+  writeUpdateInfo: false

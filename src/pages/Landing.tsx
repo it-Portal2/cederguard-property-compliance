@@ -438,7 +438,7 @@ export const Landing: React.FC = () => {
                         <motion.img
                             whileHover={{ rotateX: 1, rotateY: -1, scale: 1.01 }}
                             transition={{ duration: 0.5 }}
-                            src="/dashboard_showcase.png"
+                            src={`${import.meta.env.BASE_URL}dashboard_showcase.png`}
                             alt="CedarGuard Risk Management dashboard preview"
                             title="CedarGuard — Risk Management dashboard"
                             className="relative w-full h-auto rounded-lg shadow-[0_40px_100px_rgba(0,0,0,0.18)] dark:shadow-[0_40px_100px_rgba(0,0,0,0.6)] border-4 border-white/60 dark:border-white/5 object-cover object-top"
@@ -453,7 +453,7 @@ export const Landing: React.FC = () => {
                         className="lg:hidden w-full"
                     >
                         <img
-                            src="/dashboard_showcase.png"
+                            src={`${import.meta.env.BASE_URL}dashboard_showcase.png`}
                             alt="CedarGuard dashboard preview"
                             className="w-full h-auto rounded-lg shadow-xl border border-slate-200 dark:border-white/10"
                         />
@@ -626,7 +626,7 @@ export const Landing: React.FC = () => {
                     >
                         <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 via-teal-400 to-indigo-500 rounded-lg blur-lg opacity-20 group-hover:opacity-30 transition-opacity duration-1000" />
                         <img 
-                            src="/compliance_showcase.png" 
+                            src={`${import.meta.env.BASE_URL}compliance_showcase.png`}
                             alt="Cedar Guard Regulatory Reference - UK Social Housing and Construction Framework" 
                             title="Automated Regulatory Compliance Audit Interface" 
                             className="relative w-full h-auto rounded-lg shadow-2xl border-4 border-white/40 dark:border-white/5 object-cover object-top transition-transform duration-1000 group-hover:scale-[1.01]"

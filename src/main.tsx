@@ -3,9 +3,13 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { registerSW } from 'virtual:pwa-register';
+import { isDesktop } from './lib/desktop/isDesktop';
 
-// Register PWA service worker
-registerSW({ immediate: true });
+// Register PWA service worker — web only. Electron loads from file:// where
+// service workers don't apply and the registration noisily fails.
+if (!isDesktop) {
+  registerSW({ immediate: true });
+}
 
 // Crash recovery: catch any synchronous error during bootstrap
 try {

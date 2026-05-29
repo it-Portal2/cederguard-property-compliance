@@ -388,7 +388,7 @@ function InvoiceDocument({
       <div className="flex justify-between items-start mb-12">
         <div>
           <div className="flex items-center gap-3 mb-4">
-            <img src="/logo.png" alt="Cedar Guard Logo" className="h-12 w-auto object-contain" />
+            <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Cedar Guard Logo" className="h-12 w-auto object-contain" />
             <div>
               <h1 className="text-xl font-semibold tracking-tight text-slate-900 leading-none">CEDAR GUARD</h1>
               <p className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-1">Risk Intelligence & Compliance</p>

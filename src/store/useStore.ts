@@ -37,7 +37,7 @@ import {
 import { api } from "../lib/api";
 import { isAtLeastClientAdmin } from "../lib/roles";
 import { generateId, isValidDateString } from "../lib/utils";
-import { auth } from "../lib/firebase";
+import { authBridge } from "../lib/auth/authBridge";
 import { enqueueBestEffort } from "./mutations";
 
 /**
@@ -2030,19 +2030,19 @@ export const useStore = create<AppState>((set, get) => {
     try {
       console.log("Synchronizing store state...");
 
-      const currentUser = auth.currentUser;
+      const currentUser = authBridge.getCurrentAccount();
       if (!currentUser) {
         // Wait a bit for auth to initialize if it hasn't
         await new Promise((resolve) => {
-          const unsubscribe = auth.onAuthStateChanged((user) => {
+          const unsubscribe = authBridge.onAuthChange((account) => {
             unsubscribe();
-            resolve(user);
+            resolve(account);
           });
           setTimeout(resolve, 2000); // Max wait 2s
         });
       }
 
-      if (!auth.currentUser) {
+      if (!authBridge.getCurrentAccount()) {
         set({ isInitialized: true });
         return;
       }
@@ -2051,7 +2051,7 @@ export const useStore = create<AppState>((set, get) => {
       const profileResult = await api.getProfile();
       if (profileResult.success && profileResult.profile) {
         const firestoreProfile = profileResult.profile;
-        const authUser = auth.currentUser;
+        const authUser = authBridge.getCurrentAccount();
 
         // Merge photoURL and displayName from Firebase Auth if Firestore doesn't
         // have them yet (new Google sign-up: Firebase has them, Firestore doc doesn't).

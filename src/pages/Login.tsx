@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { loginWithGoogle, sendMagicLink, confirmMagicLink, isMagicLink } from '../lib/firebase';
+import { sendMagicLink, confirmMagicLink, isMagicLink } from '../lib/firebase';
 import { Link, useNavigate } from 'react-router';
+import { authBridge } from '../lib/auth/authBridge';
+import { isDesktop } from '../lib/desktop/isDesktop';
 
 // Map Firebase auth error codes to safe, user-facing copy so we never
 // leak raw SDK strings (which can hint at internal service state).
@@ -22,6 +24,19 @@ const GENERIC_AUTH_ERROR = 'Something went wrong. Please try again.';
 function friendlyAuthError(err: unknown): string {
     const code = (err as { code?: string })?.code;
     if (code && FRIENDLY_AUTH_ERRORS[code]) return FRIENDLY_AUTH_ERRORS[code];
+
+    // Fall through to the actual error message when the error is not a known
+    // Firebase auth code (e.g. desktop OAuth flow errors from googleOAuth.cjs).
+    // We still avoid raw SDK strings for Firebase errors above; everything
+    // else gets surfaced so the user (and we) can diagnose.
+    const message = (err as { message?: string })?.message;
+    if (message && typeof message === 'string') {
+        // Log the full error to the console for diagnostics in dev / DevTools.
+        // eslint-disable-next-line no-console
+        console.error('Auth error:', err);
+        return message;
+    }
+
     return GENERIC_AUTH_ERROR;
 }
 
@@ -92,7 +107,11 @@ export const Login: React.FC = () => {
         try {
             setError('');
             setGoogleLoading(true);
-            await loginWithGoogle();
+            // authBridge routes to Firebase popup on web and to the Electron
+            // main-process OAuth flow on desktop. The AuthProvider's
+            // onAuthChange listener picks up the resulting account and
+            // triggers initStore() — no redirect needed here.
+            await authBridge.signInGoogle();
         } catch (err: unknown) {
             setError(friendlyAuthError(err));
         } finally {
@@ -155,7 +174,7 @@ export const Login: React.FC = () => {
                     <header>
                         <Link className="brand" to="/">
                             <img
-                                src="/logo.png"
+                                src={`${import.meta.env.BASE_URL}logo.png`}
                                 alt="Cedar – Risk Intelligence & Compliance Platform"
                                 className="brand-logo"
                             />
@@ -227,58 +246,66 @@ export const Login: React.FC = () => {
                                         <span>{googleLoading ? 'Redirecting to Google…' : 'Continue with Google'}</span>
                                     </button>
 
-                                    <div className="divider-text rise d2">or with email</div>
+                                    {/* Magic-link block — web only. On desktop, only the Google
+                                        CTA is shown (magic links can't round-trip back to the
+                                        Electron app without a custom deep-link flow we haven't
+                                        built; deferred to a later milestone). */}
+                                    {!isDesktop && (
+                                        <>
+                                            <div className="divider-text rise d2">or with email</div>
 
-                                    {isLinkSent ? (
-                                        <div className="detect existing rise d2" style={{ marginTop: 0 }}>
-                                            <span className="indicator"></span>
-                                            <span>
-                                                Magic link sent — check <b>{trimmedEmail}</b> for your sign-in link.
-                                            </span>
-                                        </div>
-                                    ) : (
-                                        <form className="form-card" style={{ gap: '14px', margin: 0 }} onSubmit={handleSendMagicLink}>
-                                            <div className="field rise d2">
-                                                <label className="label" htmlFor="email">Work email</label>
-                                                <div className="input-wrap">
-                                                    <span className="icon-l">
-                                                        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="3.5" width="12" height="9" rx="1.5" /><path d="M2.5 4.5L8 8.5l5.5-4" /></svg>
-                                                    </span>
-                                                    <input
-                                                        id="email"
-                                                        className="input"
-                                                        type="email"
-                                                        placeholder="you@company.com"
-                                                        autoComplete="email"
-                                                        value={email}
-                                                        onChange={(e) => setEmail(e.target.value)}
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            {emailValid && (
-                                                <div className="detect new">
+                                            {isLinkSent ? (
+                                                <div className="detect existing rise d2" style={{ marginTop: 0 }}>
                                                     <span className="indicator"></span>
                                                     <span>
-                                                        We’ll send a secure sign-in link to <b>{trimmedEmail}</b>. New here? Your workspace is created automatically.
+                                                        Magic link sent — check <b>{trimmedEmail}</b> for your sign-in link.
                                                     </span>
                                                 </div>
+                                            ) : (
+                                                <form className="form-card" style={{ gap: '14px', margin: 0 }} onSubmit={handleSendMagicLink}>
+                                                    <div className="field rise d2">
+                                                        <label className="label" htmlFor="email">Work email</label>
+                                                        <div className="input-wrap">
+                                                            <span className="icon-l">
+                                                                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="3.5" width="12" height="9" rx="1.5" /><path d="M2.5 4.5L8 8.5l5.5-4" /></svg>
+                                                            </span>
+                                                            <input
+                                                                id="email"
+                                                                className="input"
+                                                                type="email"
+                                                                placeholder="you@company.com"
+                                                                autoComplete="email"
+                                                                value={email}
+                                                                onChange={(e) => setEmail(e.target.value)}
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    {emailValid && (
+                                                        <div className="detect new">
+                                                            <span className="indicator"></span>
+                                                            <span>
+                                                                We’ll send a secure sign-in link to <b>{trimmedEmail}</b>. New here? Your workspace is created automatically.
+                                                            </span>
+                                                        </div>
+                                                    )}
+
+                                                    <button type="submit" className="btn-primary rise d3" disabled={!emailValid || loading}>
+                                                        <span>{loading ? 'Sending…' : 'Continue with email'}</span>
+                                                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3.5 8h9M8.5 4l4 4-4 4" /></svg>
+                                                    </button>
+
+                                                    <div className="kbd-hint rise d4">
+                                                        We’ll send a magic link · no password required · <span className="kbd">↵</span> to submit
+                                                    </div>
+
+                                                    <p className="tos rise d5">
+                                                        By continuing, you agree to our <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.<br />
+                                                        New email? We’ll create your account automatically.
+                                                    </p>
+                                                </form>
                                             )}
-
-                                            <button type="submit" className="btn-primary rise d3" disabled={!emailValid || loading}>
-                                                <span>{loading ? 'Sending…' : 'Continue with email'}</span>
-                                                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3.5 8h9M8.5 4l4 4-4 4" /></svg>
-                                            </button>
-
-                                            <div className="kbd-hint rise d4">
-                                                We’ll send a magic link · no password required · <span className="kbd">↵</span> to submit
-                                            </div>
-
-                                            <p className="tos rise d5">
-                                                By continuing, you agree to our <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.<br />
-                                                New email? We’ll create your account automatically.
-                                            </p>
-                                        </form>
+                                        </>
                                     )}
                                 </>
                             )}

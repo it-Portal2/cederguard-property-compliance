@@ -1,16 +1,59 @@
+# ──────────────────────────────────────────────────────────────────────
+# .vercelignore — files NOT uploaded to Vercel for the web build.
+# Keep this tight to avoid OOM in Vercel's build container.
+# Vercel needs: src/, api/, public/, index.html, package*.json,
+# tsconfig.json, vite.config.ts, vercel.json, .env.example.
+# Everything else here is stripped from the deploy bundle.
+# ──────────────────────────────────────────────────────────────────────
+
+# Dependencies & local state
 node_modules
 .git
 .next
 .vercel
+.firebase
+.claude
+.github
+
+# Build output
 dist
+dist-electron
 build
 out
+
+# Electron desktop sources & config (not needed by Vercel)
+apps
+electron-builder.yml
+
+# Firebase config (Firebase is configured separately, not via Vercel)
+.firebaserc
+firebase.json
+firestore.rules
+firestore.indexes.json
+cors.json
+
+# Dev-only scripts
+scripts
+
+# Logs & temp
 *.log
+tmp
+temp
+
+# Env (keep .env.example as template)
 .env
 .env.*
 !.env.example
-tmp
-temp
+
+# Docs / spec files (none of these affect the build)
+*.md
+!README.md
+*.docx
+*.docx.txt
+*.pdf
+
+# Local screenshots / artefacts
+docs
 .gemini
 .agents
 _agents
@@ -18,3 +61,10 @@ _agents
 _agent
 brain
 artifacts
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Unused root files
+metadata.json

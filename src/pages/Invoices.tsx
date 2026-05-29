@@ -63,7 +63,7 @@ export function Invoices() {
         <div style="font-family: Arial, sans-serif; color: #1e293b;">
           <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 30px;">
             <div style="display: flex; align-items: center; gap: 12px;">
-              <img src="/logo.png" style="height: 45px; width: auto; object-fit: contain;" />
+              <img src="${import.meta.env.BASE_URL}logo.png" style="height: 45px; width: auto; object-fit: contain;" />
               <div>
                 <h1 style="font-size: 20px; font-weight: 900; margin: 0; color: #1e293b; letter-spacing: -0.5px;">CEDAR GUARD</h1>
                 <p style="font-size: 10px; color: #64748b; margin: 2px 0 0; font-weight: 600; text-transform: uppercase; tracking: 0.5px;">Risk Intelligence & Compliance</p>

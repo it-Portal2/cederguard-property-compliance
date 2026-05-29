@@ -3,11 +3,15 @@ import { getToken, onMessage } from 'firebase/messaging';
 import { messaging } from '../lib/firebase';
 import { useStore } from '../store/useStore';
 import { api } from '../lib/api';
+import { isDesktop } from '../lib/desktop/isDesktop';
 
 export const NotificationWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, setFcmToken, addNotification, setNotifications } = useStore();
 
   useEffect(() => {
+    // FCM requires a service worker, which doesn't run in Electron's
+    // file:// renderer. Desktop relies on toast notifications only.
+    if (isDesktop) return;
     if (!user || !messaging) return;
 
     const setupNotifications = async () => {

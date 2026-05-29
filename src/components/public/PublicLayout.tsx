@@ -97,7 +97,7 @@ export const PublicLayout: React.FC = () => {
                     {/* Logo */}
                     <Link to="/" aria-label="CedarGuard home" className="flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 rounded-md">
                         <img
-                            src="/logo.png"
+                            src={`${import.meta.env.BASE_URL}logo.png`}
                             alt="CedarGuard"
                             className="h-10 w-auto object-contain dark:invert-0"
                         />
@@ -180,7 +180,7 @@ export const PublicLayout: React.FC = () => {
                             <div className="max-w-7xl mx-auto w-full px-6 h-16 flex items-center justify-between shrink-0 border-b border-slate-200 dark:border-white/10">
                                 <Link to="/" aria-label="CedarGuard home" className="flex items-center">
                                     <img
-                                        src="/logo.png"
+                                        src={`${import.meta.env.BASE_URL}logo.png`}
                                         alt="CedarGuard"
                                         className="h-10 w-auto object-contain dark:invert-0"
                                     />
@@ -271,7 +271,7 @@ export const PublicLayout: React.FC = () => {
 
                                 <div className="flex flex-col items-center text-center">
                                     <div className="w-20 h-20 bg-indigo-100 dark:bg-indigo-500/20 rounded-lg flex items-center justify-center mb-8">
-                                        <img src="/pwa-icon.png" alt="App Icon" className="w-12 h-12" />
+                                        <img src={`${import.meta.env.BASE_URL}pwa-icon.png`} alt="App Icon" className="w-12 h-12" />
                                     </div>
                                     <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-4 uppercase tracking-tight">Install Cedar Guard</h3>
                                     <p className="text-slate-500 dark:text-slate-400 mb-8 leading-relaxed">
@@ -329,7 +329,7 @@ export const PublicLayout: React.FC = () => {
                 <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-16 mb-24 relative z-10">
                     <div className="col-span-1 md:col-span-1">
                         <Link to="/" className="inline-block mb-10 transition-transform hover:scale-105 duration-500">
-                            <img src="/logo.png" alt="Cedar Logo" className="h-12 w-auto object-contain dark:invert-0" />
+                            <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Cedar Logo" className="h-12 w-auto object-contain dark:invert-0" />
                         </Link>
                         <p className="text-lg text-slate-500 dark:text-slate-400 font-light leading-relaxed italic">
                             "AI-Powered Risk and Compliance Platform for UK Social Housing Managers."

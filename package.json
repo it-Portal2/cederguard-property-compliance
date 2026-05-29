@@ -3,9 +3,14 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "main": "apps/desktop/main.cjs",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "vite build --emptyOutDir",
+    "build:desktop-web": "cross-env VITE_DESKTOP_BUILD=1 vite build --emptyOutDir --base=./",
+    "electron:start": "electron .",
+    "electron:dev": "concurrently -k -n vite,electron -c yellow,cyan \"cross-env VITE_DESKTOP_BUILD=1 npm run dev\" \"wait-on http://localhost:3000 && cross-env CEDAR_DEV=1 electron .\"",
+    "dist:mac": "node scripts/buildDesktopEnv.cjs && npm run build:desktop-web && electron-builder --mac",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
@@ -62,12 +67,17 @@
     "@types/react": "^19.2.14",
     "@vitest/ui": "^4.1.2",
     "autoprefixer": "^10.4.21",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
     "tailwindcss": "^4.1.14",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
     "vite-plugin-pwa": "^1.2.0",
-    "vitest": "^4.1.2"
+    "vitest": "^4.1.2",
+    "wait-on": "^8.0.1"
   }
 }

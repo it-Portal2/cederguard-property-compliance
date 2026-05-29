@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router';
+import { BrowserRouter, HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 
@@ -96,6 +96,17 @@ import { TacAuditDashboardPage } from './pages/technicalAssurance/AuditDashboard
 import { ComplianceLeadGuard } from './components/technicalAssurance/ComplianceLeadGuard';
 import { ChatPage } from './pages/ChatPage';
 
+// Desktop-shell support
+import { isDesktop } from './lib/desktop/isDesktop';
+import FirstRunWizard from './components/desktop/FirstRunWizard';
+
+// On desktop (file:// origin) BrowserRouter pushes synthetic paths via the
+// History API, which breaks relative asset URLs (logo.png etc.) on any route
+// deeper than the root. HashRouter keeps the document URL anchored at
+// index.html so `./logo.png` always resolves correctly. Web build keeps
+// BrowserRouter for clean URLs.
+const Router = isDesktop ? HashRouter : BrowserRouter;
+
 function ContextSwitchingOverlay() {
   const isContextSwitching = useStore(state => state.isContextSwitching);
   if (!isContextSwitching) return null;
@@ -121,6 +132,33 @@ function AppContent() {
   const setProfileSettingsOpen = useStore(state => state.setProfileSettingsOpen);
   const routerLocation = useLocation();
   const mainRef = React.useRef<HTMLDivElement>(null);
+
+  // --- Desktop: read encrypted config (backend choice) before first render ---
+  // On the web, isDesktop is false → these refs are noops.
+  // On desktop, we ask the Electron main process for the saved config; if none
+  // exists, we render the first-run wizard. The real safeStorage round-trip
+  // lands in Task 8 — until then config:get returns null and the wizard always
+  // shows after a fresh launch.
+  const [desktopConfig, setDesktopConfig] = React.useState<any>(null);
+  const [desktopConfigLoaded, setDesktopConfigLoaded] = React.useState<boolean>(!isDesktop);
+
+  const loadDesktopConfig = React.useCallback(async () => {
+    if (!isDesktop) {
+      setDesktopConfigLoaded(true);
+      return;
+    }
+    try {
+      const cfg = await (window as any).cedar?.config?.get?.();
+      setDesktopConfig(cfg ?? null);
+    } catch (err) {
+      console.error('Failed to read desktop config:', err);
+    }
+    setDesktopConfigLoaded(true);
+  }, []);
+
+  React.useEffect(() => {
+    loadDesktopConfig();
+  }, [loadDesktopConfig]);
 
   // Global scroll-to-top on route change
   React.useEffect(() => {
@@ -150,6 +188,33 @@ function AppContent() {
     };
   }, []);
 
+  // Desktop: while the encrypted config is being read from the main process,
+  // render nothing rather than flash the public/marketing surface.
+  if (isDesktop && !desktopConfigLoaded) {
+    return null;
+  }
+
+  // Desktop, fresh install: no backend choice yet → first-run wizard.
+  // Marketing routes (Landing, About, Product, News, Support, Contact) are
+  // skipped entirely on desktop — they belong only to the web build.
+  if (isDesktop && !desktopConfig) {
+    return (
+      <FirstRunWizard
+        onComplete={async (backend) => {
+          await (window as any).cedar?.setup?.complete?.({ backend });
+          await loadDesktopConfig();
+        }}
+      />
+    );
+  }
+
+  // Desktop, config saved but not signed in → render Login directly
+  // (no public routes). Magic-link is hidden on desktop in Task 12.
+  if (isDesktop && !user) {
+    return <Login />;
+  }
+
+  // Web build, no user → existing public routes + login.
   if (!user) {
     return (
       <Routes>
@@ -364,6 +429,9 @@ export default function App() {
 
 
   React.useEffect(() => {
+    // PWA install prompt is web-only. Desktop ships as a native binary.
+    if (isDesktop) return;
+
     const handler = (e: any) => {
       // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();

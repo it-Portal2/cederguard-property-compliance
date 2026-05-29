@@ -285,7 +285,7 @@ export function Sidebar() {
         {/* Logo */}
         <div className="px-4 h-14 border-b border-slate-200 flex items-center justify-between shrink-0">
           <img
-            src="/logo.png"
+            src={`${import.meta.env.BASE_URL}logo.png`}
             alt="Cedar – Risk Intelligence & Compliance Platform"
             className="w-full max-w-[190px] h-11 object-contain"
           />

@@ -1,18 +1,24 @@
-import { auth } from "./firebase";
+import { authBridge } from "./auth/authBridge";
+import { isDesktop } from "./desktop/isDesktop";
 
 const getAuthHeaders = async () => {
-  const user = auth.currentUser;
-  if (!user) {
+  const token = await authBridge.getIdToken();
+  if (!token) {
     throw new Error("Not authenticated");
   }
-  const token = await user.getIdToken();
   return {
     Authorization: `Bearer ${token}`,
     "Content-Type": "application/json",
   };
 };
 
-const API_URL = (import.meta as any).env.VITE_API_URL || "/api";
+// Web build hits the relative /api (Vercel rewrites to the serverless
+// function). Desktop runs from file:// where relative URLs don't work,
+// so it needs the absolute production URL — VITE_DESKTOP_API_URL.
+const env = (import.meta as any).env || {};
+const API_URL = isDesktop
+  ? (env.VITE_DESKTOP_API_URL || env.VITE_API_URL || "https://cedarguard.co.uk/api")
+  : (env.VITE_API_URL || "/api");
 
 export class ApiError extends Error {
   status: number;

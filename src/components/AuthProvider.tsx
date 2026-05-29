@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '../store/useStore';
-import { auth } from '../lib/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import { authBridge } from '../lib/auth/authBridge';
 import { Loader2 } from 'lucide-react';
-import { api } from '../lib/api';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const setUser = useStore(state => state.setUser);
@@ -12,9 +10,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            if (firebaseUser) {
-                setUser(firebaseUser);
+        const unsubscribe = authBridge.onAuthChange(async (account) => {
+            if (account) {
+                setUser(account);
                 try {
                     await initStore();
                 } catch (err) {

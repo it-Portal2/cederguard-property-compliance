@@ -32,7 +32,7 @@ export function MobileHeader() {
       {/* Centered Logo for Native App Feel */}
       <div className="pointer-events-none flex min-w-0 items-center justify-center">
         <img
-          src="/logo.png"
+          src={`${import.meta.env.BASE_URL}logo.png`}
           alt="CedarGuard"
           className="h-11 w-full max-w-[13.5rem] object-contain sm:h-12"
         />
