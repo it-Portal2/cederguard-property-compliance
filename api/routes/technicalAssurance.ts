@@ -379,6 +379,23 @@ async function tacUpsertEnquiry(req: any, res: any, ctx: ApiContext) {
 }
 
 // Endpoint 4: tacAttachFile -------------------------------------------
+//
+// Decodes a base64 file payload, uploads it to GCS via the Admin SDK with
+// `makePublic: true` so the returned URL is stable + browser-openable, and
+// appends the attachment metadata (including that URL) to the enquiry doc.
+// Capped at TAC_MAX_FILE_BYTES (3 MB) per file due to Vercel's 4.5 MB
+// serverless body limit; per-enquiry total cap TAC_MAX_ENQUIRY_BYTES
+// (200 MB) is also enforced here.
+//
+// Downloads: the stored `attachment.url` is the public GCS URL — clients
+// just open it directly. Paths include the random `attachmentId` so URLs
+// are not practically guessable.
+//
+// History (2026-05-30): briefly migrated to V4 signed PUT + signed GET URLs
+// but rolled back due to reproducible `SignatureDoesNotMatch` failures
+// in the @google-cloud/storage V4 signing path against `.firebasestorage.app`
+// buckets — BOTH write and read URLs were affected. See M1.9 in
+// `~/.claude/plans/cuddly-watching-lantern.md`.
 
 async function tacAttachFile(req: any, res: any, ctx: ApiContext) {
   try {
@@ -420,6 +437,9 @@ async function tacAttachFile(req: any, res: any, ctx: ApiContext) {
     const attachmentId = makeAttachmentId();
     const path = tacAttachmentPath(ctx.primaryUid, enquiryId, attachmentId, ext);
 
+    // Upload + makePublic via uploadAsset → returns the stable GCS URL.
+    // Store the URL on the attachment record so the client can render the
+    // download link without an extra API hop.
     const { url } = await uploadTacAttachment(path, buffer, mime);
 
     const attachment = {
@@ -457,6 +477,7 @@ async function tacAttachFile(req: any, res: any, ctx: ApiContext) {
     });
   }
 }
+
 
 // Endpoint 5: tacRemoveAttachment -------------------------------------
 

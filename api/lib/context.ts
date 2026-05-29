@@ -2,6 +2,8 @@ import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
 import { getMessaging } from "firebase-admin/messaging";
+import { getStorage } from "firebase-admin/storage";
+import { resolveBucketName } from "./storage.js";
 import { GoogleGenAI } from "@google/genai";
 import { ROLE_STRINGS } from "../../src/lib/roleConstants.js";
 
@@ -58,6 +60,21 @@ export const getDB = () => {
 };
 export const getAuthService = () => getAuth();
 export const getMessagingService = () => getMessaging();
+
+// Firebase Admin Storage handle. Delegates bucket-name resolution to the
+// single source of truth in `api/lib/storage.ts`, which also handles the
+// projectId-derivation fallback when neither FIREBASE_STORAGE_BUCKET nor
+// VITE_FIREBASE_STORAGE_BUCKET is set explicitly.
+//
+// Used by api/routes/storage.ts + api/routes/technicalAssurance.ts for
+// V4 signed-URL uploads/downloads (production-standard pattern: client
+// uploads directly to GCS via a short-lived signed URL, server authorizes
+// + mints the URL but never proxies the file payload itself — avoids
+// Vercel's 4.5MB serverless body limit and works identically for web
+// and desktop clients).
+export const getStorageBucket = () => {
+  return getStorage().bucket(resolveBucketName());
+};
 
 // Helper to get fresh AI instance
 export const getAI = () => {
@@ -193,6 +210,7 @@ export type ApiContext = {
   isAuthorizedForContext: (contextId: string) => Promise<boolean>;
   getAuthService: typeof getAuthService;
   getMessagingService: typeof getMessagingService;
+  getStorageBucket: typeof getStorageBucket;
 };
 
 // Multi-tenancy check function to ensure strict tenant isolation
@@ -389,6 +407,7 @@ export async function createContext(
       isAuthorizedForContext,
       getAuthService,
       getMessagingService,
+      getStorageBucket,
     };
   } catch (e: any) {
     console.error("Context creation error:", e?.message || e);

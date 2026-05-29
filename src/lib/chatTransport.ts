@@ -1,10 +1,26 @@
 // Browser-side transport for the AI Chat streaming endpoint.
 // Opens a fetch + ReadableStream connection to POST /api?action=chatStream
 // with the Firebase auth token in the Authorization header.
+//
+// Auth + URL resolution mirror src/lib/api.ts so this transport works
+// identically on web and desktop:
+//   - Token via authBridge.getIdToken() — on desktop the Firebase ID
+//     token lives in safeStorage in the main process, NOT in
+//     auth.currentUser (which is always null on desktop because we
+//     never sign in through the Firebase Web SDK).
+//   - URL via window.cedar.apiBaseUrl on desktop, /api on web.
 
-import { auth } from "./firebase";
+import { authBridge } from "./auth/authBridge";
+import { isDesktop } from "./desktop/isDesktop";
 
-const API_URL = (import.meta as any).env.VITE_API_URL || "/api";
+const env = (import.meta as any).env || {};
+const cedar = typeof window !== "undefined" ? (window as any).cedar : null;
+const API_URL = isDesktop
+  ? (cedar?.apiBaseUrl ||
+     env.VITE_DESKTOP_API_URL ||
+     env.VITE_API_URL ||
+     "https://cedarguard.co.uk/api")
+  : (env.VITE_API_URL || "/api");
 
 export interface ChatMessage {
   role: "user" | "model";
@@ -55,10 +71,8 @@ export async function openChatStream(
   onEvent: (event: ChatStreamEvent) => void,
   signal?: AbortSignal,
 ): Promise<void> {
-  const user = auth.currentUser;
-  if (!user) throw new Error("Not authenticated");
-
-  const token = await user.getIdToken();
+  const token = await authBridge.getIdToken();
+  if (!token) throw new Error("Not authenticated");
 
   const res = await fetch(`${API_URL}?action=chatStream`, {
     method: "POST",

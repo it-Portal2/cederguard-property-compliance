@@ -99,6 +99,7 @@ import { ChatPage } from './pages/ChatPage';
 // Desktop-shell support
 import { isDesktop } from './lib/desktop/isDesktop';
 import FirstRunWizard from './components/desktop/FirstRunWizard';
+import HealthBanner from './components/desktop/HealthBanner';
 
 // On desktop (file:// origin) BrowserRouter pushes synthetic paths via the
 // History API, which breaks relative asset URLs (logo.png etc.) on any route
@@ -450,6 +451,10 @@ export default function App() {
   return (
     <Router>
       <ErrorBoundary>
+        {/* PT-HealthBanner — non-blocking offline indicator. Renders nothing
+            on web or when the backend is reachable; thin red sticky banner
+            otherwise. Above AuthProvider so it shows even pre-sign-in. */}
+        <HealthBanner />
         <AuthProvider>
           <NotificationWrapper>
             <AppContent />

@@ -11,7 +11,14 @@
 import { uploadAsset, deleteAsset } from "./storage.js";
 
 // Limits ---------------------------------------------------------------
-export const TAC_MAX_FILE_BYTES = 50 * 1024 * 1024; // 50 MB per file (PRD US-1.2)
+// Per-file: 3 MB binary cap aligns with Vercel's 4.5 MB serverless body
+// limit after ~33% base64 inflation. The original 50 MB cap from PRD
+// US-1.2 was aspirational — Vercel rejects any payload above 4.5 MB
+// regardless of what this constant says. For larger files, see the
+// M-LargeUploads future milestone.
+// Per-enquiry: 200 MB total survives because that's the sum across many
+// small files, not a single-payload constraint.
+export const TAC_MAX_FILE_BYTES = 3 * 1024 * 1024; // 3 MB per file
 export const TAC_MAX_ENQUIRY_BYTES = 200 * 1024 * 1024; // 200 MB total per enquiry
 
 // Allow-list of MIME types (PRD US-1.2) -------------------------------
@@ -144,16 +151,22 @@ export function tacAttachmentPath(
 }
 
 /**
- * Upload an attachment buffer + return the public URL + storage path.
- * Thin wrapper around `uploadAsset` so we can swap providers later without
- * touching route handlers.
+ * Upload an attachment buffer to GCS and return the public download URL +
+ * storage path. Same pattern as governance branding (`makePublic: true`)
+ * because V4 signed URLs are unreliable on this stack — see
+ * `api/routes/storage.ts` header for the SignatureDoesNotMatch story.
+ *
+ * The returned `url` is a stable Google Cloud Storage public URL. Paths
+ * include the attachmentId (random suffix) and tenant scoping, so URLs
+ * are not practically guessable. If stricter privacy is needed in the
+ * future, switch to server-streamed downloads via an API route.
  */
 export async function uploadTacAttachment(
   storagePath: string,
   buffer: Buffer,
   contentType: string,
 ): Promise<{ path: string; url: string }> {
-  return uploadAsset(storagePath, buffer, contentType);
+  return uploadAsset(storagePath, buffer, contentType, { makePublic: true });
 }
 
 /**

@@ -12,12 +12,22 @@ const getAuthHeaders = async () => {
   };
 };
 
-// Web build hits the relative /api (Vercel rewrites to the serverless
-// function). Desktop runs from file:// where relative URLs don't work,
-// so it needs the absolute production URL — VITE_DESKTOP_API_URL.
+// API URL resolution:
+//  - Desktop  → `window.cedar.apiBaseUrl` (set in apps/desktop/main.cjs from
+//    `app.isPackaged`; auto-switches between localhost in dev and the baked
+//    production URL in the packaged DMG). No manual .env.local toggling.
+//  - Web      → relative `/api` (Vercel rewrites to the serverless function).
+//
+// Env-var fallbacks remain for safety (and for testing harnesses that mock
+// neither window.cedar nor a real Vite env), but the hot path on desktop is
+// always the main-process-resolved URL exposed via preload.
 const env = (import.meta as any).env || {};
+const cedar = typeof window !== "undefined" ? (window as any).cedar : null;
 const API_URL = isDesktop
-  ? (env.VITE_DESKTOP_API_URL || env.VITE_API_URL || "https://cedarguard.co.uk/api")
+  ? (cedar?.apiBaseUrl ||
+     env.VITE_DESKTOP_API_URL ||
+     env.VITE_API_URL ||
+     "https://cedarguard.co.uk/api")
   : (env.VITE_API_URL || "/api");
 
 export class ApiError extends Error {
@@ -195,8 +205,17 @@ export const api = {
   getSystemMappings: () => callApi("getSystemMappings"),
 
   getEvidence: (projectId: string) => callApi("getEvidence", { projectId }),
-  addEvidence: (projectId: string, document: any) =>
-    callApi("addEvidence", { projectId, document }),
+  // Add an evidence record. Two call shapes:
+  //   - File upload: pass `file: { base64, mime }` alongside `document`.
+  //     Server uploads to GCS as a private object via Admin SDK + writes
+  //     Firestore. Capped at 3 MB per file (Vercel serverless body limit).
+  //   - External link: omit `file`; pass the link URL inside `document.url`
+  //     with `document.storagePath: 'external-link'`. Server skips upload.
+  addEvidence: (
+    projectId: string,
+    document: any,
+    file?: { base64: string; mime: string },
+  ) => callApi("addEvidence", { projectId, document, file }),
   deleteEvidence: (docId: string) => callApi("deleteEvidence", { docId }),
   updateEvidence: (docId: string, updates: any) =>
     callApi("updateEvidence", { docId, updates }),
@@ -578,6 +597,10 @@ export const api = {
     enquiryId: string | null,
     patch: Record<string, any>,
   ) => callApi("tacUpsertEnquiry", { enquiryId, patch }),
+  // Base64 file upload — server decodes, uploads to GCS via Admin SDK with
+  // makePublic, and appends metadata to the enquiry doc (with the stable
+  // public URL). Capped at 3 MB per file due to Vercel's 4.5 MB serverless
+  // body limit. Downloads use the stored public URL directly (no API call).
   tacAttachFile: (args: {
     enquiryId: string;
     fileName: string;

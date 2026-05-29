@@ -246,6 +246,40 @@ export const Login: React.FC = () => {
                                         <span>{googleLoading ? 'Redirecting to Google…' : 'Continue with Google'}</span>
                                     </button>
 
+                                    {/* PT-Cancel — desktop only. Lets the user abort the OAuth
+                                        flow if the browser tab opened but they changed their
+                                        mind, or it's hanging. IPC closes the loopback HTTP
+                                        server in main and rejects the pending code promise. */}
+                                    {isDesktop && googleLoading && (window as any).cedar?.auth?.cancelSignIn && (
+                                        <button
+                                            type="button"
+                                            onClick={async () => {
+                                                try {
+                                                    await (window as any).cedar.auth.cancelSignIn();
+                                                } catch (err) {
+                                                    console.warn('Cancel sign-in failed:', err);
+                                                } finally {
+                                                    setGoogleLoading(false);
+                                                    setError('');
+                                                }
+                                            }}
+                                            className="rise d2"
+                                            style={{
+                                                background: 'transparent',
+                                                border: 'none',
+                                                color: 'var(--cg-muted, #64748b)',
+                                                fontSize: '13px',
+                                                textDecoration: 'underline',
+                                                textUnderlineOffset: '3px',
+                                                cursor: 'pointer',
+                                                padding: '8px 4px',
+                                                marginTop: '8px',
+                                            }}
+                                        >
+                                            Cancel sign-in
+                                        </button>
+                                    )}
+
                                     {/* Magic-link block — web only. On desktop, only the Google
                                         CTA is shown (magic links can't round-trip back to the
                                         Electron app without a custom deep-link flow we haven't

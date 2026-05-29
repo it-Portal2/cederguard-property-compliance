@@ -17,6 +17,14 @@ export interface Account {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
+  /**
+   * Account creation timestamp as an ISO 8601 string, or null if unknown.
+   * Used by first-login onboarding detection in Dashboard.tsx.
+   * Web: populated from `auth.currentUser.metadata.creationTime`.
+   * Desktop: populated from Firebase REST `signInWithIdp` `createdAt` (ms epoch),
+   * converted to ISO; null for accounts persisted by older builds.
+   */
+  creationTime: string | null;
 }
 
 export interface IAuthBridge {

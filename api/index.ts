@@ -21,6 +21,21 @@ export default async function handler(req: any, res: any) {
     return;
   }
 
+  // --- Pre-auth health check (PT-HealthBanner) ---
+  // The desktop app fires `?action=ping` on launch — before the user signs
+  // in — to detect "can't reach server" and show a non-blocking banner.
+  // Bypass createContext (which would 401 on missing auth) and answer
+  // immediately with a tiny status payload.
+  const earlyAction = req.query.action || req.body?.action;
+  if (req.method === 'POST' && earlyAction === 'ping') {
+    return res.status(200).json({
+      ok: true,
+      service: 'cedarguard-api',
+      version: process.env.VERCEL_GIT_COMMIT_SHA || 'unknown',
+      timestamp: new Date().toISOString(),
+    });
+  }
+
   // --- Context Creation ---
   const ctx = await createContext(req, res);
   if (!ctx) return; // Response is already handled by createContext (401/500)

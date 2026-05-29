@@ -1,0 +1,39 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // =====================================================
+    // CedarGuard Compliance & Risk Manager — Storage Rules
+    // =====================================================
+    // NOTE: All production read + write paths flow through the
+    // backend API (Vercel serverless functions using the Firebase
+    // Admin SDK). The Admin SDK bypasses these rules entirely.
+    // These rules serve as a defence-in-depth layer to block any
+    // direct Firebase Storage Web SDK access from a client.
+    //
+    // Three categories of legitimate access today, NONE of which
+    // are affected by deny-all here:
+    //
+    //   1. Branding assets uploaded via `api/lib/storage.ts`
+    //      uploadAsset(...) → makePublic(). The public URL works
+    //      via object-level GCS ACL, independent of these rules.
+    //
+    //   2. Evidence + TAC uploads via V4 signed PUT URLs minted by
+    //      `api/routes/storage.ts` + `api/routes/technicalAssurance.ts`.
+    //      Signed URLs carry their own scoped credentials, also
+    //      independent of these rules.
+    //
+    //   3. Admin SDK server-side reads (e.g. `readAssetAsDataUri`
+    //      for PDF rendering, GCS object deletes). Admin SDK
+    //      bypasses rules.
+    //
+    // If a future feature needs direct client-SDK Storage access,
+    // add the narrowest possible match block ABOVE this catch-all.
+    // Do not loosen the catch-all itself.
+    // =====================================================
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

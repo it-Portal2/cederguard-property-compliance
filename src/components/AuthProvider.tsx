@@ -27,6 +27,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return () => unsubscribe();
     }, [setUser, initStore]);
 
+    // PT-Menu — wire the native macOS app menu's "Sign Out" item to our auth
+    // bridge. The menu emits a 'menu:signOut' IPC event; the renderer calls
+    // authBridge.signOut() which triggers the same onAuthChange path as the
+    // user-clicked Sign Out button.
+    useEffect(() => {
+        const cedar = (window as any).cedar;
+        if (!cedar?.menu?.onSignOut) return; // web build — nothing to wire
+        const off = cedar.menu.onSignOut(async () => {
+            try {
+                await authBridge.signOut();
+            } catch (err) {
+                console.error('Menu Sign Out failed:', err);
+            }
+        });
+        return () => { if (typeof off === 'function') off(); };
+    }, []);
+
     // Show loading if we are still checking auth OR if we have a user but the store isn't ready yet
     if (loading || (useStore.getState().user && !isInitialized)) {
         return (

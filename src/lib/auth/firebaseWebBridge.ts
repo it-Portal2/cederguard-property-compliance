@@ -18,6 +18,7 @@ function userToAccount(user: User | null): Account | null {
     email: user.email,
     displayName: user.displayName,
     photoURL: user.photoURL,
+    creationTime: user.metadata?.creationTime ?? null,
   };
 }
 

@@ -28,6 +28,19 @@ const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
 
+// PT-StructLog — emit structured events so support diagnostics are searchable.
+// We require lazily to avoid a circular import (logger.cjs uses electron-log
+// which sets up IPC bridging before any window exists).
+let _logger = null;
+function log(level, event, payload) {
+  try {
+    if (!_logger) _logger = require('./logger.cjs');
+    _logger.log(level, event, payload || {});
+  } catch {
+    // fall through silently — logging must never break auth
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Config — read from env vars baked into the Electron build at package time
 // or passed through electron:dev.
@@ -51,6 +64,12 @@ const FIREBASE_REFRESH_URL = `https://securetoken.googleapis.com/v1/token?key=${
 const SCOPES = ['openid', 'email', 'profile'];
 
 const AUTH_FILENAME = 'auth.bin';
+
+// PT-Cancel — module-level handle to the currently in-flight loopback's
+// cancel function. Set by signInGoogle() before awaiting the code; cleared
+// in a finally block once the code arrives or the await throws. The
+// cancelSignIn() export reads this and calls it (no-op if no flow in progress).
+let inflightCancel = null;
 
 // ---------------------------------------------------------------------------
 // Token storage (encrypted with safeStorage).
@@ -206,9 +225,18 @@ function startLoopback(expectedState) {
 
     server.on('error', (err) => outerReject(err));
 
+    // PT-Cancel — caller can shut the server down mid-flow if the user
+    // clicks Cancel. Idempotent + safe to call after natural completion.
+    const cancel = () => {
+      codeReject(new Error('Sign-in cancelled by user.'));
+      try {
+        server.close();
+      } catch {}
+    };
+
     server.listen(0, '127.0.0.1', () => {
       const { port } = server.address();
-      outerResolve({ port, codePromise });
+      outerResolve({ port, codePromise, cancel });
     });
 
     setTimeout(() => {
@@ -245,10 +273,19 @@ async function signInGoogle() {
     );
   }
 
+  log('info', 'auth.signin.start', { method: 'google', desktop: true });
+  const t0 = Date.now();
+
   const { verifier, challenge } = generatePkce();
   const state = randomState();
-  const { port, codePromise } = await startLoopback(state);
+  const { port, codePromise, cancel } = await startLoopback(state);
   const redirectUri = `http://127.0.0.1:${port}/callback`;
+  log('debug', 'oauth.loopback.listening', { port });
+
+  // PT-Cancel — register this run's cancel handle so the renderer can abort
+  // mid-flow via window.cedar.auth.cancelSignIn(). Cleared after success
+  // OR failure (finally below).
+  inflightCancel = cancel;
 
   // 1. Open system browser to Google's OAuth consent screen.
   const authParams = new URLSearchParams({
@@ -265,7 +302,14 @@ async function signInGoogle() {
   await shell.openExternal(`${GOOGLE_AUTH_URL}?${authParams.toString()}`);
 
   // 2. Wait for the loopback server to capture the authorization code.
-  const code = await codePromise;
+  // Clear the cancel handle as soon as the code resolves/rejects so a
+  // post-completion cancelSignIn() call is a safe no-op.
+  let code;
+  try {
+    code = await codePromise;
+  } finally {
+    inflightCancel = null;
+  }
 
   // 3. Exchange the code for Google tokens.
   const tokenBody = new URLSearchParams({
@@ -283,10 +327,12 @@ async function signInGoogle() {
   });
   if (!tokenRes.ok) {
     const text = await tokenRes.text();
+    log('error', 'auth.signin.error', { stage: 'google_token_exchange', http_status: tokenRes.status });
     throw new Error(`Google token exchange failed (${tokenRes.status}): ${text}`);
   }
   const googleTokens = await tokenRes.json();
   if (!googleTokens.id_token) {
+    log('error', 'auth.signin.error', { stage: 'google_token_exchange', reason: 'missing_id_token' });
     throw new Error('Google token response missing id_token.');
   }
 
@@ -304,6 +350,7 @@ async function signInGoogle() {
   });
   if (!fbRes.ok) {
     const text = await fbRes.text();
+    log('error', 'auth.signin.error', { stage: 'firebase_signin_idp', http_status: fbRes.status });
     throw new Error(
       `Firebase signInWithIdp failed (${fbRes.status}): ${text}. ` +
         'Likely cause: the Google Desktop Client ID is not whitelisted in ' +
@@ -314,11 +361,20 @@ async function signInGoogle() {
   const fb = await fbRes.json();
 
   // 5. Persist tokens + account info.
+  // `createdAt` from signInWithIdp is a millisecond-epoch string; convert
+  // to ISO so the renderer's Account.creationTime matches the web bridge's
+  // shape (which uses Firebase Web SDK's already-ISO `metadata.creationTime`).
+  let creationTime = null;
+  const createdAtMs = Number(fb.createdAt);
+  if (Number.isFinite(createdAtMs) && createdAtMs > 0) {
+    creationTime = new Date(createdAtMs).toISOString();
+  }
   const account = {
     uid: fb.localId,
     email: fb.email ?? null,
     displayName: fb.displayName ?? null,
     photoURL: fb.photoUrl ?? null,
+    creationTime,
   };
   const tokens = {
     idToken: fb.idToken,
@@ -327,6 +383,7 @@ async function signInGoogle() {
     account,
   };
   writeTokens(tokens);
+  log('info', 'auth.signin.success', { duration_ms: Date.now() - t0, uid: account.uid });
   return account;
 }
 
@@ -355,10 +412,13 @@ async function getIdToken() {
       body: body.toString(),
     });
     if (!res.ok) {
-      console.error('Token refresh failed:', res.status, await res.text());
+      const errText = await res.text();
+      console.error('Token refresh failed:', res.status, errText);
+      log('error', 'auth.refresh.error', { http_status: res.status });
       clearTokens();
       return null;
     }
+    log('debug', 'auth.refresh.success', {});
     const refreshed = await res.json();
     const updated = {
       ...tokens,
@@ -379,12 +439,68 @@ async function getAccount() {
   return tokens ? tokens.account : null;
 }
 
+// PT-Revoke — best-effort token revocation at Google's revoke endpoint
+// before clearing local tokens. Without this, a stolen refresh token could
+// be silently reused even after the user signed out.
+//
+// Per Google's OAuth web-server flow docs: revoke endpoint accepts the
+// token in the form body, NOT as a query parameter (query risks landing
+// in proxy access logs). Revoking the refresh token cascades to all
+// derived access tokens.
+//
+// Best-effort: log failures but always proceed to clear local state.
+// Firebase signOut on the client side is handled separately by the auth
+// bridge in the renderer (firebaseWebBridge calls auth.signOut for web;
+// desktop sessions don't have a Firebase client session to clear since
+// the OAuth flow is in main).
 async function signOut() {
+  const tokens = readTokens();
+  log('info', 'auth.signout', { had_tokens: !!(tokens && tokens.refreshToken) });
+  if (tokens && tokens.refreshToken) {
+    try {
+      const body = new URLSearchParams({ token: tokens.refreshToken });
+      const res = await fetch('https://oauth2.googleapis.com/revoke', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString(),
+      });
+      if (!res.ok) {
+        // 400 here usually means the token was already expired/revoked.
+        // Not a hard error — we still clear locally.
+        const text = await res.text();
+        console.warn('[signOut] Google revoke returned', res.status, text);
+        log('warn', 'auth.revoke.error', { http_status: res.status });
+      } else {
+        log('debug', 'auth.revoke.success', {});
+      }
+    } catch (err) {
+      // Network failure — still clear locally; user wanted to sign out.
+      console.warn('[signOut] Token revoke request failed:', err && err.message ? err.message : err);
+      log('warn', 'auth.revoke.error', { reason: 'network' });
+    }
+  }
   clearTokens();
+}
+
+// PT-Cancel — abort an in-flight signInGoogle() call. Closes the loopback
+// HTTP server and rejects the pending code promise. Idempotent — safe to
+// call when no flow is in progress (no-op).
+function cancelSignIn() {
+  const cancel = inflightCancel;
+  inflightCancel = null;
+  if (typeof cancel === 'function') {
+    log('info', 'auth.signin.cancelled', {});
+    try {
+      cancel();
+    } catch (err) {
+      console.warn('[cancelSignIn] cancel handle threw:', err);
+    }
+  }
 }
 
 module.exports = {
   signInGoogle,
+  cancelSignIn,
   getIdToken,
   getAccount,
   signOut,

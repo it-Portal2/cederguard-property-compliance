@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { clsx } from "clsx";
 import { SinceLastVisitBadge } from "./SinceLastVisitBadge";
-import { logout } from "../lib/firebase";
+import { authBridge } from "../lib/auth/authBridge";
 import { useNavigate, useLocation } from "react-router";
 import { ProfileSettingsModal } from "./ProfileSettingsModal";
 import UserAvatar from "./UserAvatar";
@@ -136,7 +136,7 @@ export function Header() {
 
   const handleLogout = async () => {
     try {
-      await logout();
+      await authBridge.signOut();
       useStore.getState().setUser(null);
       navigate("/login");
     } catch (error) {

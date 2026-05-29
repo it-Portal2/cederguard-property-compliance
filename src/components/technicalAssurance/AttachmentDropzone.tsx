@@ -9,6 +9,7 @@ import {
   Clock,
 } from "lucide-react";
 import { clsx } from "clsx";
+import { toast } from "react-hot-toast";
 import type { EnquiryAttachment } from "../../types/technicalAssurance";
 
 // TAC enquiry attachment dropzone — drag-drop OR click-to-pick + chip list.
@@ -52,8 +53,12 @@ const ACCEPT = [
   ".rfa",
 ];
 
-const MAX_FILE_BYTES = 50 * 1024 * 1024; // 50 MB
-const MAX_TOTAL_BYTES = 200 * 1024 * 1024; // 200 MB
+// 3 MB cap per file aligns with Vercel's 4.5 MB serverless body limit
+// after ~33% base64 inflation. The original 50 MB cap was aspirational —
+// any file above ~3 MB silently failed at the platform layer. For larger
+// files, see the M-LargeUploads future milestone.
+const MAX_FILE_BYTES = 3 * 1024 * 1024;
+const MAX_TOTAL_BYTES = 200 * 1024 * 1024; // 200 MB per-enquiry total
 
 const SCAN_PILL: Record<EnquiryAttachment["avScanStatus"], string> = {
   pending: "bg-amber-50 text-amber-700 border border-amber-200",
@@ -102,6 +107,17 @@ export function AttachmentDropzone({
   const [dragOver, setDragOver] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
+  // Open an uploaded attachment. New + legacy records both store a stable
+  // public GCS URL in `a.url` (returned by uploadAsset's makePublic step).
+  // Same pattern as governance branding. Just open it.
+  const handleDownload = (a: EnquiryAttachment) => {
+    if (!a?.url) {
+      toast.error("No download URL on this attachment. Try re-uploading.");
+      return;
+    }
+    window.open(a.url, "_blank", "noopener,noreferrer");
+  };
+
   const uploadedBytes = attachments.reduce(
     (acc, a) => acc + (Number(a.fileSize) || 0),
     0,
@@ -116,7 +132,7 @@ export function AttachmentDropzone({
     if (!file || isBusy) return;
     if (file.size > MAX_FILE_BYTES) {
       setLocalError(
-        `"${file.name}" is ${(file.size / 1024 / 1024).toFixed(1)} MB. Maximum is 50 MB per file.`,
+        `"${file.name}" is ${(file.size / 1024 / 1024).toFixed(1)} MB. Maximum is 3 MB per file.`,
       );
       return;
     }
@@ -175,19 +191,15 @@ export function AttachmentDropzone({
                 >
                   {SCAN_LABEL[a.avScanStatus]}
                 </span>
-                {a.url && (
-                  <a
-                    href={a.url}
-                    download={a.fileName}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className="rounded p-1 text-slate-400 transition-colors hover:bg-indigo-50 hover:text-indigo-600"
-                    aria-label={`Download ${a.fileName}`}
-                    title="Download"
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                  </a>
-                )}
+                <button
+                  type="button"
+                  onClick={() => handleDownload(a)}
+                  className="rounded p-1 text-slate-400 transition-colors hover:bg-indigo-50 hover:text-indigo-600"
+                  aria-label={`Download ${a.fileName}`}
+                  title="Download"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                </button>
                 <button
                   type="button"
                   className="rounded p-1 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50"

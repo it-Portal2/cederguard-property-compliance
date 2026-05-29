@@ -7,14 +7,46 @@ files:
   - apps/desktop/**
   - package.json
 asar: true
+
+# ─── macOS ──────────────────────────────────────────────────────────────
+# Code signing + notarisation is dormant until the Apple Developer ID cert
+# is procured. Behaviour today (no cert in env):
+#   - CSC_LINK / CSC_NAME unset → electron-builder logs "skipped macOS code
+#     signing" and produces an UNSIGNED DMG (current behaviour).
+#   - User installs via right-click → Open to bypass Gatekeeper.
+#
+# Once the cert is procured and these env vars are set:
+#   APPLE_ID                       Apple ID email
+#   APPLE_APP_SPECIFIC_PASSWORD    app-specific password from appleid.apple.com
+#   APPLE_TEAM_ID                  10-char team ID
+#   CSC_LINK                       base64-encoded .p12 OR file:// path
+#   CSC_KEY_PASSWORD               .p12 password
+#   CSC_NAME                       "Developer ID Application: <Name> (<TEAMID>)"
+# …the same `npm run dist:mac` command produces a signed + notarised DMG
+# (builder 24+ handles notarytool natively when these env vars are present —
+# NO `afterSign:` hook is needed; @electron/notarize is invoked automatically).
 mac:
   target:
     - target: dmg
       arch: arm64
   icon: public/logo_2.png
   category: public.app-category.business
-  identity: null
-  hardenedRuntime: false
+  # `identity` is read from CSC_NAME by electron-builder when present.
+  # When unset, builder skips signing — current dev behaviour.
+  hardenedRuntime: true
   gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  notarize: true
+
 dmg:
   writeUpdateInfo: false
+
+# ─── Auto-update publish target (dormant until M-UpdateRelease) ─────────
+# `electron-updater` reads this to know where to look for `latest-mac.yml`.
+# A future M-UpdateRelease milestone sets up the static directory at this URL
+# on Vercel Blob / S3 / R2. Until then, autoUpdater.checkForUpdatesAndNotify()
+# will hit a 404 and log a warning silently — no end-user-visible error.
+publish:
+  provider: generic
+  url: https://cedarguard.co.uk/desktop-updates/

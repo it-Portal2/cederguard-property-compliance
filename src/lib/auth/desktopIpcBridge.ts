@@ -30,6 +30,19 @@ function getCedar(): CedarBridge | null {
 let cachedAccount: Account | null = null;
 const listeners = new Set<(a: Account | null) => void>();
 
+// Defensive normaliser — accounts persisted by older builds (before the
+// creationTime field existed) come back without it. Force the contract.
+function normalize(raw: any): Account | null {
+  if (!raw) return null;
+  return {
+    uid: raw.uid,
+    email: raw.email ?? null,
+    displayName: raw.displayName ?? null,
+    photoURL: raw.photoURL ?? null,
+    creationTime: raw.creationTime ?? null,
+  };
+}
+
 function setAccount(next: Account | null) {
   cachedAccount = next;
   listeners.forEach((cb) => {
@@ -49,7 +62,7 @@ function setAccount(next: Account | null) {
   const cedar = getCedar();
   if (!cedar) return;
   try {
-    const account = await cedar.auth.getAccount();
+    const account = normalize(await cedar.auth.getAccount());
     if (account) setAccount(account);
   } catch (err) {
     console.error('authBridge bootstrap failed:', err);
@@ -91,7 +104,8 @@ export const desktopIpcBridge: IAuthBridge = {
     if (result.skipped) {
       throw new Error('Google sign-in is not yet implemented in this build');
     }
-    const account = result as Account;
+    const account = normalize(result);
+    if (!account) throw new Error('Sign-in returned a malformed account');
     setAccount(account);
     return account;
   },

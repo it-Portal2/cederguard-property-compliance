@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../lib/api';
 import { X, Save, Loader2, Key, Trash2, AlertTriangle, BellRing } from 'lucide-react';
 import { useNavigate } from 'react-router';
-import { logout } from '../lib/firebase';
+import { authBridge } from '../lib/auth/authBridge';
 import { useStore } from '../store/useStore';
 import { SignatureUpload } from './governance/branding/SignatureUpload';
 
@@ -93,7 +93,7 @@ export function ProfileSettingsModal({ isOpen, onClose }: ProfileSettingsModalPr
             await api.deleteUserAccount();
             setMessage({ type: 'success', text: 'Account deleted successfully. Logging out...' });
             setTimeout(async () => {
-                await logout();
+                await authBridge.signOut();
                 setUser(null);
                 onClose();
                 navigate('/login');

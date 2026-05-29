@@ -2,6 +2,7 @@ import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { ApiContext } from '../lib/context.js';
 import crypto from 'crypto';
 import { appendHistoryRow } from '../lib/historyRows.js';
+import { uploadAsset } from '../lib/storage.js';
 import {
   HRC_LEGACY_COLLECTIONS,
   type LegacyCollection,
@@ -363,36 +364,120 @@ export const dataRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
 
   addEvidence: async (req, res, ctx) => {
     const { db, uid, email, isAuthorizedForContext } = ctx;
-    const { projectId, document } = req.body;
+    const { projectId, document, file } = req.body;
     if (!projectId || !document) return res.status(400).json({ error: 'Missing data' });
-    
+
     if (!(await isAuthorizedForContext(projectId))) {
       return res.status(403).json({ error: 'Forbidden: You do not have access to upload evidence here.' });
     }
 
-    const docRef = await db.collection('evidence').add({ 
-      ...document, 
-      project: projectId, 
+    // Two call shapes:
+    //   (a) External link (no file payload) — { projectId, document: { name, url,
+    //       storagePath:'external-link', type:'link', ... } }. Just write the
+    //       Firestore record.
+    //   (b) File upload — { projectId, document: { name, type, ... }, file: {
+    //       base64, mime } }. Decode + upload to GCS via uploadAsset with
+    //       makePublic, store the returned public URL on the Firestore doc
+    //       so the client can render the download link directly without an
+    //       extra API hop. Paths include a 13-digit millisecond timestamp +
+    //       sanitized filename so the URLs are not practically guessable.
+    let finalDocument: any = { ...document };
+    if (file && typeof file.base64 === 'string' && file.base64.length > 0) {
+      const mime = typeof file.mime === 'string' && file.mime.length > 0
+        ? file.mime
+        : 'application/octet-stream';
+
+      // Accept both bare base64 and `data:.;base64,.` URIs (parity with
+      // tacFileUpload.decodeBase64TacFile).
+      const dataUriMatch = file.base64.match(/^data:[^;]+;base64,(.+)$/);
+      const payload = dataUriMatch ? dataUriMatch[1] : file.base64;
+
+      let buffer: Buffer;
+      try {
+        buffer = Buffer.from(payload, 'base64');
+      } catch (e: any) {
+        return res.status(400).json({ error: `Invalid base64 payload: ${e?.message ?? 'unknown'}` });
+      }
+      if (buffer.length === 0) {
+        return res.status(400).json({ error: 'Decoded file is empty.' });
+      }
+      // Server-side enforcement of the 3 MB per-file cap. Client validates
+      // before send for UX, but the server is the source of truth.
+      const MAX_FILE_BYTES = 3 * 1024 * 1024;
+      if (buffer.length > MAX_FILE_BYTES) {
+        const sizeMb = (buffer.length / 1024 / 1024).toFixed(1);
+        return res.status(400).json({
+          error: `File is too large (${sizeMb} MB). Maximum is 3 MB per file.`,
+        });
+      }
+
+      const sanitizedName = String(document.name || 'file').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 200);
+      const timestamp = Date.now();
+      const storagePath = `evidence/${projectId}/${timestamp}_${sanitizedName}`;
+
+      let uploadedUrl = '';
+      try {
+        const result = await uploadAsset(storagePath, buffer, mime, { makePublic: true });
+        uploadedUrl = result.url;
+      } catch (err: any) {
+        console.error('[addEvidence] upload failed:', err?.message || err);
+        return res.status(500).json({ error: `Upload failed: ${err?.message ?? 'unknown'}` });
+      }
+
+      finalDocument = {
+        ...finalDocument,
+        storagePath,
+        // Public GCS URL — stable, cacheable, works from any origin.
+        // Same pattern as governance branding. Path includes a 13-digit
+        // millisecond timestamp + sanitized filename, so URLs are not
+        // practically guessable. If stricter privacy is needed in the
+        // future (true per-request auth), switch to server-streamed
+        // downloads via an API route. The V4 signed-URL alternative is
+        // unreliable on this stack — see api/routes/storage.ts header
+        // comment for the SignatureDoesNotMatch story.
+        url: uploadedUrl,
+        size: buffer.length,
+        type: finalDocument.type || mime,
+      };
+    }
+
+    const docRef = await db.collection('evidence').add({
+      ...finalDocument,
+      project: projectId,
       userId: uid,
       uploadedBy: email,
-      createdAt: FieldValue.serverTimestamp() 
+      createdAt: FieldValue.serverTimestamp(),
     });
     return res.status(200).json({ success: true, id: docRef.id });
   },
 
   deleteEvidence: async (req, res, ctx) => {
-    const { db, isAuthorizedForContext } = ctx;
+    const { db, isAuthorizedForContext, getStorageBucket } = ctx;
     const { docId } = req.body;
     if (!docId) return res.status(400).json({ error: 'Missing docId' });
-    
+
     const evidenceDoc = await db.collection('evidence').doc(docId).get();
     if (!evidenceDoc.exists) return res.status(200).json({ success: true });
-    
+
     const evidenceData = evidenceDoc.data();
     if (!(await isAuthorizedForContext(evidenceData?.project))) {
       return res.status(403).json({ error: 'Forbidden' });
     }
-    
+
+    // Delete the GCS object first (best-effort) — closes the storage-orphan
+    // hole that existed when this lived on the client side: previously the
+    // Firestore doc was deleted but the file behind it persisted forever.
+    // Failure here doesn't block the Firestore delete; the doc-delete is
+    // what makes the file invisible to users.
+    const storagePath = evidenceData?.storagePath;
+    if (storagePath && storagePath !== 'external-link') {
+      try {
+        await getStorageBucket().file(storagePath).delete({ ignoreNotFound: true });
+      } catch (err: any) {
+        console.warn('[deleteEvidence] storage object delete failed (continuing):', err?.message || err);
+      }
+    }
+
     await db.collection('evidence').doc(docId).delete();
     return res.status(200).json({ success: true });
   },

@@ -5,8 +5,13 @@ import {
   ExternalLink, Shield, Link as LinkIcon, Search, ChevronDown,
   ChevronLeft, ChevronRight, Loader2, FileText, Globe, Pencil
 } from 'lucide-react';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { storage } from '../lib/firebase';
+// Evidence upload/download uses signed URLs minted by api/routes/storage.ts.
+// The client uploads directly to GCS via the signed PUT URL (no payload
+// through our serverless function — no Vercel size limit), and downloads
+// via a freshly-minted GET URL on each click (no long-lived URLs stored
+// in Firestore). Works identically on web and desktop because the auth
+// path is the single auth-bridge → API → Admin SDK chain — there is no
+// dependency on the Firebase Storage Web SDK having an auth session.
 import { api } from '../lib/api';
 import { toast } from "react-hot-toast";
 
@@ -73,14 +78,17 @@ export function EvidenceDocuments() {
     const f = event.target.files;
     if (!f || f.length === 0) return;
     const fileArray = Array.from(f);
-    const MAX_SIZE = 10 * 1024 * 1024;
+    // 3 MB cap aligns with Vercel's 4.5 MB serverless body limit after the
+    // ~33% base64 inflation. Files above this can't be uploaded reliably
+    // through the API; for larger documents, use an external link instead.
+    const MAX_SIZE = 3 * 1024 * 1024;
     const ALLOWED_EXTS = ['.jpg', '.jpeg', '.pdf', '.doc', '.docx'];
     const validFiles: File[] = [];
     const errors: string[] = [];
     for (const file of fileArray) {
       const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
       if (!ALLOWED_EXTS.includes(ext)) { errors.push(`"${file.name}" unsupported format.`); continue; }
-      if (file.size > MAX_SIZE) { errors.push(`"${file.name}" exceeds 10MB.`); continue; }
+      if (file.size > MAX_SIZE) { errors.push(`"${file.name}" exceeds 3 MB. For larger files, add an external link instead.`); continue; }
       validFiles.push(file);
     }
     if (errors.length > 0) {
@@ -95,36 +103,74 @@ export function EvidenceDocuments() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const withTimeout = <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> =>
-    Promise.race([promise, new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error(`${label} timed out after ${ms / 1000}s.`)), ms))]);
+  // File → base64 (data-uri prefix stripped server-side). Reads the file
+  // via FileReader and resolves with the base64 payload string.
+  const fileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result;
+        if (typeof result !== 'string') {
+          reject(new Error('Unexpected reader result.'));
+          return;
+        }
+        resolve(result);
+      };
+      reader.onerror = () => reject(reader.error ?? new Error('Read failed'));
+      reader.readAsDataURL(file);
+    });
 
   const confirmFileUpload = async () => {
     if (selectedFiles.length === 0 || !contextId) return;
     setUploading(true); setError(null);
     try {
       for (const file of selectedFiles) {
-        const timestamp = Date.now();
-        const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        const storagePath = `evidence/${contextId}/${timestamp}_${sanitizedName}`;
-        const storageRef = ref(storage, storagePath);
-        const snapshot: any = await withTimeout(uploadBytes(storageRef, file), 30000, 'File upload');
-        const downloadURL = await withTimeout(getDownloadURL(snapshot.ref), 10000, 'URL retrieval');
-        await api.addEvidence(contextId, {
-          name: file.name, url: downloadURL, storagePath: snapshot.ref.fullPath,
-          size: file.size, type: file.type, relatedRequirementId: fileRequirementId || undefined,
-          uploadedAt: new Date().toISOString(),
-        });
+        // Normalize content-type — some browsers leave it blank for .doc/.docx.
+        const contentType = file.type || (
+          file.name.endsWith('.pdf') ? 'application/pdf' :
+          file.name.endsWith('.docx') ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' :
+          file.name.endsWith('.doc') ? 'application/msword' :
+          (file.name.endsWith('.jpg') || file.name.endsWith('.jpeg')) ? 'image/jpeg' :
+          'application/octet-stream'
+        );
+
+        // Read file as base64 and POST in one API call — server uploads to
+        // GCS as a private object via Admin SDK + writes Firestore atomically.
+        // Bytes never touch the Firebase Storage Web SDK so this works on
+        // web AND desktop with the single auth-bridge path.
+        const base64 = await fileToBase64(file);
+        await api.addEvidence(
+          contextId,
+          {
+            name: file.name,
+            url: '',
+            type: contentType,
+            relatedRequirementId: fileRequirementId || undefined,
+            uploadedAt: new Date().toISOString(),
+          },
+          { base64, mime: contentType },
+        );
       }
       toast.success(`${selectedFiles.length} file(s) uploaded successfully.`);
       await fetchDocuments();
       setIsFileModalOpen(false); setSelectedFiles([]); setFileRequirementId('');
     } catch (err: any) {
       console.error('Upload failed:', err);
-      const isCors = err.message?.includes('CORS') || err.message?.includes('timed out');
-      const msg = isCors ? 'Upload failed: CORS not configured.' : `Upload failed: ${err.message || 'Unknown error'}.`;
+      const msg = `Upload failed: ${err.message || 'Unknown error'}.`;
       setError(msg); toast.error(msg);
     } finally { setUploading(false); }
+  };
+
+  // Open an evidence file (or external link). Both flows store a stable
+  // URL in the Firestore record: for external links it's the user-pasted
+  // URL; for uploads it's the public GCS URL returned by makePublic()
+  // (same pattern as governance branding). No API call needed — just open.
+  const handleOpenFile = (file: any) => {
+    if (!file?.url) {
+      toast.error('No download URL on this record. Try re-uploading the file.');
+      return;
+    }
+    window.open(file.url, '_blank', 'noopener,noreferrer');
   };
 
   const handleAddLink = async () => {
@@ -188,12 +234,11 @@ export function EvidenceDocuments() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    const { id: docId, storagePath } = deleteTarget;
+    const { id: docId } = deleteTarget;
     try {
-      if (storagePath && storagePath !== 'external-link') {
-        const storageRef = ref(storage, storagePath);
-        await deleteObject(storageRef).catch(() => {});
-      }
+      // Server-side deleteEvidence now also removes the GCS object (no
+      // more storage-orphan when a Firestore doc is deleted but its
+      // backing file lingers forever).
       const res = await api.deleteEvidence(docId);
       if (res.success) { setFiles(prev => prev.filter(f => f.id !== docId)); toast.success('Document removed.'); }
       else throw new Error('API deletion failed');
@@ -488,10 +533,10 @@ export function EvidenceDocuments() {
                             className="p-2 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors" title="Edit">
                             <Pencil className="h-4 w-4" />
                           </button>
-                          <a href={file.url} target="_blank" rel="noreferrer"
+                          <button onClick={() => handleOpenFile(file)}
                             className="p-2 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors" title="Open">
                             <ExternalLink className="h-4 w-4" />
-                          </a>
+                          </button>
                           <button onClick={() => setDeleteTarget({ id: file.id, storagePath: file.storagePath, name: file.name })}
                             className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors" title="Delete">
                             <Trash2 className="h-4 w-4" />
@@ -535,9 +580,9 @@ export function EvidenceDocuments() {
                       <button onClick={() => setEditData({ id: file.id, name: file.name, relatedRequirementId: file.relatedRequirementId || '' })} className="p-2 rounded-lg text-gray-400 hover:text-indigo-600 transition-colors">
                         <Pencil className="h-4 w-4" />
                       </button>
-                      <a href={file.url} target="_blank" rel="noreferrer" className="p-2 rounded-lg text-gray-400 hover:text-indigo-600 transition-colors">
+                      <button onClick={() => handleOpenFile(file)} className="p-2 rounded-lg text-gray-400 hover:text-indigo-600 transition-colors">
                         <ExternalLink className="h-4 w-4" />
-                      </a>
+                      </button>
                       <button onClick={() => setDeleteTarget({ id: file.id, storagePath: file.storagePath, name: file.name })} className="p-2 rounded-lg text-gray-400 hover:text-red-600 transition-colors">
                         <Trash2 className="h-4 w-4" />
                       </button>

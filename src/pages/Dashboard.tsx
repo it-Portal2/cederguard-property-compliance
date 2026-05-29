@@ -80,7 +80,6 @@ import { AIInquiryPopup } from "../components/AIInquiryPopup";
 import DynamicTable from "../components/table/DynamicTable";
 import TableTooltip from "../components/table/TableTooltip";
 import { canCreateProgramme as canCreateProgrammeFn } from "../lib/roles";
-import { auth } from "../lib/firebase";
 import { GetStartedModal } from "../components/onboarding/GetStartedModal";
 import { getOnboardingSteps } from "../components/onboarding/onboardingSteps";
 
@@ -282,7 +281,10 @@ export function Dashboard() {
   useEffect(() => {
     if (!isInitialized || !user?.uid || onboardingCheckedRef.current) return;
     onboardingCheckedRef.current = true;
-    const creationTime = auth.currentUser?.metadata?.creationTime;
+    // Read via the auth bridge's Account (web + desktop). On desktop,
+    // auth.currentUser would always be null because we sign in through
+    // the main process, not the Firebase Web SDK.
+    const creationTime = user?.creationTime;
     if (!creationTime) return;
     const createdMs = new Date(creationTime).getTime();
     if (Number.isNaN(createdMs)) return;

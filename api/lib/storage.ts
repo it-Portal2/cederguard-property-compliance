@@ -11,19 +11,31 @@ let cachedBucketName: string | null = null;
 
 /**
  * Resolve the canonical Firebase Storage bucket name.
+ *
+ * Single source of truth for the entire backend — `api/lib/context.ts`
+ * `getStorageBucket()` and the legacy in-file `getBucket()` here both
+ * delegate to this resolver. Adding a third bucket resolver elsewhere
+ * is a code smell; just import this one.
+ *
  * Priority:
- *   1. `FIREBASE_STORAGE_BUCKET` env (handy for staging / preview deploys)
- *   2. Derive from the service account's `project_id`
+ *   1. `FIREBASE_STORAGE_BUCKET` env (preferred — explicit, deploy-time)
+ *   2. `VITE_FIREBASE_STORAGE_BUCKET` env (fallback — historically only
+ *      set as a Vite-time client var, but Vercel exposes it server-side
+ *      too if it's added to the function env. Saves having to also
+ *      set FIREBASE_STORAGE_BUCKET separately on existing deployments.)
+ *   3. Derive from the service account's `project_id`
  *      — defaults to `<projectId>.firebasestorage.app` (the new Firebase
  *        Storage default introduced in Oct 2024)
- *      — set the env explicitly if your project still uses the legacy
- *        `<projectId>.appspot.com` bucket
- *   3. Throw a clear error if none of the above resolves
+ *      — set FIREBASE_STORAGE_BUCKET explicitly if your project still
+ *        uses the legacy `<projectId>.appspot.com` bucket
+ *   4. Throw a clear error if none of the above resolves
  */
-function resolveBucketName(): string {
+export function resolveBucketName(): string {
   if (cachedBucketName) return cachedBucketName;
 
-  const explicit = process.env.FIREBASE_STORAGE_BUCKET;
+  const explicit =
+    process.env.FIREBASE_STORAGE_BUCKET ||
+    process.env.VITE_FIREBASE_STORAGE_BUCKET;
   if (explicit) {
     cachedBucketName = explicit;
     return explicit;
@@ -56,25 +68,61 @@ function getBucket() {
 export interface UploadResult {
   /** Storage path relative to bucket root, e.g. `councilAssets/abc/logo.png`. */
   path: string;
-  /** Long-lived public URL. */
+  /**
+   * Stable URL for the uploaded asset.
+   *
+   * - When uploaded with `makePublic: true` (default — branding assets):
+   *   a canonical Google Cloud Storage public URL:
+   *   `https://storage.googleapis.com/<bucket>/<path>`. Cache-friendly,
+   *   embeddable in published documents.
+   * - When uploaded with `makePublic: false` (sensitive content —
+   *   evidence + TAC attachments): an empty string. Consumers must mint
+   *   a short-lived signed download URL on demand via
+   *   `api/routes/storage.ts::getStorageDownloadURL` /
+   *   `getTacAttachmentDownloadURL` so the server can re-validate
+   *   ownership on every download click.
+   */
   url: string;
 }
 
+export interface UploadAssetOptions {
+  /**
+   * When `true` (default), the uploaded object is made world-readable via
+   * `file.makePublic()` and the returned `url` is the stable public URL.
+   * Set to `false` for sensitive content — the object stays private and
+   * the returned `url` is empty; callers should mint short-lived signed
+   * download URLs via the storage download endpoints when serving the
+   * asset to the user.
+   */
+  makePublic?: boolean;
+}
+
 /**
- * Upload a buffer to Firebase Storage and return a download URL.
+ * Upload a buffer to Firebase Storage and return a download URL (or empty
+ * string when stored privately).
  *
  * Notes:
- * - We use `makePublic()` so the URL is stable + cache-friendly. Acceptable
- *   for branding assets (logos, signatures, stamps) that are routinely
- *   embedded in published documents anyway.
- * - The URL we return is the canonical Google Cloud Storage media URL.
- *   Format: `https://storage.googleapis.com/<bucket>/<path>`.
+ * - Default behaviour (`makePublic: true`) matches the historical pattern
+ *   used by governance branding (logos, stamps, signatures) — objects are
+ *   public, URLs are stable + cacheable.
+ * - Pass `{ makePublic: false }` for sensitive content (evidence,
+ *   TAC attachments). The object stays private; serve it via a fresh
+ *   short-lived signed download URL on each access so ownership can be
+ *   re-validated server-side every time.
+ * - We deliberately do NOT use signed PUT URLs for browser uploads in
+ *   this codebase — the @google-cloud/storage V4 signing path against
+ *   `.firebasestorage.app` buckets has reproducible `SignatureDoesNotMatch`
+ *   failures that no documented fix resolves. All uploads go base64 →
+ *   API → here, capped at the Vercel serverless 4.5 MB body limit
+ *   (effectively ~3 MB binary after base64 inflation).
  */
 export async function uploadAsset(
   path: string,
   buffer: Buffer,
   contentType: string,
+  options: UploadAssetOptions = {},
 ): Promise<UploadResult> {
+  const { makePublic = true } = options;
   const bucket = getBucket();
   const file = bucket.file(path);
   await file.save(buffer, {
@@ -82,14 +130,19 @@ export async function uploadAsset(
     resumable: false,
     metadata: {
       contentType,
-      cacheControl: 'public, max-age=31536000, immutable',
+      cacheControl: makePublic
+        ? 'public, max-age=31536000, immutable'
+        : 'private, no-cache, no-store, must-revalidate',
     },
   });
-  await file.makePublic();
-  return {
-    path,
-    url: `https://storage.googleapis.com/${bucket.name}/${encodeURI(path)}`,
-  };
+  if (makePublic) {
+    await file.makePublic();
+    return {
+      path,
+      url: `https://storage.googleapis.com/${bucket.name}/${encodeURI(path)}`,
+    };
+  }
+  return { path, url: '' };
 }
 
 /**

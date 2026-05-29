@@ -50,6 +50,7 @@ function enquiryToForm(e: Enquiry): FormState {
   };
 }
 
+// File → base64 (data-uri prefix stripped server-side via decodeBase64TacFile).
 async function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -243,9 +244,11 @@ export function NewEnquiryModal({
       const idForUploads = item.id;
       setEnquiryId(idForUploads);
 
-      // 2. Upload any pending files sequentially. Per-file failures are
-      //    surfaced individually so the user knows which one didn't make it
-      //    while the rest still get committed.
+      // 2. Upload any pending files sequentially via base64 → API → Admin SDK.
+      //    Server decodes, uploads to GCS as a private object, appends
+      //    metadata to the enquiry doc, returns the new attachment record.
+      //    Per-file failures are surfaced individually so the user knows
+      //    which one didn't make it while the rest still get committed.
       const uploaded: EnquiryAttachment[] = [];
       const failedNames: string[] = [];
       for (const file of pendingFiles) {
