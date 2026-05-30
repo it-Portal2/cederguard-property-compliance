@@ -6,6 +6,7 @@ import { isSuperAdmin } from '../lib/roles';
 import { api } from '../lib/api';
 import { clsx } from 'clsx';
 import { DEFAULT_PRICING, USAGE_ASSUMPTIONS, calculatePlatformCosts } from './InvoiceManager';
+import PageHeader from '../components/PageHeader';
 
 /* ─── Helpers ─── */
 const fmt2 = (n: number) => `£${n.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -189,39 +190,33 @@ export function CostCalculator() {
   if (!isAdmin) return null;
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="p-2 bg-violet-50 rounded-lg"><Calculator className="w-5 h-5 text-violet-600" /></div>
-            <h1 className="text-2xl font-bold text-slate-900">Platform Cost Calculator</h1>
-            <span className="text-[10px] font-mono font-medium px-2 py-0.5 bg-orange-100 text-orange-600 rounded-full uppercase tracking-wide">Internal Tool</span>
+    <div className="space-y-6 sm:space-y-8">
+      <PageHeader
+        title="Platform Cost Calculator"
+        subtitle="Edit base infrastructure rates and see real-time cost projections. Changes affect cost estimates across the platform."
+        breadcrumbs={[{label:"Account"},{label:"Cost Calculator"}]}
+        actions={
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleReset}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-all shadow-sm"
+            >
+              <RefreshCw className="w-4 h-4" /> Reset to Defaults
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving || !isDirty}
+              className={clsx(
+                'flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-bold text-white transition-all shadow-md',
+                isDirty ? 'bg-indigo-600 hover:bg-indigo-700 active:scale-95' : 'bg-slate-300 cursor-not-allowed'
+              )}
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+              {saving ? 'Saving…' : saved ? 'Saved!' : 'Save Rates'}
+            </button>
           </div>
-          <p className="text-slate-500 text-sm ml-11">
-            Edit base infrastructure rates and see real-time cost projections. Changes here affect cost estimates across the platform. For client invoicing, go to <strong>Platform Admin → Quote Generator</strong>.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleReset}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-all shadow-sm"
-          >
-            <RefreshCw className="w-4 h-4" /> Reset to Defaults
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving || !isDirty}
-            className={clsx(
-              'flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-bold text-white transition-all shadow-md',
-              isDirty ? 'bg-indigo-600 hover:bg-indigo-700 active:scale-95' : 'bg-slate-300 cursor-not-allowed'
-            )}
-          >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-            {saving ? 'Saving…' : saved ? 'Saved!' : 'Save Rates'}
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       {loadError && (
         <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg px-4 py-3 flex items-center gap-2 text-sm">

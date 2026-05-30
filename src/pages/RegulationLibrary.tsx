@@ -10,6 +10,7 @@ import { AIInquiryPopup } from '../components/AIInquiryPopup';
 import { AIWriter } from '../components/AIWriter';
 import { generateId } from '../lib/utils';
 import toast from 'react-hot-toast';
+import PageHeader from '../components/PageHeader';
 
 // These will be recalculated inside the component to include custom items
 const STATIC_CATS = [...new Set(REGULATIONS.map(r => r.cat))].sort();
@@ -514,7 +515,12 @@ export function RegulationLibrary() {
   }
 
   return (
-    <div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Regulation Library"
+        subtitle="Searchable reference library of UK built-environment regulations, standards, and compliance frameworks."
+        breadcrumbs={[{label:"Regulations Library"},{label:"Library"}]}
+      />
       <div className="flex flex-col lg:flex-row gap-8">
         
         {/* MOBILE STICKY HEADER */}

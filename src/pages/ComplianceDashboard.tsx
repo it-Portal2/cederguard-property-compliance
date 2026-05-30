@@ -2,18 +2,20 @@ import React, { useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import { DOMAINS } from '../data/complianceData';
 import { Link, useSearchParams, useNavigate } from 'react-router';
-import { CheckCircle2, CircleDashed, Clock, FileWarning, TrendingUp, ScanSearch, AlertCircle, ArrowLeft, ArrowRight, ShieldCheck, Calendar, MessageSquare, CheckSquare, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, CircleDashed, Clock, FileWarning, TrendingUp, ScanSearch, AlertCircle, ArrowLeft, ArrowRight, ShieldCheck, Calendar, MessageSquare, CheckSquare, AlertTriangle, Settings, RefreshCw, FileSpreadsheet } from 'lucide-react';
 import { InfoTooltip } from '../components/InfoTooltip';
 import { StatsCard } from '../components/common/StatsCard';
 import { isAtLeastClientAdmin, UserRole, isSuperAdmin, isAtLeastPM } from '../lib/roles';
 import { stripMarkdown } from '../lib/utils';
 import { AIInquiryPopup } from '../components/AIInquiryPopup';
-import { ServiceManagementBar } from '../components/ServiceManagementBar';
+import PageActions, { type ActionItem } from '../components/PageActions';
+import { exportContextData } from '../lib/exportUtils';
 import { useHistoricalView } from '../hooks/useHistoricalView';
 import { MonthPicker } from '../components/historicalReporting/MonthPicker';
 import { HistoricalBanner } from '../components/historicalReporting/HistoricalBanner';
 import { HistoricalContentSkeleton } from '../components/historicalReporting/HistoricalContentSkeleton';
 import type { LegacyArraySnapshot } from '../types/historicalReporting';
+import PageHeader from '../components/PageHeader';
 
 export function ComplianceDashboard() {
     const { 
@@ -30,7 +32,10 @@ export function ComplianceDashboard() {
         loadProjectData,
         loadProgrammeData,
         setActiveProject,
-        setActiveProgramme
+        setActiveProgramme,
+        canManageContext,
+        risks,
+        issues,
     } = useStore();
     const safeComplianceItems = Array.isArray(complianceItems) ? complianceItems : [];
     const safeProjects = Array.isArray(projects) ? projects : [];
@@ -194,22 +199,37 @@ export function ComplianceDashboard() {
     // Critical = High/Critical risk AND still open (not started)
     const criticalItems = contextCompliance.filter(i => isHighRisk(i.risk) && isOpen(i.stage));
 
+    const activeProject = safeProjects.find(p => p.id === activeProjectId);
+    const isProject = searchParams.get('type') ? searchParams.get('type') === 'project' : !!activeProjectId;
+    const contextId = isProject ? activeProject?.id : activeProgramme?.id;
+    const contextName = isProject ? activeProject?.name : activeProgramme?.name;
+    const canManage = canManageContext();
+    const pageActions: ActionItem[] = [
+      { label: 'Main Compliance Tracker', icon: ShieldCheck, onClick: () => navigate('/compliance/tracker'), description: 'Return to the primary compliance management view.', category: 'Context Actions' },
+      { label: 'Edit Profile', icon: Settings, onClick: () => isProject ? navigate('/project/initiation') : navigate(`/programmes/edit/${activeProgramme?.id}`), description: `Modify ${isProject ? 'project' : 'programme'} metadata and parameters.`, category: 'Context Actions' },
+      { label: 'Compliance Settings', icon: RefreshCw, onClick: () => navigate(`/compliance/setup?type=${isProject ? 'project' : 'programme'}&restart=true`), description: 'Update compliance parameters.', category: 'Context Actions' },
+      { label: 'Export Compliance Data (Excel)', icon: FileSpreadsheet, onClick: () => exportContextData({ page: 'compliance', complianceItems: Array.isArray(complianceItems) ? complianceItems : [], risks: Array.isArray(risks) ? risks : [], issues: Array.isArray(issues) ? issues : [], projects: safeProjects, contextId, isProject, contextName: contextName || 'CedarGuard' }), description: 'Download compliance items as .xlsx.', category: 'Data Tools' },
+    ];
+
     return (
         <>
         <div className="space-y-8">
-            <ServiceManagementBar className="mb-4" />
-
-            {/* month picker + historical banner. Placed AFTER
- ServiceManagementBar so the service status row stays the
- page's primary header signal.*/}
-            <div className="flex justify-end">
-                <MonthPicker
+            <PageHeader
+              title="Compliance Dashboard"
+              subtitle="Compliance status, domain breakdown, and pending actions for the active context."
+              breadcrumbs={[{label:"Compliance"},{label:"Dashboard"}]}
+              actions={
+                <div className="flex flex-wrap items-center gap-2">
+                  <MonthPicker
                     monthEnd={historicalView.monthEnd}
                     availableMonths={historicalView.availableMonths}
                     onChange={historicalView.setMonthEnd}
                     loading={historicalView.loading}
-                />
-            </div>
+                  />
+                  <PageActions items={pageActions} canManage={canManage} />
+                </div>
+              }
+            />
             {isHistorical && historicalView.monthEnd && (
                 <HistoricalBanner
                     monthEnd={historicalView.monthEnd}

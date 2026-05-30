@@ -5,6 +5,8 @@ import { useStore } from '../store/useStore';
 import { clsx } from 'clsx';
 import { isAtLeastClientAdmin, isSuperAdmin, UserRole, isPM } from '../lib/roles';
 import { calculateProgrammeProgress } from '../lib/progress';
+import PageHeader from '../components/PageHeader';
+import { EmptyState } from '../components/common/EmptyState';
 
 function parseAnyDate(val: any): Date | null {
     if (!val) return null;
@@ -103,26 +105,22 @@ export function Programmes() {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                        <div className="p-2 bg-indigo-50 rounded-lg">
-                            <LayoutTemplate className="w-6 h-6 text-indigo-600" />
-                        </div>
-                        Programmes
-                    </h1>
-                    <p className="text-sm text-slate-500 mt-1">Manage and monitor your high-level programme contexts.</p>
-                </div>
-                {canManage && (
-                    <button
-                        onClick={() => { setActiveProgramme(null); setActiveProject(null); navigate('/programmes/new'); }}
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 transition-all shadow-sm hover:shadow-md"
-                    >
-                        <Plus className="w-4 h-4" />
-                        New Programme
-                    </button>
-                )}
-            </div>
+            <PageHeader
+                title="Programmes"
+                subtitle="Manage and monitor your high-level programme contexts."
+                breadcrumbs={[{label:"Programme Initiation"},{label:"All Programmes"}]}
+                actions={
+                    canManage ? (
+                        <button
+                            onClick={() => { setActiveProgramme(null); setActiveProject(null); navigate('/programmes/new'); }}
+                            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+                        >
+                            <Plus className="w-4 h-4" />
+                            New Programme
+                        </button>
+                    ) : undefined
+                }
+            />
 
             {/* Filters */}
             <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
@@ -162,25 +160,23 @@ export function Programmes() {
             {/* Programme Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredProgrammes.length === 0 ? (
-                    <div className="col-span-full bg-white rounded-lg border border-dotted border-slate-300 p-12 text-center">
-                        <div className="flex flex-col items-center justify-center max-w-sm mx-auto">
-                            <div className="p-4 bg-slate-50 rounded-full mb-4">
-                                <LayoutTemplate className="w-10 h-10 text-slate-300" />
-                            </div>
-                            <h3 className="text-lg font-bold text-slate-900 tracking-tight">No programmes found</h3>
-                            <p className="text-sm text-slate-500 mt-2 leading-relaxed">
-                                There are no programmes matching your criteria. Programmes help you group related projects together for better oversight.
-                            </p>
-                                {canManage && (
+                    <div className="col-span-full bg-white rounded-lg border border-dashed border-slate-200">
+                        <EmptyState
+                            icon={LayoutTemplate}
+                            title="No Programmes Found"
+                            description="There are no programmes matching your criteria. Programmes help you group related projects for better oversight."
+                            action={
+                                canManage ? (
                                     <button
                                         onClick={() => { setActiveProgramme(null); navigate('/programmes/new'); }}
-                                        className="mt-6 text-indigo-600 font-bold text-sm hover:text-indigo-700 flex items-center gap-2"
+                                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
                                     >
                                         <Plus className="w-4 h-4" />
                                         Create Your First Programme
                                     </button>
-                                )}
-                        </div>
+                                ) : undefined
+                            }
+                        />
                     </div>
                 ) : (
                     filteredProgrammes.map(programme => (

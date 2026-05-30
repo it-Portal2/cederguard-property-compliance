@@ -18,6 +18,7 @@ import { AIWriter } from '../components/AIWriter';
 import { generateId } from '../lib/utils';
 import toast from 'react-hot-toast';
 import DynamicTable from '../components/table/DynamicTable';
+import PageHeader from '../components/PageHeader';
 import type {
   ColumnDef,
   RowAction,
@@ -228,18 +229,11 @@ export function LessonsLearned() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900 flex items-center gap-2">
-            <Lightbulb className="w-8 h-8 text-amber-500" />
-            Lessons Learned Repository
-          </h1>
-          <p className="text-slate-500 font-medium">
-            Shared knowledge base for project risk mitigation and process improvement.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Lessons Learned Repository"
+        subtitle="Shared knowledge base for project risk mitigation and process improvement."
+        breadcrumbs={[{label:"Risk Management"},{label:"Lessons Learned"}]}
+      />
 
       {/* Stats/Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

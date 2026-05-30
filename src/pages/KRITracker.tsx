@@ -16,6 +16,7 @@ import { isAtLeastPM, isAtLeastClientAdmin } from '../lib/roles';
 import { KRI_METADATA, SEED_KRIS } from '../data/riskData';
 import { generateId } from '../lib/utils';
 import toast from 'react-hot-toast';
+import PageHeader from '../components/PageHeader';
 
 export function KRITracker() {
   const {
@@ -448,27 +449,21 @@ export function KRITracker() {
   return (
     <div className="space-y-12">
 
-      {/* ─── HEADER ─── */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-semibold text-slate-900 flex items-center gap-2.5">
-            <BarChart className="w-6 h-6 text-indigo-600" /> KRI Risk Tracker
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Full diagnostic indicators across {safeProjects.length} active workstream{safeProjects.length === 1 ? '' : 's'}.
-          </p>
-        </div>
-        {canModify && (
-          <div className="flex flex-wrap gap-2 self-start md:self-auto">
+      <PageHeader
+        title="KRI Risk Tracker"
+        subtitle={`Full diagnostic indicators across ${safeProjects.length} active workstream${safeProjects.length === 1 ? '' : 's'}.`}
+        breadcrumbs={[{label:"Monitoring & Reporting"},{label:"KRI Tracker"}]}
+        actions={
+          canModify ? (
             <button
               onClick={handleAdd}
               className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors"
             >
               <Plus className="w-4 h-4" /> Add KRI
             </button>
-          </div>
-        )}
-      </div>
+          ) : undefined
+        }
+      />
 
       {/* ─── KPI CARDS ─── */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

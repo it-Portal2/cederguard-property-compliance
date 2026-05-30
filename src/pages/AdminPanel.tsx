@@ -25,6 +25,7 @@ import { ProjectsTab } from '../components/admin/ProjectsTab';
 import { PricingTab } from '../components/admin/PricingTab';
 import { OverviewTab } from '../components/admin/OverviewTab';
 import { AIModelsTab } from '../components/admin/AIModelsTab';
+import PageHeader from '../components/PageHeader';
 
 export function AdminPanel() {
     const navigate = useNavigate();
@@ -116,18 +117,11 @@ export function AdminPanel() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-semibold text-slate-900 flex items-center gap-3">
-                        <div className="p-2 bg-indigo-50 rounded-lg">
-                            <Shield className="w-7 h-7 text-indigo-600" />
-                        </div>
-                        Platform Administration
-                    </h1>
-                    <p className="text-sm text-slate-500 mt-1 font-medium opacity-80">Command center for users and platform governance.</p>
-                </div>
-            </div>
+            <PageHeader
+                title="Platform Administration"
+                subtitle="Command centre for users, activity, and platform governance."
+                breadcrumbs={[{label:"Account"},{label:"Administration"}]}
+            />
 
             {/* Tab Navigation */}
             <div className="flex gap-1 bg-slate-100 p-1 rounded-lg w-fit">

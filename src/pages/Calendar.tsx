@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 import { clsx } from 'clsx';
 import { getRIBALabelFull } from '../data/complianceData';
 import { isAtLeastPM } from '../lib/roles';
+import PageHeader from '../components/PageHeader';
 
 export function Calendar() {
   const {
@@ -371,22 +372,11 @@ export function Calendar() {
       <div className="space-y-6 mb-10">
         {/* Top Row: Title & Action Summary */}
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-5">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2.5 md:p-3 bg-indigo-600 rounded-lg shadow-lg shadow-indigo-200/50 shrink-0">
-                <CalendarIcon className="w-6 h-6 md:w-8 md:h-8 text-white" />
-              </div>
-              <h1 className="text-xl sm:text-2xl lg:text-4xl font-semibold text-slate-900 tracking-tight">
-                Project Calendar
-              </h1>
-            </div>
-            <div className="flex items-center gap-3 ml-1">
-              <div className="hidden sm:block h-1 w-12 bg-indigo-600 rounded-full shrink-0" />
-              <p className="font-mono text-[10px] sm:text-[11px] text-slate-500 font-medium uppercase tracking-wide opacity-70 tabular-nums">
-                {compareMode ? 'High-Level Timeline Comparison Mode' : `Tracking ${events.length} milestones across ${activeProjects.length} active projects`}
-              </p>
-            </div>
-          </div>
+          <PageHeader
+            title="Project Calendar"
+            subtitle={compareMode ? 'High-Level Timeline Comparison Mode' : `Tracking ${events.length} milestones across ${activeProjects.length} active projects`}
+            breadcrumbs={[{label:"Overview"},{label:"Calendar"}]}
+          />
 
           <div className="grid grid-cols-2 xl:flex items-stretch xl:items-center gap-3 w-full xl:w-auto">
               <button

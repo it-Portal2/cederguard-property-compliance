@@ -4,6 +4,7 @@ import { Link } from 'react-router';
 import { useStore } from '../store/useStore';
 import { isSuperAdmin, isAtLeastClientAdmin, isAtLeastPM } from '../lib/roles';
 import { AIInquiryPopup } from '../components/AIInquiryPopup';
+import PageHeader from '../components/PageHeader';
 
 /* ────────────────────────────────────────────────────── */
 /*  Types                                                 */
@@ -519,13 +520,11 @@ export function HelpCenter() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <HelpCircle className="w-6 h-6 text-indigo-500" />
-            <h1 className="text-3xl font-semibold text-slate-900 dark:text-white tracking-tight">Help Centre</h1>
-          </div>
-          <p className="text-slate-500 dark:text-slate-400 text-sm">Step-by-step guides for every role. Select your role below to get started.</p>
-        </div>
+        <PageHeader
+          title="Help Centre"
+          subtitle="Step-by-step guides for every role. Select your role below to get started."
+          breadcrumbs={[{label:"Help"},{label:"Help Centre"}]}
+        />
         {/* Search */}
         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 w-full md:w-auto">
           <div className="relative flex-1 md:w-64">

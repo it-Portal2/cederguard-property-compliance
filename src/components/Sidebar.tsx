@@ -271,14 +271,14 @@ export function Sidebar() {
       {/* Mobile Backdrop overlay */}
       {isMobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-slate-900/50 z-40 md:hidden backdrop-blur-sm transition-opacity"
+          className="fixed inset-0 bg-slate-900/50 z-40 lg:hidden backdrop-blur-sm transition-opacity"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
       <div
         className={clsx(
-          "w-64 bg-white border-r border-slate-200 flex flex-col h-full fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 md:relative md:translate-x-0 print:hidden",
+          "w-64 bg-white border-r border-slate-200 flex flex-col h-full fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 lg:relative lg:translate-x-0 print:hidden",
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
@@ -290,7 +290,7 @@ export function Sidebar() {
             className="w-full max-w-[190px] h-11 object-contain"
           />
           <button
-            className="md:hidden p-1 text-slate-400 hover:bg-slate-100 rounded-lg transition-colors"
+            className="lg:hidden p-1 text-slate-400 hover:bg-slate-100 rounded-lg transition-colors"
             onClick={() => setMobileMenuOpen(false)}
           >
             <X className="w-5 h-5" />

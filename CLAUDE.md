@@ -199,11 +199,24 @@ devInstall.cjs                      Fast `dev:install` + `dev:install:fast` work
 
 #### Navigation & Layout
 ```
-Header.tsx            (367 lines)   Top header: project/programme switcher, notifications bell, user menu
-Sidebar.tsx           (367 lines)   Left nav: role-gated menu groups, auto-collapse on route change
-MobileHeader.tsx                    Mobile-specific top header variant
-MobileNav.tsx                       Mobile bottom navigation bar
-ServiceManagementBar.tsx (298 lines) Banner showing last compliance/risk analysis run timestamps
+Header.tsx            (367 lines)   Top header: project/programme switcher, notifications bell, user menu.
+                                    New/programme + New/project buttons: icon-only at lg (1024–1279px),
+                                    full labels at xl (1280px+) via hidden xl:inline span + styled tooltip.
+Sidebar.tsx           (367 lines)   Left nav: role-gated menu groups, auto-collapse on route change.
+                                    Breakpoint: lg (1024px) — permanent at ≥1024px, drawer at <1024px.
+MobileHeader.tsx                    Mobile/tablet top header (lg:hidden — visible below 1024px).
+MobileNav.tsx                       Bottom tab bar (lg:hidden — visible below 1024px).
+PageHeader.tsx                      CANONICAL page-level header. Props: title, subtitle?, breadcrumbs,
+                                    actions?. Renders breadcrumb nav + H1 + subtitle; when actions is
+                                    provided, wraps in md:flex-row responsive layout. Every authenticated
+                                    page (except full-screen wizards ComplianceSetup/RiskSetup) uses this.
+                                    NEVER add an ad-hoc h1 block — always use PageHeader.
+PageActions.tsx                     Reusable "Actions & options" dropdown for page-level context actions.
+                                    Props: items: ActionItem[], canManage: boolean. Groups items by
+                                    'Context Actions' | 'Data Tools'; shows Read-only badge when
+                                    canManage===false; detects async onClick for export spinner.
+                                    Used by 7 pages: ComplianceDashboard, ComplianceTracker, RiskDashboard,
+                                    RiskRegister, ProgrammeRiskRegister, RiskIssues, ProgrammeIssues.
 PublicationChecklist.tsx (402 lines) Pre-publication validation checklist modal
 ```
 
@@ -452,6 +465,13 @@ useStore.ts           (2000+ lines) Single Zustand store: all app state, API cal
 
 ### `/src/lib/`
 ```
+exportUtils.ts                     SINGLE SOURCE OF TRUTH for client-side Excel export. Exports
+                                   `exportContextData(opts: ExportContextOpts)` — filters arrays by
+                                   contextId (project or programme), then writes page-specific XLSX:
+                                   'issues' → Issues Register (19 cols), 'risk' → Risk Register (25 cols),
+                                   'tracker'/'compliance' → Compliance Tracker/Items (9 cols),
+                                   'full' → multi-sheet bundle. Used by PageActions on all 7 pages.
+                                   Never re-implement export inline in a page; always extend this file.
 api.ts                             API client: all frontend→backend calls via action-dispatch pattern.
                                    `addEvidence(projectId, document, file?)` accepts optional
                                    `{ base64, mime }` file payload (server uploads via uploadAsset).
@@ -820,12 +840,13 @@ Auth: Firebase ID token in Authorization header
 ### Navigation & Layout
 | Component | File | What it does |
 |---|---|---|
-| `Header` | components/Header.tsx | Top bar: project/programme switcher, notifications, dark mode toggle, user menu |
-| `Sidebar` | components/Sidebar.tsx | Left nav: role-gated menu groups (Compliance, Risk, Reports, Admin); collapses on mobile |
-| `MobileHeader` | components/MobileHeader.tsx | Mobile-specific top header |
-| `MobileNav` | components/MobileNav.tsx | Mobile bottom tab bar |
+| `Header` | components/Header.tsx | Top bar: project/programme switcher, New programme/New project buttons (icon-only at lg, full labels at xl), notifications, user menu |
+| `Sidebar` | components/Sidebar.tsx | Left nav: role-gated menu groups; permanent at ≥1024px (lg), drawer at <1024px |
+| `MobileHeader` | components/MobileHeader.tsx | Mobile/tablet top header — shown below 1024px (`lg:hidden`) |
+| `MobileNav` | components/MobileNav.tsx | Bottom tab bar — shown below 1024px (`lg:hidden`) |
+| `PageHeader` | components/PageHeader.tsx | **Canonical** page-level header with breadcrumbs, H1, subtitle, and optional `actions` slot |
+| `PageActions` | components/PageActions.tsx | **Canonical** "Actions & options" dropdown — per-page context actions + data export |
 | `PublicLayout` | components/public/PublicLayout.tsx | Wrapper with public header/footer for marketing pages |
-| `ServiceManagementBar` | components/ServiceManagementBar.tsx | Pinned bar showing last analysis run timestamps |
 
 ### Auth & Route Control
 | Component | File | What it does |
@@ -982,7 +1003,7 @@ Auth: Firebase ID token in Authorization header
 
 ### Folder Structure Patterns
 - Feature sub-folders inside `components/` are lowercase: `admin/`, `compliance/`, `common/`, `public/`
-- No `hooks/` directory — custom hook logic embedded in components or store
+- `/src/hooks/` exists with 4 hooks (useChatStream, useFocusTrap, useHistoricalView, useHistoricalMonthMulti) — new cross-page hooks go here
 - No `contexts/` directory — all context via Zustand store
 - Backend under `/api/` with `lib/` and `routes/` sub-folders
 - Static data under `/src/data/`; app-wide constants under `/src/constants/`
@@ -1037,9 +1058,15 @@ export const authRoutes = {
 - **Scoped CSS exception**: [`src/pages/Login.tsx`](src/pages/Login.tsx) ships a custom OKLCH-palette design under a `.cg-login-root` scope (CSS embedded as a `<style>` block in the component). This is a deliberate exception — Login is on the typography exclusion list and the design uses features (custom OKLCH operations, scoped CSS variables, keyframe animations) that don't translate cleanly to Tailwind. **Do not extend this pattern to other pages** — Tailwind remains the rule everywhere else.
 
 ### Page wrapper convention
-- The app shell wraps every authenticated page with `<main className="flex-1 overflow-y-auto p-4 md:p-6 ...">` containing `<div className="max-w-[1600px] mx-auto">` ([`src/App.tsx:181-182`](src/App.tsx#L181)). Pages should **not** add their own page-level padding (`p-2 sm:p-4 lg:p-6`), `max-w-*`, or `mx-auto` — that double-wraps the layout.
-- Canonical page root: `<div className="space-y-6 sm:space-y-8">` (as used in [`src/pages/ComplianceTracker.tsx`](src/pages/ComplianceTracker.tsx)). The matching tighter variant `space-y-5 sm:space-y-6` is reserved for sub-sections inside a page, not page roots.
-- `ServiceManagementBar` (when used) renders as a sibling **before** the `space-y-*` page root, not inside it.
+- The app shell wraps every authenticated page with `<main className="flex-1 overflow-y-auto p-4 lg:p-6 ...">` containing `<div className="max-w-[1600px] mx-auto">` ([`src/App.tsx`](src/App.tsx)). Pages should **not** add their own page-level padding, `max-w-*`, or `mx-auto` — that double-wraps the layout.
+- Canonical page root: `<div className="space-y-6 sm:space-y-8">`. The tighter variant `space-y-5 sm:space-y-6` is reserved for sub-sections, not page roots.
+- `ServiceManagementBar` has been **deleted** (M2.1). Its per-page action items now live in `PageActions` in the `PageHeader` `actions` slot.
+- Every authenticated page (except full-screen wizards: `ComplianceSetup`, `RiskSetup`) must open with `<PageHeader title=... subtitle=... breadcrumbs={[...]} />` as the first child of the page root. Breadcrumb first item = sidebar group name (e.g. "Compliance", "Risk Management", "Account").
+
+### Responsive layout breakpoints
+- **Sidebar / mobile nav breakpoint: `lg` (1024px).** Below 1024px: `MobileHeader` + drawer sidebar + `MobileNav` bottom bar. At 1024px+: permanent `Sidebar` + desktop `Header`. This was changed from `md` (768px) in M2.1.
+- **App shell padding**: `p-4 lg:p-6` (was `p-4 md:p-6` before M2.1).
+- **Header new-context buttons**: `hidden lg:flex` container, text labels `hidden xl:inline` (icon-only at 1024–1279px, full labels at 1280px+).
 
 ### Typography — v4 calibration (load-bearing across the authenticated app)
 **Geist (sans) + Geist Mono** loaded globally via Google Fonts import in [`src/index.css:1`](src/index.css#L1); Tailwind `@theme` maps `--font-sans` and `--font-mono` ([`src/index.css:7-8`](src/index.css)). `font-sans` cascades from the authenticated root in [`src/App.tsx:174`](src/App.tsx#L174).
@@ -1214,6 +1241,10 @@ Configured JSON-first in [apps/desktop/logger.cjs](apps/desktop/logger.cjs). Fil
 - **`ErrorBoundary` Copy Diagnostics** ([src/components/ErrorBoundary.tsx](src/components/ErrorBoundary.tsx) + `diagnostics:get` IPC) bundles the last ~200 lines of `main.log` + sysinfo + React error stack — that's the support payload. Don't add a parallel error-reporting path on desktop.
 
 ### Standing rules for sweeps / refactors
+- **`PageHeader` is the ONLY way to add a page title.** Never add an ad-hoc `<h1>` or title block to an authenticated page. Props: `breadcrumbs` (first item = sidebar group name), `title`, optional `subtitle`, optional `actions` slot.
+- **`PageActions` is the ONLY way to add a per-page context dropdown.** Pass `items: ActionItem[]` and `canManage: boolean`. Never roll a custom dropdown for page-level actions.
+- **`exportContextData` in [`src/lib/exportUtils.ts`](src/lib/exportUtils.ts) is the ONLY Excel export helper.** Never write inline XLSX logic in a page. Add new sheet types to `exportUtils.ts`.
+- **`ServiceManagementBar` is deleted.** Do not recreate it. Its MonthPicker and PageActions patterns replace it entirely.
 - **Never run regex passes on backtick template literals.** A pattern like `(["'`])((?:[^\\]|\\.)*?)\1` matches across newlines inside backticks and corrupts JSX inside `${...}`. Always restrict regex find/replace to single-line `'...'` or `"..."` strings unless the pattern is anchored on a definite per-line attribute.
 - **Never commit with `--no-verify`, never push with `--force` to `main` / `master`.** No model names, no co-authored-by footer in commit messages.
 - **Never push without explicit user instruction.** Commit locally; wait for "push".

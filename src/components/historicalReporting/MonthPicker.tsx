@@ -62,7 +62,7 @@ export function MonthPicker({
   return (
     <div
       className={
-        "relative inline-flex items-stretch overflow-hidden rounded-lg border shadow-sm transition-colors " +
+        "relative inline-flex h-9 items-stretch overflow-hidden rounded-lg border shadow-sm transition-colors " +
         (isHistorical
           ? "border-amber-300 bg-amber-50"
           : "border-slate-200 bg-white") +

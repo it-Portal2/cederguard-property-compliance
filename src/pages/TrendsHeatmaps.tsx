@@ -14,6 +14,7 @@ import {
   BAND_RANGES,
   SEVERE_SCORE_THRESHOLD,
 } from '../data/riskScoringMatrix';
+import PageHeader from '../components/PageHeader';
 
 // Local helpers — used only on this page to display ALE as a passive % of
 // linked project / programme value. The matrix-score band drives colour;
@@ -235,17 +236,11 @@ export function TrendsHeatmaps() {
 
   return (
     <div className="space-y-6">
-      {/* Header*/}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-semibold text-slate-900 flex items-center gap-2.5">
-            <TrendingUp className="w-6 h-6 text-indigo-600" /> Trends &amp; Heatmaps
-          </h1>
-          <p className="text-sm text-slate-500 mt-1 max-w-2xl">
-            Enterprise risk intelligence across strategic workstreams. Aggregate heatmaps driven by live field data.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Trends & Heatmaps"
+        subtitle="Enterprise risk intelligence across strategic workstreams. Aggregate heatmaps driven by live field data."
+        breadcrumbs={[{label:"Monitoring & Reporting"},{label:"Trends & Heatmaps"}]}
+      />
 
       {/* KPIs*/}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">

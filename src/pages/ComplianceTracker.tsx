@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Shield, Search, Filter, ChevronRight, AlertCircle, CheckCircle2, Clock, Calendar, AlertTriangle, ArrowRight, TrendingUp, LayoutGrid, List, ExternalLink, Info, ShieldCheck, SearchCheck, FileText, Target, History, Lock, MessageSquare, MoreVertical, Plus, ScanSearch, Trash2, ArrowLeft, X, ChevronDown, Edit2, Layers, FileSpreadsheet, Loader2 } from 'lucide-react';
+import { Shield, Search, Filter, ChevronRight, AlertCircle, CheckCircle2, Clock, Calendar, AlertTriangle, ArrowRight, TrendingUp, LayoutGrid, List, ExternalLink, Info, ShieldCheck, SearchCheck, FileText, Target, History, Lock, MessageSquare, MoreVertical, Plus, ScanSearch, Trash2, ArrowLeft, X, ChevronDown, Edit2, Layers, FileSpreadsheet, Loader2, Settings, RefreshCw } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { clsx } from 'clsx';
 import { motion, AnimatePresence } from 'motion/react';
-import { useSearchParams, Link } from 'react-router';
+import { useSearchParams, Link, useNavigate } from 'react-router';
 import { useStore, ComplianceItem } from '../store/useStore';
 import { DOMAINS, getRIBALabelFull } from '../data/complianceData';
 import { isAtLeastClientAdmin } from '../lib/roles';
@@ -13,13 +13,15 @@ import { AIInquiryPopup } from '../components/AIInquiryPopup';
 import { AIWriter } from '../components/AIWriter';
 import { format, isValid } from 'date-fns';
 import toast from 'react-hot-toast';
-import { ServiceManagementBar } from '../components/ServiceManagementBar';
+import PageActions, { type ActionItem } from '../components/PageActions';
+import { exportContextData } from '../lib/exportUtils';
 import { canCreateCompliance } from '../lib/roles';
 import { useHistoricalView } from '../hooks/useHistoricalView';
 import { MonthPicker } from '../components/historicalReporting/MonthPicker';
 import { HistoricalBanner } from '../components/historicalReporting/HistoricalBanner';
 import { HistoricalContentSkeleton } from '../components/historicalReporting/HistoricalContentSkeleton';
 import type { LegacyArraySnapshot } from '../types/historicalReporting';
+import PageHeader from '../components/PageHeader';
 
 /* ═══════════════════════════════════════════════════
  CONSTANTS
@@ -101,9 +103,13 @@ export function ComplianceTracker() {
     loadProjectData,
     loadProgrammeData,
     setActiveProject,
-    setActiveProgramme
+    setActiveProgramme,
+    canManageContext,
+    risks,
+    issues,
   } = useStore();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -485,21 +491,35 @@ export function ComplianceTracker() {
     XLSX.writeFile(workbook, `Compliance_Tracker_${formattedDate}.xlsx`);
   };
 
+  const canManage = canManageContext();
+  const isProjectCtx = searchParams.get('type') ? searchParams.get('type') === 'project' : !!activeProjectId;
+  const exportCtxId = isProjectCtx ? activeProject?.id : activeProgramme?.id;
+  const exportCtxName = isProjectCtx ? activeProject?.name : activeProgramme?.name;
+  const pageActions: ActionItem[] = [
+    { label: 'Add Requirement', icon: ShieldCheck, onClick: () => { const p = new URLSearchParams(searchParams.toString()); p.set('action', 'add-compliance'); navigate(`?${p.toString()}`); }, description: 'Add a new compliance requirement to this context.', category: 'Context Actions' },
+    { label: 'Edit Profile', icon: Settings, onClick: () => isProjectCtx ? navigate('/project/initiation') : navigate(`/programmes/edit/${activeProgramme?.id}`), description: `Modify ${isProjectCtx ? 'project' : 'programme'} metadata and parameters.`, category: 'Context Actions' },
+    { label: 'View Risk Register', icon: AlertCircle, onClick: () => { const cp = isProjectCtx ? `?projectId=${activeProject?.id}` : activeProgramme ? `?programmeId=${activeProgramme?.id}` : ''; navigate((isProjectCtx ? '/risk/register' : '/risk/programme-register') + cp); }, description: 'Switch to the risk management module.', category: 'Context Actions' },
+    { label: 'Export Tracker Data (Excel)', icon: FileSpreadsheet, onClick: () => exportContextData({ page: 'tracker', complianceItems: Array.isArray(complianceItems) ? complianceItems : [], risks: Array.isArray(risks) ? risks : [], issues: Array.isArray(issues) ? issues : [], projects: Array.isArray(projects) ? projects : [], contextId: exportCtxId, isProject: isProjectCtx, contextName: exportCtxName || 'CedarGuard' }), description: 'Download compliance tracker data as .xlsx.', category: 'Data Tools' },
+  ];
+
   return (
     <div className="space-y-6 sm:space-y-8">
-      <ServiceManagementBar className="mb-4" />
-
-      {/* month picker + historical banner. Placed AFTER
- ServiceManagementBar so the service status row stays the
- page's primary header signal.*/}
-      <div className="flex justify-end">
-        <MonthPicker
-          monthEnd={historicalView.monthEnd}
-          availableMonths={historicalView.availableMonths}
-          onChange={historicalView.setMonthEnd}
-          loading={historicalView.loading}
-        />
-      </div>
+      <PageHeader
+        title="Compliance Tracker"
+        subtitle="Review, filter, and update compliance item status across all domains."
+        breadcrumbs={[{label:"Compliance"},{label:"Tracker"}]}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <MonthPicker
+              monthEnd={historicalView.monthEnd}
+              availableMonths={historicalView.availableMonths}
+              onChange={historicalView.setMonthEnd}
+              loading={historicalView.loading}
+            />
+            <PageActions items={pageActions} canManage={canManage} />
+          </div>
+        }
+      />
       {isHistorical && historicalView.monthEnd && (
         <HistoricalBanner
           monthEnd={historicalView.monthEnd}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { ArrowLeft, Shield, AlertTriangle, ScanSearch, DollarSign, Rocket, Target, Plus, Loader2 } from 'lucide-react';
+import { Shield, AlertTriangle, ScanSearch, DollarSign, Rocket, Target, Plus, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useStore } from '../store/useStore';
 import { api } from '../lib/api';
@@ -14,6 +14,7 @@ import { calculateProgrammeProgress } from '../lib/progress';
 import { DeliveryTeamCRUD } from '../components/DeliveryTeamCRUD';
 import { PublicationChecklist } from '../components/PublicationChecklist';
 import { CheckPillGroup, inputBase, textareaBase } from '../components/forms';
+import PageHeader from '../components/PageHeader';
 
 const inputCls = inputBase;
 const labelCls = "block text-sm font-medium text-slate-700 mb-1.5";
@@ -606,19 +607,11 @@ export function ProgrammeInitiation() {
             <div className="space-y-6">
                 {/* ── HEADER SECTION ──────────────────────────────────────────*/}
                 <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 pb-6 border-b border-slate-200">
-                    <div className="flex items-start gap-3 min-w-0">
-                        <button
-                            onClick={() => navigate(-1)}
-                            className="p-2 hover:bg-slate-100 rounded-md transition-colors shrink-0"
-                            aria-label="Back"
-                        >
-                            <ArrowLeft className="w-5 h-5 text-slate-500" />
-                        </button>
-                        <div className="min-w-0">
-                            <h1 className="text-2xl font-semibold text-slate-900">Programme initiation</h1>
-                            <p className="mt-1 text-sm text-slate-500">Define governance, financials and regulatory context.</p>
-                        </div>
-                    </div>
+                    <PageHeader
+                        title="Programme Initiation"
+                        subtitle="Define governance, financials and regulatory context."
+                        breadcrumbs={[{label:"Programme Initiation"},{label:"Initiation"}]}
+                    />
 
                     <div className="flex flex-wrap items-center gap-2">
                         {isAtLeastClientAdmin(_userRole) && (

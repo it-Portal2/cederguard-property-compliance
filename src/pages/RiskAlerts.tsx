@@ -7,6 +7,7 @@ import { format, differenceInDays } from 'date-fns';
 import { KRI_LIST, KRI_OWNERS } from '../data/riskData';
 import { getGrossScore } from '../lib/riskMetrics';
 import { clsx } from 'clsx';
+import PageHeader from '../components/PageHeader';
 
 export function RiskAlerts() {
   const { risks, issues, acknowledgedAlerts, snoozedAlerts, ackAlert, snoozeAlert, resetAlerts, activeProjectId, activeProgrammeId, projects } = useStore();
@@ -118,33 +119,27 @@ export function RiskAlerts() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-3">
-        {fromInitiation && (
-          <Link
-            to={type === 'programme' ? '/programmes/new' : '/initiate'}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" /> Back to initiation flow
-          </Link>
-        )}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div className="min-w-0">
-            <h1 className="text-2xl font-semibold text-slate-900 flex items-center gap-2.5">
-              <Bell className="w-6 h-6 text-indigo-600" /> Alert Board
-              {critCount > 0 && <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />}
-            </h1>
-            <p className="text-sm text-slate-500 mt-1">
-              {activeAlerts.length} active alerts · {ackdCount} acknowledged
-            </p>
-          </div>
+      {fromInitiation && (
+        <Link
+          to={type === 'programme' ? '/programmes/new' : '/initiate'}
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to initiation flow
+        </Link>
+      )}
+      <PageHeader
+        title="Alert Board"
+        subtitle="Live risk threshold breaches, acknowledgements, and active alert monitoring."
+        breadcrumbs={[{label:"Risk Management"},{label:"Alerts"}]}
+        actions={
           <button
             onClick={resetAlerts}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors self-start md:self-auto"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors"
           >
             <RotateCcw className="w-4 h-4" /> Reset all
           </button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Summary Strip */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">

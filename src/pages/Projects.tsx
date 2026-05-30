@@ -28,6 +28,8 @@ import {
   UserRole,
 } from "../lib/roles";
 import toast from "react-hot-toast";
+import PageHeader from "../components/PageHeader";
+import { EmptyState } from "../components/common/EmptyState";
 
 // ─── CSV Export Helper ───────────────────────────────────────────────────────
 
@@ -380,7 +382,12 @@ export function Projects() {
   };
 
   return (
-    <div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Projects"
+        subtitle="Browse, manage, and monitor all projects in your organisation."
+        breadcrumbs={[{label:"Overview"},{label:"All Projects"}]}
+      />
       <div className="flex flex-col md:flex-row gap-8">
         {/* ── MOBILE FILTERS BUTTON ── */}
         {/* ── MOBILE STICKY HEADER ── */}
@@ -575,22 +582,20 @@ export function Projects() {
           {/* Project Cards */}
           <div className="space-y-3">
             {filtered.length === 0 ? (
-              <div className="bg-white border border-slate-200 rounded-lg p-16 flex flex-col items-center text-center">
-                <div className="w-14 h-14 bg-slate-50 rounded-lg flex items-center justify-center mb-4">
-                  <Building2 className="w-7 h-7 text-slate-300" />
-                </div>
-                <h3 className="text-base font-bold text-slate-800">
-                  No projects found
-                </h3>
-                <p className="text-sm text-slate-400 mt-1 max-w-xs">
-                  Adjust your filters or create a new project to get started.
-                </p>
-                <button
-                  onClick={() => navigate("/projects/new")}
-                  className="mt-5 flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
-                >
-                  <Plus className="w-4 h-4" /> New Project
-                </button>
+              <div className="bg-white border border-dashed border-slate-200 rounded-lg">
+                <EmptyState
+                  icon={Building2}
+                  title="No Projects Found"
+                  description="Adjust your filters or create a new project to get started."
+                  action={
+                    <button
+                      onClick={() => navigate("/projects/new")}
+                      className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+                    >
+                      <Plus className="w-4 h-4" /> New Project
+                    </button>
+                  }
+                />
               </div>
             ) : (
               filtered.map((project) => {

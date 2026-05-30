@@ -12,14 +12,17 @@ import {
     Trash2, Edit2, ScanSearch, Plus, ShieldOff, AlertCircle,
     ArrowRight, AlertTriangle, Flag, FlagOff,
     MessageSquare, ShieldCheck, TrendingUp, Clock,
+    Settings, RefreshCw, FileSpreadsheet,
 } from 'lucide-react';
 import { RiskModal } from '../components/RiskModal';
 import { AIInquiryPopup } from '../components/AIInquiryPopup';
-import { ServiceManagementBar } from '../components/ServiceManagementBar';
+import PageActions, { type ActionItem } from '../components/PageActions';
+import { exportContextData } from '../lib/exportUtils';
 import { motion, AnimatePresence } from 'motion/react';
 import DynamicTable from '../components/table/DynamicTable';
 import type { ColumnDef, RowAction, BulkAction, FilterDef } from '../components/table/types';
 import { StatsCard } from '../components/common/StatsCard';
+import PageHeader from '../components/PageHeader';
 import { useHistoricalView } from '../hooks/useHistoricalView';
 import { MonthPicker } from '../components/historicalReporting/MonthPicker';
 import { HistoricalBanner } from '../components/historicalReporting/HistoricalBanner';
@@ -103,6 +106,7 @@ export function ProgrammeRiskRegister() {
         projects, activeProgrammeId, setActiveProgramme, user, addNotification,
         getPendingRisks, approveRisk, dismissRisk,
         pendingMutations,
+        issues, complianceItems, canManageContext, activeProgramme,
     } = useStore();
 
     // Row is "busy" when any mutation targeting this risk id is in flight.
@@ -835,9 +839,17 @@ export function ProgrammeRiskRegister() {
 
     // ── Render ──────────────────────────────────────────────────────────────
 
+    const canManage = canManageContext();
+    const exportCtxName = activeProgramme?.name || 'Programme';
+    const pageActions: ActionItem[] = [
+        { label: 'Add Risk', icon: AlertCircle, onClick: () => navigate(`/risk/programme-register${activeProgrammeId ? `?programmeId=${activeProgrammeId}` : ''}`), description: 'Go to the risk register to log a new risk.', category: 'Context Actions' },
+        { label: 'Edit Profile', icon: Settings, onClick: () => navigate(`/programmes/edit/${activeProgrammeId}`), description: 'Modify programme metadata and parameters.', category: 'Context Actions' },
+        { label: 'Re-run AI Analysis', icon: RefreshCw, onClick: () => navigate('/compliance/setup?type=programme&restart=true'), description: 'Restart compliance setup and re-run AI analysis.', category: 'Context Actions' },
+        { label: 'Export Risk Data (Excel)', icon: FileSpreadsheet, onClick: () => exportContextData({ page: 'risk', complianceItems: Array.isArray(complianceItems) ? complianceItems : [], risks: Array.isArray(risks) ? risks : [], issues: Array.isArray(issues) ? issues : [], projects: Array.isArray(projects) ? projects : [], contextId: activeProgrammeId || undefined, isProject: false, contextName: exportCtxName }), description: 'Download all risk register data as .xlsx.', category: 'Data Tools' },
+    ];
+
     return (
         <>
-            <ServiceManagementBar />
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -845,21 +857,22 @@ export function ProgrammeRiskRegister() {
                 className="space-y-6 sm:space-y-8"
             >
 
-                {/* month picker + read-only banner. The chip
- sits at the top of the page so it's the first thing
- the user sees; the amber banner below appears once
- a past month is selected.*/}
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="font-mono text-[11px] font-bold uppercase tracking-wide text-slate-400">
-                        Risk Register · Programme Level
-                    </div>
-                    <MonthPicker
-                        monthEnd={historicalView.monthEnd}
-                        availableMonths={historicalView.availableMonths}
-                        onChange={historicalView.setMonthEnd}
-                        loading={historicalView.loading}
-                    />
-                </div>
+                <PageHeader
+                    title="Programme Risk Register"
+                    subtitle="Consolidated risk register view across all projects in this programme."
+                    breadcrumbs={[{label:"Risk Management"},{label:"Programme Register"}]}
+                    actions={
+                        <div className="flex flex-wrap items-center gap-2">
+                            <MonthPicker
+                                monthEnd={historicalView.monthEnd}
+                                availableMonths={historicalView.availableMonths}
+                                onChange={historicalView.setMonthEnd}
+                                loading={historicalView.loading}
+                            />
+                            <PageActions items={pageActions} canManage={canManage} />
+                        </div>
+                    }
+                />
                 {isHistorical && historicalView.monthEnd && (
                     <HistoricalBanner
                         monthEnd={historicalView.monthEnd}

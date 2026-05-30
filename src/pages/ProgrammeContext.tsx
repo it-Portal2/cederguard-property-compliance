@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router';
 import { api } from '../lib/api';
 import { clsx } from 'clsx';
 import { isSystemAdmin } from '../lib/roles';
+import PageHeader from '../components/PageHeader';
 
 export function ProgrammeContext() {
     const navigate = useNavigate();
@@ -67,52 +68,35 @@ export function ProgrammeContext() {
 
     return (
         <div className="space-y-6">
-            {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-indigo-100 text-indigo-700 rounded-lg shadow-sm">
-                            <FolderKanban className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <h1 className="text-xl font-bold text-slate-900 leading-tight">
-                                {activeProgramme.name}
-                            </h1>
-                            <div className="flex items-center gap-2 mt-0.5">
-                                <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-mono font-medium uppercase tracking-wide border border-slate-200">
-                                    {activeProgramme.reference}
-                                </span>
-                                <span className="text-xs font-medium text-slate-400">•</span>
-                                <span className="text-xs font-medium text-slate-500">{activeProgramme.type}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
-                    {isClientAdmin && (
+            <PageHeader
+                title={activeProgramme.name}
+                subtitle={`${activeProgramme.type} · ${activeProgramme.reference}`}
+                breadcrumbs={[{label:"Programme Initiation"},{label:"Programme Context"}]}
+                actions={
+                    <div className="flex flex-wrap items-center gap-3">
+                        {isClientAdmin && (
+                            <button
+                                onClick={() => { useStore.getState().setActiveProgramme(null); navigate('/programmes/new'); }}
+                                className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-2"
+                            >
+                                <Plus className="w-4 h-4" /> New Programme
+                            </button>
+                        )}
                         <button
-                            onClick={() => { useStore.getState().setActiveProgramme(null); navigate('/programmes/new'); }}
-                            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 transition-all shadow-sm flex items-center gap-2"
+                            onClick={() => navigate('/setup/programme')}
+                            className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors flex items-center gap-2"
                         >
-                            <Plus className="w-4 h-4" />
-                            New Programme
+                            Edit Context
                         </button>
-                    )}
-                    <button
-                        onClick={() => navigate('/setup/programme')}
-                        className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-50 transition-all flex items-center gap-2"
-                    >
-                        Edit Context
-                    </button>
-                    <button
-                        onClick={() => navigate('/projects/new')}
-                        className="px-4 py-2 bg-indigo-600 border border-transparent text-white rounded-lg text-sm font-bold hover:bg-indigo-700 shadow-sm transition-all flex items-center gap-2"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Create Project
-                    </button>
-                </div>
-            </div>
+                        <button
+                            onClick={() => navigate('/projects/new')}
+                            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-2"
+                        >
+                            <Plus className="w-4 h-4" /> Create Project
+                        </button>
+                    </div>
+                }
+            />
 
             {/* Quick Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

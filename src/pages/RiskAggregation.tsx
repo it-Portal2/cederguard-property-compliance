@@ -13,6 +13,7 @@ import {
   OPERATIONAL_CATEGORY_NAMES,
   STRATEGIC_CATEGORY_NAMES,
 } from '../data/riskTaxonomy';
+import PageHeader from '../components/PageHeader';
 
 function fGBP(v: number) {
   if (v === null || v === undefined || isNaN(v)) return "—";
@@ -394,21 +395,17 @@ export function RiskAggregation() {
   return (
     <div className="space-y-10">
 
-      {/* ─── HEADER ───*/}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-semibold text-slate-900 flex items-center gap-2.5">
-            <Layers className="w-6 h-6 text-indigo-600" /> Aggregation — {contextLabel}
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            {inProgrammeContext
-              ? 'Consolidated view of all risks across the programme.'
-              : inProjectContext
-                ? 'Consolidated view of all risks for this project.'
-                : 'Consolidated view of all risks across the portfolio.'}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title={`Risk Aggregation — ${contextLabel}`}
+        subtitle={
+          inProgrammeContext
+            ? 'Consolidated view of all risks across the programme.'
+            : inProjectContext
+              ? 'Consolidated view of all risks for this project.'
+              : 'Consolidated view of all risks across the portfolio.'
+        }
+        breadcrumbs={[{label:"Monitoring & Reporting"},{label:"Aggregation"}]}
+      />
 
       {/* ─── KPI STRIP ───*/}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

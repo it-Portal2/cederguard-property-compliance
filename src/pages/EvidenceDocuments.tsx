@@ -1,19 +1,15 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useStore, ComplianceItem } from '../store/useStore';
 import {
-  UploadCloud, File, Trash2, CheckCircle2, X, AlertCircle, Clock,
+  UploadCloud, File, Trash2, CheckCircle2, X, AlertCircle,
   ExternalLink, Shield, Link as LinkIcon, Search, ChevronDown,
-  ChevronLeft, ChevronRight, Loader2, FileText, Globe, Pencil
+  Loader2, FileText, Globe, Pencil
 } from 'lucide-react';
-// Evidence upload/download uses signed URLs minted by api/routes/storage.ts.
-// The client uploads directly to GCS via the signed PUT URL (no payload
-// through our serverless function — no Vercel size limit), and downloads
-// via a freshly-minted GET URL on each click (no long-lived URLs stored
-// in Firestore). Works identically on web and desktop because the auth
-// path is the single auth-bridge → API → Admin SDK chain — there is no
-// dependency on the Firebase Storage Web SDK having an auth session.
 import { api } from '../lib/api';
 import { toast } from "react-hot-toast";
+import PageHeader from '../components/PageHeader';
+import DynamicTable from '../components/table/DynamicTable';
+import type { ColumnDef, RowAction, FilterDef } from '../components/table/types';
 
 /* ── helpers ─────────────────────────────────────────── */
 function formatSize(bytes: number) {
@@ -23,7 +19,21 @@ function formatSize(bytes: number) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-const ITEMS_PER_PAGE = 10;
+/* ── row type ──────────────────────────────────────────── */
+interface EvidenceRow {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  uploadedAt: string;
+  relatedRequirementId: string;
+  storagePath: string;
+  url: string;
+  project: string;
+  _reqLabel: string;
+  _source: string;
+  _typeGroup: 'file' | 'link';
+}
 
 /* ── component ───────────────────────────────────────── */
 export function EvidenceDocuments() {
@@ -38,11 +48,6 @@ export function EvidenceDocuments() {
   const [isFileModalOpen, setIsFileModalOpen] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [fileRequirementId, setFileRequirementId] = useState('');
-
-  const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; storagePath: string; name: string } | null>(null);
   const [editData, setEditData] = useState<{ id: string; name: string; relatedRequirementId: string } | null>(null);
 
   const contextId = activeProjectId || activeProgrammeId || 'all';
@@ -78,9 +83,6 @@ export function EvidenceDocuments() {
     const f = event.target.files;
     if (!f || f.length === 0) return;
     const fileArray = Array.from(f);
-    // 3 MB cap aligns with Vercel's 4.5 MB serverless body limit after the
-    // ~33% base64 inflation. Files above this can't be uploaded reliably
-    // through the API; for larger documents, use an external link instead.
     const MAX_SIZE = 3 * 1024 * 1024;
     const ALLOWED_EXTS = ['.jpg', '.jpeg', '.pdf', '.doc', '.docx'];
     const validFiles: File[] = [];
@@ -103,17 +105,12 @@ export function EvidenceDocuments() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // File → base64 (data-uri prefix stripped server-side). Reads the file
-  // via FileReader and resolves with the base64 payload string.
   const fileToBase64 = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => {
         const result = reader.result;
-        if (typeof result !== 'string') {
-          reject(new Error('Unexpected reader result.'));
-          return;
-        }
+        if (typeof result !== 'string') { reject(new Error('Unexpected reader result.')); return; }
         resolve(result);
       };
       reader.onerror = () => reject(reader.error ?? new Error('Read failed'));
@@ -125,7 +122,6 @@ export function EvidenceDocuments() {
     setUploading(true); setError(null);
     try {
       for (const file of selectedFiles) {
-        // Normalize content-type — some browsers leave it blank for .doc/.docx.
         const contentType = file.type || (
           file.name.endsWith('.pdf') ? 'application/pdf' :
           file.name.endsWith('.docx') ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' :
@@ -133,43 +129,24 @@ export function EvidenceDocuments() {
           (file.name.endsWith('.jpg') || file.name.endsWith('.jpeg')) ? 'image/jpeg' :
           'application/octet-stream'
         );
-
-        // Read file as base64 and POST in one API call — server uploads to
-        // GCS as a private object via Admin SDK + writes Firestore atomically.
-        // Bytes never touch the Firebase Storage Web SDK so this works on
-        // web AND desktop with the single auth-bridge path.
         const base64 = await fileToBase64(file);
-        await api.addEvidence(
-          contextId,
-          {
-            name: file.name,
-            url: '',
-            type: contentType,
-            relatedRequirementId: fileRequirementId || undefined,
-            uploadedAt: new Date().toISOString(),
-          },
-          { base64, mime: contentType },
-        );
+        await api.addEvidence(contextId, {
+          name: file.name, url: '', type: contentType,
+          relatedRequirementId: fileRequirementId || undefined,
+          uploadedAt: new Date().toISOString(),
+        }, { base64, mime: contentType });
       }
       toast.success(`${selectedFiles.length} file(s) uploaded successfully.`);
       await fetchDocuments();
       setIsFileModalOpen(false); setSelectedFiles([]); setFileRequirementId('');
     } catch (err: any) {
-      console.error('Upload failed:', err);
       const msg = `Upload failed: ${err.message || 'Unknown error'}.`;
       setError(msg); toast.error(msg);
     } finally { setUploading(false); }
   };
 
-  // Open an evidence file (or external link). Both flows store a stable
-  // URL in the Firestore record: for external links it's the user-pasted
-  // URL; for uploads it's the public GCS URL returned by makePublic()
-  // (same pattern as governance branding). No API call needed — just open.
   const handleOpenFile = (file: any) => {
-    if (!file?.url) {
-      toast.error('No download URL on this record. Try re-uploading the file.');
-      return;
-    }
+    if (!file?.url) { toast.error('No download URL on this record. Try re-uploading the file.'); return; }
     window.open(file.url, '_blank', 'noopener,noreferrer');
   };
 
@@ -188,6 +165,24 @@ export function EvidenceDocuments() {
     } catch (err: any) {
       const msg = `Failed to add link: ${err.message || 'Unknown error'}.`;
       setError(msg); toast.error(msg);
+    } finally { setUploading(false); }
+  };
+
+  const handleUpdateEvidence = async () => {
+    if (!editData || !editData.id) return;
+    setUploading(true);
+    try {
+      const res = await api.updateEvidence(editData.id, {
+        name: editData.name,
+        relatedRequirementId: editData.relatedRequirementId || null
+      });
+      if (res.success) {
+        toast.success('Document updated successfully.');
+        await fetchDocuments();
+        setEditData(null);
+      } else { throw new Error(res.error || 'Update failed'); }
+    } catch (err: any) {
+      toast.error(`Failed to update: ${err.message}`);
     } finally { setUploading(false); }
   };
 
@@ -213,77 +208,119 @@ export function EvidenceDocuments() {
     return result;
   }, [groupedRequirements, reqSearchTerm]);
 
-  const filteredFiles = useMemo(() => {
-    let result = files;
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      result = result.filter(f =>
-        f.name?.toLowerCase().includes(term) ||
-        (complianceItems.find(c => c.id === f.relatedRequirementId)?.req || '').toLowerCase().includes(term));
-    }
-    if (typeFilter !== 'all') {
-      result = result.filter(f => typeFilter === 'link' ? f.type === 'link' : f.type !== 'link');
-    }
-    return result;
-  }, [files, searchTerm, typeFilter, complianceItems]);
+  /* ── table rows (derived) ─────────────────────────────── */
+  const tableRows = useMemo<EvidenceRow[]>(() => files.map(f => ({
+    ...f,
+    relatedRequirementId: f.relatedRequirementId || '',
+    _reqLabel: complianceItems.find(c => c.id === f.relatedRequirementId)?.req || '',
+    _source: projects.find(p => p.id === f.project)?.name || programmes.find(p => p.id === f.project)?.name || 'Unknown',
+    _typeGroup: f.type === 'link' ? 'link' : 'file',
+  })), [files, complianceItems, projects, programmes]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredFiles.length / ITEMS_PER_PAGE));
-  const paginatedFiles = filteredFiles.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  /* ── columns ─────────────────────────────────────────── */
+  const columns: ColumnDef<EvidenceRow>[] = [
+    {
+      key: 'name',
+      label: 'Document',
+      sortable: true,
+      render: (v, row) => (
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
+            {row._typeGroup === 'link'
+              ? <LinkIcon className="h-3.5 w-3.5 text-slate-400" />
+              : <File className="h-3.5 w-3.5 text-slate-400" />}
+          </div>
+          <div className="min-w-0">
+            <p className="text-[13px] font-semibold text-slate-800 truncate max-w-[260px]" title={v}>{v}</p>
+            {row._reqLabel && (
+              <p className="flex items-center gap-1 mt-0.5 text-[11px] text-slate-400 truncate max-w-[240px]">
+                <Shield className="h-3 w-3 shrink-0" />{row._reqLabel}
+              </p>
+            )}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: '_source',
+      label: 'Source',
+      render: (v) => <span className="text-[12px] text-slate-500 font-medium">{v}</span>,
+    },
+    {
+      key: 'size',
+      label: 'Size',
+      align: 'right',
+      render: (v, row) => (
+        row._typeGroup === 'link'
+          ? <span className="inline-flex items-center gap-1 text-[10px] font-mono font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded"><Globe className="h-2.5 w-2.5" />URL</span>
+          : <span className="text-[12px] font-mono tabular-nums text-slate-500">{formatSize(v)}</span>
+      ),
+    },
+    {
+      key: 'uploadedAt',
+      label: 'Date Added',
+      sortable: true,
+      render: (v) => (
+        <span className="text-[12px] font-mono tabular-nums text-slate-500">
+          {v ? new Date(v).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+        </span>
+      ),
+    },
+  ];
 
-  useEffect(() => { setCurrentPage(1); }, [searchTerm, typeFilter]);
+  /* ── filters ─────────────────────────────────────────── */
+  const filters: FilterDef<EvidenceRow>[] = [
+    {
+      key: '_typeGroup',
+      label: 'Type',
+      type: 'select',
+      options: [
+        { value: 'all', label: 'All Types' },
+        { value: 'file', label: 'Files' },
+        { value: 'link', label: 'Links' },
+      ],
+    },
+  ];
 
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
-    const { id: docId } = deleteTarget;
-    try {
-      // Server-side deleteEvidence now also removes the GCS object (no
-      // more storage-orphan when a Firestore doc is deleted but its
-      // backing file lingers forever).
-      const res = await api.deleteEvidence(docId);
-      if (res.success) { setFiles(prev => prev.filter(f => f.id !== docId)); toast.success('Document removed.'); }
-      else throw new Error('API deletion failed');
-    } catch (err: any) {
-      setError('Could not remove document.'); toast.error('Could not remove document.');
-    } finally {
-      setDeleteTarget(null);
-    }
-  };
+  /* ── row actions ─────────────────────────────────────── */
+  const rowActions: RowAction<EvidenceRow>[] = [
+    {
+      key: 'edit',
+      label: 'Edit',
+      icon: Pencil,
+      onClick: (row) => setEditData({ id: row.id, name: row.name, relatedRequirementId: row.relatedRequirementId }),
+    },
+    {
+      key: 'open',
+      label: 'Open',
+      icon: ExternalLink,
+      onClick: (row) => handleOpenFile(row),
+    },
+    {
+      key: 'delete',
+      label: 'Delete',
+      icon: Trash2,
+      isDanger: true,
+      requireConfirm: {
+        title: (row) => `Delete "${row.name}"?`,
+        message: 'This document will be permanently removed and cannot be recovered.',
+        confirmLabel: 'Delete',
+        isDanger: true,
+        icon: Trash2,
+      },
+      onClick: async (row) => {
+        const res = await api.deleteEvidence(row.id);
+        if (res.success) {
+          setFiles(prev => prev.filter(f => f.id !== row.id));
+          toast.success('Document removed.');
+        } else {
+          throw new Error('API deletion failed');
+        }
+      },
+    },
+  ];
 
-  const handleUpdateEvidence = async () => {
-    if (!editData || !editData.id) return;
-    setUploading(true);
-    try {
-      const res = await api.updateEvidence(editData.id, {
-        name: editData.name,
-        relatedRequirementId: editData.relatedRequirementId || null
-      });
-      if (res.success) {
-        toast.success('Document updated successfully.');
-        await fetchDocuments();
-        setEditData(null);
-      } else {
-        throw new Error(res.error || 'Update failed');
-      }
-    } catch (err: any) {
-      toast.error(`Failed to update: ${err.message}`);
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const pageNumbers = useMemo(() => {
-    const pages: (number | string)[] = [];
-    for (let i = 1; i <= totalPages; i++) {
-      if (i === 1 || i === totalPages || Math.abs(i - currentPage) <= 1) {
-        if (pages.length > 0 && typeof pages[pages.length - 1] === 'number' && (i - (pages[pages.length - 1] as number)) > 1)
-          pages.push('...');
-        pages.push(i);
-      }
-    }
-    return pages;
-  }, [totalPages, currentPage]);
-
-  /* ── RequirementSelector (pure tailwind) ─── */
+  /* ── RequirementSelector ─────────────────────────────── */
   const RequirementSelector = ({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) => {
     const [open, setOpen] = useState(false);
     const selected = complianceItems.find(i => i.id === value);
@@ -295,18 +332,13 @@ export function EvidenceDocuments() {
           <span className="truncate text-gray-700">{selected ? selected.req : '— Select Requirement —'}</span>
           <ChevronDown className="h-4 w-4 text-gray-400 shrink-0 ml-2" />
         </button>
-
         {open && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => setOpen(false)}>
             <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col border border-gray-200" onClick={e => e.stopPropagation()}>
-              {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-gray-100">
                 <h4 className="text-sm font-semibold text-gray-900">Select Requirement</h4>
-                <button onClick={() => setOpen(false)} className="p-1 rounded hover:bg-gray-100 transition-colors">
-                  <X className="h-4 w-4 text-gray-400" />
-                </button>
+                <button onClick={() => setOpen(false)} className="p-1 rounded hover:bg-gray-100 transition-colors"><X className="h-4 w-4 text-gray-400" /></button>
               </div>
-              {/* Search */}
               <div className="p-3 border-b border-gray-100">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -315,7 +347,6 @@ export function EvidenceDocuments() {
                     className="w-full rounded-lg border border-gray-200 bg-gray-50 pl-9 pr-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
                 </div>
               </div>
-              {/* List */}
               <div className="flex-1 overflow-y-auto p-2">
                 <button onClick={() => { onChange(''); setOpen(false); }}
                   className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:bg-gray-50 rounded-lg flex items-center gap-2">
@@ -369,9 +400,7 @@ export function EvidenceDocuments() {
               <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
               {description && <p className="text-sm text-gray-500 mt-0.5">{description}</p>}
             </div>
-            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
-              <X className="h-4 w-4 text-gray-400" />
-            </button>
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"><X className="h-4 w-4 text-gray-400" /></button>
           </div>
           <div className="p-5">{children}</div>
         </div>
@@ -379,64 +408,31 @@ export function EvidenceDocuments() {
     );
   };
 
-  /* ── Skeleton rows ────────────────────────────── */
-  const SkeletonRows = () => (
-    <div className="p-5 space-y-4">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="flex items-center gap-4 animate-pulse">
-          <div className="h-10 w-10 rounded-lg bg-gray-100" />
-          <div className="flex-1 space-y-2">
-            <div className="h-4 w-3/4 rounded bg-gray-100" />
-            <div className="h-3 w-1/2 rounded bg-gray-100" />
-          </div>
-          <div className="h-4 w-16 rounded bg-gray-100 hidden sm:block" />
-          <div className="h-4 w-24 rounded bg-gray-100 hidden md:block" />
-        </div>
-      ))}
-    </div>
-  );
-
   /* ── RENDER ────────────────────────────────────── */
   return (
-    <div className="space-y-6">
-
-      {/* Header */}
-      <div className="flex flex-col gap-4 border-b border-gray-200 pb-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <div className="flex items-center gap-2.5 mb-1">
-            <span className="inline-block rounded bg-gray-900 px-2 py-0.5 text-[10px] font-mono font-medium uppercase tracking-wide text-white">Repository</span>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">Evidence &amp; Documents</h1>
+    <div className="space-y-6 sm:space-y-8">
+      <PageHeader
+        title="Evidence & Documents"
+        subtitle={isPortfolioView
+          ? `Global audit trail across ${projects.length} projects and ${programmes.length} programmes.`
+          : `Statutory evidence records for "${contextName || 'the active context'}".`}
+        breadcrumbs={[{label:"Compliance"},{label:"Evidence"}]}
+        actions={
+          <div className="flex gap-2 flex-wrap">
+            <button onClick={() => setIsLinkModalOpen(true)} disabled={uploading || isPortfolioView}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              <LinkIcon className="h-4 w-4" /> Add URL
+            </button>
+            <button onClick={() => fileInputRef.current?.click()} disabled={uploading || isPortfolioView}
+              className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
+              {uploading ? 'Processing…' : 'Upload Evidence'}
+            </button>
+            <input type="file" multiple accept=".jpg,.jpeg,.pdf,.doc,.docx" ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
           </div>
-          <p className="text-sm text-gray-500">
-            {isPortfolioView ? (
-              <span className="flex items-center gap-1.5">
-                <Globe className="h-3.5 w-3.5" />
-                Global Audit Trail — {projects.length} Projects &amp; {programmes.length} Programmes
-              </span>
-            ) : (
-              <span className="flex items-center gap-1.5">
-                <Shield className="h-3.5 w-3.5" />
-                Statutory records for <strong className="text-gray-700">&ldquo;{contextName}&rdquo;</strong>
-              </span>
-            )}
-          </p>
-        </div>
+        }
+      />
 
-        <div className="flex gap-2 flex-wrap">
-          <button onClick={() => setIsLinkModalOpen(true)} disabled={uploading || isPortfolioView}
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-            <LinkIcon className="h-4 w-4" /> Add URL
-          </button>
-          <button onClick={() => fileInputRef.current?.click()} disabled={uploading || isPortfolioView}
-            className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
-            {uploading ? 'Processing…' : 'Upload Evidence'}
-          </button>
-          <input type="file" multiple accept=".jpg,.jpeg,.pdf,.doc,.docx" ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
-        </div>
-      </div>
-
-      {/* Error */}
       {error && (
         <div className="flex items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
           <div className="flex items-center gap-2 text-sm text-red-700">
@@ -446,183 +442,31 @@ export function EvidenceDocuments() {
         </div>
       )}
 
-      {/* Search & Filter */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-            placeholder="Search by name or requirement…"
-            className="w-full rounded-lg border border-gray-200 bg-white pl-9 pr-3 py-2.5 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" />
-        </div>
-        <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}
-          className="rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 sm:w-44">
-          <option value="all">All Types</option>
-          <option value="file">Files Only</option>
-          <option value="link">Links Only</option>
-        </select>
-      </div>
-
-      {/* Table */}
-      <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-        {loading ? <SkeletonRows /> : filteredFiles.length === 0 ? (
-          <div className="py-20 text-center flex flex-col items-center gap-3">
-            <div className="h-14 w-14 rounded-full bg-gray-100 flex items-center justify-center">
-              <FileText className="h-7 w-7 text-gray-300" />
-            </div>
-            <h3 className="font-semibold text-gray-900">{files.length === 0 ? 'No documents yet' : 'No results found'}</h3>
-            <p className="text-sm text-gray-400 max-w-xs">
-              {files.length === 0 ? 'Upload evidence to get started.' : 'Try adjusting your search or filter.'}
-            </p>
-            {files.length === 0 && (
-              <button onClick={() => fileInputRef.current?.click()}
-                className="mt-1 rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                Get Started
-              </button>
-            )}
-          </div>
-        ) : (
-          <>
-            {/* Desktop table */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead>
-                  <tr className="font-mono border-b border-gray-100 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    <th className="px-5 py-3">Document</th>
-                    <th className="px-5 py-3">Source</th>
-                    <th className="px-5 py-3">Size</th>
-                    <th className="px-5 py-3">Date</th>
-                    <th className="px-5 py-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {paginatedFiles.map(file => (
-                    <tr key={file.id} className="group hover:bg-indigo-50/30 transition-colors">
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
-                            {file.type === 'link' ? <LinkIcon className="h-4 w-4 text-gray-400" /> : <File className="h-4 w-4 text-gray-400" />}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="font-medium text-gray-800 truncate max-w-[280px]" title={file.name}>{file.name}</p>
-                            {file.relatedRequirementId && (
-                              <p className="flex items-center gap-1 mt-0.5 text-xs text-gray-400 truncate max-w-[250px] cursor-help"
-                                title={`Compliance: ${complianceItems.find(c => c.id === file.relatedRequirementId)?.req || file.relatedRequirementId}\nRegulation: ${complianceItems.find(c => c.id === file.relatedRequirementId)?.reg || 'N/A'}\nRisk: ${complianceItems.find(c => c.id === file.relatedRequirementId)?.risk || 'N/A'}`}>
-                                <Shield className="h-3 w-3 shrink-0" />
-                                {complianceItems.find(c => c.id === file.relatedRequirementId)?.req || file.relatedRequirementId}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-5 py-4 text-xs text-gray-500 truncate max-w-[120px] cursor-help"
-                        title={`Source: ${projects.find(p => p.id === file.project)?.name || programmes.find(p => p.id === file.project)?.name || 'Unknown'}\nID: ${file.project}`}>
-                        {projects.find(p => p.id === file.project)?.name || programmes.find(p => p.id === file.project)?.name || 'Unknown'}
-                      </td>
-                      <td className="px-5 py-4 text-xs text-gray-500 tabular-nums">
-                        {file.type === 'link' ? <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500">URL</span> : formatSize(file.size)}
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className="flex items-center gap-1.5 text-xs text-gray-500">
-                          <Clock className="h-3 w-3" />
-                          {new Date(file.uploadedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <button onClick={() => setEditData({ id: file.id, name: file.name, relatedRequirementId: file.relatedRequirementId || '' })}
-                            className="p-2 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors" title="Edit">
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                          <button onClick={() => handleOpenFile(file)}
-                            className="p-2 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors" title="Open">
-                            <ExternalLink className="h-4 w-4" />
-                          </button>
-                          <button onClick={() => setDeleteTarget({ id: file.id, storagePath: file.storagePath, name: file.name })}
-                            className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors" title="Delete">
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Mobile card list */}
-            <div className="md:hidden divide-y divide-gray-100">
-              {paginatedFiles.map(file => (
-                <div key={file.id} className="p-4 space-y-2">
-                  <div className="flex items-start gap-3">
-                    <div className="h-9 w-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 mt-0.5">
-                      {file.type === 'link' ? <LinkIcon className="h-4 w-4 text-gray-400" /> : <File className="h-4 w-4 text-gray-400" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-800 text-sm truncate" title={file.name}>{file.name}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {projects.find(p => p.id === file.project)?.name || programmes.find(p => p.id === file.project)?.name || 'Unknown'}
-                        {' · '}
-                        {file.type === 'link' ? 'URL' : formatSize(file.size)}
-                      </p>
-                      <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
-                        <Clock className="h-3 w-3" />
-                        {new Date(file.uploadedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                      </p>
-                      {file.relatedRequirementId && (
-                        <p className="text-xs text-gray-400 flex items-center gap-1 mt-1 truncate cursor-help"
-                          title={`Compliance: ${complianceItems.find(c => c.id === file.relatedRequirementId)?.req || file.relatedRequirementId}\nRegulation: ${complianceItems.find(c => c.id === file.relatedRequirementId)?.reg || 'N/A'}\nRisk: ${complianceItems.find(c => c.id === file.relatedRequirementId)?.risk || 'N/A'}`}>
-                          <Shield className="h-3 w-3 shrink-0" />
-                          {complianceItems.find(c => c.id === file.relatedRequirementId)?.req || file.relatedRequirementId}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button onClick={() => setEditData({ id: file.id, name: file.name, relatedRequirementId: file.relatedRequirementId || '' })} className="p-2 rounded-lg text-gray-400 hover:text-indigo-600 transition-colors">
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button onClick={() => handleOpenFile(file)} className="p-2 rounded-lg text-gray-400 hover:text-indigo-600 transition-colors">
-                        <ExternalLink className="h-4 w-4" />
-                      </button>
-                      <button onClick={() => setDeleteTarget({ id: file.id, storagePath: file.storagePath, name: file.name })} className="p-2 rounded-lg text-gray-400 hover:text-red-600 transition-colors">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Pagination */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3 border-t border-gray-100 bg-gray-50/50">
-              <p className="text-xs text-gray-500">
-                Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredFiles.length)} of {filteredFiles.length}
-              </p>
-              <div className="flex items-center gap-1">
-                <button disabled={currentPage <= 1} onClick={() => setCurrentPage(p => p - 1)}
-                  className="h-8 w-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                {pageNumbers.map((p, i) =>
-                  typeof p === 'string' ? (
-                    <span key={`e${i}`} className="px-1 text-xs text-gray-400">…</span>
-                  ) : (
-                    <button key={p} onClick={() => setCurrentPage(p)}
-                      className={`h-8 w-8 flex items-center justify-center rounded-lg text-xs font-medium transition-colors ${
-                        currentPage === p ? 'bg-indigo-600 text-white' : 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-                      }`}>
-                      {p}
-                    </button>
-                  )
-                )}
-                <button disabled={currentPage >= totalPages} onClick={() => setCurrentPage(p => p + 1)}
-                  className="h-8 w-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
+      <DynamicTable<EvidenceRow>
+        data={tableRows}
+        columns={columns}
+        loading={loading}
+        searchable
+        searchPlaceholder="Search by name or requirement…"
+        searchFields={['name', '_reqLabel', '_source']}
+        filters={filters}
+        rowActions={rowActions}
+        getRowId={r => r.id}
+        pagination={{ enabled: true, pageSize: 10, pageSizeOptions: [10, 25, 50] }}
+        emptyState={{
+          title: files.length === 0 ? 'No documents yet' : 'No results found',
+          description: files.length === 0 ? 'Upload evidence files or add an external URL link.' : 'Try adjusting your search or filter.',
+          icon: FileText,
+          action: files.length === 0 ? (
+            <button onClick={() => fileInputRef.current?.click()}
+              className="mt-1 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors">
+              <UploadCloud className="h-4 w-4" /> Upload Evidence
+            </button>
+          ) : undefined,
+        }}
+        headerVariant="light"
+        stickyHeader
+      />
 
       {/* Add Link Modal */}
       <Modal open={isLinkModalOpen} onClose={() => setIsLinkModalOpen(false)} title="Add External Evidence Link" description="Add a URL reference to external evidence.">
@@ -687,30 +531,25 @@ export function EvidenceDocuments() {
         <div className="space-y-4">
           <div className="space-y-1.5">
             <label className="block text-xs font-medium text-gray-500">Document Name</label>
-            <input 
-              value={editData?.name || ''} 
+            <input
+              value={editData?.name || ''}
               onChange={e => setEditData(prev => prev ? { ...prev, name: e.target.value } : null)}
               placeholder="Enter document name..."
-              className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" 
+              className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
             />
           </div>
-          <RequirementSelector 
-            value={editData?.relatedRequirementId || ''} 
-            onChange={val => setEditData(prev => prev ? { ...prev, relatedRequirementId: val } : null)} 
-            label="Linked Requirement" 
+          <RequirementSelector
+            value={editData?.relatedRequirementId || ''}
+            onChange={val => setEditData(prev => prev ? { ...prev, relatedRequirementId: val } : null)}
+            label="Linked Requirement"
           />
           <div className="flex gap-3 pt-2">
-            <button 
-              onClick={() => setEditData(null)}
-              className="flex-1 rounded-lg border border-gray-200 bg-gray-50 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
-            >
+            <button onClick={() => setEditData(null)}
+              className="flex-1 rounded-lg border border-gray-200 bg-gray-50 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors">
               Cancel
             </button>
-            <button 
-              onClick={handleUpdateEvidence} 
-              disabled={!editData?.name || uploading}
-              className="flex-1 rounded-lg bg-indigo-600 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-            >
+            <button onClick={handleUpdateEvidence} disabled={!editData?.name || uploading}
+              className="flex-1 rounded-lg bg-indigo-600 py-2.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">
               {uploading && <Loader2 className="h-4 w-4 animate-spin" />}
               {uploading ? 'Updating…' : 'Save Changes'}
             </button>
@@ -719,44 +558,17 @@ export function EvidenceDocuments() {
       </Modal>
 
       {/* Info Panel */}
-      <div className="rounded-lg bg-gray-900 p-5 sm:p-6 text-white flex flex-col sm:flex-row items-start gap-4">
+      <div className="rounded-lg bg-slate-900 p-5 sm:p-6 text-white flex flex-col sm:flex-row items-start gap-4">
         <div className="h-10 w-10 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
           <Shield className="h-5 w-5 text-indigo-400" />
         </div>
         <div>
           <h3 className="font-semibold mb-1">Compliance Data Sovereignty</h3>
-          <p className="text-sm text-gray-400 leading-relaxed max-w-2xl">
-            All uploaded documentation is encrypted at rest and transit via military-grade AES-256 protocols. Documents are immutable once registered and tagged with the project's unique forensic identifier for audit chain continuity.
+          <p className="text-sm text-slate-400 leading-relaxed max-w-2xl">
+            All uploaded documentation is encrypted at rest and in transit via AES-256. Documents are immutable once registered and tagged with the project's unique forensic identifier for audit chain continuity.
           </p>
         </div>
       </div>
-
-      {/* Delete Confirmation Dialog */}
-      {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => setDeleteTarget(null)}>
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-sm border border-gray-200 overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="p-6 text-center">
-              <div className="mx-auto h-12 w-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
-                <Trash2 className="h-5 w-5 text-red-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">Delete Document</h3>
-              <p className="text-sm text-gray-500 mb-1">Are you sure you want to permanently delete:</p>
-              <p className="text-sm font-medium text-gray-700 truncate px-4" title={deleteTarget.name}>&ldquo;{deleteTarget.name}&rdquo;</p>
-              <p className="text-xs text-gray-400 mt-2">This action cannot be undone.</p>
-            </div>
-            <div className="flex border-t border-gray-100">
-              <button onClick={() => setDeleteTarget(null)}
-                className="flex-1 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors border-r border-gray-100">
-                Cancel
-              </button>
-              <button onClick={handleDelete}
-                className="flex-1 py-3 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors">
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

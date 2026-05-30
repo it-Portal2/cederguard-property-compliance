@@ -4,6 +4,7 @@ import { clsx } from 'clsx';
 import { differenceInDays, subMonths, format } from 'date-fns';
 import { Info, BarChart as BarChartIcon, PieChart as PieChartIcon, Shield, TrendingUp, HelpCircle, ScanSearch, LayoutTemplate } from 'lucide-react';
 import { PieChart, Pie, Cell, BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
+import PageHeader from '../components/PageHeader';
 
 const EmptyState = ({ title }: { title: string }) => (
   <div className="flex flex-col items-center justify-center h-full text-slate-400 space-y-2 opacity-60 py-12">
@@ -140,10 +141,11 @@ export function RiskTracker() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Risk Tracker & Dashboards</h1>
-        <p className="text-sm text-slate-500 mt-1">Programme-wide metrics and visual tracker</p>
-      </div>
+      <PageHeader
+        title="Risk Tracker & Dashboards"
+        subtitle="Programme-wide risk metrics, trend analysis, and KRI performance indicators."
+        breadcrumbs={[{label:"Risk Management"},{label:"Tracker"}]}
+      />
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -9,10 +9,10 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
 } from 'recharts';
-import { Shield, Briefcase, ArrowRight, ShieldCheck, CheckCircle2, Target, AlertTriangle, Binoculars, Loader2, AlertCircle, Flame, TrendingUp, TrendingDown, PoundSterling } from 'lucide-react';
+import { Shield, Briefcase, ArrowRight, ShieldCheck, CheckCircle2, Target, AlertTriangle, Binoculars, Loader2, AlertCircle, Flame, TrendingUp, TrendingDown, PoundSterling, Settings, RefreshCw, FileSpreadsheet } from 'lucide-react';
 import { clsx } from 'clsx';
 import { StatsCard } from '../components/common/StatsCard';
-import { Link, useSearchParams } from 'react-router';
+import { Link, useSearchParams, useNavigate } from 'react-router';
 import { stripMarkdown } from '../lib/utils';
 import { analyzeStrategicInsights } from '../services/aiService';
 import { differenceInMonths } from 'date-fns';
@@ -21,7 +21,9 @@ import { ScanSearch, RefreshCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AIInquiryPopup } from '../components/AIInquiryPopup';
 import { PremiumAIBanner } from '../components/common/PremiumAIBanner';
-import { ServiceManagementBar } from '../components/ServiceManagementBar';
+import PageActions, { type ActionItem } from '../components/PageActions';
+import { exportContextData } from '../lib/exportUtils';
+import PageHeader from '../components/PageHeader';
 
 const PIE_COLORS: Record<string, string> = {
   Open: '#ef4444',
@@ -156,8 +158,10 @@ export function RiskDashboard() {
   const {
     risks, issues, projects, activeProgrammeId, activeProjectId, programmes, user,
     complianceItems, setActiveProject, setActiveProgramme,
+    canManageContext, activeProject, activeProgramme,
   } = useStore();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const fromInitiation = searchParams.get('from') === 'initiation';
   const userRole = (user?.role || user?.profile?.role) as UserRole | undefined;
   const userIsSuperAdmin = isSuperAdmin(user?.email, userRole);
@@ -412,6 +416,17 @@ export function RiskDashboard() {
     };
   }).filter(d => d.gross > 0 || d.residual > 0).slice(0, 6);
 
+  const canManage = canManageContext();
+  const isProject = searchParams.get('type') ? searchParams.get('type') === 'project' : !!activeProjectId;
+  const exportCtxId = isProject ? activeProject?.id : activeProgramme?.id;
+  const exportCtxName = isProject ? activeProject?.name : activeProgramme?.name;
+  const pageActions: ActionItem[] = [
+    { label: 'Add Risk', icon: AlertCircle, onClick: () => { const cp = activeProjectId ? `?projectId=${activeProjectId}` : activeProgrammeId ? `?programmeId=${activeProgrammeId}` : ''; navigate((activeProjectId ? '/risk/register' : '/risk/programme-register') + cp); }, description: 'Go to the risk register to log a new risk.', category: 'Context Actions' },
+    { label: 'Edit Profile', icon: Settings, onClick: () => isProject ? navigate('/project/initiation') : navigate(`/programmes/edit/${activeProgramme?.id}`), description: `Modify ${isProject ? 'project' : 'programme'} metadata and parameters.`, category: 'Context Actions' },
+    { label: 'Re-run AI Analysis', icon: RefreshCw, onClick: () => navigate(`/compliance/setup?type=${isProject ? 'project' : 'programme'}&restart=true`), description: 'Restart compliance setup and re-run AI analysis.', category: 'Context Actions' },
+    { label: 'Export Risk Data (Excel)', icon: FileSpreadsheet, onClick: () => exportContextData({ page: 'risk', complianceItems: Array.isArray(complianceItems) ? complianceItems : [], risks: Array.isArray(risks) ? risks : [], issues: Array.isArray(issues) ? issues : [], projects: Array.isArray(projects) ? projects : [], contextId: exportCtxId, isProject, contextName: exportCtxName || 'CedarGuard' }), description: 'Download all risk register data as .xlsx.', category: 'Data Tools' },
+  ];
+
   return (
     <>
     {/* Bug 10 fix: full-screen overlay during strategic outlook generation*/}
@@ -424,20 +439,23 @@ export function RiskDashboard() {
         </div>
       </div>
     )}
-    <div className="max-w-7xl mx-auto space-y-5 px-4 md:px-0 pb-12 pb-safe">
-      <ServiceManagementBar className="mb-4" />
-
-      {/* month picker for historical view. Placed AFTER
- ServiceManagementBar so the service status row stays the
- page's primary header signal.*/}
-      <div className="flex justify-end">
-        <MonthPicker
-          monthEnd={historicalView.monthEnd}
-          availableMonths={historicalView.availableMonths}
-          onChange={historicalView.setMonthEnd}
-          loading={historicalView.loading}
-        />
-      </div>
+    <div className="space-y-6 sm:space-y-8">
+      <PageHeader
+        title="Risk Dashboard"
+        subtitle="Portfolio-wide risk scoring, category breakdown, and KRI status overview."
+        breadcrumbs={[{label:"Risk Management"},{label:"Dashboard"}]}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <MonthPicker
+              monthEnd={historicalView.monthEnd}
+              availableMonths={historicalView.availableMonths}
+              onChange={historicalView.setMonthEnd}
+              loading={historicalView.loading}
+            />
+            <PageActions items={pageActions} canManage={canManage} />
+          </div>
+        }
+      />
       {isHistorical && historicalView.monthEnd && (
         <HistoricalBanner
           monthEnd={historicalView.monthEnd}

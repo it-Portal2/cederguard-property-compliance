@@ -5,6 +5,7 @@ import { ShieldAlert, AlertTriangle, Clock, ListChecks, Info, CheckCircle2, Scan
 import { clsx } from 'clsx';
 import { stripMarkdown } from '../lib/utils';
 import { Link } from 'react-router';
+import PageHeader from '../components/PageHeader';
 
 export function ComplianceAlerts() {
     const { complianceItems, complianceAnalysis, activeProjectId, activeProgrammeId } = useStore();
@@ -108,10 +109,11 @@ export function ComplianceAlerts() {
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold text-slate-900">Compliance Alerts & Breaches</h1>
-                <p className="text-sm text-slate-500 mt-1">Smart categorization of open compliance tasks requiring attention.</p>
-            </div>
+            <PageHeader
+                title="Compliance Alerts & Breaches"
+                subtitle="Smart categorisation of open compliance tasks requiring immediate attention."
+                breadcrumbs={[{label:"Compliance"},{label:"Alerts"}]}
+            />
 
             {groups.length === 0 ? (
                 <div className="flex flex-col items-center justify-center p-16 bg-white border border-slate-200 rounded-lg shadow-sm">

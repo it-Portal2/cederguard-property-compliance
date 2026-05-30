@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Link, useSearchParams } from "react-router";
+import { Link, useSearchParams, useNavigate } from "react-router";
 import { useStore, IssueItem } from "../store/useStore";
 import {
   isAtLeastPM,
@@ -21,9 +21,13 @@ import {
   CheckCircle2,
   ArrowLeft,
   Plus,
+  Settings,
+  RefreshCw,
+  FileSpreadsheet,
 } from "lucide-react";
 import { IssueModal } from "../components/IssueModal";
-import { ServiceManagementBar } from "../components/ServiceManagementBar";
+import PageActions, { type ActionItem } from "../components/PageActions";
+import { exportContextData } from "../lib/exportUtils";
 import { StatsCard } from "../components/common/StatsCard";
 import toast from "react-hot-toast";
 import DynamicTable from "../components/table/DynamicTable";
@@ -37,6 +41,7 @@ import { useHistoricalView } from "../hooks/useHistoricalView";
 import { MonthPicker } from "../components/historicalReporting/MonthPicker";
 import { HistoricalBanner } from "../components/historicalReporting/HistoricalBanner";
 import type { LegacyArraySnapshot } from "../types/historicalReporting";
+import PageHeader from "../components/PageHeader";
 
 // ── Helper functions (unchanged) ───────────────────────────────────────────────
 
@@ -114,7 +119,13 @@ export function RiskIssues() {
     projects,
     user,
     isInitialized,
+    risks,
+    complianceItems,
+    canManageContext,
+    activeProject,
+    activeProgramme,
   } = useStore();
+  const navigate = useNavigate();
 
   const [searchParams] = useSearchParams();
   const fromInitiation = searchParams.get("from") === "initiation";
@@ -163,7 +174,7 @@ export function RiskIssues() {
   // Reset on context switch — unchanged
   useEffect(() => {}, [activeProjectId, activeProgrammeId]);
 
-  // Handle URL-based actions from ServiceManagementBar — unchanged logic
+  // Handle URL-based actions (e.g. ?action=add-issue from PageActions "Add Issue" button)
   useEffect(() => {
     const action = searchParams.get("action");
     const clearAction = () => {
@@ -506,48 +517,56 @@ export function RiskIssues() {
 
   // ── Render ────────────────────────────────────────────────────────────────────
 
+  const canManage = canManageContext();
+  const isProject = searchParams.get("type") ? searchParams.get("type") === "project" : !!activeProjectId;
+  const exportCtxId = isProject ? activeProject?.id : activeProgramme?.id;
+  const exportCtxName = isProject ? activeProject?.name : activeProgramme?.name;
+  const pageActions: ActionItem[] = [
+    { label: "Add Issue", icon: AlertCircle, onClick: () => { const p = new URLSearchParams(searchParams.toString()); p.set("action", "add-issue"); navigate(`?${p.toString()}`); }, description: "Log a new issue for this context.", category: "Context Actions" },
+    { label: "Edit Profile", icon: Settings, onClick: () => isProject ? navigate("/project/initiation") : navigate(`/programmes/edit/${activeProgramme?.id}`), description: `Modify ${isProject ? "project" : "programme"} metadata and parameters.`, category: "Context Actions" },
+    { label: "Re-run AI Analysis", icon: RefreshCw, onClick: () => navigate(`/compliance/setup?type=${isProject ? "project" : "programme"}&restart=true`), description: "Restart compliance setup and re-run AI analysis.", category: "Context Actions" },
+    { label: "Export Issues Data (Excel)", icon: FileSpreadsheet, onClick: () => exportContextData({ page: "issues", complianceItems: Array.isArray(complianceItems) ? complianceItems : [], risks: Array.isArray(risks) ? risks : [], issues: Array.isArray(issues) ? issues : [], projects: Array.isArray(projects) ? projects : [], contextId: exportCtxId, isProject, contextName: exportCtxName || "CedarGuard" }), description: "Download all issues register data as .xlsx.", category: "Data Tools" },
+  ];
+
   return (
     <>
-      <ServiceManagementBar />
       <div className="space-y-6 sm:space-y-8">
-        {/* Page Header*/}
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            {fromInitiation && (
-              <Link
-                to={`/project/initiation${activeProjectId ? `?projectId=${activeProjectId}` : ""}`}
-                className="flex items-center gap-1 text-xs text-indigo-600 font-medium mb-2 hover:underline"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" /> Back to Project Initiation
-              </Link>
-            )}
-            <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
-              Issues Register
-            </h1>
-            <p className="text-sm text-slate-500 mt-0.5">{contextLabel}</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {/* month picker for historical view.*/}
-            <MonthPicker
-              monthEnd={historicalView.monthEnd}
-              availableMonths={historicalView.availableMonths}
-              onChange={historicalView.setMonthEnd}
-              loading={historicalView.loading}
-            />
-            {canModify && (
-              <button
-                onClick={() => {
-                  setEditingIssue(null);
-                  setIsModalOpen(true);
-                }}
-                className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
-              >
-                <Plus className="w-4 h-4" />
-                Add Issue
-              </button>
-            )}
-          </div>
-        </div>
+        {fromInitiation && (
+          <Link
+            to={`/project/initiation${activeProjectId ? `?projectId=${activeProjectId}` : ""}`}
+            className="flex items-center gap-1 text-xs text-indigo-600 font-medium hover:underline"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" /> Back to Project Initiation
+          </Link>
+        )}
+        <PageHeader
+          title="Issues Register"
+          subtitle="Track, escalate, and resolve issues linked to risks and compliance items."
+          breadcrumbs={[{label:"Risk Management"},{label:"Issues"}]}
+          actions={
+            <div className="flex flex-wrap items-center gap-2">
+              <MonthPicker
+                monthEnd={historicalView.monthEnd}
+                availableMonths={historicalView.availableMonths}
+                onChange={historicalView.setMonthEnd}
+                loading={historicalView.loading}
+              />
+              {canModify && (
+                <button
+                  onClick={() => {
+                    setEditingIssue(null);
+                    setIsModalOpen(true);
+                  }}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Issue
+                </button>
+              )}
+              <PageActions items={pageActions} canManage={canManage} />
+            </div>
+          }
+        />
 
         {/* read-only banner appears when MonthPicker is set
  to a past month.*/}

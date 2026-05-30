@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Code, Terminal, Book, KeyRound, Server, Copy, Check, Users, ShieldAlert, LayoutDashboard, Database, Activity, Briefcase } from 'lucide-react';
+import PageHeader from '../components/PageHeader';
 
 export function APIDocs() {
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
@@ -31,16 +32,11 @@ export function APIDocs() {
   return (
     <div>
 
-      <div className="mb-12 text-center md:text-left">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[11px] font-mono font-medium uppercase tracking-wide mb-4">
-          <Terminal className="w-4 h-4" /> Developers
-        </div>
-        <h1 className="text-4xl md:text-5xl font-semibold text-slate-900 dark:text-white mb-4 tracking-tight">Platform API Reference</h1>
-        <p className="text-xl text-slate-600 dark:text-slate-400 max-w-3xl leading-relaxed">
-          Integrate Cedar Risk platform data directly into your BI dashboards, ERP systems, or custom scripts. 
-          Our API strictly enforces your Role-Based Access Controls (RBAC) to ensure absolute data security.
-        </p>
-      </div>
+      <PageHeader
+        title="Platform API Reference"
+        subtitle="Integrate Cedar Risk data into your BI dashboards, ERP systems, or custom scripts. All endpoints enforce your organisation's RBAC."
+        breadcrumbs={[{label:"Developer / API"},{label:"API Documentation"}]}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
         {/* Navigation Sidebar */}

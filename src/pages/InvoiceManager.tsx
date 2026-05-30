@@ -5,6 +5,7 @@ import { api } from '../lib/api';
 import { clsx } from 'clsx';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import PageHeader from '../components/PageHeader';
 
 /* ═══════════════════════════════════════════════════════
    REAL PRICING CONSTANTS — Cedar Guard Actual Stack
@@ -705,14 +706,11 @@ export function InvoiceManager() {
       {/* ── Header ── */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="p-2 bg-violet-50 rounded-lg"><Calculator className="w-5 h-5 text-violet-600" /></div>
-            <h1 className="text-xl font-bold text-slate-900">Platform Cost & Invoice Manager</h1>
-            <span className="text-[10px] font-mono font-medium px-2 py-0.5 bg-orange-100 text-orange-600 rounded-full uppercase tracking-wide">Super Admin</span>
-          </div>
-          <p className="text-slate-500 text-sm ml-11">
-            Model your real infrastructure, support, and AI costs for UK local government council clients. Plan your pricing strategy with full cost visibility.
-          </p>
+          <PageHeader
+            title="Platform Cost & Invoice Manager"
+            subtitle="Model your real infrastructure, support, and AI costs for UK local government council clients."
+            breadcrumbs={[{label:"Account"},{label:"Invoices"}]}
+          />
           <div className="flex items-center gap-1 mt-6 bg-slate-100 p-1 rounded-lg w-fit">
             <button
               onClick={() => setActiveTab('calculator')}

@@ -6,6 +6,7 @@ import { api } from '../lib/api';
 import { isAtLeastClientAdmin } from '../lib/roles';
 import { useEffect } from 'react';
 import type { Programme } from '../store/useStore';
+import PageHeader from '../components/PageHeader';
 
 const inputCls = "w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors bg-white";
 const labelCls = "font-mono block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5";
@@ -122,10 +123,11 @@ export function NewProgramme() {
                 >
                     <ArrowLeft className="w-5 h-5 text-slate-500" />
                 </button>
-                <div className="flex-1">
-                    <h1 className="text-2xl font-bold text-slate-900">Create New Programme</h1>
-                    <p className="text-sm text-slate-500 mt-1">Set up a high-level programme context to aggregate projects and strategic risks.</p>
-                </div>
+                <PageHeader
+                    title="Create New Programme"
+                    subtitle="Set up a high-level programme context to aggregate projects and strategic risks."
+                    breadcrumbs={[{label:"Programme Initiation"},{label:"New Programme"}]}
+                />
                 <button type="button" onClick={loadDummyData} className="flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-700 font-semibold px-2 py-1 bg-indigo-50 rounded-lg transition-all border border-indigo-100 hover:border-indigo-200"><LayoutTemplate className="w-3.5 h-3.5" /> Load Dummy Data</button>
             </div>
 

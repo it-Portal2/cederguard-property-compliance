@@ -5,6 +5,7 @@ import { useStore } from '../store/useStore';
 import { clsx } from 'clsx';
 import { isSuperAdmin, isAtLeastClientAdmin } from '../lib/roles';
 import { Navigate } from 'react-router';
+import PageHeader from '../components/PageHeader';
 
 // Mock Invoice Data
 const INVOICES = [
@@ -34,16 +35,11 @@ export function BillingPanel() {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-semibold text-slate-900 flex items-center gap-3">
-          <CreditCard className="w-8 h-8 text-indigo-600" />
-          Billing & Subscriptions
-        </h1>
-        <p className="text-slate-500 mt-2 font-medium text-lg">
-          Manage your subscription plan, payment methods, and invoice history.
-        </p>
-      </div>
+      <PageHeader
+        title="Billing & Subscriptions"
+        subtitle="Manage your subscription plan, payment methods, and invoice history."
+        breadcrumbs={[{label:"Account"},{label:"Billing"}]}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         

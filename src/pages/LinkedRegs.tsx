@@ -7,6 +7,7 @@ import { MilestoneManager } from '../components/MilestoneManager';
 import type { ProgrammeMilestone } from '../store/useStore';
 import { format, parseISO } from 'date-fns';
 import { useNavigate } from 'react-router';
+import PageHeader from '../components/PageHeader';
 
 export function LinkedRegs() {
   const navigate = useNavigate();
@@ -51,15 +52,11 @@ export function LinkedRegs() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-semibold text-slate-900 tracking-tight ">
-          {activeProgramme?.name || projectInfo?.name || 'Programme'} Plan
-        </h1>
-        <p className="text-sm text-slate-500 mt-1 font-medium">
-          Strategic milestones and compliance regulations mapped across the project lifecycle.
-        </p>
-      </div>
+      <PageHeader
+        title={`${activeProgramme?.name || projectInfo?.name || 'Programme'} Plan`}
+        subtitle="Strategic milestones and compliance regulations mapped across the project lifecycle."
+        breadcrumbs={[{label:"Programme Initiation"},{label:"Programme Plan"}]}
+      />
 
       {/* Stats */}
       {linkedProjects.length > 0 && (

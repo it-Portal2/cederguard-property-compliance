@@ -24,7 +24,7 @@ export function MobileNav() {
   ];
 
   return (
-    <nav className="md:hidden print:hidden fixed bottom-0 left-0 right-0 bg-white/70 backdrop-blur-xl border-t border-slate-200/40 z-50 px-2 pt-2 pb-[calc(env(safe-area-inset-bottom)+0.6rem)] shadow-[0_-4px_16px_-4px_rgba(0,0,0,0.05)] no-select transition-all duration-300">
+    <nav className="lg:hidden print:hidden fixed bottom-0 left-0 right-0 bg-white/70 backdrop-blur-xl border-t border-slate-200/40 z-50 px-2 pt-2 pb-[calc(env(safe-area-inset-bottom)+0.6rem)] shadow-[0_-4px_16px_-4px_rgba(0,0,0,0.05)] no-select transition-all duration-300">
       <div className="flex items-center justify-around max-w-lg mx-auto relative">
         {navItems.map((item) => {
           const isActive = location.pathname === item.to || (item.to !== '/dashboard' && location.pathname.startsWith(item.to.split('?')[0]));

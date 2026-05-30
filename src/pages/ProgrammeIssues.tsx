@@ -1,16 +1,18 @@
-import { FileWarning } from 'lucide-react';
-import { useSearchParams } from 'react-router';
+import { FileWarning, AlertCircle, Settings, RefreshCw, FileSpreadsheet } from 'lucide-react';
+import { useSearchParams, useNavigate } from 'react-router';
 import { useState, useEffect, useMemo } from 'react';
 import { useStore, type IssueItem } from '../store/useStore';
 import { api } from '../lib/api';
 import { isAtLeastClientAdmin } from '../lib/roles';
-import { ServiceManagementBar } from '../components/ServiceManagementBar';
+import PageActions, { type ActionItem } from '../components/PageActions';
+import { exportContextData } from '../lib/exportUtils';
 import DynamicTable from '../components/table/DynamicTable';
 import type { ColumnDef } from '../components/table/types';
 import { useHistoricalView } from '../hooks/useHistoricalView';
 import { MonthPicker } from '../components/historicalReporting/MonthPicker';
 import { HistoricalBanner } from '../components/historicalReporting/HistoricalBanner';
 import type { LegacyArraySnapshot } from '../types/historicalReporting';
+import PageHeader from '../components/PageHeader';
 
 interface ProjectIssueRow {
   id: string;
@@ -22,7 +24,8 @@ interface ProjectIssueRow {
 }
 
 export function ProgrammeIssues() {
-  const { activeProgrammeId, user } = useStore();
+  const { activeProgrammeId, user, issues, canManageContext, activeProgramme } = useStore();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const fromInitiation = searchParams.get('from') === 'initiation';
   const userRole = user?.role || user?.profile?.role;
@@ -131,20 +134,34 @@ export function ProgrammeIssues() {
 
   // ── Render ────────────────────────────────────────────────────────────────────
 
+  const canManage = canManageContext();
+  const exportCtxName = activeProgramme?.name || 'Programme';
+  const pageActions: ActionItem[] = [
+    { label: 'Add Issue', icon: AlertCircle, onClick: () => navigate('/risk/issues'), description: 'Log a new issue for this context.', category: 'Context Actions' },
+    { label: 'Edit Profile', icon: Settings, onClick: () => navigate(`/programmes/edit/${activeProgrammeId}`), description: 'Modify programme metadata and parameters.', category: 'Context Actions' },
+    { label: 'Re-run AI Analysis', icon: RefreshCw, onClick: () => navigate('/compliance/setup?type=programme&restart=true'), description: 'Restart compliance setup and re-run AI analysis.', category: 'Context Actions' },
+    { label: 'Export Issues Data (Excel)', icon: FileSpreadsheet, onClick: () => exportContextData({ page: 'issues', complianceItems: [], risks: [], issues: Array.isArray(issues) ? issues : [], projects: [], contextId: activeProgrammeId || undefined, isProject: false, contextName: exportCtxName }), description: 'Download all issues register data as .xlsx.', category: 'Data Tools' },
+  ];
+
   return (
     <>
-      <ServiceManagementBar />
       <div className="space-y-6 sm:space-y-8">
-
-        {/* month picker for historical view.*/}
-        <div className="flex justify-end">
-          <MonthPicker
-            monthEnd={historicalView.monthEnd}
-            availableMonths={historicalView.availableMonths}
-            onChange={historicalView.setMonthEnd}
-            loading={historicalView.loading}
-          />
-        </div>
+        <PageHeader
+          title="Programme Issues"
+          subtitle="Track and resolve issues across all projects linked to this programme."
+          breadcrumbs={[{label:"Risk Management"},{label:"Issues"}]}
+          actions={
+            <div className="flex flex-wrap items-center gap-2">
+              <MonthPicker
+                monthEnd={historicalView.monthEnd}
+                availableMonths={historicalView.availableMonths}
+                onChange={historicalView.setMonthEnd}
+                loading={historicalView.loading}
+              />
+              <PageActions items={pageActions} canManage={canManage} />
+            </div>
+          }
+        />
         {isHistorical && historicalView.monthEnd && (
           <HistoricalBanner
             monthEnd={historicalView.monthEnd}
@@ -180,8 +197,8 @@ export function ProgrammeIssues() {
           searchFields={['name', 'pmName']}
           getRowId={(r) => r.id}
           emptyState={{
-            title: 'No projects found.',
-            description: 'Projects in this programme will appear here.',
+            title: 'No issues found.',
+            description: 'No projects in this programme have open issues.',
             icon: FileWarning,
           }}
           headerVariant="light"

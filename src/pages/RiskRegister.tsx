@@ -30,9 +30,13 @@ import {
   Shield,
   Flame,
   PoundSterling,
+  Settings,
+  RefreshCw,
+  FileSpreadsheet,
 } from "lucide-react";
 import { RiskModal } from "../components/RiskModal";
-import { ServiceManagementBar } from "../components/ServiceManagementBar";
+import PageActions, { type ActionItem } from "../components/PageActions";
+import { exportContextData } from "../lib/exportUtils";
 import { StatsCard } from "../components/common/StatsCard";
 
 import toast from "react-hot-toast";
@@ -48,6 +52,7 @@ import {
   formatRatingDisplay,
   SEVERE_SCORE_THRESHOLD,
 } from "../data/riskScoringMatrix";
+import PageHeader from "../components/PageHeader";
 
 // Score-to-pill helpers using the 5-band scheme:
 // Insignificant 1-3 · Minor 4-6 · Moderate 7-11 · Major 12-18 · Severe 19-25.
@@ -138,6 +143,11 @@ export function RiskRegister() {
     pendingMutations,
     loadProjectData,
     loadProgrammeData,
+    activeProject,
+    activeProgramme,
+    issues,
+    complianceItems,
+    canManageContext,
   } = useStore();
 
   // Row is "busy" when any mutation targeting this risk id is in flight.
@@ -942,49 +952,57 @@ export function RiskRegister() {
 
   // ── Render ────────────────────────────────────────────────────────────────────
 
+  const canManage = canManageContext();
+  const isProject = searchParams.get("type") ? searchParams.get("type") === "project" : !!activeProjectId;
+  const exportCtxId = isProject ? activeProject?.id : activeProgramme?.id;
+  const exportCtxName = isProject ? activeProject?.name : activeProgramme?.name;
+  const pageActions: ActionItem[] = [
+    { label: "Add Risk", icon: AlertCircle, onClick: () => { const p = new URLSearchParams(searchParams.toString()); p.set("action", "add-risk"); navigate(`?${p.toString()}`); }, description: "Open the new risk form for this context.", category: "Context Actions" },
+    { label: "Edit Profile", icon: Settings, onClick: () => isProject ? navigate("/project/initiation") : navigate(`/programmes/edit/${activeProgramme?.id}`), description: `Modify ${isProject ? "project" : "programme"} metadata and parameters.`, category: "Context Actions" },
+    { label: "Re-run AI Analysis", icon: RefreshCw, onClick: () => navigate(`/compliance/setup?type=${isProject ? "project" : "programme"}&restart=true`), description: "Restart compliance setup and re-run AI analysis.", category: "Context Actions" },
+    { label: "Export Risk Data (Excel)", icon: FileSpreadsheet, onClick: () => exportContextData({ page: "risk", complianceItems: Array.isArray(complianceItems) ? complianceItems : [], risks: Array.isArray(risks) ? risks : [], issues: Array.isArray(issues) ? issues : [], projects: Array.isArray(projects) ? projects : [], contextId: exportCtxId, isProject, contextName: exportCtxName || "CedarGuard" }), description: "Download all risk register data as .xlsx.", category: "Data Tools" },
+  ];
+
   return (
     <>
-      <ServiceManagementBar />
       <div className="space-y-6 sm:space-y-8">
 
-        {/* Page Header*/}
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            {fromInitiation && (
-              <Link
-                to={`/project/initiation${activeProjectId ? `?projectId=${activeProjectId}` : ""}`}
-                className="flex items-center gap-1 text-xs text-indigo-600 font-medium mb-2 hover:underline"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" /> Back to Project Initiation
-              </Link>
-            )}
-            <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
-              Risk Register
-            </h1>
-            <p className="text-sm text-slate-500 mt-0.5">{contextLabel}</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {/* month picker for historical view.*/}
-            <MonthPicker
-              monthEnd={historicalView.monthEnd}
-              availableMonths={historicalView.availableMonths}
-              onChange={historicalView.setMonthEnd}
-              loading={historicalView.loading}
-            />
-            {canModify && (
-              <button
-                onClick={() => {
-                  setEditingRisk(null);
-                  setIsModalOpen(true);
-                }}
-                className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
-              >
-                <Plus className="w-4 h-4" />
-                Add Risk
-              </button>
-            )}
-          </div>
-        </div>
+        {fromInitiation && (
+          <Link
+            to={`/project/initiation${activeProjectId ? `?projectId=${activeProjectId}` : ""}`}
+            className="flex items-center gap-1 text-xs text-indigo-600 font-medium hover:underline"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" /> Back to Project Initiation
+          </Link>
+        )}
+        <PageHeader
+          title="Risk Register"
+          subtitle="Full register of identified risks with scoring, controls, and status tracking."
+          breadcrumbs={[{label:"Risk Management"},{label:"Risk Register"}]}
+          actions={
+            <div className="flex flex-wrap items-center gap-2">
+              <MonthPicker
+                monthEnd={historicalView.monthEnd}
+                availableMonths={historicalView.availableMonths}
+                onChange={historicalView.setMonthEnd}
+                loading={historicalView.loading}
+              />
+              {canModify && (
+                <button
+                  onClick={() => {
+                    setEditingRisk(null);
+                    setIsModalOpen(true);
+                  }}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Risk
+                </button>
+              )}
+              <PageActions items={pageActions} canManage={canManage} />
+            </div>
+          }
+        />
 
         {/* read-only banner appears when MonthPicker is set
  to a past month. banner also renders the friendly

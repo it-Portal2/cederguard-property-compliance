@@ -7,6 +7,7 @@ import { stripMarkdown } from '../lib/utils';
 import type { Programme } from '../store/useStore';
 import { Plus } from 'lucide-react';
 import { isAtLeastClientAdmin } from '../lib/roles';
+import PageHeader from '../components/PageHeader';
 
 const inputCls = "w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white/80 backdrop-blur-sm placeholder:text-slate-400 shadow-sm hover:border-slate-300";
 const labelCls = "block text-[10px] font-semibold text-slate-500 uppercase tracking-[0.15em] mb-2 ml-1";
@@ -287,30 +288,17 @@ Use precise, formal language appropriate for a board-level risk register. Focus 
     ];
 
     return (
-        <div className="max-w-5xl mx-auto pb-24">
+        <div className="space-y-6 sm:space-y-8 pb-24">
             {/* Page header*/}
             <div className="flex items-center gap-4 mb-8">
                 <button onClick={() => navigate(-1)} className="p-2 hover:bg-white rounded-lg border border-transparent hover:border-slate-200 transition-colors">
                     <ArrowLeft className="w-5 h-5 text-slate-500" />
                 </button>
-                <div>
-                    <div className="flex items-center gap-3">
-                        <h1 className="text-2xl font-bold text-slate-900">Create a Programme</h1>
-                        {isAtLeastClientAdmin(userRole) && (
-                            <button
-                                onClick={() => {
-                                    useStore.getState().setActiveProgramme(null);
-                                    navigate('/programmes/new');
-                                }}
-                                className="flex items-center gap-2 px-3 py-1 bg-white border border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-200 rounded-lg transition-all text-sm font-medium"
-                            >
-                                <Plus className="w-3.5 h-3.5 text-indigo-500" />
-                                New Programme
-                            </button>
-                        )}
-                    </div>
-                    <p className="text-sm text-slate-500 mt-0.5">Define the strategic context, governance and regulatory obligations for your programme.</p>
-                </div>
+                <PageHeader
+                    title="Create a Programme"
+                    subtitle="Define the strategic context, governance and regulatory obligations for your programme."
+                    breadcrumbs={[{label:"Programme Initiation"},{label:"Programme Setup"}]}
+                />
             </div>
 
             {/* Step indicator*/}

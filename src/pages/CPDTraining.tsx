@@ -7,6 +7,7 @@ import {
 import { useStore } from '../store/useStore';
 import { clsx } from 'clsx';
 import { MicrolearningSlideshow } from '../components/MicrolearningSlideshow';
+import PageHeader from '../components/PageHeader';
 
 export function CPDTraining() {
   const { cpdModules, updateCPDModule, activeProjectId, projects } = useStore();
@@ -56,13 +57,11 @@ export function CPDTraining() {
     <div className="space-y-6">
       {/* Header & Stats */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900 flex items-center gap-2">
-            <BookOpen className="w-8 h-8 text-indigo-600" />
-            CPD Training & Microlearning
-          </h1>
-          <p className="text-slate-500 font-medium">Professional development and regulatory compliance sessions.</p>
-        </div>
+        <PageHeader
+          title="CPD Training & Microlearning"
+          subtitle="Professional development and regulatory compliance sessions."
+          breadcrumbs={[{label:"Regulations Library"},{label:"CPD Training"}]}
+        />
         
         <div className="flex gap-4">
           <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex items-center gap-4">

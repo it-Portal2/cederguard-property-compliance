@@ -39,8 +39,7 @@ body {
   header,
   nav,
   [class*="MobileHeader"],
-  [class*="MobileNav"],
-  [class*="ServiceManagementBar"] {
+  [class*="MobileNav"] {
     display: none !important;
   }
 

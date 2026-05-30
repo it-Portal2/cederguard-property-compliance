@@ -241,10 +241,10 @@ function AppContent() {
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden print:overflow-visible print:block">
         <MobileHeader />
-        <div className="hidden md:block print:hidden">
+        <div className="hidden lg:block print:hidden">
           <Header />
         </div>
-        <main ref={mainRef} className="flex-1 overflow-y-auto p-4 md:p-6 pb-[calc(env(safe-area-inset-bottom)+5rem)] md:pb-6 print:overflow-visible print:p-0">
+        <main ref={mainRef} className="flex-1 overflow-y-auto p-4 lg:p-6 pb-[calc(env(safe-area-inset-bottom)+5rem)] lg:pb-6 print:overflow-visible print:p-0">
           <div className="max-w-[1600px] mx-auto">
             <Routes>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />

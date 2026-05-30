@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { KeyRound, Plus, Trash2, Copy, Check, AlertTriangle, AlertCircle, CheckCircle2 } from 'lucide-react';
+import PageHeader from '../components/PageHeader';
 
 export function DeveloperSettings() {
   const [keys, setKeys] = useState<any[]>([]);
@@ -85,11 +86,12 @@ export function DeveloperSettings() {
   };
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">Developer Settings</h1>
-        <p className="text-slate-500 mt-1">Manage API keys to securely access the platform's API</p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Developer Settings"
+        subtitle="Manage API keys to securely access the platform's API."
+        breadcrumbs={[{label:"Developer / API"},{label:"API Keys"}]}
+      />
 
       {error && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3 text-red-700 animate-in fade-in">

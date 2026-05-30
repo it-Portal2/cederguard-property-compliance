@@ -9,6 +9,7 @@ import { api } from '../lib/api';
 import { isSuperAdmin, isAtLeastClientAdmin, isAtLeastPM } from '../lib/roles';
 import { useNavigate } from 'react-router';
 import { clsx } from 'clsx';
+import PageHeader from '../components/PageHeader';
 
 /* ─────────────────────── Types ─────────────────────── */
 const TEAM_ROLES = [
@@ -229,20 +230,12 @@ export function ClientTeamPanel() {
   if (!isAtLeastPMUser) return null;
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      {/* Header */}
-      <div>
-        <div className="flex items-center gap-2 mb-1">
-          <div className="p-2 bg-indigo-50 rounded-lg">
-            <Users className="w-5 h-5 text-indigo-600" />
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900">Team Management</h1>
-        </div>
-        <p className="text-slate-500 text-sm ml-11">
-          Invite and manage your Project Managers, Senior PMs, and Coordinators.
-          Roles are scoped to your organisation — your team cannot access other clients' data.
-        </p>
-      </div>
+    <div className="space-y-6 sm:space-y-8">
+      <PageHeader
+        title="Team Management"
+        subtitle="Invite and manage your Project Managers, Senior PMs, and Coordinators. Roles are scoped to your organisation."
+        breadcrumbs={[{label:"Account"},{label:"Team"}]}
+      />
 
       {/* Invite Form — Only for Client Admins */}
       {isClientAdminUser && <InviteForm onInvited={load} />}

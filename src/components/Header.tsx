@@ -215,7 +215,7 @@ export function Header() {
       <div className="flex-1 flex items-center gap-2 md:gap-4 min-w-0">
         <button
           onClick={() => setMobileMenuOpen(!isMobileMenuOpen)}
-          className="md:hidden p-2 -ml-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
+          className="lg:hidden p-2 -ml-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
         >
           <Menu className="w-5 h-5" />
         </button>
@@ -408,8 +408,8 @@ export function Header() {
           )}
         </div>
 
-        {/* ── New programme / New project quick-actions (v4 calm styling) ── */}
-        <div className="hidden lg:flex items-center gap-2 pl-3 ml-1 border-l border-slate-200 h-8">
+        {/* ── New programme / New project quick-actions ── */}
+        <div className="hidden lg:flex items-center gap-1.5 pl-3 ml-1 border-l border-slate-200 h-8 shrink-0">
           {(userIsSuperAdmin || canCreateProgramme(userRole as any)) && (
             <button
               onClick={() => {
@@ -417,11 +417,13 @@ export function Header() {
                 setActiveProject(null);
                 navigate("/programmes/new");
               }}
-              className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border border-slate-200 bg-white text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
-              title="Initiate New Programme"
+              className="relative group inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border border-slate-200 bg-white text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
             >
-              <Plus className="w-3.5 h-3.5" />
-              New programme
+              <Plus className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden xl:inline">New programme</span>
+              <span className="xl:hidden absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[11px] font-medium text-white bg-slate-800 rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg">
+                New programme
+              </span>
             </button>
           )}
           {(userIsSuperAdmin || canCreateProject(userRole as any)) && (
@@ -431,18 +433,20 @@ export function Header() {
                 setActiveProgramme(null);
                 navigate("/project/initiation");
               }}
-              className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-indigo-600 hover:bg-indigo-500 text-xs font-medium text-white transition-colors"
-              title="Initiate New Project"
+              className="relative group inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-indigo-600 hover:bg-indigo-500 text-xs font-medium text-white transition-colors"
             >
-              <Plus className="w-3.5 h-3.5" />
-              New project
+              <Plus className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden xl:inline">New project</span>
+              <span className="xl:hidden absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[11px] font-medium text-white bg-slate-800 rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg">
+                New project
+              </span>
             </button>
           )}
         </div>
       </div>
 
       {/* ⌘K command palette trigger + Since-last-visit badge */}
-      <div className="hidden md:flex items-center gap-2 shrink-0">
+      <div className="hidden lg:flex items-center gap-2 shrink-0 min-w-0">
         <SinceLastVisitBadge />
         <button
           type="button"

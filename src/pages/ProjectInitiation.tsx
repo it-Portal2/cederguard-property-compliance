@@ -15,6 +15,7 @@ import { toast } from "react-hot-toast";
 import { PublicationChecklist } from "../components/PublicationChecklist";
 import { DeliveryTeamCRUD } from "../components/DeliveryTeamCRUD";
 import { CheckPillGroup, inputBase, textareaBase } from "../components/forms";
+import PageHeader from "../components/PageHeader";
 
 // ─── Main Page
 export function ProjectInitiation() {
@@ -594,12 +595,11 @@ export function ProjectInitiation() {
         {/* ── HEADER SECTION ───────────*/}
         <div className="pb-6 border-b border-slate-200">
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-            <div className="min-w-0">
-              <h1 className="text-2xl font-semibold text-slate-900">Project initiation</h1>
-              <p className="mt-1 text-sm text-slate-500 max-w-2xl">
-                Establish the core foundations, delivery team, and key milestones for your project.
-              </p>
-            </div>
+            <PageHeader
+              title="Project Initiation"
+              subtitle="Establish the core foundations, delivery team, and key milestones for your project."
+              breadcrumbs={[{label:"Project Initiation"},{label:"Initiation"}]}
+            />
 
             <div className="flex flex-wrap items-center gap-2">
               {isAtLeastPM(userRole) && activeProjectId && (

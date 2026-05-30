@@ -36,6 +36,7 @@ import { StatsCard } from '../components/common/StatsCard';
 import ConfirmDialog from '../components/table/ConfirmDialog';
 import { BrandingTab } from '../components/governance/branding/BrandingTab';
 import { TacCostRatesTab } from '../components/technicalAssurance/TacCostRatesTab';
+import PageHeader from '../components/PageHeader';
 
 const inputCls = "w-full border border-slate-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all bg-white/80 backdrop-blur-sm placeholder:text-slate-400 shadow-sm hover:border-slate-300";
 const labelCls = "block text-[10px] font-semibold text-slate-500 uppercase tracking-[0.15em] mb-2 ml-1";
@@ -479,27 +480,17 @@ export function WorkspaceSettings() {
     const activeTabMeta = tabs.find(t => t.key === activeTab);
 
     return (
-        <div className="max-w-full mx-auto">
-            {/* Page header — eyebrow breadcrumb, title, description */}
-            <header className="px-2 pt-2 pb-6">
-                <div className="flex items-center gap-1.5 text-[11px] font-mono font-medium text-slate-500 uppercase tracking-wide">
-                    <Settings2 className="w-3.5 h-3.5" strokeWidth={2.25} />
-                    <span>Settings</span>
-                    <span className="text-slate-300">/</span>
-                    <span className="text-slate-400 normal-case tracking-normal font-medium">{activeTabMeta?.label}</span>
-                </div>
-                <h1 className="mt-2 text-[26px] sm:text-[30px] leading-[1.15] font-bold text-slate-900 tracking-tight">
-                    Workspace
-                </h1>
-                <p className="mt-1.5 text-sm text-slate-500 leading-relaxed max-w-2xl">
-                    Manage your organisation profile, branding, team access, and data infrastructure from one central dashboard.
-                </p>
-            </header>
+        <div className="space-y-6 sm:space-y-8">
+            <PageHeader
+                title="Workspace Settings"
+                subtitle="Manage your organisation profile, branding, team access, and data infrastructure from one central dashboard."
+                breadcrumbs={[{label:"Account"},{label:"Workspace"}]}
+            />
 
             {/* Segmented control — Linear / Vercel / Notion pattern with raised active pill */}
-            <div className="px-2 mb-8">
+            <div className="w-full overflow-x-auto scrollbar-hide">
                 <nav
-                    className="inline-flex items-center gap-1 p-1 bg-slate-100/90 border border-slate-200/80 rounded-lg shadow-[inset_0_1px_2px_rgba(15,23,42,0.04)] overflow-x-auto scrollbar-hide max-w-full"
+                    className="flex w-max items-center gap-1 p-1 bg-slate-100/90 border border-slate-200/80 rounded-lg shadow-[inset_0_1px_2px_rgba(15,23,42,0.04)]"
                     aria-label="Workspace sections"
                     role="tablist"
                 >
@@ -533,7 +524,7 @@ export function WorkspaceSettings() {
                 </nav>
             </div>
 
-            <div className="px-2">
+            <div>
                 {activeTab === 'org' && (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                         <div className="lg:col-span-2 bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">

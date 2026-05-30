@@ -25,6 +25,7 @@ import type {
   BulkAction,
   FilterDef,
 } from "../components/table/types";
+import PageHeader from "../components/PageHeader";
 
 type TaskType = "task" | "compliance" | "risk_review" | "issue_deadline";
 
@@ -563,6 +564,11 @@ export function MyTasks() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
+      <PageHeader
+        title="My Tasks"
+        subtitle="All your open actions: manual tasks, compliance items, risk reviews, and issue deadlines in one feed."
+        breadcrumbs={[{label:"Overview"},{label:"My Tasks"}]}
+      />
       {/* KPI Header */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatsCard
