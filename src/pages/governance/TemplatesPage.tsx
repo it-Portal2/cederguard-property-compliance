@@ -4,6 +4,7 @@ import { FileText, Search, Plus } from 'lucide-react';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
 import { api } from '../../lib/api';
+import PageHeader from '../../components/PageHeader';
 import { TemplateCard } from '../../components/governance/templates/TemplateCard';
 import { TemplateEditorModal } from '../../components/governance/templates/TemplateEditorModal';
 import { AiRecommendationCard } from '../../components/governance/templates/AiRecommendationCard';
@@ -157,47 +158,35 @@ export function GovernanceTemplatesPage() {
       transition={{ duration: 0.25, ease: 'easeOut' }}
       className="space-y-6"
     >
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-            <FileText className="h-5 w-5" strokeWidth={2.25} />
+      <PageHeader
+        title="Reports & templates"
+        subtitle="Library of statutory report templates. Customise sections, set authoring defaults, and publish new versions for your council."
+        breadcrumbs={[{ label: 'Programme Governance' }, { label: 'Report Templates' }]}
+        actions={
+          <div className="flex items-center gap-2">
+            {/* month picker for historical view.*/}
+            <MonthPicker
+              monthEnd={historicalView.monthEnd}
+              availableMonths={historicalView.availableMonths}
+              onChange={historicalView.setMonthEnd}
+              loading={historicalView.loading}
+            />
+            {canEdit && (
+              <button
+                type="button"
+                onClick={() => {
+                  setOpened(null);
+                  setModalOpen(true);
+                }}
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-indigo-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-indigo-700"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                New template
+              </button>
+            )}
           </div>
-          <div>
-            <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-              Programme Governance
-            </p>
-            <h1 className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">
-              Reports &amp; templates
-            </h1>
-            <p className="mt-1 max-w-2xl text-sm text-slate-500">
-              Library of statutory report templates. Customise sections, set authoring
-              defaults, and publish new versions for your council.
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* month picker for historical view.*/}
-          <MonthPicker
-            monthEnd={historicalView.monthEnd}
-            availableMonths={historicalView.availableMonths}
-            onChange={historicalView.setMonthEnd}
-            loading={historicalView.loading}
-          />
-          {canEdit && (
-            <button
-              type="button"
-              onClick={() => {
-                setOpened(null);
-                setModalOpen(true);
-              }}
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-indigo-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-indigo-700"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              New template
-            </button>
-          )}
-        </div>
-      </header>
+        }
+      />
 
       {isHistorical && historicalView.monthEnd && (
         <HistoricalBanner

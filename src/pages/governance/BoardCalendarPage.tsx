@@ -11,6 +11,7 @@ import { CalendarDays, List as ListIcon, CalendarRange } from 'lucide-react';
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
 import { api } from '../../lib/api';
+import PageHeader from '../../components/PageHeader';
 import { type Meeting, STATUS_STYLES } from '../../components/governance/meetings/types';
 import { MeetingsCalendarView } from '../../components/governance/meetings/MeetingsCalendarView';
 import { MeetingModal } from '../../components/governance/meetings/MeetingModal';
@@ -96,25 +97,11 @@ export function GovernanceBoardCalendarPage() {
       transition={{ duration: 0.25, ease: 'easeOut' }}
       className="space-y-6"
     >
-      <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-6">
-        <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-            <CalendarDays className="h-5 w-5" strokeWidth={2.25} />
-          </div>
-          <div>
-            <p className="font-mono text-[11px] font-medium uppercase tracking-wide text-slate-400">
-              Programme Governance
-            </p>
-            <h1 className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">
-              Board calendar
-            </h1>
-            <p className="mt-1 max-w-2xl text-sm text-slate-500">
-              Read-only view of every scheduled board meeting in your
-              workspace. Open a meeting to see attendees, agenda and the
-              reports being discussed.
-            </p>
-          </div>
-        </div>
+      <PageHeader
+        title="Board calendar"
+        subtitle="Read-only view of every scheduled board meeting in your workspace. Open a meeting to see attendees, agenda and the reports being discussed."
+        breadcrumbs={[{ label: 'Programme Governance' }, { label: 'Board Calendar' }]}
+        actions={
         <div className="flex flex-wrap items-center gap-2 self-start">
           {/* month picker for historical view.*/}
           <MonthPicker
@@ -157,7 +144,8 @@ export function GovernanceBoardCalendarPage() {
             </button>
           </div>
         </div>
-      </header>
+        }
+      />
 
       {isHistorical && historicalView.monthEnd && (
         <HistoricalBanner

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import {
-  Gavel,
   Pencil,
   Eye,
   Loader2,
@@ -12,6 +11,7 @@ import {
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
 import { api } from '../../lib/api';
+import PageHeader from '../../components/PageHeader';
 import { FrameworkCanvas } from '../../components/governance/framework/FrameworkCanvas';
 import { FrameworkBodyModal } from '../../components/governance/framework/FrameworkBodyModal';
 import { AuthorityThresholdsEditor } from '../../components/governance/framework/AuthorityThresholdsEditor';
@@ -181,74 +181,68 @@ export function GovernanceFrameworkPage() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
     >
-      <header className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-            <Gavel className="h-5 w-5" strokeWidth={2.25} />
-          </div>
-          <div>
-            <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-              Programme Governance
-            </p>
-            <h1 className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">
-              Framework
-            </h1>
-            <p className="mt-1 max-w-2xl text-sm text-slate-500">
-              Four-tier governance model for your council. Edit bodies, set authority thresholds
-              and publish a new version for Cabinet / Council Constitution alignment.
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {/* month picker for historical view.*/}
-          <MonthPicker
-            monthEnd={historicalView.monthEnd}
-            availableMonths={historicalView.availableMonths}
-            onChange={historicalView.setMonthEnd}
-            loading={historicalView.loading}
-          />
-          {statusBadge && (
-            <span
-              className={clsx(
-                'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold',
-                statusBadge.cls,
+      <div className="mb-6">
+        <PageHeader
+          title="Framework"
+          subtitle="Four-tier governance model for your council. Edit bodies, set authority thresholds and publish a new version for Cabinet / Council Constitution alignment."
+          breadcrumbs={[
+            { label: 'Programme Governance' },
+            { label: 'Project Governance' },
+            { label: 'Framework' },
+          ]}
+          actions={
+            <div className="flex flex-wrap items-center gap-2">
+              {/* month picker for historical view.*/}
+              <MonthPicker
+                monthEnd={historicalView.monthEnd}
+                availableMonths={historicalView.availableMonths}
+                onChange={historicalView.setMonthEnd}
+                loading={historicalView.loading}
+              />
+              {statusBadge && (
+                <span
+                  className={clsx(
+                    'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold',
+                    statusBadge.cls,
+                  )}
+                >
+                  <statusBadge.icon className="h-3.5 w-3.5" />
+                  {statusBadge.label}
+                </span>
               )}
-            >
-              <statusBadge.icon className="h-3.5 w-3.5" />
-              {statusBadge.label}
-            </span>
-          )}
-          {!isHistorical && <FrameworkExportMenu />}
-          {!isHistorical && (
-            <button
-              type="button"
-              onClick={() => setEditMode((v) => !v)}
-              className={clsx(
-                'inline-flex h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors',
-                editMode
-                  ? 'border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
-                  : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+              {!isHistorical && <FrameworkExportMenu />}
+              {!isHistorical && (
+                <button
+                  type="button"
+                  onClick={() => setEditMode((v) => !v)}
+                  className={clsx(
+                    'inline-flex h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors',
+                    editMode
+                      ? 'border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+                  )}
+                >
+                  {editMode ? <Eye className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
+                  {editMode ? 'View mode' : 'Edit framework'}
+                </button>
               )}
-            >
-              {editMode ? <Eye className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
-              {editMode ? 'View mode' : 'Edit framework'}
-            </button>
-          )}
-          {!isHistorical && (
-            <button
-              type="button"
-              onClick={handlePublish}
-              disabled={
-                publishing || loading || snapshot.framework?.status !== 'draft'
-              }
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-indigo-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {publishing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UploadCloud className="h-3.5 w-3.5" />}
-              Publish new version
-            </button>
-          )}
-        </div>
-      </header>
+              {!isHistorical && (
+                <button
+                  type="button"
+                  onClick={handlePublish}
+                  disabled={
+                    publishing || loading || snapshot.framework?.status !== 'draft'
+                  }
+                  className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-indigo-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {publishing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UploadCloud className="h-3.5 w-3.5" />}
+                  Publish new version
+                </button>
+              )}
+            </div>
+          }
+        />
+      </div>
 
       {isHistorical && historicalView.monthEnd && (
         <div className="mb-6">

@@ -17,6 +17,7 @@ import {
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
 import { api } from '../../lib/api';
+import PageHeader from '../../components/PageHeader';
 import { useStore } from '../../store/useStore';
 import { isAtLeastClientAdmin, isSuperAdmin } from '../../lib/roles';
 import DynamicTable from '../../components/table/DynamicTable';
@@ -414,35 +415,20 @@ export function GovernanceReportsListPage() {
       className="mx-auto space-y-6"
     >
       {/* Header (same pattern as Forward Plan: heading left, controls right)*/}
-      <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-6">
-        <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-            <FileText className="h-5 w-5" strokeWidth={2.25} />
-          </div>
-          <div>
-            <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-              Programme Governance
-            </p>
-            <h1 className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">
-              Reports
-            </h1>
-            <p className="mt-1 max-w-2xl text-sm text-slate-500">
-              Authored from the templates library, routed through boards, and
-              archived on approval. Open a report to edit its sections in the
-              authoring editor, or use the pencil to update its details.
-            </p>
-          </div>
-        </div>
-        {/* month picker for historical view.*/}
-        <div className="self-start md:mt-1">
+      <PageHeader
+        title="Reports"
+        subtitle="Authored from the templates library, routed through boards, and archived on approval. Open a report to edit its sections in the authoring editor, or use the pencil to update its details."
+        breadcrumbs={[{ label: 'Programme Governance' }, { label: 'Reports' }]}
+        actions={
+          /* month picker for historical view.*/
           <MonthPicker
             monthEnd={historicalView.monthEnd}
             availableMonths={historicalView.availableMonths}
             onChange={historicalView.setMonthEnd}
             loading={historicalView.loading}
           />
-        </div>
-      </header>
+        }
+      />
 
       {/* read-only banner appears when MonthPicker is set to a
  past month.*/}

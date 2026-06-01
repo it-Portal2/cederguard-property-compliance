@@ -20,6 +20,7 @@ import {
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
 import { api } from '../../lib/api';
+import PageHeader from '../../components/PageHeader';
 import { useStore } from '../../store/useStore';
 import { isAtLeastClientAdmin, isSuperAdmin } from '../../lib/roles';
 import DynamicTable from '../../components/table/DynamicTable';
@@ -568,34 +569,20 @@ export function GovernanceMyReportsPage() {
       className="space-y-6"
     >
       {/* Header*/}
-      <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-6">
-        <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-            <ClipboardList className="h-5 w-5" strokeWidth={2.25} />
-          </div>
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
-              Programme Governance
-            </p>
-            <h1 className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">
-              My reports
-            </h1>
-            <p className="mt-1 max-w-2xl text-sm text-slate-500">
-              Your personal workspace — drafts, items with the Programme Manager,
-              amendments to address, and your upcoming board dates.
-            </p>
-          </div>
-        </div>
-        {/* month picker for historical view.*/}
-        <div className="self-start md:mt-1">
+      <PageHeader
+        title="My reports"
+        subtitle="Your personal workspace — drafts, items with the Programme Manager, amendments to address, and your upcoming board dates."
+        breadcrumbs={[{ label: 'Programme Governance' }, { label: 'My Reports' }]}
+        actions={
+          /* month picker for historical view.*/
           <MonthPicker
             monthEnd={historicalView.monthEnd}
             availableMonths={historicalView.availableMonths}
             onChange={historicalView.setMonthEnd}
             loading={historicalView.loading}
           />
-        </div>
-      </header>
+        }
+      />
 
       {isHistorical && historicalView.monthEnd && (
         <HistoricalBanner

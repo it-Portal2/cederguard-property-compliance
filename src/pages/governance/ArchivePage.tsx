@@ -21,6 +21,7 @@ import {
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
 import { api } from '../../lib/api';
+import PageHeader from '../../components/PageHeader';
 import DynamicTable from '../../components/table/DynamicTable';
 import type { ColumnDef, FilterDef, RowAction } from '../../components/table/types';
 import { StatsCard } from '../../components/common/StatsCard';
@@ -290,52 +291,40 @@ export function GovernanceArchivePage() {
       transition={{ duration: 0.25, ease: 'easeOut' }}
       className="mx-auto space-y-6"
     >
-      <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-6">
-        <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-            <ScrollText className="h-5 w-5" strokeWidth={2.25} />
+      <PageHeader
+        title="Archive & audit"
+        subtitle="Immutable record of every sealed report, held meeting and published project doc. Click a row for the full audit trail. FOI export is metadata-only — Part 2 redaction is enforced inside individual report PDFs."
+        breadcrumbs={[{ label: 'Programme Governance' }, { label: 'Archive' }]}
+        actions={
+          <div className="inline-flex items-center gap-2">
+            {/* month picker drives `asOfMonth` on the aggregator endpoint.*/}
+            <MonthPicker
+              monthEnd={historicalView.monthEnd}
+              availableMonths={historicalView.availableMonths}
+              onChange={historicalView.setMonthEnd}
+              loading={historicalView.loading}
+            />
+            <button
+              type="button"
+              onClick={handleExport}
+              disabled={exporting || items.length === 0 || isHistorical}
+              title={
+                isHistorical
+                  ? 'Exit historical view to export — FOI exports always use live data.'
+                  : undefined
+              }
+              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {exporting ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Download className="h-3.5 w-3.5" />
+              )}
+              FOI export (CSV)
+            </button>
           </div>
-          <div>
-            <p className="font-mono text-[11px] font-medium uppercase tracking-wide text-slate-400">
-              Programme Governance
-            </p>
-            <h1 className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">
-              Archive &amp; audit
-            </h1>
-            <p className="mt-1 max-w-2xl text-sm text-slate-500">
-              Immutable record of every sealed report, held meeting and published project doc. Click a row for the full audit trail. FOI export is metadata-only — Part 2 redaction is enforced inside individual report PDFs.
-            </p>
-          </div>
-        </div>
-        <div className="inline-flex shrink-0 items-center gap-2 self-start">
-          {/* month picker drives `asOfMonth` on the
- aggregator endpoint.*/}
-          <MonthPicker
-            monthEnd={historicalView.monthEnd}
-            availableMonths={historicalView.availableMonths}
-            onChange={historicalView.setMonthEnd}
-            loading={historicalView.loading}
-          />
-          <button
-            type="button"
-            onClick={handleExport}
-            disabled={exporting || items.length === 0 || isHistorical}
-            title={
-              isHistorical
-                ? 'Exit historical view to export — FOI exports always use live data.'
-                : undefined
-            }
-            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {exporting ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Download className="h-3.5 w-3.5" />
-            )}
-            FOI export (CSV)
-          </button>
-        </div>
-      </header>
+        }
+      />
 
       {isHistorical && historicalView.monthEnd && (
         <HistoricalBanner

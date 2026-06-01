@@ -21,6 +21,7 @@ import {
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
 import { api } from '../../lib/api';
+import PageHeader from '../../components/PageHeader';
 import { useStore } from '../../store/useStore';
 import { isAtLeastClientAdmin, isSuperAdmin } from '../../lib/roles';
 import DynamicTable from '../../components/table/DynamicTable';
@@ -932,60 +933,47 @@ export function GovernanceForwardPlanPage() {
     >
       {/* Header: heading on the LEFT corner, tabs on the RIGHT corner.
  Flex row justify-between on desktop, stacked col on mobile.*/}
-      <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-6">
-        <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-            <CalendarIcon className="h-5 w-5" strokeWidth={2.25} />
+      <PageHeader
+        title="Forward Plan"
+        subtitle="Statutory rolling 28-day key-decision pipeline. Add items, route through boards, and mark decisions as they're taken."
+        breadcrumbs={[{ label: 'Programme Governance' }, { label: 'Forward Plan' }]}
+        actions={
+          <div className="flex flex-col items-start gap-2 self-start md:items-end md:gap-2">
+            {/* Month picker sits above the view-mode toggle so it is the first
+                control the eye lands on when switching modes. */}
+            <MonthPicker
+              monthEnd={historicalView.monthEnd}
+              availableMonths={historicalView.availableMonths}
+              onChange={historicalView.setMonthEnd}
+              loading={historicalView.loading}
+            />
+            <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-[11px] font-semibold">
+              {([
+                { key: 'schedule' as const, label: 'Schedule', Icon: CalendarIcon },
+                { key: 'list' as const, label: 'List', Icon: ListIcon },
+                { key: 'calendar' as const, label: 'Calendar', Icon: CalendarIcon },
+                { key: 'timeline' as const, label: 'Timeline', Icon: BarChart3 },
+                { key: 'workflow' as const, label: 'Workflow', Icon: LayoutGrid },
+              ]).map(({ key, label, Icon }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setViewMode(key)}
+                  className={clsx(
+                    'inline-flex h-8 items-center gap-1.5 rounded-md px-3 transition-colors',
+                    viewMode === key
+                      ? 'bg-white text-indigo-700 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900',
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
-          <div>
-            <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-              Programme Governance
-            </p>
-            <h1 className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">
-              Forward Plan
-            </h1>
-            <p className="mt-1 max-w-2xl text-sm text-slate-500">
-              Statutory rolling 28-day key-decision pipeline. Add items, route through
-              boards, and mark decisions as they're taken.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex flex-col items-start gap-2 self-start md:items-end md:gap-2 md:mt-1">
-          {/* Month picker sits above the view-mode toggle so it is the first
-              control the eye lands on when switching modes. */}
-          <MonthPicker
-            monthEnd={historicalView.monthEnd}
-            availableMonths={historicalView.availableMonths}
-            onChange={historicalView.setMonthEnd}
-            loading={historicalView.loading}
-          />
-          <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-[11px] font-semibold">
-            {([
-              { key: 'schedule' as const, label: 'Schedule', Icon: CalendarIcon },
-              { key: 'list' as const, label: 'List', Icon: ListIcon },
-              { key: 'calendar' as const, label: 'Calendar', Icon: CalendarIcon },
-              { key: 'timeline' as const, label: 'Timeline', Icon: BarChart3 },
-              { key: 'workflow' as const, label: 'Workflow', Icon: LayoutGrid },
-            ]).map(({ key, label, Icon }) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setViewMode(key)}
-                className={clsx(
-                  'inline-flex h-8 items-center gap-1.5 rounded-md px-3 transition-colors',
-                  viewMode === key
-                    ? 'bg-white text-indigo-700 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900',
-                )}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </header>
+        }
+      />
 
       {/* read-only banner appears when MonthPicker is set to a
  past month. Sits above StatsCards so the user can't miss it.*/}

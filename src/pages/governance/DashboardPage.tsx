@@ -11,7 +11,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { motion } from 'motion/react';
 import {
-  LayoutDashboard,
   Lightbulb,
   Inbox,
   CalendarDays,
@@ -27,6 +26,7 @@ import {
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
 import { api } from '../../lib/api';
+import PageHeader from '../../components/PageHeader';
 import { StatsCard } from '../../components/common/StatsCard';
 import type {
   DashboardPayload,
@@ -119,49 +119,39 @@ export function GovernanceDashboardPage() {
       transition={{ duration: 0.25, ease: 'easeOut' }}
       className="space-y-6"
     >
-      <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-6">
-        <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-            <LayoutDashboard className="h-5 w-5" strokeWidth={2.25} />
+      <PageHeader
+        title="Dashboard"
+        subtitle={
+          payload?.role === 'pm'
+            ? 'Your reports, deadlines, and feedback from the Programme Manager.'
+            : 'Your queue, the workspace pipeline, and what is on the next board.'
+        }
+        breadcrumbs={[{ label: 'Programme Governance' }, { label: 'Dashboard' }]}
+        actions={
+          <div className="inline-flex items-center gap-2">
+            {/* month picker drives `asOfMonth` on the dashboard aggregator.*/}
+            <MonthPicker
+              monthEnd={historicalView.monthEnd}
+              availableMonths={historicalView.availableMonths}
+              onChange={historicalView.setMonthEnd}
+              loading={historicalView.loading}
+            />
+            <button
+              type="button"
+              onClick={() => refresh(true)}
+              disabled={loading || refreshing}
+              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:opacity-50"
+            >
+              {refreshing ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5" />
+              )}
+              Refresh
+            </button>
           </div>
-          <div>
-            <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-              Programme Governance
-            </p>
-            <h1 className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">
-              Dashboard
-            </h1>
-            <p className="mt-1 max-w-2xl text-sm text-slate-500">
-              {payload?.role === 'pm'
-                ? 'Your reports, deadlines, and feedback from the Programme Manager.'
-                : 'Your queue, the workspace pipeline, and what is on the next board.'}
-            </p>
-          </div>
-        </div>
-        <div className="inline-flex shrink-0 items-center gap-2 self-start">
-          {/* month picker drives `asOfMonth` on the
- dashboard aggregator.*/}
-          <MonthPicker
-            monthEnd={historicalView.monthEnd}
-            availableMonths={historicalView.availableMonths}
-            onChange={historicalView.setMonthEnd}
-            loading={historicalView.loading}
-          />
-          <button
-            type="button"
-            onClick={() => refresh(true)}
-            disabled={loading || refreshing}
-            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:opacity-50"
-          >
-            {refreshing ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <RefreshCw className="h-3.5 w-3.5" />
-            )}
-            Refresh
-          </button>
-        </div>
-      </header>
+        }
+      />
 
       {isHistorical && historicalView.monthEnd && (
         <HistoricalBanner

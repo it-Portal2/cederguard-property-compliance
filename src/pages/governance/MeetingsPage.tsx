@@ -17,6 +17,7 @@ import {
 import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
 import { api } from '../../lib/api';
+import PageHeader from '../../components/PageHeader';
 import { useStore } from '../../store/useStore';
 import { isAtLeastClientAdmin, isSuperAdmin } from '../../lib/roles';
 import DynamicTable from '../../components/table/DynamicTable';
@@ -421,64 +422,52 @@ export function GovernanceMeetingsPage() {
       transition={{ duration: 0.25, ease: 'easeOut' }}
       className="mx-auto space-y-6"
     >
-      <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-6">
-        <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-            <CalendarDays className="h-5 w-5" strokeWidth={2.25} />
-          </div>
-          <div>
-            <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-              Programme Governance
-            </p>
-            <h1 className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">
-              Meetings
-            </h1>
-            <p className="mt-1 max-w-2xl text-sm text-slate-500">
-              Schedule, attendees, agendas, minutes, decisions and actions for
-              each governance body. Mark held when the meeting takes place.
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-col items-start gap-3 md:flex-row md:items-center">
-          {/* month picker for historical view.*/}
-          <MonthPicker
-            monthEnd={historicalView.monthEnd}
-            availableMonths={historicalView.availableMonths}
-            onChange={historicalView.setMonthEnd}
-            loading={historicalView.loading}
-          />
-          {/* View mode toggle — same chrome as Forward Plan (:
+      <PageHeader
+        title="Meetings"
+        subtitle="Schedule, attendees, agendas, minutes, decisions and actions for each governance body. Mark held when the meeting takes place."
+        breadcrumbs={[{ label: 'Programme Governance' }, { label: 'Meetings' }]}
+        actions={
+          <div className="flex flex-col items-start gap-3 md:flex-row md:items-center">
+            {/* month picker for historical view.*/}
+            <MonthPicker
+              monthEnd={historicalView.monthEnd}
+              availableMonths={historicalView.availableMonths}
+              onChange={historicalView.setMonthEnd}
+              loading={historicalView.loading}
+            />
+            {/* View mode toggle — same chrome as Forward Plan (:
  calendar = read-only surface; CRUD stays in modal).*/}
-        <div className="inline-flex shrink-0 items-center gap-0.5 self-start rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
-          <button
-            type="button"
-            onClick={() => setViewMode('list')}
-            className={clsx(
-              'inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors',
-              viewMode === 'list'
-                ? 'bg-indigo-600 text-white'
-                : 'text-slate-600 hover:bg-slate-50',
-            )}
-          >
-            <List className="h-3.5 w-3.5" />
-            List
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode('calendar')}
-            className={clsx(
-              'inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors',
-              viewMode === 'calendar'
-                ? 'bg-indigo-600 text-white'
-                : 'text-slate-600 hover:bg-slate-50',
-            )}
-          >
-            <CalendarRange className="h-3.5 w-3.5" />
-            Calendar
-          </button>
-        </div>
-        </div>
-      </header>
+            <div className="inline-flex shrink-0 items-center gap-0.5 self-start rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
+              <button
+                type="button"
+                onClick={() => setViewMode('list')}
+                className={clsx(
+                  'inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors',
+                  viewMode === 'list'
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-slate-600 hover:bg-slate-50',
+                )}
+              >
+                <List className="h-3.5 w-3.5" />
+                List
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('calendar')}
+                className={clsx(
+                  'inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors',
+                  viewMode === 'calendar'
+                    ? 'bg-indigo-600 text-white'
+                    : 'text-slate-600 hover:bg-slate-50',
+                )}
+              >
+                <CalendarRange className="h-3.5 w-3.5" />
+                Calendar
+              </button>
+            </div>
+          </div>
+        }
+      />
 
       {isHistorical && historicalView.monthEnd && (
         <HistoricalBanner
