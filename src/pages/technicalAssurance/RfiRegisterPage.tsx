@@ -6,6 +6,7 @@ import { motion } from "motion/react";
 import DynamicTable from "../../components/table/DynamicTable";
 import { StatsCard } from "../../components/common/StatsCard";
 import { api } from "../../lib/api";
+import PageHeader from "../../components/PageHeader";
 import { useStore } from "../../store/useStore";
 import type {
   ColumnDef,
@@ -216,25 +217,11 @@ export function TacRfiRegisterPage() {
       transition={{ duration: 0.2 }}
       className="space-y-6"
     >
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-            <ClipboardList className="h-5 w-5" strokeWidth={2.25} />
-          </div>
-          <div>
-            <p className="font-mono text-[11px] font-medium uppercase tracking-wide text-slate-400">
-              Technical Assurance
-            </p>
-            <h1 className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">
-              RFI register
-            </h1>
-            <p className="mt-1 text-sm text-slate-500">
-              Every Request for Information issued from a TAC enquiry,
-              workspace-wide.
-            </p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="RFI register"
+        subtitle="Every Request for Information issued from a TAC enquiry, workspace-wide."
+        breadcrumbs={[{ label: "Technical Assurance" }, { label: "RFI Register" }]}
+      />
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatsCard

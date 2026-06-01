@@ -25,6 +25,7 @@ import DynamicTable from "../../components/table/DynamicTable";
 import { StatsCard } from "../../components/common/StatsCard";
 import { ReasonDialog } from "../../components/governance/ReasonDialog";
 import { api } from "../../lib/api";
+import PageHeader from "../../components/PageHeader";
 import type {
   ColumnDef,
   FilterDef,
@@ -288,24 +289,11 @@ export function TacAuditDashboardPage() {
       className="space-y-6"
     >
       {/* Header*/}
-      <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-          <ShieldCheck className="h-5 w-5" strokeWidth={2.25} />
-        </div>
-        <div>
-          <p className="font-mono text-[11px] font-medium uppercase tracking-wide text-slate-400">
-            Technical Assurance
-          </p>
-          <h1 className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">
-            Audit dashboard
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Compliance Lead view of every enquiry flagged for audit or
-            carrying thumbs-down feedback. First 50 responses per project
-            should be reviewed here as part of the in-house chartered review.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Audit dashboard"
+        subtitle="Compliance Lead view of every enquiry flagged for audit or carrying thumbs-down feedback. First 50 responses per project should be reviewed here as part of the in-house chartered review."
+        breadcrumbs={[{ label: "Technical Assurance" }, { label: "Audit" }]}
+      />
 
       {/* StatsCards*/}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">

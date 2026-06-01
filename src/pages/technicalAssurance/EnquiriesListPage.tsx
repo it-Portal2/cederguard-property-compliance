@@ -28,6 +28,7 @@ import { ReasonDialog } from "../../components/governance/ReasonDialog";
 import { NewEnquiryModal } from "../../components/technicalAssurance/NewEnquiryModal";
 import { RecentEnquiriesPanel } from "../../components/technicalAssurance/RecentEnquiriesPanel";
 import { api } from "../../lib/api";
+import PageHeader from "../../components/PageHeader";
 import { useTechnicalAssuranceStore } from "../../store/technicalAssuranceStore";
 import type { ColumnDef, FilterDef, RowAction } from "../../components/table/types";
 import type {
@@ -556,54 +557,42 @@ export function TacEnquiriesListPage() {
       className="space-y-6"
     >
       {/* Header*/}
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-            <MessageSquare className="h-5 w-5" strokeWidth={2.25} />
+      <PageHeader
+        title="Enquiries"
+        subtitle="Capture technical queries with attachments and route them through regulation-cited insights."
+        breadcrumbs={[{ label: "Technical Assurance" }, { label: "Enquiries" }]}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Decision log export. Project-scoped via active project.*/}
+            <button
+              type="button"
+              onClick={handleExportDecisionLog}
+              disabled={exportingDecisionLog || !activeProjectId}
+              title={
+                !activeProjectId
+                  ? "Pick an active project from the top bar to enable export"
+                  : "Export every closed enquiry on the active project as a single PDF"
+              }
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:border-indigo-400 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {exportingDecisionLog ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              Decision log
+            </button>
+            <button
+              type="button"
+              onClick={handleNewClicked}
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"
+            >
+              <Plus className="h-4 w-4" />
+              New enquiry
+            </button>
           </div>
-          <div>
-            <p className="font-mono text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-              Technical Assurance
-            </p>
-            <h1 className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">
-              Enquiries
-            </h1>
-            <p className="mt-1 text-sm text-slate-500">
-              Capture technical queries with attachments and route them through
-              regulation-cited insights.
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 self-start">
-          {/* Decision log export. Project-scoped via active project.*/}
-          <button
-            type="button"
-            onClick={handleExportDecisionLog}
-            disabled={exportingDecisionLog || !activeProjectId}
-            title={
-              !activeProjectId
-                ? "Pick an active project from the top bar to enable export"
-                : "Export every closed enquiry on the active project as a single PDF"
-            }
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:border-indigo-400 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {exportingDecisionLog ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Download className="h-4 w-4" />
-            )}
-            Decision log
-          </button>
-          <button
-            type="button"
-            onClick={handleNewClicked}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"
-          >
-            <Plus className="h-4 w-4" />
-            New enquiry
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Recent enquiries panel (HTML prototype "Recent prompts").*/}
       <RecentEnquiriesPanel enquiries={items} />
