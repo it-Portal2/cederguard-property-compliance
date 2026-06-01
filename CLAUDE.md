@@ -209,8 +209,10 @@ MobileNav.tsx                       Bottom tab bar (lg:hidden — visible below 
 PageHeader.tsx                      CANONICAL page-level header. Props: title, subtitle?, breadcrumbs,
                                     actions?. Renders breadcrumb nav + H1 + subtitle; when actions is
                                     provided, wraps in md:flex-row responsive layout. Every authenticated
-                                    page (except full-screen wizards ComplianceSetup/RiskSetup) uses this.
-                                    NEVER add an ad-hoc h1 block — always use PageHeader.
+                                    page uses this. EXEMPT (keep their bespoke headers): full-screen wizards
+                                    ComplianceSetup/RiskSetup, the full-screen editor ReportAuthoringPage,
+                                    the dev surface EditorSandboxPage, and the back-button detail route
+                                    EnquiryWorkspacePage. NEVER add an ad-hoc h1 block — always use PageHeader.
 PageActions.tsx                     Reusable "Actions & options" dropdown for page-level context actions.
                                     Props: items: ActionItem[], canManage: boolean. Groups items by
                                     'Context Actions' | 'Data Tools'; shows Read-only badge when
@@ -445,6 +447,45 @@ DeveloperSettings.tsx               API key generation and management
 APIDocs.tsx                         In-app API documentation viewer
 MyTasks.tsx                         Personal task list for logged-in user
 ```
+
+#### `/src/pages/governance/` — Programme Governance page group (sidebar group "Programme Governance")
+These are the ONLY route-level pages that live in a `src/pages/` subfolder (the rest of `src/pages/` is flat).
+Import depth is therefore two levels: `import PageHeader from '../../components/PageHeader'`. Sub-components
+live under `src/components/governance/<feature>/` (archive, branding, dashboard, editor, extensions, forwardPlan,
+framework, meetings, projectDocs, reports, templates) + shared dialogs/pickers at that folder's root.
+```
+DashboardPage.tsx                   /governance/dashboard — role-aware briefing + StatsCards (PgM vs PM payload)
+ForwardPlanPage.tsx                 /governance/forward-plan — rolling 28-day key-decision pipeline (5 view modes)
+TemplatesPage.tsx                   /governance/reports — statutory report template library
+ReportsListPage.tsx                 /governance/reports-list — authored reports list (routed through boards)
+ReportAuthoringPage.tsx             /governance/reports-list/:id — FULL-SCREEN section editor (PageHeader-EXEMPT)
+MyReportsPage.tsx                   /governance/my-reports — personal drafts/with-PgM/amendments workspace
+MeetingsPage.tsx                    /governance/meetings — schedule/minutes/decisions per governance body
+FrameworkPage.tsx                   /governance/framework — four-tier governance model editor + publish
+ProjectGovernanceDocsPage.tsx       /governance/project-docs — versioned per-project governance documents
+ArchivePage.tsx                     /governance/archive — immutable sealed-record register + FOI CSV export
+BoardCalendarPage.tsx               /governance/board-calendar — read-only scheduled-meeting calendar
+EditorSandboxPage.tsx               /governance/editor-sandbox — dev/test surface for the editor (PageHeader-EXEMPT)
+```
+
+#### `/src/pages/technicalAssurance/` — Technical Assurance page group (sidebar group "Technical Assurance")
+Also subfoldered (two-level import depth). Sub-components under `src/components/technicalAssurance/`.
+```
+EnquiriesListPage.tsx               /technical-assurance/enquiries — enquiry list + decision-log PDF export
+EnquiryWorkspacePage.tsx            /technical-assurance/enquiries/:id — detail workspace, BACK-BUTTON header (PageHeader-EXEMPT)
+RfiRegisterPage.tsx                 /technical-assurance/rfis — workspace-wide RFI register
+AuditDashboardPage.tsx              /technical-assurance/audit — Compliance Lead audit/feedback review
+```
+
+#### `/src/components/historicalReporting/` — As-of-month reporting primitives
+Used across governance pages (and elsewhere) to drive historical/point-in-time views.
+```
+MonthPicker.tsx                     As-of-month selector; drives `asOfMonth` on aggregator endpoints.
+                                    Sits in the PageHeader `actions` slot on governance pages.
+HistoricalBanner.tsx                Read-only banner shown when a past month is selected.
+CorrectionModal / CorrectionBadge / CorrectionHistory / HistoricalContentSkeleton / HistoricalEmptyState
+```
+Backed by the `useHistoricalView` / `useHistoricalMonthMulti` hooks in `src/hooks/`.
 
 #### `/src/pages/public/` — Public marketing pages
 ```
@@ -1002,7 +1043,8 @@ Auth: Firebase ID token in Authorization header
 - **API route files**: camelCase — `auth.ts`, `compliance.ts`, `projects.ts`
 
 ### Folder Structure Patterns
-- Feature sub-folders inside `components/` are lowercase: `admin/`, `compliance/`, `common/`, `public/`
+- Feature sub-folders inside `components/` are lowercase: `admin/`, `compliance/`, `common/`, `public/`, `governance/`, `technicalAssurance/`, `historicalReporting/`, `table/`
+- Most route-level pages are flat in `src/pages/`. The exceptions: `src/pages/governance/` (12 pages) and `src/pages/technicalAssurance/` (4 pages) — subfoldered, so they import shared modules at two-level depth (`'../../components/...'`).
 - `/src/hooks/` exists with 4 hooks (useChatStream, useFocusTrap, useHistoricalView, useHistoricalMonthMulti) — new cross-page hooks go here
 - No `contexts/` directory — all context via Zustand store
 - Backend under `/api/` with `lib/` and `routes/` sub-folders
@@ -1061,7 +1103,8 @@ export const authRoutes = {
 - The app shell wraps every authenticated page with `<main className="flex-1 overflow-y-auto p-4 lg:p-6 ...">` containing `<div className="max-w-[1600px] mx-auto">` ([`src/App.tsx`](src/App.tsx)). Pages should **not** add their own page-level padding, `max-w-*`, or `mx-auto` — that double-wraps the layout.
 - Canonical page root: `<div className="space-y-6 sm:space-y-8">`. The tighter variant `space-y-5 sm:space-y-6` is reserved for sub-sections, not page roots.
 - `ServiceManagementBar` has been **deleted** (M2.1). Its per-page action items now live in `PageActions` in the `PageHeader` `actions` slot.
-- Every authenticated page (except full-screen wizards: `ComplianceSetup`, `RiskSetup`) must open with `<PageHeader title=... subtitle=... breadcrumbs={[...]} />` as the first child of the page root. Breadcrumb first item = sidebar group name (e.g. "Compliance", "Risk Management", "Account").
+- Every authenticated page must open with `<PageHeader title=... subtitle=... breadcrumbs={[...]} />` as the first child of the page root. Breadcrumb first item = sidebar group name (e.g. "Compliance", "Risk Management", "Account", "Programme Governance", "Technical Assurance"). **Exempt** (keep bespoke headers): full-screen wizards `ComplianceSetup` / `RiskSetup`, the full-screen editor `ReportAuthoringPage`, the dev surface `EditorSandboxPage`, and the back-button detail route `EnquiryWorkspacePage`.
+- **Page-level header controls** (MonthPicker, view-mode toggles, export/publish/New buttons) go in the `PageHeader` `actions` slot — never as a sibling `<header>` block. All governance + Technical Assurance pages follow this (their former ad-hoc `<header>` blocks were migrated in the governance/TAC PageHeader batch). When the page root has no `space-y-*` (e.g. `FrameworkPage`), wrap `<PageHeader>` in a `mb-6` div to preserve spacing.
 
 ### Responsive layout breakpoints
 - **Sidebar / mobile nav breakpoint: `lg` (1024px).** Below 1024px: `MobileHeader` + drawer sidebar + `MobileNav` bottom bar. At 1024px+: permanent `Sidebar` + desktop `Header`. This was changed from `md` (768px) in M2.1.
