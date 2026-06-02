@@ -152,7 +152,9 @@ const validationRunFactCheck: Handler = async (req, res, ctx) => {
       .status(400)
       .json({ error: "Missing surface, targetId or content" });
   }
-  const safeContent = String(content).slice(0, 8000);
+  // Generous cap so large compliance sets (e.g. 39+ requirements) all reach the
+  // model — the old 8000 truncated to ~30 items. ~24k chars ≈ ~6k tokens.
+  const safeContent = String(content).slice(0, 24000);
   const userName =
     userData?.displayName || userData?.name || userData?.companyName || null;
 
@@ -169,6 +171,7 @@ const validationRunFactCheck: Handler = async (req, res, ctx) => {
       "CONTENT TO VERIFY:",
       safeContent,
       "",
+      "Verify EVERY distinct item/requirement listed above — do not skip or merge items; if many are listed, cover them all.",
       "Write a thorough analysis: for each claim state whether it is supported, unsupported, or uncertain, and cite the source you relied on. End with a one-paragraph overall assessment and your confidence (0-100%).",
     ]
       .filter(Boolean)
@@ -179,7 +182,7 @@ const validationRunFactCheck: Handler = async (req, res, ctx) => {
       prompt: gatherPrompt,
       webSearch: true,
       action: "validationFactCheckGather",
-      config: { temperature: 0.3, maxOutputTokens: 4096 },
+      config: { temperature: 0.3, maxOutputTokens: 8192 },
     });
 
     // ── Call 2 — structure the analysis into strict JSON (no web) ──────────
@@ -188,9 +191,10 @@ const validationRunFactCheck: Handler = async (req, res, ctx) => {
       "verdict must be one of: supported | unsupported | uncertain.",
       "overallConfidence is a number between 0 and 1.",
       "ratingFlags lists any scores/ratings that looked off (empty array if none).",
+      "Include one claim entry for EVERY distinct requirement/item assessed — do not omit or merge any.",
       "",
       "ANALYSIS:",
-      gather.text.slice(0, 8000),
+      gather.text.slice(0, 24000),
     ].join("\n");
 
     const structured = await runAIOperation({
@@ -199,7 +203,7 @@ const validationRunFactCheck: Handler = async (req, res, ctx) => {
       action: "validationFactCheckStructure",
       config: {
         temperature: 0.1,
-        maxOutputTokens: 4096,
+        maxOutputTokens: 8192,
         responseMimeType: "application/json",
         responseSchema: FACTCHECK_SCHEMA,
       },

@@ -46,7 +46,7 @@ export default function ValidateButton({
       setRunning(true);
       try {
         await gate.runFactCheck({
-          content: String(resolveArg(content) || "").slice(0, 12000),
+          content: String(resolveArg(content) || "").slice(0, 24000),
           contextId,
           label,
           ratingsContext: resolveArg(ratingsContext),

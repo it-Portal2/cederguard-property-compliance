@@ -1662,7 +1662,10 @@ export function ComplianceSetup() {
                     label="Compliance assessment"
                     content={() =>
                       (complianceItems || [])
-                        .map((i: any) => `${i.reg || i.name || i.id}: ${i.req || ""}`)
+                        .map(
+                          (i: any, idx: number) =>
+                            `${idx + 1}. ${i.reg || i.name || i.id}: ${String(i.req || "").slice(0, 280)}`,
+                        )
                         .join("\n")
                     }
                     ratingsContext={() =>
