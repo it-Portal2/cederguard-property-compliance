@@ -251,7 +251,16 @@ AIWriter.tsx                        AI content generation interface (drafting te
 #### Misc
 ```
 NotificationWrapper.tsx             react-hot-toast provider wrapper
-InfoTooltip.tsx                     Hover tooltip component
+InfoTooltip.tsx                     Hover tooltip component. Absolutely-positioned panel — fine inline,
+                                    but it gets CLIPPED inside a scroll/overflow container (e.g. a
+                                    DynamicTable cell). For tooltips inside tables use TrendingTooltip's
+                                    portal pattern instead.
+TrendingTooltip.tsx                 Portal-based hover tooltip for the "Trending" badge in the risk
+                                    tables. Renders its panel via createPortal to document.body with
+                                    position:fixed so it ESCAPES the table's overflow-x-auto clipping,
+                                    at z-40 — above the table (max z-30) but BELOW modals / confirm
+                                    dialogs / dropdown overlays (z-50). The reference pattern for any
+                                    tooltip that must overflow a scroll container.
 UserAvatar.tsx                      Shared user avatar: renders <img src={photoURL}> with onError
                                     fallback to a gradient initials badge. Three sizes (sm/md/lg).
                                     SINGLE SOURCE OF TRUTH for avatar rendering — Header, Sidebar,
@@ -537,6 +546,17 @@ riskMetrics.ts                     Shared risk-score / ALE helpers + thresholds 
                                    getGrossScore / getResidualScore / getGrossALE / getResidualALE /
                                    SEVERE_SCORE_THRESHOLD (= 19) / MAJOR_SCORE_THRESHOLD (= 12). Used by
                                    Dashboard, RiskBurnDown, RiskCallout, AIInquiryPopup.
+riskConversion.ts                  SINGLE SOURCE OF TRUTH for the Risk-to-Issue conversion alert system.
+                                   Pure module: `evaluateConversion(risk, allRisks)` → `{ isTrending,
+                                   score, reasons[], factors[] }` scoring 8 signals (severity, overdue,
+                                   stale review, escalated, residual-over-appetite, unmitigated,
+                                   probability-trend, dependency-cascade) into a plain-English "why".
+                                   Tunable constants: CONVERSION_MIN_FACTORS (= 2), STALE_REVIEW_DAYS
+                                   (= 90), PROB_TREND_MIN_SNAPSHOTS (= 2), CONVERSION_SEVERITY_THRESHOLD
+                                   (= MAJOR_SCORE_THRESHOLD), APPETITE_CEILING map. Also exports
+                                   `conversionAction(result)`. Imports scores ONLY from riskMetrics.ts;
+                                   never re-derives. Consumed by RiskRegister, ProgrammeRiskRegister,
+                                   RiskAlerts.
 ```
 
 #### `/src/lib/auth/` — Platform-agnostic auth bridge
@@ -1207,7 +1227,12 @@ User action → Component handler → useStore method → api.ts → /api endpoi
   - `getGrossALE(risk)` / `getResidualALE(risk)` → use stored ALE if present, else recompute from `impact × probability` (handles probability as decimal or percentage).
   - `SEVERE_SCORE_THRESHOLD = 19`, `MAJOR_SCORE_THRESHOLD = 12`.
 - Risk matrix cell colour bands always use `calculateMatrixScore(L, I)` from [`src/data/riskScoringMatrix.ts`](src/data/riskScoringMatrix.ts), never raw `L × I`.
-- `normalizeRisk` in [`src/store/useStore.ts`](src/store/useStore.ts) backfills missing `residualALE` / `grossALE` from `impact × probability` on every risk load — downstream KPI math relies on this.
+- `normalizeRisk` in [`src/store/useStore.ts`](src/store/useStore.ts) backfills missing `residualALE` / `grossALE` from `impact × probability` on every risk load — downstream KPI math relies on this. It ALSO (Risk-to-Issue conversion engine) defaults `dependencies` to `[]` and seeds one stable-dated baseline `probHistory` snapshot from the current score when empty — idempotent, runs on every read site.
+
+### Risk-to-Issue conversion conventions
+- **`RiskItem` carries two engine fields** ([`src/store/useStore.ts`](src/store/useStore.ts)): `dependencies?: string[]` (ids of other risks this one depends on) and `probHistory?: ProbSnapshot[]` (`{ date, grossScore, residualScore, residualProb? }` score snapshots over time). Both are backfilled by `normalizeRisk`; `updateRisk` appends a `probHistory` snapshot whenever the calibrated score changes (the baseline seeded at load means one upward re-score is enough to register a trend). New risks pass through `normalizeRisk` so they get the baseline too.
+- **All "is this risk trending toward an issue?" logic lives in [`src/lib/riskConversion.ts`](src/lib/riskConversion.ts).** Call `evaluateConversion(risk, allRisks)`; never re-implement the heuristics or hardcode the thresholds in a page. Retune the system by editing that file's constants. The engine excludes `Closed` / `convertedToIssue` risks. Scores come from `riskMetrics.ts` only.
+- **Surfaces (all read from the one engine):** RiskRegister + ProgrammeRiskRegister show a "Trending" badge (with `TrendingTooltip`), an orange row tint, and a "Trending to Issue" StatsCard; RiskAlerts has a "Conversion Watch" alert group + filter tile with a "Convert to issue" button wired to the existing `convertToIssue(riskId)` store action. The dependencies multi-select lives in `RiskModal`.
 
 ### Refresh / skeleton conventions (dashboard surfaces)
 - During `isRefreshing` (or context-switch loaders `isLoadingContent` / `loadingOverview`), every visible content surface should render a skeleton, not freeze with stale data.
@@ -1316,6 +1341,8 @@ Configured JSON-first in [apps/desktop/logger.cjs](apps/desktop/logger.cjs). Fil
 
 ### Standing rules for sweeps / refactors
 - **`PageHeader` is the ONLY way to add a page title.** Never add an ad-hoc `<h1>` or title block to an authenticated page. Props: `breadcrumbs` (first item = sidebar group name), `title`, optional `subtitle`, optional `actions` slot.
+- **Risk-to-Issue "trending" logic goes through [`src/lib/riskConversion.ts`](src/lib/riskConversion.ts) `evaluateConversion` ONLY.** Don't re-implement the heuristics or hardcode its thresholds in a page; retune via that file's constants. Scores via `riskMetrics.ts`, never inline.
+- **Tooltips inside a scroll/overflow container (e.g. a `DynamicTable` cell) must portal out** — use [`TrendingTooltip`](src/components/TrendingTooltip.tsx)'s pattern (`createPortal` to `document.body`, `position:fixed`, `z-40` so it sits above the table but below `z-50` modals/dialogs/dropdowns). The plain `InfoTooltip` gets clipped there.
 - **`PageActions` is the ONLY way to add a per-page context dropdown.** Pass `items: ActionItem[]` and `canManage: boolean`. Never roll a custom dropdown for page-level actions.
 - **`exportContextData` in [`src/lib/exportUtils.ts`](src/lib/exportUtils.ts) is the ONLY Excel export helper.** Never write inline XLSX logic in a page. Add new sheet types to `exportUtils.ts`.
 - **`ServiceManagementBar` is deleted.** Do not recreate it. Its MonthPicker and PageActions patterns replace it entirely.
