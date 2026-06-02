@@ -42,7 +42,7 @@ const itemVariants: Variants = {
 };
 
 export function AIControlSuggestions() {
-    const { risks, updateRisk, activeProject, activeProgramme, projectInfo, pendingMutations } = useStore();
+    const { risks, updateRisk, activeProject, activeProgramme, activeProjectId, activeProgrammeId, projectInfo, pendingMutations } = useStore();
     const isRiskPending = (id: string) => pendingMutations.has(`risk:${id}`);
     const [isAutoLoading,     setIsAutoLoading]     = useState(false);
     const [isManualLoading,   setIsManualLoading]   = useState(false);
@@ -55,7 +55,7 @@ export function AIControlSuggestions() {
     const highRisks = risks.filter(r => r.status === 'Open' && (r.residualRating || 0) >= 12);
 
     // Fact-Check / Validation gate (Q4=A) — one passing fact-check unlocks the Add buttons.
-    const mitigationCtxId = (activeProject as any)?.id || (activeProgramme as any)?.id || '';
+    const mitigationCtxId = activeProjectId || activeProgrammeId || (activeProject as any)?.id || (activeProgramme as any)?.id || '';
     const mitigationValidation = useStore((s) => s.validationsByKey[`mitigation:${mitigationCtxId}`] ?? null);
     const isMitigationValidationBlocked =
         !!mitigationCtxId &&
@@ -130,7 +130,21 @@ export function AIControlSuggestions() {
                 title="Mitigation & Control Strategy"
                 subtitle="Generate industrial-grade mitigation strategies for your project risk profile."
                 actions={
-                    <AnimatePresence>
+                    <div className="flex items-center gap-2">
+                        {mitigationCtxId && suggestedControls.length > 0 && (
+                            <ValidateButton
+                                surface="mitigation"
+                                targetId={mitigationCtxId}
+                                contextId={mitigationCtxId}
+                                label="Mitigation & control strategy"
+                                content={() =>
+                                    suggestedControls
+                                        .map((sc: any) => `${sc.riskTitle || sc.riskId}: ${(sc.suggestions || []).join('; ')}`)
+                                        .join('\n')
+                                }
+                            />
+                        )}
+                        <AnimatePresence>
                         {highRisks.length > 0 && (
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.75 }}
@@ -152,7 +166,8 @@ export function AIControlSuggestions() {
                                 </span>
                             </motion.div>
                         )}
-                    </AnimatePresence>
+                        </AnimatePresence>
+                    </div>
                 }
             />
 
@@ -493,22 +508,6 @@ export function AIControlSuggestions() {
                                     {suggestedControls.length} risks
                                 </motion.span>
                             </div>
-
-                            {mitigationCtxId && (
-                                <div className="px-0.5">
-                                    <ValidateButton
-                                        surface="mitigation"
-                                        targetId={mitigationCtxId}
-                                        contextId={mitigationCtxId}
-                                        label="Mitigation & control strategy"
-                                        content={() =>
-                                            suggestedControls
-                                                .map((sc: any) => `${sc.riskTitle || sc.riskId}: ${(sc.suggestions || []).join('; ')}`)
-                                                .join('\n')
-                                        }
-                                    />
-                                </div>
-                            )}
 
                             <motion.div
                                 variants={listVariants}
