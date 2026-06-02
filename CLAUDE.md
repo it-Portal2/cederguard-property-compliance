@@ -557,6 +557,17 @@ riskConversion.ts                  SINGLE SOURCE OF TRUTH for the Risk-to-Issue 
                                    `conversionAction(result)`. Imports scores ONLY from riskMetrics.ts;
                                    never re-derives. Consumed by RiskRegister, ProgrammeRiskRegister,
                                    RiskAlerts.
+validation.ts                      SINGLE SOURCE OF TRUTH for the Fact-Check / Validation feature
+                                   (pure, framework-agnostic). Types: `ValidationStatus`
+                                   (unchecked|awaiting_validation|validated|rejected), `ValidationSurface`
+                                   (risk|compliance|technical|mitigation|outlook|chat), `FactCheckResult`
+                                   (claims[] + ratingFlags[] + overallConfidence + summary),
+                                   `ValidationCitation`, `ValidationAttachment`, `ValidationRecord`.
+                                   Constant `CONFIDENCE_SOFT_FLAG` (= 0.85). Helpers `statusLabel`,
+                                   `isLowConfidence`, `canValidate(role)` (→ `isAtLeastPM`),
+                                   `validationKey(surface,targetId)`, `isApprovalBlocked(status)`.
+                                   Imports only client-safe `roles.ts`; the server route builds records
+                                   structurally (never imports this).
 ```
 
 #### `/src/lib/auth/` — Platform-agnostic auth bridge
@@ -621,6 +632,11 @@ useChatStream.ts                   AI-chat streaming hook. Wraps `openChatStream
 useFocusTrap.ts                    Modal/dialog focus trap.
 useHistoricalView.ts               Historical reporting view-state hook.
 useHistoricalMonthMulti.ts         Multi-month picker state for historical reporting.
+useValidationGate.ts               Fact-Check / Validation gate for a (surface, targetId). Loads the
+                                   validation record from the store, exposes `status`, `isValidated`,
+                                   `isBlocked` (= status !== 'validated'), `runFactCheck`, `refresh`.
+                                   Used by `<ValidateButton/>` and by each surface to block its
+                                   approve/submit action until validated.
 ```
 
 ### `/api/` — Backend (Vercel serverless)
@@ -656,6 +672,13 @@ lib/activityLog.ts                 SINGLE SOURCE OF TRUTH for user-activity / au
                                    kris) to log per-item create/update/delete by title (summarised
                                    above a 12-item threshold to avoid flooding). See the activity-logging
                                    convention below — ALWAYS `await` these BEFORE sending the response.
+lib/aiOperationRouter.ts           Cascading AI-operation transport (OpenRouter entries → free
+                                   auto-router → Gemini-direct safety-net) behind `runAIOperation`.
+                                   Editable (NOT routes/ai.ts). Supports `webSearch?: boolean` — when
+                                   set it enables OpenRouter's web plugin AND Gemini `googleSearch`
+                                   grounding, returning normalised `citations: WebCitation[]` on the
+                                   result (best-effort: a web failure yields `[]`, never throws). This
+                                   is the web-sourcing engine for the fact-check feature.
 routes/index.ts                    Aggregates all route handler maps
 routes/auth.ts                     API key generate/revoke, user account deletion
 routes/ai.ts                       Gemini calls with retry, dual-key fallback, quota handling.
@@ -676,6 +699,16 @@ routes/technicalAssurance.ts       TAC enquiry CRUD + attachments. `tacAttachFil
                                    stores URL on the enquiry's attachments array.
                                    `tacRemoveAttachment` deletes the GCS object then the Firestore
                                    entry.
+routes/validation.ts               Fact-Check / Validation engine. `validationRunFactCheck` runs the
+                                   TWO-CALL fact-check (Call 1 web-grounded gather via
+                                   `runAIOperation({ webSearch:true })`, Call 2 strict-JSON verdict —
+                                   NEVER touches routes/ai.ts) and persists a `ValidationRecord` to the
+                                   **`validations`** collection (deterministic id per tenant+surface+target;
+                                   status `awaiting_validation`). `validationSetStatus` (PM+ only;
+                                   idempotent — re-applying the same status is a no-op),
+                                   `validationGet` / `validationGetForContext` (equality-only filters →
+                                   no composite index), `validationAttachSource` / `validationRemoveAttachment`
+                                   (link or file via `uploadAsset`, 3 MB cap). All writes `logActivity`.
 __tests__/context.test.ts          Tests for API context creation
 __tests__/dispatcher.test.ts       Tests for action route dispatching
 ```
@@ -711,7 +744,7 @@ __tests__/dispatcher.test.ts       Tests for action route dispatching
 - **URL ↔ store sync**: At least 4 pages manually sync `searchParams.get('projectId')` with `setActiveProjectId` in separate `useEffect` calls — identical pattern repeated, could be one hook.
 
 ### Other Issues
-- `/src/hooks/` exists but is sparsely populated (4 hooks for chat-stream + focus-trap + historical reporting). Most cross-page repeated logic (URL↔store sync, filter state, etc.) is still inlined in components instead of factored into hooks.
+- `/src/hooks/` is sparsely populated (chat-stream, focus-trap, historical reporting, validation gate). Most cross-page repeated logic (URL↔store sync, filter state, etc.) is still inlined in components instead of factored into hooks.
 - AI prompt strings (~100 lines each) hardcoded in `aiService.ts` with manual JSON healing (`parseAIResponse`) — fragile and untestable.
 - Only 2 test files exist for the entire application (`context.test.ts`, `dispatcher.test.ts`) — no component tests, no store tests, no utility tests.
 - Magic numbers and status strings scattered (e.g., timeout `120000`, statuses `'Verified'`/`'Pending'`/`'Open'`) instead of named constants.
@@ -1082,9 +1115,9 @@ Auth: Firebase ID token in Authorization header
 - **API route files**: camelCase — `auth.ts`, `compliance.ts`, `projects.ts`
 
 ### Folder Structure Patterns
-- Feature sub-folders inside `components/` are lowercase: `admin/`, `compliance/`, `common/`, `public/`, `governance/`, `technicalAssurance/`, `historicalReporting/`, `table/`
+- Feature sub-folders inside `components/` are lowercase: `admin/`, `compliance/`, `common/`, `public/`, `governance/`, `technicalAssurance/`, `historicalReporting/`, `table/`, `validation/`
 - Most route-level pages are flat in `src/pages/`. The exceptions: `src/pages/governance/` (12 pages) and `src/pages/technicalAssurance/` (4 pages) — subfoldered, so they import shared modules at two-level depth (`'../../components/...'`).
-- `/src/hooks/` exists with 4 hooks (useChatStream, useFocusTrap, useHistoricalView, useHistoricalMonthMulti) — new cross-page hooks go here
+- `/src/hooks/` holds useChatStream, useFocusTrap, useHistoricalView, useHistoricalMonthMulti, useValidationGate — new cross-page hooks go here
 - No `contexts/` directory — all context via Zustand store
 - Backend under `/api/` with `lib/` and `routes/` sub-folders
 - Static data under `/src/data/`; app-wide constants under `/src/constants/`
@@ -1234,6 +1267,15 @@ User action → Component handler → useStore method → api.ts → /api endpoi
 - **All "is this risk trending toward an issue?" logic lives in [`src/lib/riskConversion.ts`](src/lib/riskConversion.ts).** Call `evaluateConversion(risk, allRisks)`; never re-implement the heuristics or hardcode the thresholds in a page. Retune the system by editing that file's constants. The engine excludes `Closed` / `convertedToIssue` risks. Scores come from `riskMetrics.ts` only.
 - **Surfaces (all read from the one engine):** RiskRegister + ProgrammeRiskRegister show a "Trending" badge (with `TrendingTooltip`), an orange row tint, and a "Trending to Issue" StatsCard; RiskAlerts has a "Conversion Watch" alert group + filter tile with a "Convert to issue" button wired to the existing `convertToIssue(riskId)` store action. The dependencies multi-select lives in `RiskModal`.
 
+### Fact-Check / Validation conventions
+The "Fact Check / Validate" layer sits ON TOP of every AI output (additive — existing flows are untouched). It runs an AI fact-check, attaches sources, flags low confidence, and **blocks final approval until a PM+ validates**.
+- **Types/status/threshold live in [`src/lib/validation.ts`](src/lib/validation.ts) ONLY** (pure module). Don't redefine `ValidationStatus`, `FactCheckResult`, or hardcode the soft-flag threshold — import `CONFIDENCE_SOFT_FLAG` / the helpers.
+- **One Firestore collection: `validations`** — one `ValidationRecord` per `(tenant, surface, target)`, deterministic doc id (re-running a fact-check overwrites; flipping status is allowed, re-applying the same status is a server-side no-op). Read back by `validationGet` / `validationGetForContext`. Do NOT add a parallel collection.
+- **The AI fact-check is a TWO-CALL pattern, in [`api/routes/validation.ts`](api/routes/validation.ts):** Call 1 = web-grounded gather via `runAIOperation({ webSearch:true })` (free-form text), Call 2 = strict-JSON verdict via `runAIOperation` (responseSchema, no web) healed by `parseAIResponse`. This keeps JSON reliable and behaves identically on the OpenRouter→Gemini failover. **Never** route fact-check AI through `api/routes/ai.ts` (out of bounds) — always `aiOperationRouter`.
+- **Web sourcing + citations come from `aiOperationRouter` `webSearch`** (OpenRouter web plugin + Gemini `googleSearch`, normalised to `WebCitation[]`, best-effort). The regulations corpus has NO source URLs, so the AI must never fabricate links — clickable sources are either web-search results or user-attached links/files.
+- **Adding a gate to a NEW AI surface:** render [`<ValidateButton surface=… targetId=… content=… />`](src/components/validation/ValidateButton.tsx) near the result, and gate the surface's approve/submit action on `useValidationGate(surface, targetId).isBlocked` (= status !== 'validated'). For surfaces with no single approval (mitigation/outlook), one passing fact-check unlocks the per-item "Add" actions. Chat is **advisory** (verify + sources + log, no block — no persisted record to approve).
+- **PM and above validate** (`canValidate` → `isAtLeastPM`); the server re-checks the role (it can't import `roles.ts`, so it mirrors the PM+ set inline). Every fact-check / validate / reject / attach `logActivity`s (category `update`/`approve`), awaited before the response.
+
 ### Refresh / skeleton conventions (dashboard surfaces)
 - During `isRefreshing` (or context-switch loaders `isLoadingContent` / `loadingOverview`), every visible content surface should render a skeleton, not freeze with stale data.
 - Setup-pending CTAs (`!isComplianceSetup || !isRiskSetup`) must be **gated on `!isLoadingContent && !loadingOverview && !isRefreshing`** — otherwise they flash during the gap between previous-context-clear and new-context-load.
@@ -1342,6 +1384,7 @@ Configured JSON-first in [apps/desktop/logger.cjs](apps/desktop/logger.cjs). Fil
 ### Standing rules for sweeps / refactors
 - **`PageHeader` is the ONLY way to add a page title.** Never add an ad-hoc `<h1>` or title block to an authenticated page. Props: `breadcrumbs` (first item = sidebar group name), `title`, optional `subtitle`, optional `actions` slot.
 - **Risk-to-Issue "trending" logic goes through [`src/lib/riskConversion.ts`](src/lib/riskConversion.ts) `evaluateConversion` ONLY.** Don't re-implement the heuristics or hardcode its thresholds in a page; retune via that file's constants. Scores via `riskMetrics.ts`, never inline.
+- **Fact-Check / Validation goes through [`src/lib/validation.ts`](src/lib/validation.ts) types + [`useValidationGate`](src/hooks/useValidationGate.ts) + [`<ValidateButton/>`](src/components/validation/ValidateButton.tsx).** One `validations` collection; the AI fact-check is the two-call pattern in [`api/routes/validation.ts`](api/routes/validation.ts) via `aiOperationRouter` (`webSearch`), NEVER `api/routes/ai.ts`. PM+ validates; approval blocked until validated; everything `logActivity`s. Don't fork the types, add a parallel collection, or hardcode the confidence threshold.
 - **Tooltips inside a scroll/overflow container (e.g. a `DynamicTable` cell) must portal out** — use [`TrendingTooltip`](src/components/TrendingTooltip.tsx)'s pattern (`createPortal` to `document.body`, `position:fixed`, `z-40` so it sits above the table but below `z-50` modals/dialogs/dropdowns). The plain `InfoTooltip` gets clipped there.
 - **`PageActions` is the ONLY way to add a per-page context dropdown.** Pass `items: ActionItem[]` and `canManage: boolean`. Never roll a custom dropdown for page-level actions.
 - **`exportContextData` in [`src/lib/exportUtils.ts`](src/lib/exportUtils.ts) is the ONLY Excel export helper.** Never write inline XLSX logic in a page. Add new sheet types to `exportUtils.ts`.
