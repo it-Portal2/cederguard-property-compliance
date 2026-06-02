@@ -6,7 +6,7 @@
 import { useState } from "react";
 import { clsx } from "clsx";
 import toast from "react-hot-toast";
-import { ShieldCheck, ShieldAlert, ShieldQuestion, Loader2 } from "lucide-react";
+import { ShieldCheck, ShieldAlert, Sparkles, Loader2 } from "lucide-react";
 import { useValidationGate } from "../../hooks/useValidationGate";
 import FactCheckPanel from "./FactCheckPanel";
 
@@ -59,14 +59,21 @@ export default function ValidateButton({
     }
   };
 
+  // The "unchecked" state is the call-to-action that unblocks approval, so it
+  // is deliberately the most eye-catching (gradient + glow + pulsing dot).
   const pill =
     gate.status === "validated"
       ? { Icon: ShieldCheck, cls: "text-emerald-700 bg-emerald-50 border-emerald-200", text: "Validated" }
       : gate.status === "awaiting_validation"
-        ? { Icon: ShieldAlert, cls: "text-amber-700 bg-amber-50 border-amber-200", text: "Awaiting validation" }
+        ? { Icon: ShieldAlert, cls: "text-amber-800 bg-amber-100 border-amber-300", text: "Awaiting validation" }
         : gate.status === "rejected"
           ? { Icon: ShieldAlert, cls: "text-red-700 bg-red-50 border-red-200", text: "Rejected" }
-          : { Icon: ShieldQuestion, cls: "text-slate-700 bg-white border-slate-200", text: "Fact-check" };
+          : {
+              Icon: Sparkles,
+              cls: "text-white bg-gradient-to-r from-indigo-600 to-violet-600 border-transparent shadow-md shadow-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/40 hover:-translate-y-0.5",
+              text: "Fact-check",
+            };
+  const isCta = gate.status === "unchecked";
   const Icon = running ? Loader2 : pill.Icon;
 
   return (
@@ -77,11 +84,19 @@ export default function ValidateButton({
         disabled={disabled}
         title="Fact-check & validate before approving"
         className={clsx(
-          "inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border transition hover:shadow-sm disabled:opacity-50",
+          "relative inline-flex items-center gap-1.5 text-sm rounded-lg border transition-all duration-200 disabled:opacity-50",
+          isCta ? "font-semibold px-3.5 py-2" : "font-medium px-3 py-1.5 hover:shadow-sm",
           pill.cls,
           className,
         )}
       >
+        {/* Pulsing attention dot — only on the call-to-action state. */}
+        {isCta && !running && (
+          <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-75" />
+            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-violet-300" />
+          </span>
+        )}
         <Icon className={clsx("w-4 h-4", running && "animate-spin")} />
         {running ? "Checking…" : pill.text}
       </button>
