@@ -36,7 +36,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { RiskModal } from "../components/RiskModal";
-import { InfoTooltip } from "../components/InfoTooltip";
+import { TrendingTooltip } from "../components/TrendingTooltip";
 import {
   evaluateConversion,
   type ConversionResult,
@@ -827,20 +827,7 @@ export function RiskRegister() {
             {trending && !r.convertedToIssue && (
               <span className="px-2 py-0.5 bg-orange-100 text-orange-700 border border-orange-200 rounded font-mono text-[10px] font-medium flex items-center gap-1 shadow-sm shadow-orange-200/50 uppercase tracking-wide">
                 <TrendingUp className="w-2.5 h-2.5" /> Trending
-                <InfoTooltip
-                  content={
-                    <div>
-                      <div className="font-semibold mb-1">
-                        Trending toward an issue — why:
-                      </div>
-                      <ul className="list-disc pl-4 space-y-0.5">
-                        {(conv?.reasons || []).map((reason, i) => (
-                          <li key={i}>{reason}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  }
-                />
+                <TrendingTooltip reasons={conv?.reasons || []} />
               </span>
             )}
             {!r.escalated && !r.convertedToIssue && !trending && (
