@@ -1,5 +1,6 @@
 import { ApiContext } from '../lib/context.js';
 import crypto from 'crypto';
+import { logActivity } from '../lib/activityLog.js';
 
 export const authRoutes: Record<string, (req: any, res: any, ctx: ApiContext) => Promise<any>> = {
   generateApiKey: async (req, res, ctx) => {
@@ -20,13 +21,13 @@ export const authRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
       createdAt: new Date().toISOString()
     });
 
-    db.collection('activityLogs').add({ 
-      type: 'api_key_created', 
-      uid, 
-      email, 
-      timestamp: new Date().toISOString() 
-    }).catch(console.error);
-    
+    await logActivity(ctx, 'api_key_created', {
+      category: 'auth',
+      entityType: 'apiKey',
+      entityId: token.slice(0, 12) + '…',
+      entityName: (typeof name === 'string' ? name.trim().slice(0, 100) : '') || 'API Key',
+    });
+
     return res.status(200).json({ success: true, key: token });
   },
 
@@ -54,13 +55,14 @@ export const authRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
 
     const keyDoc = await db.collection('apiKeys').doc(keyId).get();
     if (keyDoc.exists && keyDoc.data()?.uid === uid) {
+      const keyName = keyDoc.data()?.name || 'API Key';
       await db.collection('apiKeys').doc(keyId).delete();
-      db.collection('activityLogs').add({ 
-        type: 'api_key_revoked', 
-        uid, 
-        email, 
-        timestamp: new Date().toISOString() 
-      }).catch(console.error);
+      await logActivity(ctx, 'api_key_revoked', {
+        category: 'auth',
+        entityType: 'apiKey',
+        entityId: String(keyId).slice(0, 12) + '…',
+        entityName: keyName,
+      });
     }
     return res.status(200).json({ success: true });
   },
@@ -129,13 +131,13 @@ export const authRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
     }
 
     // 6. Log deletion
-    db.collection('activityLogs').add({
-       type: 'account_deleted',
-       uid, 
-       email, 
-       targetUid: uidToDelete,
-       timestamp: new Date().toISOString()
-    }).catch(console.error);
+    await logActivity(ctx, 'account_deleted', {
+      category: 'delete',
+      entityType: 'user',
+      entityId: uidToDelete,
+      entityName: uidToDelete === uid ? (email || uid) : uidToDelete,
+      details: { selfDelete: uidToDelete === uid },
+    });
 
     return res.status(200).json({ success: true, message: 'User account completely erased.' });
   },

@@ -16,6 +16,7 @@
 
 import { FieldValue } from "firebase-admin/firestore";
 import type { ApiContext } from "./context";
+import { logSystemActivity } from "./activityLog.js";
 
 export type SevereEscalationRouteKind = "project_sd" | "programme_sd" | "pgm_fallback";
 
@@ -217,22 +218,18 @@ export async function writeSevereEscalations(
     return { alertCount: 0, recipientCount: 0, riskIds: [] };
   }
 
-  // Best-effort activity log entry — mirrors the existing saveData pattern.
-  ctx.db
-    .collection("activityLogs")
-    .add({
-      type: "risks_severe_escalation",
-      uid: ctx.uid ?? null,
-      email: ctx.email ?? null,
-      clientId: ctx.primaryUid,
-      contextId,
-      contextKind,
+  // System activity entry — automatic escalation triggered by a risk save.
+  await logSystemActivity(ctx, "risks_severe_escalation", {
+    entityType: contextKind,
+    entityId: contextId,
+    entityName: `Severe risk escalation (${summary.alertCount})`,
+    details: {
       severeRiskCount: summary.alertCount,
       recipientCount: summary.recipientCount,
       riskIds: summary.riskIds,
-      timestamp: new Date().toISOString(),
-    })
-    .catch((err) => console.error("[rsc-d] activityLogs write failed:", err));
+      triggeredBy: "saveData",
+    },
+  });
 
   return summary;
 }

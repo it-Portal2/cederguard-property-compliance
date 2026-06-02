@@ -13,6 +13,7 @@ import {
   type ChatModelEntry,
 } from '../lib/aiModelConfig.js';
 import { fetchOpenRouterCatalog } from '../lib/openRouterCatalog.js';
+import { logActivity } from '../lib/activityLog.js';
 
 const canonicalOf = (role?: string | null): string => {
   switch (role) {
@@ -54,7 +55,13 @@ export const adminRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =
     }
 
     await db.collection('projects').doc(id).delete();
-    db.collection('activityLogs').add({ type: 'admin_project_deleted', uid, email, projectId: id, timestamp: new Date().toISOString() }).catch(console.error);
+    await logActivity(ctx, 'admin_project_deleted', {
+      category: 'delete',
+      entityType: 'project',
+      entityId: id,
+      entityName: projectData.name ?? null,
+      details: { adminAction: true },
+    });
     return res.status(200).json({ success: true });
   },
 
@@ -74,7 +81,13 @@ export const adminRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =
     }
 
     await db.collection('programmes').doc(id).delete();
-    db.collection('activityLogs').add({ type: 'admin_programme_deleted', uid, email, id, timestamp: new Date().toISOString() }).catch(console.error);
+    await logActivity(ctx, 'admin_programme_deleted', {
+      category: 'delete',
+      entityType: 'programme',
+      entityId: id,
+      entityName: progData.name ?? null,
+      details: { adminAction: true },
+    });
     return res.status(200).json({ success: true });
   },
 
@@ -115,14 +128,19 @@ export const adminRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =
       updatedAt: FieldValue.serverTimestamp()
     });
 
-    db.collection('activityLogs').add({
-        type: 'admin_project_transferred',
-        uid, email, 
-        projectId: id, 
-        targetUid: targetUser.uid,
-        timestamp: new Date().toISOString() 
-    }).catch(console.error);
-    
+    await logActivity(ctx, 'admin_project_transferred', {
+      category: 'update',
+      entityType: 'project',
+      entityId: id,
+      entityName: projectData.name ?? null,
+      details: {
+        adminAction: true,
+        fromOwner: projectData.userId ?? null,
+        toOwner: targetUser.uid,
+        toOwnerEmail: targetUser.email ?? null,
+      },
+    });
+
     return res.status(200).json({ success: true });
   },
 
@@ -160,14 +178,19 @@ export const adminRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =
       updatedAt: FieldValue.serverTimestamp()
     });
 
-    db.collection('activityLogs').add({
-        type: 'admin_programme_transferred',
-        uid, email, 
-        id, 
-        targetUid: targetUser.uid,
-        timestamp: new Date().toISOString() 
-    }).catch(console.error);
-    
+    await logActivity(ctx, 'admin_programme_transferred', {
+      category: 'update',
+      entityType: 'programme',
+      entityId: id,
+      entityName: progData.name ?? null,
+      details: {
+        adminAction: true,
+        fromOwner: progData.userId ?? null,
+        toOwner: targetUser.uid,
+        toOwnerEmail: targetUser.email ?? null,
+      },
+    });
+
     return res.status(200).json({ success: true });
   },
 
@@ -267,14 +290,13 @@ export const adminRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =
       updatedAt: new Date().toISOString()
     }, { merge: true });
 
-    // Log this admin action
-    await db.collection('activityLogs').add({
-      type: 'admin_user_update',
-      adminUid: uid,
-      adminEmail: email,
-      targetUid,
-      updates,
-      timestamp: new Date().toISOString()
+    const updatedUser = (await db.collection('users').doc(targetUid).get()).data() || {};
+    await logActivity(ctx, 'admin_user_update', {
+      category: 'update',
+      entityType: 'user',
+      entityId: targetUid,
+      entityName: updatedUser.displayName || updatedUser.email || targetUid,
+      details: { adminAction: true, changedFields: Object.keys(updates || {}) },
     });
 
     return res.status(200).json({ success: true });
@@ -304,14 +326,13 @@ export const adminRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =
       updatedAt: new Date().toISOString(),
     }, { merge: true });
 
-    db.collection('activityLogs').add({
-      type: 'admin_supervisor_assigned',
-      uid,
-      email,
-      targetUid,
-      supervisorUid: supervisorUid || null,
-      timestamp: new Date().toISOString(),
-    }).catch(console.error);
+    await logActivity(ctx, 'admin_supervisor_assigned', {
+      category: 'update',
+      entityType: 'user',
+      entityId: targetUid,
+      entityName: targetDoc.data()?.displayName || targetDoc.data()?.email || targetUid,
+      details: { adminAction: true, supervisorUid: supervisorUid || null },
+    });
 
     return res.status(200).json({ success: true });
   },
@@ -356,16 +377,13 @@ export const adminRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =
 
     await db.collection('users').doc(targetUid).set(updates, { merge: true });
 
-    db.collection('activityLogs').add({
-      type: 'admin_user_promoted',
-      uid,
-      email,
-      targetUid,
-      fromRole,
-      toRole: newRole,
-      pmLevel: updates.pmLevel || null,
-      timestamp: new Date().toISOString(),
-    }).catch(console.error);
+    await logActivity(ctx, 'admin_user_promoted', {
+      category: 'update',
+      entityType: 'user',
+      entityId: targetUid,
+      entityName: targetData.displayName || targetData.email || targetUid,
+      details: { adminAction: true, fromRole, toRole: newRole, pmLevel: updates.pmLevel || null },
+    });
 
     return res.status(200).json({ success: true });
   },
@@ -374,7 +392,12 @@ export const adminRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =
     const { db, isAdmin } = ctx;
     if (!isAdmin) return res.status(403).json({ error: 'Forbidden' });
 
-    const snap = await db.collection('activityLogs').orderBy('timestamp', 'desc').limit(50).get();
+    // Allow the client to request a larger window (the Observability/Activity
+    // table paginates + filters client-side). Default 500, hard cap 2000.
+    const requested = Number(req.body?.limit);
+    const max = Math.min(Math.max(Number.isFinite(requested) ? requested : 500, 1), 2000);
+
+    const snap = await db.collection('activityLogs').orderBy('timestamp', 'desc').limit(max).get();
     const logs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     return res.status(200).json({ success: true, logs });
   },
@@ -453,11 +476,13 @@ export const adminRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =
       updatedBy: email
     });
 
-    db.collection('activityLogs').add({
-      type: 'pricing_config_updated',
-      uid: ctx.uid, email,
-      timestamp: new Date().toISOString()
-    }).catch(console.error);
+    await logActivity(ctx, 'pricing_config_updated', {
+      category: 'update',
+      entityType: 'config',
+      entityId: 'pricingConfig',
+      entityName: 'Pricing configuration',
+      details: { adminAction: true },
+    });
 
     return res.status(200).json({ success: true });
   },
@@ -474,6 +499,14 @@ export const adminRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =
       createdBy: uid,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
+    });
+
+    await logActivity(ctx, 'invoice_created', {
+      category: 'create',
+      entityType: 'invoice',
+      entityId: docRef.id,
+      entityName: invoice.invoiceNumber || invoice.number || docRef.id,
+      details: { adminAction: true },
     });
 
     return res.status(200).json({ success: true, id: docRef.id });
@@ -495,14 +528,16 @@ export const adminRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =
     const { id } = req.body;
     if (!id) return res.status(400).json({ error: 'Missing invoice id' });
 
+    const deletedInvoice = (await db.collection('invoices').doc(id).get()).data();
     await db.collection('invoices').doc(id).delete();
 
-    db.collection('activityLogs').add({
-      type: 'invoice_deleted',
-      uid, email,
-      invoiceId: id,
-      timestamp: new Date().toISOString()
-    }).catch(console.error);
+    await logActivity(ctx, 'invoice_deleted', {
+      category: 'delete',
+      entityType: 'invoice',
+      entityId: id,
+      entityName: deletedInvoice?.invoiceNumber || deletedInvoice?.number || id,
+      details: { adminAction: true },
+    });
 
     return res.status(200).json({ success: true });
   },

@@ -1,6 +1,7 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { ApiContext } from '../lib/context.js';
 import { ROLE_STRINGS, PM_LEVELS } from '../../src/lib/roleConstants.js';
+import { logActivity } from '../lib/activityLog.js';
 
 const canonicalOf = (role?: string | null): string => {
   switch (role) {
@@ -73,15 +74,13 @@ export const teamRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
       createdAt: new Date().toISOString(),
     });
 
-    db.collection('activityLogs').add({
-      type: 'pm_invited',
-      uid,
-      email,
-      pmEmail: normalizedEmail,
-      pmLevel: level,
-      programmeIds: validProgrammeIds,
-      timestamp: new Date().toISOString(),
-    }).catch(console.error);
+    await logActivity(ctx, 'pm_invited', {
+      category: 'create',
+      entityType: 'invitation',
+      entityId: normalizedEmail,
+      entityName: pmName || normalizedEmail,
+      details: { invitedEmail: normalizedEmail, pmLevel: level, programmeIds: validProgrammeIds },
+    });
 
     return res.status(200).json({ success: true });
   },
@@ -173,13 +172,13 @@ export const teamRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
     }
 
     await db.collection('invitations').doc(inviteId).set(updates, { merge: true });
-    db.collection('activityLogs').add({
-      type: 'invite_updated',
-      uid,
-      email,
-      inviteEmail: invData.email,
-      timestamp: new Date().toISOString(),
-    }).catch(console.error);
+    await logActivity(ctx, 'invite_updated', {
+      category: 'update',
+      entityType: 'invitation',
+      entityId: inviteId,
+      entityName: invData.name || invData.email,
+      details: { invitedEmail: invData.email, changedFields: Object.keys(updates) },
+    });
 
     return res.status(200).json({ success: true });
   },
@@ -199,13 +198,13 @@ export const teamRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
     }
 
     await db.collection('invitations').doc(inviteId).delete();
-    db.collection('activityLogs').add({
-      type: 'invite_cancelled',
-      uid,
-      email,
-      inviteEmail: invData.email,
-      timestamp: new Date().toISOString(),
-    }).catch(console.error);
+    await logActivity(ctx, 'invite_cancelled', {
+      category: 'delete',
+      entityType: 'invitation',
+      entityId: inviteId,
+      entityName: invData.name || invData.email,
+      details: { invitedEmail: invData.email },
+    });
 
     return res.status(200).json({ success: true });
   },
@@ -230,13 +229,13 @@ export const teamRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
     }
 
     await db.collection('users').doc(targetUid).update({ clientId: null });
-    db.collection('activityLogs').add({
-      type: 'team_member_removed',
-      uid,
-      email,
-      targetUid,
-      timestamp: new Date().toISOString(),
-    }).catch(console.error);
+    await logActivity(ctx, 'team_member_removed', {
+      category: 'delete',
+      entityType: 'user',
+      entityId: targetUid,
+      entityName: targetData.displayName || targetData.email || targetUid,
+      details: { removedRole: targetData.role ?? null },
+    });
 
     return res.status(200).json({ success: true });
   },
@@ -259,15 +258,15 @@ export const teamRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
       return res.status(403).json({ error: 'Forbidden: This user does not belong to your organisation.' });
     }
 
+    const roleTargetData = targetDoc.data() || {};
     await db.collection('users').doc(targetUid).update({ role });
-    db.collection('activityLogs').add({
-      type: 'team_member_role_updated',
-      uid,
-      email,
-      targetUid,
-      role,
-      timestamp: new Date().toISOString(),
-    }).catch(console.error);
+    await logActivity(ctx, 'team_member_role_updated', {
+      category: 'update',
+      entityType: 'user',
+      entityId: targetUid,
+      entityName: roleTargetData.displayName || roleTargetData.email || targetUid,
+      details: { fromRole: roleTargetData.role ?? null, toRole: role },
+    });
 
     return res.status(200).json({ success: true });
   },
@@ -509,14 +508,13 @@ export const teamRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
       await db.collection('users').doc(targetUserId).update({ supervisorUid: uid });
     }
 
-    db.collection('activityLogs').add({
-      type: 'pm_added_to_programme',
-      uid,
-      email,
-      targetUid: targetUserId,
-      programmeId,
-      timestamp: new Date().toISOString(),
-    }).catch(console.error);
+    await logActivity(ctx, 'pm_added_to_programme', {
+      category: 'update',
+      entityType: 'user',
+      entityId: targetUserId,
+      entityName: targetData.displayName || targetData.email || targetUserId,
+      details: { programmeId },
+    });
 
     return res.status(200).json({ success: true });
   },
@@ -544,14 +542,14 @@ export const teamRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
       assignedPMIds: FieldValue.arrayRemove(targetUserId),
     });
 
-    db.collection('activityLogs').add({
-      type: 'pm_removed_from_programme',
-      uid,
-      email,
-      targetUid: targetUserId,
-      programmeId,
-      timestamp: new Date().toISOString(),
-    }).catch(console.error);
+    const rmTarget = (await db.collection('users').doc(targetUserId).get()).data() || {};
+    await logActivity(ctx, 'pm_removed_from_programme', {
+      category: 'update',
+      entityType: 'user',
+      entityId: targetUserId,
+      entityName: rmTarget.displayName || rmTarget.email || targetUserId,
+      details: { programmeId },
+    });
 
     return res.status(200).json({ success: true });
   },
@@ -577,14 +575,13 @@ export const teamRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
 
     await db.collection('users').doc(targetUid).update({ pmLevel });
 
-    db.collection('activityLogs').add({
-      type: 'pm_level_updated',
-      uid,
-      email,
-      targetUid,
-      pmLevel,
-      timestamp: new Date().toISOString(),
-    }).catch(console.error);
+    await logActivity(ctx, 'pm_level_updated', {
+      category: 'update',
+      entityType: 'user',
+      entityId: targetUid,
+      entityName: targetData.displayName || targetData.email || targetUid,
+      details: { fromPmLevel: targetData.pmLevel ?? null, toPmLevel: pmLevel },
+    });
 
     return res.status(200).json({ success: true });
   },
@@ -621,14 +618,13 @@ export const teamRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
       supervisorUid: supervisorUid || null,
     });
 
-    db.collection('activityLogs').add({
-      type: 'supervisor_assigned',
-      uid,
-      email,
-      targetUid,
-      supervisorUid: supervisorUid || null,
-      timestamp: new Date().toISOString(),
-    }).catch(console.error);
+    await logActivity(ctx, 'supervisor_assigned', {
+      category: 'update',
+      entityType: 'user',
+      entityId: targetUid,
+      entityName: targetData.displayName || targetData.email || targetUid,
+      details: { supervisorUid: supervisorUid || null },
+    });
 
     return res.status(200).json({ success: true });
   },
@@ -702,12 +698,17 @@ export const teamRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
       await batch.commit();
     }
 
-    db.collection('activityLogs').add({
-      type: 'workspace_reset',
-      uid,
-      email,
-      timestamp: new Date().toISOString(),
-    }).catch(console.error);
+    await logActivity(ctx, 'workspace_reset', {
+      category: 'delete',
+      entityType: 'workspace',
+      entityId: ctx.primaryUid,
+      entityName: 'Workspace data',
+      details: {
+        projectsDeleted: projectsSnap.size,
+        programmesDeleted: programmesSnap.size,
+        invitesDeleted: invitesSnap.size,
+      },
+    });
 
     return res.status(200).json({ success: true });
   },

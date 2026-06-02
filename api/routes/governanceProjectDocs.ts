@@ -23,6 +23,7 @@
 // Versions: sub-collection `projectGovernanceDocs/{docId}/versions/{n}`.
 
 import type { ApiContext } from '../lib/context.js';
+import { logActivity } from '../lib/activityLog.js';
 import {
   SEED_PROJECT_DOCS,
   ALL_PROJECT_DOC_STATUSES,
@@ -326,6 +327,12 @@ async function governanceUpsertProjectDoc(req: any, res: any, ctx: ApiContext) {
       newState: latest ?? null,
       changeKind: exists ? 'update' : 'create',
     });
+    await logActivity(ctx, exists ? 'project_doc_updated' : 'project_doc_created', {
+      category: exists ? 'update' : 'create',
+      entityType: 'projectGovernanceDoc',
+      entityId: docId,
+      entityName: latest?.title || latest?.name || docId,
+    });
     return res
       .status(200)
       .json({ success: true, item: { _id: ref.id, ...latest } });
@@ -443,6 +450,12 @@ async function governancePublishProjectDoc(
       prevState: 'prevState' in result ? (result.prevState ?? null) : null,
       newState: latest ?? null,
       changeKind: 'update',
+    });
+    await logActivity(ctx, 'project_doc_published', {
+      category: 'approve',
+      entityType: 'projectGovernanceDoc',
+      entityId: docId,
+      entityName: latest?.title || latest?.name || docId,
     });
     return res
       .status(200)
@@ -572,6 +585,13 @@ async function governanceSoftDeleteProjectDoc(
       prevState: data,
       newState: latest ?? null,
       changeKind: wantRestore ? 'restore' : 'softDelete',
+    });
+    await logActivity(ctx, wantRestore ? 'project_doc_restored' : 'project_doc_deleted', {
+      category: wantRestore ? 'update' : 'delete',
+      entityType: 'projectGovernanceDoc',
+      entityId: docId,
+      entityName: latest?.title || latest?.name || docId,
+      details: wantRestore ? undefined : { reason: trimmedReason },
     });
     return res
       .status(200)

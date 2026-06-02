@@ -33,6 +33,7 @@ import { uploadAsset, readAssetAsDataUri } from '../lib/storage.js';
 import { ensureFpItemFromReport } from './governanceForwardPlan.js';
 import { appendHistoryRow } from '../lib/historyRows.js';
 import type { ChangeKind } from '../../src/types/historicalReporting.js';
+import { logActivity } from '../lib/activityLog.js';
 
 const REPORT_ID_RE = /^[a-z0-9_-]{1,80}$/i;
 
@@ -324,6 +325,12 @@ async function governanceGetReport(req: any, res: any, ctx: ApiContext) {
         console.error('[reports] firstViewedBySpmAt mark failed:', markErr);
       }
     }
+    await logActivity(ctx, 'report_viewed', {
+      category: 'read',
+      entityType: 'report',
+      entityId: reportId,
+      entityName: data.title || reportId,
+    });
     return res.status(200).json({ success: true, item: { _id: snap.id, ...data } });
   } catch (e: any) {
     console.error('[governanceGetReport] failed:', e);
@@ -526,6 +533,12 @@ async function governanceUpsertReport(req: any, res: any, ctx: ApiContext) {
       }
     }
 
+    await logActivity(ctx, exists ? 'report_updated' : 'report_created', {
+      category: exists ? 'update' : 'create',
+      entityType: 'report',
+      entityId: reportId,
+      entityName: latest?.title || reportId,
+    });
     return res.status(200).json({ success: true, item: { _id: ref.id, ...latest } });
   } catch (e: any) {
     console.error('[governanceUpsertReport] failed:', e);
@@ -607,6 +620,13 @@ async function governanceSoftDeleteReport(req: any, res: any, ctx: ApiContext) {
       prevState: data,
       newState: latest ?? null,
       changeKind: wantRestore ? 'restore' : 'softDelete',
+    });
+    await logActivity(ctx, wantRestore ? 'report_restored' : 'report_deleted', {
+      category: wantRestore ? 'update' : 'delete',
+      entityType: 'report',
+      entityId: reportId,
+      entityName: latest?.title || reportId,
+      details: wantRestore ? undefined : { reason: trimmedReason },
     });
     return res.status(200).json({ success: true, item: { _id: ref.id, ...latest } });
   } catch (e: any) {
@@ -936,6 +956,28 @@ async function writeReportAuditEvent(
   } catch (err) {
     // Audit failures don't roll back the transition — log + continue.
     console.error('[reports] audit write failed:', err);
+  }
+
+  // Mirror into the unified Activity Log so report approvals/sign-offs show up
+  // alongside all other user activity (with the report's title as the "what").
+  try {
+    let reportTitle: string | null = null;
+    try {
+      reportTitle =
+        (await ctx.db.collection('reports').doc(reportDocId(ctx, meta.reportId)).get()).data()?.title ??
+        null;
+    } catch {
+      /* best-effort title lookup */
+    }
+    await logActivity(ctx, action, {
+      category: 'approve',
+      entityType: 'report',
+      entityId: meta.reportId,
+      entityName: reportTitle || meta.reportId,
+      details: { before: meta.beforeStatus, after: meta.afterStatus, ...(meta.extra ?? {}) },
+    });
+  } catch (err) {
+    console.error('[reports] activity log failed:', err);
   }
 }
 

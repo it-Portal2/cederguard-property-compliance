@@ -19,6 +19,7 @@
 //   failure → { success: false, error: string, code?: string }
 
 import type { ApiContext } from "../lib/context.js";
+import { logActivity } from "../lib/activityLog.js";
 import {
   decodeBase64TacFile,
   tacAttachmentPath,
@@ -246,6 +247,13 @@ async function tacGetEnquiry(req: any, res: any, ctx: ApiContext) {
         code: "CROSS_TENANT",
       });
     }
+    await logActivity(ctx, "enquiry_viewed", {
+      category: "read",
+      entityType: "enquiry",
+      entityId: enquiryId,
+      entityName: doc.title || enquiryId,
+      details: { projectId: doc.projectId ?? null },
+    });
     return res.status(200).json({ success: true, item: doc });
   } catch (e: any) {
     console.error("[tacGetEnquiry] failed:", e);
@@ -352,6 +360,13 @@ async function tacUpsertEnquiry(req: any, res: any, ctx: ApiContext) {
         updatedAt: nowIso(),
       };
       await docRef.set(newDoc);
+      await logActivity(ctx, "enquiry_created", {
+        category: "create",
+        entityType: "enquiry",
+        entityId: id,
+        entityName: safePatch.title,
+        details: { projectId: safePatch.projectId ?? null },
+      });
       return res.status(200).json({ success: true, item: newDoc });
     }
 
@@ -367,6 +382,13 @@ async function tacUpsertEnquiry(req: any, res: any, ctx: ApiContext) {
     };
     await guard.docRef.set(merged, { merge: true });
     const next = { ...guard.doc, ...merged };
+    await logActivity(ctx, "enquiry_updated", {
+      category: "update",
+      entityType: "enquiry",
+      entityId: id,
+      entityName: next.title || guard.doc.title || id,
+      details: { changedFields: Object.keys(safePatch || {}) },
+    });
     return res.status(200).json({ success: true, item: next });
   } catch (e: any) {
     console.error("[tacUpsertEnquiry] failed:", e);
@@ -525,6 +547,13 @@ async function tacRemoveAttachment(req: any, res: any, ctx: ApiContext) {
       { merge: true },
     );
 
+    await logActivity(ctx, "enquiry_attachment_removed", {
+      category: "delete",
+      entityType: "enquiry",
+      entityId: guard.doc.id,
+      entityName: guard.doc.title || guard.doc.id,
+      details: { attachment: target.name ?? attachmentId },
+    });
     return res.status(200).json({ success: true });
   } catch (e: any) {
     console.error("[tacRemoveAttachment] failed:", e);
@@ -612,6 +641,13 @@ async function tacDeleteEnquiry(req: any, res: any, ctx: ApiContext) {
     // 4. Delete the parent enquiry doc.
     await guard.docRef.delete();
 
+    await logActivity(ctx, "enquiry_deleted", {
+      category: "delete",
+      entityType: "enquiry",
+      entityId: doc.id,
+      entityName: doc.title || doc.id,
+      details: { projectId: doc.projectId ?? null },
+    });
     return res.status(200).json({ success: true, deleted: true });
   } catch (e: any) {
     console.error("[tacDeleteEnquiry] failed:", e);
@@ -1039,6 +1075,13 @@ async function tacIssueRfi(req: any, res: any, ctx: ApiContext) {
       { merge: true },
     );
 
+    await logActivity(ctx, "rfi_issued", {
+      category: "approve",
+      entityType: "rfi",
+      entityId: rfiNumber,
+      entityName: issuedRfi.subject || rfiNumber,
+      details: { enquiryId: guard.doc.id, projectId },
+    });
     return res.status(200).json({
       success: true,
       rfiNumber,
@@ -1457,6 +1500,13 @@ async function tacSubmitFeedback(req: any, res: any, ctx: ApiContext) {
     if (safeNote) feedback.note = safeNote;
 
     await guard.docRef.set({ feedback }, { merge: true });
+    await logActivity(ctx, "enquiry_feedback_submitted", {
+      category: "approve",
+      entityType: "enquiry",
+      entityId: enquiryId,
+      entityName: guard.doc.title || enquiryId,
+      details: { thumbs, projectId: guard.doc.projectId ?? null },
+    });
     return res.status(200).json({ success: true, feedback });
   } catch (e: any) {
     console.error("[tacSubmitFeedback] failed:", e);
@@ -1506,6 +1556,13 @@ async function tacFlagForAudit(req: any, res: any, ctx: ApiContext) {
       flaggedForAudit.reviewerNote = String(reviewerNote).trim().slice(0, 1000);
     }
     await guard.docRef.set({ flaggedForAudit }, { merge: true });
+    await logActivity(ctx, "enquiry_flagged_for_audit", {
+      category: "approve",
+      entityType: "enquiry",
+      entityId: enquiryId,
+      entityName: guard.doc.title || enquiryId,
+      details: { projectId: guard.doc.projectId ?? null },
+    });
     return res.status(200).json({ success: true, flaggedForAudit });
   } catch (e: any) {
     console.error("[tacFlagForAudit] failed:", e);
@@ -1571,6 +1628,13 @@ async function tacResolveFlag(req: any, res: any, ctx: ApiContext) {
         : String(reviewerNote).trim().slice(0, 1000),
     };
     await guard.docRef.set({ flaggedForAudit }, { merge: true });
+    await logActivity(ctx, "enquiry_audit_flag_resolved", {
+      category: "approve",
+      entityType: "enquiry",
+      entityId: enquiryId,
+      entityName: guard.doc.title || enquiryId,
+      details: { projectId: guard.doc.projectId ?? null },
+    });
     return res.status(200).json({ success: true, flaggedForAudit });
   } catch (e: any) {
     console.error("[tacResolveFlag] failed:", e);
@@ -1606,6 +1670,12 @@ async function tacArchiveEnquiry(req: any, res: any, ctx: ApiContext) {
         { status: "Open", updatedAt: new Date().toISOString() },
         { merge: true },
       );
+      await logActivity(ctx, "enquiry_unarchived", {
+        category: "update",
+        entityType: "enquiry",
+        entityId: guard.doc.id,
+        entityName: guard.doc.title || guard.doc.id,
+      });
       return res.status(200).json({ success: true, status: "Open" });
     }
 
@@ -1627,6 +1697,12 @@ async function tacArchiveEnquiry(req: any, res: any, ctx: ApiContext) {
       { status: "Archived", updatedAt: new Date().toISOString() },
       { merge: true },
     );
+    await logActivity(ctx, "enquiry_archived", {
+      category: "update",
+      entityType: "enquiry",
+      entityId: guard.doc.id,
+      entityName: guard.doc.title || guard.doc.id,
+    });
     return res.status(200).json({ success: true, status: "Archived" });
   } catch (e: any) {
     console.error("[tacArchiveEnquiry] failed:", e);
@@ -1805,6 +1881,13 @@ async function tacCloseEnquiry(req: any, res: any, ctx: ApiContext) {
       patch.goldenThreadSavedAt = ts;
     }
     await guard.docRef.set(patch, { merge: true });
+    await logActivity(ctx, "enquiry_closed", {
+      category: "approve",
+      entityType: "enquiry",
+      entityId: enquiryId,
+      entityName: guard.doc.title || enquiryId,
+      details: { before: guard.doc.status, after: "Closed", projectId: guard.doc.projectId ?? null },
+    });
     return res.status(200).json({
       success: true,
       status: "Closed",
@@ -2698,6 +2781,13 @@ async function tacUpsertCostRate(req: any, res: any, ctx: ApiContext) {
       { merge: true },
     );
     const saved = await ref.get();
+    await logActivity(ctx, "cost_rate_saved", {
+      category: "update",
+      entityType: "costRate",
+      entityId: patch.rateId,
+      entityName: patch.description || patch.rateId,
+      details: { category: patch.category, rate: patch.rate },
+    });
     return res.status(200).json({ success: true, rate: saved.data() });
   } catch (e: any) {
     console.error("[tacUpsertCostRate] failed:", e);
@@ -2743,7 +2833,14 @@ async function tacDeleteCostRate(req: any, res: any, ctx: ApiContext) {
       .doc(`${ctx.primaryUid}_${rateId}`);
     const ownSnap = await ownRef.get();
     if (ownSnap.exists && ownSnap.data()?.clientId === ctx.primaryUid) {
+      const rateName = ownSnap.data()?.description || rateId;
       await ownRef.delete();
+      await logActivity(ctx, "cost_rate_deleted", {
+        category: "delete",
+        entityType: "costRate",
+        entityId: rateId,
+        entityName: rateName,
+      });
       return res.status(200).json({ success: true, mode: "deleted-custom" });
     }
 
@@ -2781,6 +2878,13 @@ async function tacDeleteCostRate(req: any, res: any, ctx: ApiContext) {
       },
       { merge: false },
     );
+    await logActivity(ctx, "cost_rate_deleted", {
+      category: "delete",
+      entityType: "costRate",
+      entityId: rateId,
+      entityName: sharedData.description || rateId,
+      details: { mode: "hidden-seed" },
+    });
     return res.status(200).json({ success: true, mode: "hidden-seed" });
   } catch (e: any) {
     console.error("[tacDeleteCostRate] failed:", e);

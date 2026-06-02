@@ -229,7 +229,8 @@ export const api = {
   adminGetUsers: () => callApi("adminGetUsers"),
   adminUpdateUser: (targetUid: string, updates: any) =>
     callApi("adminUpdateUser", { targetUid, updates }),
-  adminGetActivity: () => callApi("adminGetActivity"),
+  adminGetActivity: (limit?: number) =>
+    callApi("adminGetActivity", limit ? { limit } : {}),
   adminGetProjects: () => callApi("adminGetProjects"),
   adminGetProgrammes: () => callApi("adminGetProgrammes"),
   getAssignablePMs: () => callApi("getAssignablePMs"),

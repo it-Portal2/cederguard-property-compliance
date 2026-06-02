@@ -19,6 +19,7 @@
 
 import * as XLSX from 'xlsx';
 import type { ApiContext } from '../lib/context.js';
+import { logActivity } from '../lib/activityLog.js';
 import { SEED_MEETINGS, type MeetingStatus } from '../lib/meetingsSeed.js';
 import {
   parseMeetingsXlsx,
@@ -333,6 +334,12 @@ async function governanceUpsertMeeting(req: any, res: any, ctx: ApiContext) {
       newState: latest ?? null,
       changeKind: exists ? 'update' : 'create',
     });
+    await logActivity(ctx, exists ? 'meeting_updated' : 'meeting_created', {
+      category: exists ? 'update' : 'create',
+      entityType: 'meeting',
+      entityId: meetingId,
+      entityName: latest?.title || meetingId,
+    });
     return res
       .status(200)
       .json({ success: true, item: { _id: ref.id, ...latest } });
@@ -434,6 +441,13 @@ async function governanceSoftDeleteMeeting(
       newState: latest ?? null,
       changeKind: wantRestore ? 'restore' : 'softDelete',
     });
+    await logActivity(ctx, wantRestore ? 'meeting_restored' : 'meeting_deleted', {
+      category: wantRestore ? 'update' : 'delete',
+      entityType: 'meeting',
+      entityId: meetingId,
+      entityName: latest?.title || meetingId,
+      details: wantRestore ? undefined : { reason: trimmedReason },
+    });
     return res
       .status(200)
       .json({ success: true, item: { _id: ref.id, ...latest } });
@@ -509,6 +523,12 @@ async function governanceMarkMeetingHeld(
       prevState: data,
       newState: latest ?? null,
       changeKind: 'update',
+    });
+    await logActivity(ctx, 'meeting_marked_held', {
+      category: 'approve',
+      entityType: 'meeting',
+      entityId: meetingId,
+      entityName: latest?.title || meetingId,
     });
     return res
       .status(200)
@@ -677,6 +697,13 @@ async function governanceCancelMeeting(
       newState: latest ?? null,
       changeKind: 'update',
     });
+    await logActivity(ctx, 'meeting_cancelled', {
+      category: 'approve',
+      entityType: 'meeting',
+      entityId: meetingId,
+      entityName: latest?.title || meetingId,
+      details: { reason: trimmedReason, flaggedFpItems, flaggedReports },
+    });
     return res.status(200).json({
       success: true,
       item: { _id: ref.id, ...latest },
@@ -837,6 +864,13 @@ async function governanceRescheduleMeeting(
       prevState: data,
       newState: latest ?? null,
       changeKind: 'update',
+    });
+    await logActivity(ctx, 'meeting_rescheduled', {
+      category: 'update',
+      entityType: 'meeting',
+      entityId: meetingId,
+      entityName: latest?.title || meetingId,
+      details: { fromDate: oldDate ?? null, toDate: newDate, reason: trimmedReason },
     });
     return res
       .status(200)
@@ -1583,6 +1617,12 @@ async function governanceBulkCreateRecurringMeetings(
         changeKind: 'create',
       });
     }
+    await logActivity(ctx, 'meetings_bulk_created', {
+      category: 'create',
+      entityType: 'meeting',
+      entityName: `${body.name ?? 'Meeting'} × ${created.length}`,
+      details: { count: created.length, pattern: input.pattern },
+    });
     return res.status(200).json({ success: true, created: created.length, meetings: created });
   } catch (e: any) {
     console.error('[governanceBulkCreateRecurringMeetings] failed:', e);

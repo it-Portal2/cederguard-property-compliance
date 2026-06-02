@@ -36,6 +36,21 @@ export const ACTIVITY_ICONS: Record<string, { label: string; color: string }> = 
     default: { label: 'Activity', color: 'text-slate-600 bg-slate-100' },
 };
 
+// ─── Activity category badges (Activity Log table) ──────────────────────────────
+// Colour by coarse category; the specific action `type` is humanised in the UI.
+
+export const ACTIVITY_CATEGORY_BADGES: Record<string, { label: string; color: string }> = {
+    create: { label: 'Create', color: 'text-emerald-600 bg-emerald-50' },
+    read: { label: 'View', color: 'text-slate-600 bg-slate-100' },
+    update: { label: 'Update', color: 'text-blue-600 bg-blue-50' },
+    delete: { label: 'Delete', color: 'text-red-600 bg-red-50' },
+    approve: { label: 'Approval', color: 'text-violet-600 bg-violet-50' },
+    auth: { label: 'Auth', color: 'text-amber-600 bg-amber-50' },
+    export: { label: 'Export', color: 'text-cyan-600 bg-cyan-50' },
+    system: { label: 'System', color: 'text-indigo-600 bg-indigo-50' },
+    other: { label: 'Activity', color: 'text-slate-600 bg-slate-100' },
+};
+
 // ─── Tab Navigation ─────────────────────────────────────────────────────────────
 
 export const TABS = [

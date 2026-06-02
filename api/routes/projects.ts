@@ -1,6 +1,7 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { ApiContext } from "../lib/context.js";
 import { ROLE_STRINGS } from "../../src/lib/roleConstants.js";
+import { logActivity } from "../lib/activityLog.js";
 
 export const projectRoutes: Record<
   string,
@@ -71,16 +72,12 @@ export const projectRoutes: Record<
       }
     }
 
-    db.collection("activityLogs")
-      .add({
-        type: "project_created",
-        uid,
-        email,
-        projectId: docRef.id,
-        projectName: data.name || "Unnamed",
-        timestamp: new Date().toISOString(),
-      })
-      .catch(console.error);
+    await logActivity(ctx, "project_created", {
+      category: "create",
+      entityType: "project",
+      entityId: docRef.id,
+      entityName: data.name || "Unnamed",
+    });
 
     return res.status(200).json({ success: true, id: docRef.id });
   },
@@ -255,15 +252,18 @@ export const projectRoutes: Record<
       }
     }
 
-    db.collection("activityLogs")
-      .add({
-        type: "project_updated",
-        uid,
-        email,
-        projectId: id,
-        timestamp: new Date().toISOString(),
-      })
-      .catch(console.error);
+    // Capture the project's real name for the log (payload may be a partial update).
+    const projName =
+      data?.name ??
+      (await db.collection("projects").doc(id).get()).data()?.name ??
+      null;
+    await logActivity(ctx, "project_updated", {
+      category: "update",
+      entityType: "project",
+      entityId: id,
+      entityName: projName,
+      details: { changedFields: Object.keys(data || {}) },
+    });
     return res.status(200).json({ success: true });
   },
 
@@ -277,6 +277,10 @@ export const projectRoutes: Record<
         .status(403)
         .json({ error: "Forbidden: You do not have access to this project." });
     }
+
+    // Capture the project's name BEFORE deletion so the log shows what was deleted.
+    const deletedProjectName =
+      (await db.collection("projects").doc(id).get()).data()?.name ?? null;
 
     // 1. Delete all documents in the projects/{id}/data subcollection
     const dataSnap = await db
@@ -309,15 +313,12 @@ export const projectRoutes: Record<
     // 3. Delete the project document itself
     await db.collection("projects").doc(id).delete();
 
-    db.collection("activityLogs")
-      .add({
-        type: "project_deleted",
-        uid,
-        email,
-        projectId: id,
-        timestamp: new Date().toISOString(),
-      })
-      .catch(console.error);
+    await logActivity(ctx, "project_deleted", {
+      category: "delete",
+      entityType: "project",
+      entityId: id,
+      entityName: deletedProjectName,
+    });
     return res.status(200).json({ success: true });
   },
 
@@ -333,6 +334,13 @@ export const projectRoutes: Record<
     const doc = await db.collection("projects").doc(id).get();
     if (!doc.exists)
       return res.status(404).json({ error: "Project not found" });
+
+    await logActivity(ctx, "project_viewed", {
+      category: "read",
+      entityType: "project",
+      entityId: id,
+      entityName: doc.data()?.name ?? null,
+    });
 
     return res
       .status(200)

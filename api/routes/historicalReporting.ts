@@ -18,6 +18,7 @@
 //   Authenticated `super_admin` always allowed (ad-hoc rebuilds).
 
 import type { ApiContext } from "../lib/context.js";
+import { logSystemActivity } from "../lib/activityLog.js";
 import {
   buildMonthlySnapshot,
   listAvailableSnapshotMonths,
@@ -164,6 +165,12 @@ async function hrcRunMonthlySnapshot(req: any, res: any, ctx: ApiContext) {
       `[hrcCron] runMonthlySnapshot summary ${JSON.stringify(summary)}`,
     );
 
+    await logSystemActivity(ctx, "monthly_snapshot_run", {
+      entityType: "system",
+      entityName: `Monthly snapshot ${summary.yearMonth}`,
+      details: summary,
+    });
+
     return res.status(200).json({ success: true, ...summary, results });
   } catch (err: any) {
     console.error("[hrcCron] runMonthlySnapshot fatal", err);
@@ -188,6 +195,11 @@ async function hrcRunRetentionPurge(req: any, res: any, ctx: ApiContext) {
       });
     }
     const result = await purgeExpiredSnapshots(ctx);
+    await logSystemActivity(ctx, "retention_purge_run", {
+      entityType: "system",
+      entityName: "Retention purge run",
+      details: { ...result },
+    });
     return res.status(200).json({ success: true, ...result });
   } catch (err: any) {
     console.error("[hrcCron] runRetentionPurge fatal", err);

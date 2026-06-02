@@ -15,6 +15,7 @@
 // their report has to route through.
 
 import type { ApiContext } from '../lib/context.js';
+import { logActivity } from '../lib/activityLog.js';
 import {
   SEED_BODIES,
   SEED_THRESHOLDS,
@@ -310,6 +311,12 @@ async function governancePublishFramework(_req: any, res: any, ctx: ApiContext) 
       newState: fwAfter,
       changeKind: 'update',
     });
+    await logActivity(ctx, 'framework_published', {
+      category: 'approve',
+      entityType: 'framework',
+      entityName: 'Governance framework',
+      details: { version: nextVersion },
+    });
     return res.status(200).json({ success: true, version: nextVersion });
   } catch (e: any) {
     console.error('[governancePublishFramework] failed:', e);
@@ -392,6 +399,12 @@ async function governanceUpsertBody(req: any, res: any, ctx: ApiContext) {
       newState: { ...(fwBefore ?? {}), updatedAt: payload.updatedAt, status: 'draft', _bodyEdited: { bodyId, exists } },
       changeKind: exists ? 'update' : 'create',
     });
+    await logActivity(ctx, exists ? 'governance_body_updated' : 'governance_body_created', {
+      category: exists ? 'update' : 'create',
+      entityType: 'governanceBody',
+      entityId: bodyId,
+      entityName: latest?.name || bodyId,
+    });
     return res.status(200).json({ success: true, body: { _id: docId, ...latest } });
   } catch (e: any) {
     console.error('[governanceUpsertBody] failed:', e);
@@ -445,6 +458,12 @@ async function governanceDeleteBody(req: any, res: any, ctx: ApiContext) {
       prevState: fwBefore,
       newState: { ...(fwBefore ?? {}), status: 'draft', _bodyDeleted: { bodyId, body: bodyDataBefore } },
       changeKind: 'update',
+    });
+    await logActivity(ctx, 'governance_body_deleted', {
+      category: 'delete',
+      entityType: 'governanceBody',
+      entityId: bodyId,
+      entityName: bodyDataBefore?.name || bodyId,
     });
     return res.status(200).json({ success: true });
   } catch (e: any) {
@@ -515,6 +534,12 @@ async function governanceUpsertThreshold(req: any, res: any, ctx: ApiContext) {
       newState: { ...(fwBefore ?? {}), status: 'draft', _thresholdEdited: { thresholdId, was: thresholdBefore } },
       changeKind: thresholdBefore ? 'update' : 'create',
     });
+    await logActivity(ctx, thresholdBefore ? 'authority_threshold_updated' : 'authority_threshold_created', {
+      category: thresholdBefore ? 'update' : 'create',
+      entityType: 'authorityThreshold',
+      entityId: thresholdId,
+      entityName: latest?.label || latest?.name || thresholdId,
+    });
     return res.status(200).json({ success: true, threshold: { _id: thresholdId, ...latest } });
   } catch (e: any) {
     console.error('[governanceUpsertThreshold] failed:', e);
@@ -555,6 +580,12 @@ async function governanceDeleteThreshold(req: any, res: any, ctx: ApiContext) {
       prevState: fwBefore,
       newState: { ...(fwBefore ?? {}), status: 'draft', _thresholdDeleted: { thresholdId, was: thresholdBefore } },
       changeKind: 'update',
+    });
+    await logActivity(ctx, 'authority_threshold_deleted', {
+      category: 'delete',
+      entityType: 'authorityThreshold',
+      entityId: thresholdId,
+      entityName: thresholdBefore?.label || thresholdBefore?.name || thresholdId,
     });
     return res.status(200).json({ success: true });
   } catch (e: any) {
@@ -694,6 +725,13 @@ async function governanceUpsertToR(req: any, res: any, ctx: ApiContext) {
       changeKind: result.isNewDoc ? 'create' : 'update',
     });
 
+    await logActivity(ctx, result.isNewDoc ? 'tor_created' : 'tor_updated', {
+      category: result.payload?.status === 'published' ? 'approve' : (result.isNewDoc ? 'create' : 'update'),
+      entityType: 'termsOfReference',
+      entityId: result.docId,
+      entityName: result.payload?.title || result.payload?.name || result.docId,
+      details: { status: result.payload?.status ?? null },
+    });
     return res.status(200).json({
       success: true,
       tor: { _id: result.docId, ...result.payload },

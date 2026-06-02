@@ -11,6 +11,7 @@ import {
   detectSevereTransitions,
   writeSevereEscalations,
 } from '../lib/riskSevereEscalation.js';
+import { logActivity, logArrayChanges } from '../lib/activityLog.js';
 
 // Legacy single-array collections persisted via the generic saveData
 // chokepoint that need field-level history captured pre-mutation.
@@ -74,16 +75,18 @@ export const dataRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
         });
       }
 
-      if (['risks', 'issues', 'complianceItems', 'complianceAnalysis'].includes(collection)) {
-        const count = Array.isArray(data) ? data.length : (data ? 1 : 0);
-        db.collection('activityLogs').add({
-          type: `${collection}_saved`,
-          uid,
-          email,
-          projectId,
-          count,
-          timestamp: new Date().toISOString()
-        }).catch(console.error);
+      // Activity log: for the item-array collections, diff old vs new to record
+      // WHICH item (by name) was created/updated/deleted + by whom. For the
+      // non-array complianceAnalysis, log a single update event.
+      if (['risks', 'issues', 'complianceItems', 'kris'].includes(collection) && data !== null) {
+        await logArrayChanges(ctx, collection, projectId, hrcPrevArray, data);
+      } else if (collection === 'complianceAnalysis') {
+        await logActivity(ctx, 'compliance_analysis_saved', {
+          category: 'update',
+          entityType: 'compliance',
+          entityId: projectId,
+          details: { project: projectId },
+        });
       }
 
       // Severe-risk escalation: when a saved risks array contains a risk
@@ -134,6 +137,7 @@ export const dataRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
       // Standardize: programmes stored as documents in top-level collection indexed by clientId
       if (Array.isArray(data)) {
         for (const programme of data) {
+          const isNew = !programme.id;
           const progId = programme.id || `PROG-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
           await db.collection('programmes').doc(progId).set({
             ...programme,
@@ -142,10 +146,17 @@ export const dataRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
             userId: uid,
             updatedAt: FieldValue.serverTimestamp()
           }, { merge: true });
+          await logActivity(ctx, isNew ? 'programme_created' : 'programme_updated', {
+            category: isNew ? 'create' : 'update',
+            entityType: 'programme',
+            entityId: progId,
+            entityName: programme.name ?? null,
+          });
         }
         return res.status(200).json({ success: true });
       } else {
         // Single programme update
+        const isNew = !data.id;
         const progId = data.id || `PROG-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
         await db.collection('programmes').doc(progId).set({
           ...data,
@@ -154,6 +165,12 @@ export const dataRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
           userId: uid,
           updatedAt: FieldValue.serverTimestamp()
         }, { merge: true });
+        await logActivity(ctx, isNew ? 'programme_created' : 'programme_updated', {
+          category: isNew ? 'create' : 'update',
+          entityType: 'programme',
+          entityId: progId,
+          entityName: data.name ?? null,
+        });
         return res.status(200).json({ success: true, id: progId });
       }
     } else if (['systemMappings', 'globalRisks'].includes(collection)) {
@@ -172,17 +189,15 @@ export const dataRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
       }
     }
 
-    // Log meaningful save events
+    // Log meaningful save events (legacy / non-project-scoped path)
     if (['risks', 'issues', 'complianceItems', 'complianceAnalysis'].includes(collection)) {
       const count = Array.isArray(data) ? data.length : (data ? 1 : 0);
-      db.collection('activityLogs').add({ 
-        type: `${collection}_saved`, 
-        uid, 
-        email, 
-        projectId: projectId || 'legacy', 
-        count, 
-        timestamp: new Date().toISOString() 
-      }).catch(console.error);
+      await logActivity(ctx, `${collection}_saved`, {
+        category: 'update',
+        entityType: collection,
+        entityId: projectId || 'legacy',
+        details: { count, scope: 'legacy' },
+      });
     }
     return res.status(200).json({ success: true });
   },
@@ -359,6 +374,16 @@ export const dataRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
       data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     }
 
+    // Meaningful view-access log (Option A): someone opened a specific project's
+    // evidence. Aggregate/dashboard reads above are intentionally not logged.
+    await logActivity(ctx, 'evidence_viewed', {
+      category: 'read',
+      entityType: 'project',
+      entityId: projectId,
+      entityName: (await db.collection('projects').doc(projectId).get()).data()?.name ?? null,
+      details: { count: data.length },
+    });
+
     return res.status(200).json({ success: true, data });
   },
 
@@ -448,6 +473,13 @@ export const dataRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
       uploadedBy: email,
       createdAt: FieldValue.serverTimestamp(),
     });
+    await logActivity(ctx, 'evidence_added', {
+      category: 'create',
+      entityType: 'evidence',
+      entityId: docRef.id,
+      entityName: document.name || 'Evidence document',
+      details: { projectId, isLink: finalDocument.storagePath === 'external-link' },
+    });
     return res.status(200).json({ success: true, id: docRef.id });
   },
 
@@ -479,6 +511,13 @@ export const dataRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
     }
 
     await db.collection('evidence').doc(docId).delete();
+    await logActivity(ctx, 'evidence_deleted', {
+      category: 'delete',
+      entityType: 'evidence',
+      entityId: docId,
+      entityName: evidenceData?.name || 'Evidence document',
+      details: { projectId: evidenceData?.project ?? null },
+    });
     return res.status(200).json({ success: true });
   },
 
@@ -499,7 +538,14 @@ export const dataRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
       ...updates,
       updatedAt: FieldValue.serverTimestamp()
     }, { merge: true });
-    
+
+    await logActivity(ctx, 'evidence_updated', {
+      category: 'update',
+      entityType: 'evidence',
+      entityId: docId,
+      entityName: updates.name || evidenceData?.name || 'Evidence document',
+      details: { projectId: evidenceData?.project ?? null, changedFields: Object.keys(updates || {}) },
+    });
     return res.status(200).json({ success: true });
   },
 

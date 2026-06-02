@@ -1,5 +1,6 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { ApiContext } from '../lib/context.js';
+import { logActivity } from '../lib/activityLog.js';
 
 export const complianceRoutes: Record<string, (req: any, res: any, ctx: ApiContext) => Promise<any>> = {
   getComplianceLibrary: async (req, res, ctx) => {
@@ -22,7 +23,13 @@ export const complianceRoutes: Record<string, (req: any, res: any, ctx: ApiConte
           updatedBy: email
         }, { merge: true });
 
-        db.collection('activityLogs').add({ type: 'compliance_library_updated', uid, email, itemId: item.id, timestamp: new Date().toISOString() }).catch(console.error);
+        await logActivity(ctx, 'compliance_library_updated', {
+          category: 'update',
+          entityType: 'complianceLibraryItem',
+          entityId: item.id,
+          entityName: item.name || item.title || item.requirement || item.id,
+          details: { adminAction: true },
+        });
         return res.status(200).json({ success: true });
   },
 
@@ -33,8 +40,15 @@ export const complianceRoutes: Record<string, (req: any, res: any, ctx: ApiConte
 
         if (!isAdmin) return res.status(403).json({ error: 'Forbidden: Admin access required' });
 
+        const deletedLibItem = (await db.collection('compliance_library').doc(id).get()).data();
         await db.collection('compliance_library').doc(id).delete();
-        db.collection('activityLogs').add({ type: 'compliance_library_deleted', uid, email, itemId: id, timestamp: new Date().toISOString() }).catch(console.error);
+        await logActivity(ctx, 'compliance_library_deleted', {
+          category: 'delete',
+          entityType: 'complianceLibraryItem',
+          entityId: id,
+          entityName: deletedLibItem?.name || deletedLibItem?.title || id,
+          details: { adminAction: true },
+        });
         return res.status(200).json({ success: true });
   },
 

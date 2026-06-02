@@ -14,6 +14,7 @@
 // only require `isSignedIn` so PMs can browse the FP for their projects.
 
 import type { ApiContext } from '../lib/context.js';
+import { logActivity } from '../lib/activityLog.js';
 import {
   SEED_FORWARD_PLAN_ITEMS,
   withCouncilPrefixedBodyKeys,
@@ -404,6 +405,12 @@ async function governanceUpsertForwardPlanItem(req: any, res: any, ctx: ApiConte
       newState: latest ?? null,
       changeKind: exists ? 'update' : 'create',
     });
+    await logActivity(ctx, exists ? 'forward_plan_item_updated' : 'forward_plan_item_created', {
+      category: exists ? 'update' : 'create',
+      entityType: 'forwardPlanItem',
+      entityId: itemId,
+      entityName: latest?.title || itemId,
+    });
     return res.status(200).json({ success: true, item: { _id: ref.id, ...latest } });
   } catch (e: any) {
     console.error('[governanceUpsertForwardPlanItem] failed:', e);
@@ -484,6 +491,13 @@ async function governanceSoftDeleteForwardPlanItem(req: any, res: any, ctx: ApiC
       prevState: snap.data() ?? null,
       newState: latest ?? null,
       changeKind: wantRestore ? 'restore' : 'softDelete',
+    });
+    await logActivity(ctx, wantRestore ? 'forward_plan_item_restored' : 'forward_plan_item_deleted', {
+      category: wantRestore ? 'update' : 'delete',
+      entityType: 'forwardPlanItem',
+      entityId: itemId,
+      entityName: latest?.title || itemId,
+      details: wantRestore ? undefined : { reason: trimmedReason },
     });
     return res.status(200).json({ success: true, item: { _id: ref.id, ...latest } });
   } catch (e: any) {

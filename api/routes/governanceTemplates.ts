@@ -16,6 +16,7 @@
 // reports.
 
 import type { ApiContext } from '../lib/context.js';
+import { logActivity } from '../lib/activityLog.js';
 import { SEED_TEMPLATES, type SeedTemplate } from '../lib/templateSeed.js';
 import { appendHistoryRow } from '../lib/historyRows.js';
 import type { ChangeKind } from '../../src/types/historicalReporting.js';
@@ -326,6 +327,12 @@ async function governanceUpsertTemplate(req: any, res: any, ctx: ApiContext) {
       newState: latest ?? null,
       changeKind: exists ? 'update' : 'create',
     });
+    await logActivity(ctx, exists ? 'report_template_updated' : 'report_template_created', {
+      category: exists ? 'update' : 'create',
+      entityType: 'reportTemplate',
+      entityId: templateId,
+      entityName: latest?.name || latest?.title || templateId,
+    });
     return res.status(200).json({
       success: true,
       template: { _id: ref.id, ...latest },
@@ -404,6 +411,13 @@ async function governancePublishTemplate(req: any, res: any, ctx: ApiContext) {
       changeKind: 'update',
     });
 
+    await logActivity(ctx, 'report_template_published', {
+      category: 'approve',
+      entityType: 'reportTemplate',
+      entityId: templateId,
+      entityName: latest?.name || latest?.title || templateId,
+      details: { version: nextVersion },
+    });
     return res.status(200).json({ success: true, version: nextVersion });
   } catch (e: any) {
     console.error('[governancePublishTemplate] failed:', e);

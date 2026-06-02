@@ -1,29 +1,83 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import {
-    Filter,
-    AlertCircle,
-    Loader2,
-    RefreshCw,
-    LineChart,
-} from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AlertCircle, Loader2, RefreshCw, LineChart } from 'lucide-react';
 import { api } from '../../lib/api';
-import { ACTIVITY_ICONS } from './constants';
+import { ACTIVITY_CATEGORY_BADGES, ACTIVITY_ICONS } from './constants';
+import DynamicTable from '../table/DynamicTable';
+import type { ColumnDef, FilterDef } from '../table/types';
 
-export function ActivityTab({ isAdmin, users }: { isAdmin: boolean; users: any[] }) {
-    const [logs, setLogs] = useState<any[]>([]);
+interface ActivityRow {
+    id: string;
+    type: string;
+    category?: string;
+    userName?: string | null;
+    email?: string | null;
+    uid?: string | null;
+    entityType?: string | null;
+    entityId?: string | null;
+    entityName?: string | null;
+    details?: Record<string, any> | null;
+    timestamp?: string | null;
+    // legacy ad-hoc fields tolerated
+    [k: string]: any;
+}
+
+// Humanise an action type (e.g. "risks_item_updated" → "Risks item updated",
+// "report.approve" → "Report approve"). Falls back to the known ACTIVITY_ICONS
+// label when present.
+function humaniseType(type: string): string {
+    if (!type) return 'Activity';
+    if (ACTIVITY_ICONS[type]?.label) return ACTIVITY_ICONS[type].label;
+    return type
+        .replace(/[._]/g, ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function deriveCategory(row: ActivityRow): string {
+    if (row.category) return row.category;
+    // Best-effort for legacy rows without a category.
+    const t = row.type || '';
+    if (/deleted|removed|cancelled|reset/.test(t)) return 'delete';
+    if (/created|added|invited/.test(t)) return 'create';
+    if (/viewed/.test(t)) return 'read';
+    if (/approve|seal|sign|submit|flag|feedback|closed/.test(t)) return 'approve';
+    if (/escalation|snapshot|purge|chase/.test(t)) return 'system';
+    return 'update';
+}
+
+function fmtWhen(iso?: string | null): string {
+    if (!iso) return '—';
+    try {
+        return new Date(iso).toLocaleString(undefined, {
+            year: 'numeric', month: 'short', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
+        });
+    } catch {
+        return String(iso);
+    }
+}
+
+function detailSummary(details: Record<string, any> | null | undefined): string {
+    if (!details || typeof details !== 'object') return '';
+    return Object.entries(details)
+        .filter(([, v]) => v !== null && v !== undefined && v !== '')
+        .map(([k, v]) => `${k}: ${typeof v === 'object' ? JSON.stringify(v) : String(v)}`)
+        .join(' · ');
+}
+
+export function ActivityTab({ isAdmin }: { isAdmin: boolean; users?: any[] }) {
+    const [logs, setLogs] = useState<ActivityRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [filterType, setFilterType] = useState('all');
 
     const load = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
-            const res = await api.adminGetActivity();
-            if (res.success) setLogs(res.logs || []);
+            const res = await api.adminGetActivity(500);
+            if (res.success) setLogs(Array.isArray(res.logs) ? res.logs : []);
             else setError(res.error || 'Failed to load activity');
         } catch (e: any) {
-            setError(e.message);
+            setError(e?.message || 'Failed to load activity');
         } finally {
             setLoading(false);
         }
@@ -31,105 +85,143 @@ export function ActivityTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
 
     useEffect(() => { if (isAdmin) load(); }, [isAdmin, load]);
 
-    const types = ['all', ...Array.from(new Set((Array.isArray(logs) ? logs : []).map(l => l.type)))];
-    const filtered = filterType === 'all' ? (Array.isArray(logs) ? logs : []) : (Array.isArray(logs) ? logs : []).filter(l => l.type === filterType);
+    // Normalise rows so columns/filters have stable fields (esp. category +
+    // a single "who" string), tolerating legacy records.
+    const rows = useMemo<ActivityRow[]>(
+        () => (Array.isArray(logs) ? logs : []).map((l) => ({
+            ...l,
+            _category: deriveCategory(l),
+            _who: l.userName || l.email || l.adminEmail || (l.uid ? `User ${String(l.uid).slice(0, 8)}` : 'System'),
+            _what: l.entityName || l.projectName || l.entityId || '—',
+            _action: humaniseType(l.type),
+        })),
+        [logs],
+    );
 
-    if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-indigo-500" /></div>;
-    if (error) return <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg flex items-center gap-3"><AlertCircle className="w-5 h-5 shrink-0" />{error}</div>;
+    const columns = useMemo<ColumnDef<ActivityRow>[]>(() => [
+        {
+            key: 'timestamp',
+            label: 'When',
+            sortable: true,
+            width: '180px',
+            render: (v: string) => (
+                <span className="font-mono text-[11px] text-slate-600 tabular-nums whitespace-nowrap">{fmtWhen(v)}</span>
+            ),
+            exportValue: (v: string) => fmtWhen(v),
+        },
+        {
+            key: '_who',
+            label: 'Who',
+            sortable: true,
+            render: (_v, row) => (
+                <span className="text-sm text-slate-700">
+                    <span className="font-medium text-slate-900">{row._who}</span>
+                    {row.email && row.email !== row._who && (
+                        <span className="block font-mono text-[10px] text-slate-400">{row.email}</span>
+                    )}
+                </span>
+            ),
+            exportValue: (_v, row) => `${row._who}${row.email ? ` <${row.email}>` : ''}`,
+        },
+        {
+            key: '_category',
+            label: 'Category',
+            sortable: true,
+            width: '110px',
+            render: (v: string) => {
+                const badge = ACTIVITY_CATEGORY_BADGES[v] || ACTIVITY_CATEGORY_BADGES.other;
+                return (
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full font-mono uppercase tracking-wide text-[10px] font-medium ${badge.color}`}>
+                        {badge.label}
+                    </span>
+                );
+            },
+        },
+        {
+            key: '_action',
+            label: 'Action',
+            sortable: true,
+            render: (v: string) => <span className="text-sm text-slate-700">{v}</span>,
+        },
+        {
+            key: '_what',
+            label: 'What',
+            sortable: true,
+            render: (_v, row) => (
+                <span className="text-sm text-slate-700">
+                    {row._what}
+                    {row.entityType && (
+                        <span className="ml-1 font-mono text-[10px] text-slate-400">({row.entityType})</span>
+                    )}
+                </span>
+            ),
+            exportValue: (_v, row) => `${row._what}${row.entityType ? ` (${row.entityType})` : ''}`,
+        },
+        {
+            key: 'details',
+            label: 'Details',
+            truncate: true,
+            tooltip: (_v, row) => detailSummary(row.details) || '',
+            render: (_v, row) => {
+                const s = detailSummary(row.details);
+                return s ? <span className="text-[12px] text-slate-500">{s}</span> : <span className="text-slate-400">—</span>;
+            },
+            exportValue: (_v, row) => detailSummary(row.details),
+        },
+    ], []);
+
+    const filters = useMemo<FilterDef<ActivityRow>[]>(() => [
+        {
+            key: '_category',
+            label: 'Category',
+            type: 'select',
+            options: Object.entries(ACTIVITY_CATEGORY_BADGES).map(([value, b]) => ({ value, label: b.label })),
+        },
+        {
+            key: 'entityType',
+            label: 'Entity',
+            type: 'select',
+            options: Array.from(new Set(rows.map((r) => r.entityType).filter(Boolean)))
+                .map((t) => ({ value: String(t), label: String(t) })),
+        },
+    ], [rows]);
+
+    if (loading) {
+        return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-indigo-500" /></div>;
+    }
+    if (error) {
+        return (
+            <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg flex items-center gap-3">
+                <AlertCircle className="w-5 h-5 shrink-0" />{error}
+            </div>
+        );
+    }
 
     return (
-        <div className="space-y-4">
-            <div className="flex items-center gap-3">
-                <Filter className="w-4 h-4 text-slate-400" />
-                <select
-                    value={filterType}
-                    onChange={e => setFilterType(e.target.value)}
-                    className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        <DynamicTable<ActivityRow>
+            data={rows}
+            columns={columns}
+            filters={filters}
+            searchable
+            searchPlaceholder="Search who, action, or what…"
+            searchFields={['_who', 'email', '_action', '_what', 'type']}
+            pagination={{ enabled: true, pageSize: 25, pageSizeOptions: [25, 50, 100] }}
+            export={{ xlsx: true, filename: 'activity-log' }}
+            stickyHeader
+            getRowId={(row) => row.id}
+            emptyState={{
+                title: 'No activity recorded yet',
+                description: 'User actions, approvals, and system events will appear here as they happen.',
+                icon: LineChart,
+            }}
+            toolbarActions={
+                <button
+                    onClick={load}
+                    className="inline-flex items-center gap-2 px-3 h-9 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50"
                 >
-                    {(Array.isArray(types) ? types : []).map(t => (
-                        <option key={t as string} value={t as string}>
-                            {t === 'all' ? 'All Types' : (ACTIVITY_ICONS[t as string]?.label || t as string)}
-                        </option>
-                    ))}
-                </select>
-                <button onClick={load} className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
-                    <RefreshCw className="w-4 h-4 text-slate-500" />
+                    <RefreshCw className="w-4 h-4" /> Refresh
                 </button>
-                <span className="text-sm text-slate-500">{filtered.length} events</span>
-            </div>
-
-            {filtered.length === 0 ? (
-                <div className="bg-white rounded-lg border border-slate-200 p-16 text-center">
-                    <LineChart className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-                    <p className="text-slate-500 font-medium">No activity recorded yet</p>
-                    <p className="text-xs text-slate-400 mt-1">Activity will appear here as users interact with the platform</p>
-                </div>
-            ) : (
-                <div className="bg-white rounded-lg border border-slate-200 divide-y divide-slate-100 shadow-sm overflow-hidden">
-                    {filtered.map(log => {
-                        const cfg = ACTIVITY_ICONS[log.type] || ACTIVITY_ICONS.default;
-                        
-                        const getUserIdentity = () => {
-                            const found = users.find(u => u.uid === log.adminUid || u.uid === log.uid || u.email === (log.adminEmail || log.userEmail));
-                            if (found) {
-                                return found.displayName || found.email || `User (${found.uid.slice(0, 8)})`;
-                            }
-                            return log.adminEmail || log.userEmail || (log.uid ? `User (${log.uid.slice(0, 8)})` : 'System');
-                        };
-
-                        const formatUpdateDescription = () => {
-                            if (!log.updates) return null;
-                            try {
-                                const updates = typeof log.updates === 'string' ? JSON.parse(log.updates) : log.updates;
-                                if (log.type === 'admin_transfer_programme' || log.type === 'admin_transfer_project') {
-                                    const target = users.find(u => u.uid === updates.targetUid || u.email === updates.targetEmail);
-                                    const targetName = target ? (target.displayName || target.email) : (updates.targetEmail || 'Unknown');
-                                    return `Transferred ownership to ${targetName}`;
-                                }
-                                if (log.type === 'project_deleted' || log.type === 'programme_deleted') {
-                                    return `Permanently deleted ${updates.name || 'resource'}`;
-                                }
-                                const keys = Object.keys(updates);
-                                if (keys.length > 0) {
-                                    return `Updated: ${keys.join(', ')}`;
-                                }
-                            } catch (e) {
-                                return JSON.stringify(log.updates);
-                            }
-                            return null;
-                        };
-
-                        const identity = getUserIdentity();
-                        const updateDesc = formatUpdateDescription();
-
-                        return (
-                            <div key={log.id} className="flex items-start gap-4 px-5 py-4 hover:bg-slate-50 transition-colors">
-                                <span className={`mt-0.5 px-2 py-1 rounded-md font-mono text-[10px] font-medium uppercase tracking-wide whitespace-nowrap ${cfg.color}`}>{cfg.label}</span>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm text-slate-700 truncate">
-                                        <span className="font-bold text-slate-900">{identity}</span>
-                                        {updateDesc ? (
-                                            <span className="text-slate-500 font-medium ml-2">— {updateDesc}</span>
-                                        ) : log.description ? (
-                                            <span className="text-slate-500 ml-2">— {log.description}</span>
-                                        ) : null}
-                                    </p>
-                                    <div className="flex items-center gap-3 mt-1 underline-none">
-                                        <p className="font-mono text-[10px] text-slate-500 font-medium tabular-nums">
-                                            {log.timestamp ? new Date(log.timestamp).toLocaleString() : 'Just now'}
-                                        </p>
-                                        {log.targetUid && (
-                                            <span className="text-[10px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded font-mono">
-                                                ID: {log.targetUid.slice(0, 8)}
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
-        </div>
+            }
+        />
     );
 }

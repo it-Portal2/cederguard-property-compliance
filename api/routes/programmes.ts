@@ -1,5 +1,6 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { ApiContext } from '../lib/context.js';
+import { logActivity } from '../lib/activityLog.js';
 
 export const programmeRoutes: Record<string, (req: any, res: any, ctx: ApiContext) => Promise<any>> = {
   updateProgramme: async (req, res, ctx) => {
@@ -12,7 +13,14 @@ export const programmeRoutes: Record<string, (req: any, res: any, ctx: ApiContex
     }
 
     await db.collection('programmes').doc(id).update({ ...data, updatedAt: FieldValue.serverTimestamp() });
-    db.collection('activityLogs').add({ type: 'programme_updated', uid, email, id, timestamp: new Date().toISOString() }).catch(console.error);
+    const progName = data?.name ?? (await db.collection('programmes').doc(id).get()).data()?.name ?? null;
+    await logActivity(ctx, 'programme_updated', {
+      category: 'update',
+      entityType: 'programme',
+      entityId: id,
+      entityName: progName,
+      details: { changedFields: Object.keys(data || {}) },
+    });
     return res.status(200).json({ success: true });
   },
 
@@ -25,8 +33,14 @@ export const programmeRoutes: Record<string, (req: any, res: any, ctx: ApiContex
       return res.status(403).json({ error: 'Forbidden: You do not have access to delete this programme.' });
     }
 
+    const deletedProgName = (await db.collection('programmes').doc(id).get()).data()?.name ?? null;
     await db.collection('programmes').doc(id).delete();
-    db.collection('activityLogs').add({ type: 'programme_deleted', uid, email, id, timestamp: new Date().toISOString() }).catch(console.error);
+    await logActivity(ctx, 'programme_deleted', {
+      category: 'delete',
+      entityType: 'programme',
+      entityId: id,
+      entityName: deletedProgName,
+    });
     return res.status(200).json({ success: true });
   },
 

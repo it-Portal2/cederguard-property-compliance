@@ -297,12 +297,19 @@ tiles / status chips / table headers / sparklines to other pages.
 ```
 OverviewTab.tsx       (329 lines)   Admin dashboard overview cards
 UsersTab.tsx                        User list management (role, deactivation)
-ActivityTab.tsx                     Activity log viewer with filters
+ActivityTab.tsx                     Audit / activity-log viewer. Built on DynamicTable (search,
+                                    category + entity filters, sort, pagination, XLSX export).
+                                    Columns: When / Who (name+email) / Category / Action / What
+                                    (entity name) / Details. Reads via `api.adminGetActivity(limit)`;
+                                    humanises `type` and colours by `category`. Tolerates legacy
+                                    records missing the newer fields.
 ProjectsTab.tsx       (615 lines)   Project list with search, filter, admin actions
 PricingTab.tsx                      Pricing config editor
 MappingManager.tsx                  AI system mapping directives editor
 RegulationManager.tsx (594 lines)   Regulation library CRUD editor
-constants.tsx                       Admin UI configuration constants
+constants.tsx                       Admin UI configuration constants. Exports `TABS`, `ROLE_CONFIG`,
+                                    `ACTIVITY_ICONS` (per-type labels) and `ACTIVITY_CATEGORY_BADGES`
+                                    (category → label + colour, used by ActivityTab).
 DetailsModal.tsx                    Admin-specific details modal
 ```
 
@@ -617,6 +624,18 @@ lib/tacFileUpload.ts               TAC attachment helpers. `decodeBase64TacFile`
                                    `makePublic: true`), `deleteTacAttachment`. `TAC_MAX_FILE_BYTES`
                                    = 3 MB (Vercel body limit / base64 inflation); per-enquiry
                                    `TAC_MAX_ENQUIRY_BYTES` = 200 MB.
+lib/activityLog.ts                 SINGLE SOURCE OF TRUTH for user-activity / audit logging. Writes
+                                   to the `activityLogs` collection via `logActivity(ctx, type, {
+                                   category, entityType, entityId, entityName, details })` — captures
+                                   actor name + email (auto from ctx.userData/email), the entity NAME
+                                   (not just id), a coarse `category`
+                                   (create|read|update|delete|approve|auth|export|system|other), and
+                                   an ISO `timestamp`. `logSystemActivity` for automatic/cron events.
+                                   `logArrayChanges(ctx, collection, projectId, prev, next)` diffs the
+                                   item arrays saved through `saveData` (risks/issues/complianceItems/
+                                   kris) to log per-item create/update/delete by title (summarised
+                                   above a 12-item threshold to avoid flooding). See the activity-logging
+                                   convention below — ALWAYS `await` these BEFORE sending the response.
 routes/index.ts                    Aggregates all route handler maps
 routes/auth.ts                     API key generate/revoke, user account deletion
 routes/ai.ts                       Gemini calls with retry, dual-key fallback, quota handling.
@@ -1091,6 +1110,18 @@ export const authRoutes = {
 - `ctx` is the `ApiContext` from `api/lib/context.ts` — contains `uid`, `clientId`, `isAdmin`, `isAuthorizedForContext()`
 - Authorization always checked at start of handler via `ctx.*` helpers
 
+### Activity / audit logging convention (server-side)
+All user-activity / audit logging goes through the helpers in [`api/lib/activityLog.ts`](api/lib/activityLog.ts) and writes to the **`activityLogs`** Firestore collection (read back by `adminGetActivity` → the admin **Activity Log** tab). There is one audit surface (the Activity Log tab) and one collection — do not add a parallel collection or a second tab.
+
+- **Always `await` the log call BEFORE sending the response** — e.g. `await logActivity(ctx, 'project_updated', {...}); return res.status(200).json(...)`. This is load-bearing: a fire-and-forget write placed *after* the response (or a centralized post-response dispatcher hook) is killed by Vercel's serverless teardown when the response ends, so records are silently lost. Logging inside the handler before the response guarantees the write completes within the live invocation. (Do NOT re-introduce a post-response central hook for this.)
+- **Capture who + what + when, all human-readable.** `logActivity` auto-fills the actor's `userName` (from `ctx.userData.displayName/name/companyName`) + `email` + `uid`. The caller passes the entity's **NAME** (`entityName`) — not just the id — fetching it first when the payload doesn't include it (read the doc before a delete; re-read after a partial update). `timestamp` (ISO 8601) is stamped automatically.
+- **Record shape:** `{ type, category, uid, userName, email, clientId, entityType, entityId, entityName, details, timestamp }`. `category` is the coarse bucket used by the UI filters + colour: `create | read | update | delete | approve | auth | export | system | other`.
+- **Array-saved collections** (`risks` / `issues` / `complianceItems` / `kris`, persisted whole through `saveData`): use `logArrayChanges(ctx, collection, projectId, prev, next)` — it diffs old vs new by item id and logs per-item create/update/delete *by title*, summarising above a 12-item threshold to avoid flooding.
+- **System / automatic events** (cron, escalations) use `logSystemActivity(ctx, type, {...})` (category `system`).
+- **Reads are logged sparingly (Option A — meaningful views only):** opening a specific record (e.g. `project_viewed`, `evidence_viewed`, `report_viewed`, `enquiry_viewed`). Do NOT log high-volume background reads (dashboard aggregates, `getData`, `getProfile`).
+- **Coverage is app-wide.** Every CRUD handler logs — compliance, risk, projects/programmes, team, admin, auth, evidence, invoices, AND the Governance + Technical Assurance modules (meetings, forward plan, reports, project docs, framework, templates, enquiries, RFIs, cost rates). Approval transitions log via `writeReportAuditEvent` (governance) + per-handler `logActivity` (TAC). Deliberately NOT logged: meeting sub-item tweaks (minutes/decisions/action-items — captured in meeting history), RFI draft autosave (noisy; only *issued* logs), and the high-volume reads above.
+- New CRUD handlers MUST add a `logActivity` call following this pattern; new event `type`s render automatically (the table humanises `type` and colours by `category` — no enum to extend, though `ACTIVITY_ICONS` in `admin/constants.tsx` can give a nicer label).
+
 ### Styling
 - Pure **Tailwind CSS v4** (Vite plugin; no `tailwind.config.js`) — no CSS modules, no styled-components, no SCSS
 - `clsx()` for conditional class names: `clsx('base-class', condition && 'extra-class')`
@@ -1298,3 +1329,4 @@ Configured JSON-first in [apps/desktop/logger.cjs](apps/desktop/logger.cjs). Fil
 - **Never read `auth.currentUser` or call `signOut(auth)` directly in app code.** Use [`authBridge`](src/lib/auth/authBridge.ts) — breaks silently on desktop otherwise.
 - **`apps/desktop/built-env.cjs` must stay gitignored.** It contains the Google OAuth client secret baked at build time. Never commit, never `git add` it.
 - **Never raise the 3 MB upload cap by editing constants alone.** It's bounded by Vercel's 4.5 MB serverless body limit (not configurable). Raising it requires switching pattern entirely (M-LargeUploads in `handoff.md`).
+- **Activity logging goes through [`api/lib/activityLog.ts`](api/lib/activityLog.ts), awaited BEFORE the response.** Don't write to `activityLogs` ad-hoc, and never move logging to a post-response central dispatcher hook — Vercel tears the invocation down at response end and the write is lost (see the activity-logging convention above).

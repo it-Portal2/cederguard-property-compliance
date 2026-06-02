@@ -21,6 +21,7 @@
 
 import type { ApiContext } from '../lib/context.js';
 import { computeChaseEvents, URGENT_KINDS, type ChaseEvent } from '../lib/chaseEngine.js';
+import { logSystemActivity } from '../lib/activityLog.js';
 
 const DEDUPE_WINDOW_HOURS = 12;
 
@@ -385,6 +386,12 @@ async function runChaseEngine(req: any, res: any, ctx: ApiContext) {
         console.error('[chase] TTL purge failed', err);
       }
     }
+
+    await logSystemActivity(ctx, "chase_engine_run", {
+      entityType: "system",
+      entityName: "Chase engine run",
+      details: { workspacesProcessed: workspaceIds.length, purgedChaseEvents },
+    });
 
     return res.status(200).json({
       success: true,
