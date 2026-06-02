@@ -52,10 +52,18 @@ export type ChatStreamEvent =
   | { event: "done"; data: { messageId: string | null; remaining?: number } };
 
 export interface Citation {
+  /** Record-type ("risk" | "compliance" | …) for in-app sources, or "web" for an external web source. */
   kind: string;
   id: string;
   label: string;
+  /** In-app deep-link route. For web sources this is the external URL too (or use `url`). */
   route: string;
+  /** External source URL — present on web citations (kind: "web"). */
+  url?: string;
+  /** Optional page/source title for web citations. */
+  title?: string;
+  /** Optional extractive snippet from the web source. */
+  snippet?: string;
 }
 
 export interface ChatSendOptions {
