@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import {
-  Briefcase,
   FileSearch,
   ArrowRight,
   CheckCircle2,
   AlertTriangle,
-  ChevronRight,
   FileCheck,
   Plus,
   Activity,
@@ -15,6 +13,7 @@ import {
 import { analyzeContextSentence } from "../services/aiService";
 import { useStore } from "../store/useStore";
 import ValidateButton from "../components/validation/ValidateButton";
+import PageHeader from "../components/PageHeader";
 import { clsx } from "clsx";
 import toast from "react-hot-toast";
 
@@ -168,21 +167,12 @@ export function AIComplianceOutlook() {
   const remainingCount = suggestions.filter((_, i) => !addedIndices.has(i)).length;
 
   return (
-    <div>
-      {/* ── Sticky Header ──────────────────────────────────────── */}
-      <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200/70 sticky top-0 z-20">
-        <div className="max-w-full mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="shrink-0 w-7 h-7 bg-indigo-600 rounded-md flex items-center justify-center shadow-sm shadow-indigo-600/30">
-              <Briefcase className="w-3.5 h-3.5 text-white" />
-            </div>
-            <nav className="flex items-center gap-1.5 min-w-0">
-              <span className="text-xs text-slate-400 hidden sm:block">Compliance</span>
-              <ChevronRight className="w-3 h-3 text-slate-300 shrink-0 hidden sm:block" />
-              <span className="text-xs font-semibold text-slate-700 truncate">Posture Outlook</span>
-            </nav>
-          </div>
-
+    <div className="space-y-6 sm:space-y-8">
+      <PageHeader
+        breadcrumbs={[{ label: "Automated Intelligence" }, { label: "Compliance Posture Outlook" }]}
+        title="Compliance Posture Outlook"
+        subtitle="Generate statutory compliance requirements from natural language project descriptions."
+        actions={
           <div className="flex items-center gap-3">
             {/* Context badge */}
             {contextName ? (
@@ -223,17 +213,11 @@ export function AIComplianceOutlook() {
               )}
             </AnimatePresence>
           </div>
-        </div>
-      </header>
+        }
+      />
 
       {/* ── Page Body ──────────────────────────────────────────── */}
-      <div className="max-w-full mx-auto px-4 sm:px-6 py-8 space-y-6">
-        <div className="space-y-1 pb-2">
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Compliance Posture Outlook</h1>
-          <p className="text-sm text-slate-500">
-            Generate statutory compliance requirements from natural language project descriptions.
-          </p>
-        </div>
+      <div className="space-y-6">
 
         {/* ── Input Card ──────────────────────────────────────── */}
         <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">

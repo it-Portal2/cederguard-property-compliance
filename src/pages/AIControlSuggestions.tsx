@@ -7,13 +7,12 @@ import {
     Search,
     Plus,
     ArrowRight,
-    ChevronRight,
     Radar,
     FileText,
-    Shield,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import ValidateButton from '../components/validation/ValidateButton';
+import PageHeader from '../components/PageHeader';
 import toast from 'react-hot-toast';
 import { analyzeControls, analyzeContextSentence } from '../services/aiService';
 import { clsx } from 'clsx';
@@ -124,23 +123,13 @@ export function AIControlSuggestions() {
     };
 
     return (
-        <div>
+        <div className="space-y-6 sm:space-y-8">
 
-            {/* ── Sticky Header ──────────────────────────────────────── */}
-            <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200/70 sticky top-0 z-20">
-                <div className="max-w-full mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
-
-                    <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="shrink-0 w-7 h-7 bg-indigo-600 rounded-md flex items-center justify-center shadow-sm shadow-indigo-600/30">
-                            <Shield className="w-3.5 h-3.5 text-white" />
-                        </div>
-                        <nav className="flex items-center gap-1.5 min-w-0">
-                            <span className="text-xs text-slate-400 hidden sm:block">Risk Management</span>
-                            <ChevronRight className="w-3 h-3 text-slate-300 shrink-0 hidden sm:block" />
-                            <span className="text-xs font-semibold text-slate-700 truncate">AI Controls</span>
-                        </nav>
-                    </div>
-
+            <PageHeader
+                breadcrumbs={[{ label: "Automated Intelligence" }, { label: "Mitigation & Control Strategy" }]}
+                title="Mitigation & Control Strategy"
+                subtitle="Generate industrial-grade mitigation strategies for your project risk profile."
+                actions={
                     <AnimatePresence>
                         {highRisks.length > 0 && (
                             <motion.div
@@ -164,18 +153,10 @@ export function AIControlSuggestions() {
                             </motion.div>
                         )}
                     </AnimatePresence>
+                }
+            />
 
-                </div>
-            </header>
-
-            <div className="max-w-full mx-auto px-4 sm:px-6 py-8 space-y-6">
-
-                <div className="space-y-1 pb-2">
-                    <h1 className="text-xl font-bold text-slate-900 tracking-tight">Mitigation &amp; Control Strategy</h1>
-                    <p className="text-sm text-slate-500">
-                        Generate industrial-grade mitigation strategies for your project risk profile.
-                    </p>
-                </div>
+            <div className="space-y-6">
 
                 {/* ── Analysis Modules ────────────────────────────────── */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
