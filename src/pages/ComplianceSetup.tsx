@@ -1647,6 +1647,32 @@ export function ComplianceSetup() {
 
           {/* ─── Analysis Results ───*/}
           {phase === 3 && lastAnalysisResults && (
+            <>
+              {complianceCtxId && (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 p-3.5 rounded-lg border border-indigo-100 bg-indigo-50/50">
+                  <p className="text-[13px] text-slate-600 max-w-xl">
+                    Fact-check the AI-identified requirements before publishing — it verifies the
+                    regulations, attaches sources, and unlocks publication once a Project Manager
+                    validates.
+                  </p>
+                  <ValidateButton
+                    surface="compliance"
+                    targetId={complianceCtxId}
+                    contextId={complianceCtxId}
+                    label="Compliance assessment"
+                    content={() =>
+                      (complianceItems || [])
+                        .map((i: any) => `${i.reg || i.name || i.id}: ${i.req || ""}`)
+                        .join("\n")
+                    }
+                    ratingsContext={() =>
+                      (complianceItems || [])
+                        .map((i: any) => `${i.reg || i.id}: risk ${i.risk || "?"}`)
+                        .join("\n")
+                    }
+                  />
+                </div>
+              )}
             <AnalysisSummary
               projectInfo={projectInfo}
               lastAnalysisResults={lastAnalysisResults}
@@ -1667,6 +1693,7 @@ export function ComplianceSetup() {
               handleFinalise={handleFinalise}
               loading={loading}
             />
+            </>
           )}
 
           {/* ─── Publication & Completion ───*/}
@@ -1718,36 +1745,12 @@ export function ComplianceSetup() {
                   </div>
 
                   <div className="flex flex-col sm:flex-row items-center gap-4 pt-8">
-                    {complianceCtxId && (
-                      <ValidateButton
-                        surface="compliance"
-                        targetId={complianceCtxId}
-                        contextId={complianceCtxId}
-                        label="Compliance assessment"
-                        content={() =>
-                          (complianceItems || [])
-                            .map(
-                              (i: any) =>
-                                `${i.reg || i.name || i.id}: ${i.req || ""}`,
-                            )
-                            .join("\n")
-                        }
-                        ratingsContext={() =>
-                          (complianceItems || [])
-                            .map(
-                              (i: any) =>
-                                `${i.reg || i.id}: risk ${i.risk || "?"}`,
-                            )
-                            .join("\n")
-                        }
-                      />
-                    )}
                     <button
                       onClick={publishFramework}
                       disabled={loading || isComplianceValidationBlocked}
                       title={
                         isComplianceValidationBlocked
-                          ? "Fact-check & validate before publishing"
+                          ? "Fact-check & validate the requirements in the Strategic Review step before publishing"
                           : undefined
                       }
                       className="flex items-center gap-3 px-10 py-5 bg-emerald-500 text-white rounded-lg font-medium text-sm hover:bg-emerald-600 transition-all   /20 disabled:opacity-50"
