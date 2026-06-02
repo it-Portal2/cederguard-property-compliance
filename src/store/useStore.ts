@@ -35,6 +35,7 @@ import {
   getWorkstreamId,
 } from "../data/riskTaxonomy";
 import { api } from "../lib/api";
+import { getGrossScore, getResidualScore } from "../lib/riskMetrics";
 import { isAtLeastClientAdmin } from "../lib/roles";
 import { generateId, isValidDateString } from "../lib/utils";
 import { authBridge } from "../lib/auth/authBridge";
@@ -138,6 +139,32 @@ export const normalizeRisk = (risk: Partial<RiskItem>): Partial<RiskItem> => {
       !isValidWorkstreamIdFormat(normalized.workstreamId))
   ) {
     normalized.workstreamId = getWorkstreamId(normalized.workstream);
+  }
+
+  // Risk-to-Issue conversion engine backfill (idempotent). `dependencies`
+  // defaults to an empty array. `probHistory` is seeded with ONE baseline
+  // snapshot from the risk's current scores so the trend signal has a starting
+  // point and fires on the very next re-score — rather than needing two future
+  // edits to accumulate history. The baseline is dated from existing stable
+  // fields (lastReviewDate → dateAdded), never "now", so repeated reads of an
+  // un-resaved risk don't churn the date. A non-empty probHistory is left as-is.
+  if (!Array.isArray(normalized.dependencies)) {
+    normalized.dependencies = [];
+  }
+  if (!Array.isArray(normalized.probHistory) || normalized.probHistory.length === 0) {
+    const gScore = getGrossScore(normalized);
+    const rScore = getResidualScore(normalized);
+    normalized.probHistory =
+      gScore > 0 || rScore > 0
+        ? [
+            {
+              date: normalized.lastReviewDate || normalized.dateAdded || "",
+              grossScore: gScore,
+              residualScore: rScore,
+              residualProb: normalized.residualProb,
+            },
+          ]
+        : [];
   }
 
   return normalized;
@@ -403,6 +430,19 @@ export interface Programme {
   lastComplianceRun?: string;
 }
 
+/**
+ * A point-in-time snapshot of a risk's calibrated scores, used to detect a
+ * rising probability/severity trend for the Risk-to-Issue conversion engine
+ * (src/lib/riskConversion.ts). Seeded once from current scores by normalizeRisk
+ * and appended to by updateRisk whenever likelihood/impact changes.
+ */
+export interface ProbSnapshot {
+  date: string;
+  grossScore: number;
+  residualScore: number;
+  residualProb?: number;
+}
+
 export interface RiskItem {
   id: string;
   projectId?: string;
@@ -443,6 +483,11 @@ export interface RiskItem {
   convertedToIssue?: boolean;
   isProgrammeLevel?: boolean;
   grossALE?: number;
+  // Risk-to-Issue conversion engine inputs (src/lib/riskConversion.ts):
+  // `dependencies` = ids of other risks this one depends on (cascade signal);
+  // `probHistory` = score snapshots over time (probability-trend signal).
+  dependencies?: string[];
+  probHistory?: ProbSnapshot[];
   lastReviewDate?: string;
   nextReviewDate?: string;
   nextReview?: string;
@@ -1202,6 +1247,28 @@ export const useStore = create<AppState>((set, get) => {
         const merged = { ...risk, ...updates };
         // Normalize to ensure both ID and name fields are populated
         const next = normalizeRisk(merged) as RiskItem;
+
+        // Append a probability snapshot whenever the calibrated score changes,
+        // so the conversion engine (src/lib/riskConversion.ts) can detect an
+        // upward trend. The baseline point was already seeded by normalizeRisk
+        // on load (from the OLD score), so a score change yields ≥2 points.
+        // Unchanged saves (e.g. title-only edits) append nothing.
+        const prevG = getGrossScore(risk);
+        const prevR = getResidualScore(risk);
+        const nextG = getGrossScore(next);
+        const nextR = getResidualScore(next);
+        if (nextG !== prevG || nextR !== prevR) {
+          const history = Array.isArray(next.probHistory)
+            ? [...next.probHistory]
+            : [];
+          history.push({
+            date: new Date().toISOString().split("T")[0],
+            grossScore: nextG,
+            residualScore: nextR,
+            residualProb: next.residualProb,
+          });
+          next.probHistory = history;
+        }
 
         if (updates.escalated === true && !risk.escalated) {
           // Ensure projectId is stamped — needed for reliable de-escalation later

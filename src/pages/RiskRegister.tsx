@@ -33,8 +33,14 @@ import {
   Settings,
   RefreshCw,
   FileSpreadsheet,
+  TrendingUp,
 } from "lucide-react";
 import { RiskModal } from "../components/RiskModal";
+import { InfoTooltip } from "../components/InfoTooltip";
+import {
+  evaluateConversion,
+  type ConversionResult,
+} from "../lib/riskConversion";
 import PageActions, { type ActionItem } from "../components/PageActions";
 import { exportContextData } from "../lib/exportUtils";
 import { StatsCard } from "../components/common/StatsCard";
@@ -279,6 +285,19 @@ export function RiskRegister() {
         return (b.id || "").localeCompare(a.id || "");
       });
   }, [effectiveRisks, activeProjectId, activeProgrammeId, projects, projectFilter, progLevelLabel]);
+
+  // Risk-to-Issue conversion signals for the in-scope risks
+  // (src/lib/riskConversion.ts). Keyed by id; dependency-cascade lookups use the
+  // same scoped list so a linked risk resolves within the current view.
+  const conversionById = useMemo(() => {
+    const m = new Map<string, ConversionResult>();
+    for (const r of contextScoped) m.set(r.id, evaluateConversion(r, contextScoped));
+    return m;
+  }, [contextScoped]);
+  const trendingCount = useMemo(
+    () => Array.from(conversionById.values()).filter((c) => c.isTrending).length,
+    [conversionById],
+  );
 
   // Action handlers — pessimistic: await the store call, return the promise so
   // ConfirmDialog (inside DynamicTable) can hold open with a spinner until the
@@ -790,23 +809,46 @@ export function RiskRegister() {
       key: "_indicators" as any,
       label: "Ind",
       align: "center",
-      render: (_v, r) => (
-        <div className="flex flex-col gap-1.5 items-center">
-          {r.escalated && (
-            <span className="px-2 py-0.5 bg-rose-100 text-rose-700 border border-rose-200 rounded font-mono text-[10px] font-medium flex items-center gap-1 shadow-sm shadow-rose-200/50 uppercase tracking-wide">
-              <Flag className="w-2.5 h-2.5 fill-current" /> ESC
-            </span>
-          )}
-          {r.convertedToIssue && (
-            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 border border-amber-200 rounded font-mono text-[10px] font-medium flex items-center gap-1 shadow-sm shadow-amber-200/50 uppercase tracking-wide">
-              <AlertTriangle className="w-2.5 h-2.5 fill-current" /> ISSUE
-            </span>
-          )}
-          {!r.escalated && !r.convertedToIssue && (
-            <span className="text-slate-300">—</span>
-          )}
-        </div>
-      ),
+      render: (_v, r) => {
+        const conv = conversionById.get(r.id);
+        const trending = !!conv?.isTrending;
+        return (
+          <div className="flex flex-col gap-1.5 items-center">
+            {r.escalated && (
+              <span className="px-2 py-0.5 bg-rose-100 text-rose-700 border border-rose-200 rounded font-mono text-[10px] font-medium flex items-center gap-1 shadow-sm shadow-rose-200/50 uppercase tracking-wide">
+                <Flag className="w-2.5 h-2.5 fill-current" /> ESC
+              </span>
+            )}
+            {r.convertedToIssue && (
+              <span className="px-2 py-0.5 bg-amber-100 text-amber-700 border border-amber-200 rounded font-mono text-[10px] font-medium flex items-center gap-1 shadow-sm shadow-amber-200/50 uppercase tracking-wide">
+                <AlertTriangle className="w-2.5 h-2.5 fill-current" /> ISSUE
+              </span>
+            )}
+            {trending && !r.convertedToIssue && (
+              <span className="px-2 py-0.5 bg-orange-100 text-orange-700 border border-orange-200 rounded font-mono text-[10px] font-medium flex items-center gap-1 shadow-sm shadow-orange-200/50 uppercase tracking-wide">
+                <TrendingUp className="w-2.5 h-2.5" /> Trending
+                <InfoTooltip
+                  content={
+                    <div>
+                      <div className="font-semibold mb-1">
+                        Trending toward an issue — why:
+                      </div>
+                      <ul className="list-disc pl-4 space-y-0.5">
+                        {(conv?.reasons || []).map((reason, i) => (
+                          <li key={i}>{reason}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  }
+                />
+              </span>
+            )}
+            {!r.escalated && !r.convertedToIssue && !trending && (
+              <span className="text-slate-300">—</span>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: "_age" as any,
@@ -1020,7 +1062,7 @@ export function RiskRegister() {
         )}
 
         {/* Summary Tiles*/}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
           <StatsCard
             title="Total Risks"
             value={contextScoped.length}
@@ -1056,6 +1098,15 @@ export function RiskRegister() {
             iconBgClassName="bg-amber-50 dark:bg-amber-900/30"
             iconClassName="text-amber-600 dark:text-amber-400"
             valueClassName="text-amber-600 dark:text-amber-400"
+          />
+          <StatsCard
+            title="Trending to Issue"
+            value={trendingCount}
+            unit="risks"
+            icon={TrendingUp}
+            iconBgClassName="bg-orange-50 dark:bg-orange-900/30"
+            iconClassName="text-orange-600 dark:text-orange-400"
+            valueClassName="text-orange-600 dark:text-orange-400"
           />
           <StatsCard
             title="Financial Exposure"
@@ -1115,7 +1166,9 @@ export function RiskRegister() {
           rowClassName={(r) => {
             const base = r.escalated
               ? "bg-indigo-50/30 hover:bg-indigo-50/50"
-              : "";
+              : conversionById.get(r.id)?.isTrending
+                ? "bg-orange-50/40 hover:bg-orange-50/60"
+                : "";
             const pending = isRowPending(r.id)
               ? " opacity-60 pointer-events-none"
               : "";

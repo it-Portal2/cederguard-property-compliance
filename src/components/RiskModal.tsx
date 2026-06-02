@@ -171,6 +171,7 @@ export function RiskModal({
   const {
     projects,
     programmes,
+    risks,
     activeProjectId,
     activeProgrammeId,
     tasks,
@@ -437,6 +438,26 @@ export function RiskModal({
         (p) => p.programmeId === (formData.programmeId || activeProgrammeId),
       )
     : safeProjects;
+
+  // Dependency candidates: other risks in the SAME scope as this risk (same
+  // project, or same programme for programme-level risks), excluding itself.
+  // Feeds the conversion engine's dependency-cascade signal.
+  const safeRisks = Array.isArray(risks) ? risks : [];
+  const dependencyCandidates = safeRisks.filter((r) => {
+    if (r.id === initialData?.id) return false;
+    if (formData.projectId) return r.projectId === formData.projectId;
+    if (formData.programmeId) return r.programmeId === formData.programmeId;
+    return true;
+  });
+  const selectedDeps = Array.isArray(formData.dependencies)
+    ? formData.dependencies
+    : [];
+  const toggleDependency = (rid: string) => {
+    const set = new Set(selectedDeps);
+    if (set.has(rid)) set.delete(rid);
+    else set.add(rid);
+    handleChange("dependencies", Array.from(set));
+  };
 
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50">
@@ -1308,6 +1329,58 @@ We removed the disabled <fieldset> wrapping (it killed scrolling while saving)
                         first.
                       </span>
                     </p>
+                  )}
+                </div>
+
+                {/* Dependencies — other risks this one depends on. Drives the
+                    conversion-alert dependency-cascade signal. */}
+                <div className="md:col-span-2 min-w-0">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Dependencies{" "}
+                    <span className="text-slate-400 font-normal text-xs">
+                      (Optional)
+                    </span>
+                  </label>
+                  <p className="text-[11px] text-slate-400 mb-2">
+                    Link other risks this one depends on. A dependency that turns
+                    severe, overdue, or becomes an issue will flag this risk as
+                    trending toward conversion.
+                  </p>
+                  {dependencyCandidates.length === 0 ? (
+                    <div className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-[11px] text-slate-400">
+                      No other risks in this context to link.
+                    </div>
+                  ) : (
+                    <>
+                      <div className="max-h-40 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100">
+                        {dependencyCandidates.map((r) => (
+                          <label
+                            key={r.id}
+                            className="flex items-center gap-2.5 px-3 py-2 cursor-pointer hover:bg-slate-50 transition-colors"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedDeps.includes(r.id)}
+                              onChange={() => toggleDependency(r.id)}
+                              disabled={isSaving}
+                              className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 shrink-0 disabled:opacity-60"
+                            />
+                            <span className="font-mono text-[10px] text-slate-400 shrink-0 tabular-nums">
+                              {r.id}
+                            </span>
+                            <span className="text-xs text-slate-700 truncate min-w-0">
+                              {r.title || "Untitled risk"}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                      {selectedDeps.length > 0 && (
+                        <div className="mt-1.5 font-mono text-[11px] text-slate-500 tabular-nums">
+                          {selectedDeps.length} dependenc
+                          {selectedDeps.length === 1 ? "y" : "ies"} linked
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>

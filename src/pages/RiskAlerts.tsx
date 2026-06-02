@@ -1,16 +1,18 @@
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 import { Link, useSearchParams } from 'react-router';
-import { AlertCircle, Scale, Folder, User, Check, Clock, CheckCircle2, RotateCcw, ShieldAlert, AlertTriangle, ArrowLeft, Bell, Flame, Radar, Landmark } from 'lucide-react';
+import { AlertCircle, Scale, Folder, User, Check, Clock, CheckCircle2, RotateCcw, ShieldAlert, AlertTriangle, ArrowLeft, Bell, Flame, Radar, Landmark, TrendingUp, ArrowRightLeft } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { StatsCard } from '../components/common/StatsCard';
 import { format, differenceInDays } from 'date-fns';
 import { KRI_LIST, KRI_OWNERS } from '../data/riskData';
 import { getGrossScore } from '../lib/riskMetrics';
+import { evaluateConversion, conversionAction } from '../lib/riskConversion';
 import { clsx } from 'clsx';
 import PageHeader from '../components/PageHeader';
 
 export function RiskAlerts() {
-  const { risks, issues, acknowledgedAlerts, snoozedAlerts, ackAlert, snoozeAlert, resetAlerts, activeProjectId, activeProgrammeId, projects } = useStore();
+  const { risks, issues, acknowledgedAlerts, snoozedAlerts, ackAlert, snoozeAlert, resetAlerts, convertToIssue, activeProjectId, activeProgrammeId, projects } = useStore();
   const [searchParams] = useSearchParams();
   const fromInitiation = searchParams.get('from') === 'initiation';
   const type = searchParams.get('type') || (activeProjectId ? 'project' : 'programme');
@@ -19,6 +21,19 @@ export function RiskAlerts() {
   const [search, setSearch] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [sendSuccess, setSendSuccess] = useState(false);
+  const [convertingId, setConvertingId] = useState<string | null>(null);
+
+  const handleConvert = async (riskId: string, alertId: string) => {
+    setConvertingId(alertId);
+    try {
+      await convertToIssue(riskId);
+      toast.success('Risk converted to an issue.');
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to convert risk. Please try again.');
+    } finally {
+      setConvertingId(null);
+    }
+  };
 
   const handleSendAlerts = () => {
     setIsSending(true);
@@ -104,6 +119,25 @@ export function RiskAlerts() {
     }
   });
 
+  // Conversion Watch — risks predicted to be trending toward becoming an active
+  // issue, with a plain-English justification (src/lib/riskConversion.ts).
+  filteredRisks.forEach(r => {
+    const conv = evaluateConversion(r, filteredRisks);
+    if (!conv.isTrending) return;
+    allAlerts.push({
+      id: `conv::${r.id}`,
+      group: 'Conversion',
+      color: 'orange',
+      icon: <TrendingUp className="w-4 h-4 text-orange-500" />,
+      label: 'Trending Toward Issue',
+      item: r,
+      msg: `${r.id}${r.title ? ` "${r.title}"` : ''} is trending toward becoming an issue — ${conv.reasons.join('; ')}.`,
+      action: conversionAction(conv),
+      isConversion: true,
+      riskId: r.id,
+    });
+  });
+
   const activeAlerts = allAlerts.filter(a => !acknowledgedAlerts.includes(a.id) && (!snoozedAlerts[a.id] || snoozedAlerts[a.id] < now));
 
   const filtered = activeAlerts.filter(a => {
@@ -115,6 +149,7 @@ export function RiskAlerts() {
   const critCount = activeAlerts.filter(a => a.group === 'Critical').length;
   const kriCount = activeAlerts.filter(a => a.group === 'KRI').length;
   const statCount = activeAlerts.filter(a => a.group === 'Statutory').length;
+  const convCount = activeAlerts.filter(a => a.group === 'Conversion').length;
   const ackdCount = acknowledgedAlerts.length;
 
   return (
@@ -142,7 +177,7 @@ export function RiskAlerts() {
       />
 
       {/* Summary Strip */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
         <StatsCard
           icon={Bell}
           title="Total Active"
@@ -182,6 +217,16 @@ export function RiskAlerts() {
           iconClassName="text-violet-600 dark:text-violet-400"
           className={clsx(filter === 'Statutory' && 'ring-2 ring-violet-500')}
           onClick={() => setFilter('Statutory')}
+        />
+        <StatsCard
+          icon={TrendingUp}
+          title="Conversion"
+          value={convCount}
+          size="sm"
+          iconBgClassName="bg-orange-50 dark:bg-orange-500/10"
+          iconClassName="text-orange-600 dark:text-orange-400"
+          className={clsx(filter === 'Conversion' && 'ring-2 ring-orange-500')}
+          onClick={() => setFilter('Conversion')}
         />
         <StatsCard
           icon={CheckCircle2}
@@ -232,7 +277,8 @@ export function RiskAlerts() {
             <div key={a.id} className={clsx("bg-white border rounded-lg p-5 shadow-sm transition-all border-l-4",
               a.color === 'red' ? 'border-l-red-500 border-slate-200' :
                 a.color === 'purple' ? 'border-l-purple-500 border-slate-200' :
-                  'border-l-amber-500 border-slate-200'
+                  a.color === 'orange' ? 'border-l-orange-500 border-slate-200' :
+                    'border-l-amber-500 border-slate-200'
             )}>
               <div className="flex flex-col md:flex-row justify-between gap-4">
                 <div className="flex-1">
@@ -241,7 +287,8 @@ export function RiskAlerts() {
                     <span className={clsx("text-[10px] font-mono font-medium uppercase tracking-wide",
                       a.color === 'red' ? 'text-red-600' :
                         a.color === 'purple' ? 'text-purple-600' :
-                          'text-amber-600'
+                          a.color === 'orange' ? 'text-orange-600' :
+                            'text-amber-600'
                     )}>{a.group}</span>
                     <span className="px-2 py-0.5 bg-slate-100 text-slate-600 border border-slate-200 rounded text-[10px] font-medium">
                       {a.label}
@@ -255,12 +302,23 @@ export function RiskAlerts() {
                   <div className={clsx("p-3 rounded-lg text-xs border",
                     a.color === 'red' ? 'bg-red-50 border-red-100 text-red-800' :
                       a.color === 'purple' ? 'bg-purple-50 border-purple-100 text-purple-800' :
-                        'bg-amber-50 border-amber-100 text-amber-800'
+                        a.color === 'orange' ? 'bg-orange-50 border-orange-100 text-orange-800' :
+                          'bg-amber-50 border-amber-100 text-amber-800'
                   )}>
                     <strong>Recommended Action:</strong> {a.action}
                   </div>
                 </div>
                 <div className="flex flex-col gap-2 shrink-0">
+                  {a.isConversion && (
+                    <button
+                      onClick={() => handleConvert(a.riskId, a.id)}
+                      disabled={convertingId === a.id}
+                      className="px-4 py-2 bg-orange-600 text-white rounded-lg text-xs font-bold hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                    >
+                      <ArrowRightLeft className="w-4 h-4" />
+                      {convertingId === a.id ? 'Converting…' : 'Convert to issue'}
+                    </button>
+                  )}
                   <button onClick={() => ackAlert(a.id)} className="px-4 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-bold hover:bg-emerald-100 transition-colors flex items-center gap-2">
                     <Check className="w-4 h-4" /> Acknowledge
                   </button>

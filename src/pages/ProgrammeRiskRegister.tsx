@@ -15,6 +15,8 @@ import {
     Settings, RefreshCw, FileSpreadsheet,
 } from 'lucide-react';
 import { RiskModal } from '../components/RiskModal';
+import { InfoTooltip } from '../components/InfoTooltip';
+import { evaluateConversion, type ConversionResult } from '../lib/riskConversion';
 import { AIInquiryPopup } from '../components/AIInquiryPopup';
 import PageActions, { type ActionItem } from '../components/PageActions';
 import { exportContextData } from '../lib/exportUtils';
@@ -197,6 +199,11 @@ export function ProgrammeRiskRegister() {
         if (dateB !== dateA) return dateB - dateA;
         return (b.id || '').localeCompare(a.id || '');
     });
+
+    // Risk-to-Issue conversion signals (src/lib/riskConversion.ts), keyed by id.
+    // Dependency-cascade lookups resolve within the programme-scoped list.
+    const conversionById = new Map<string, ConversionResult>();
+    for (const r of allProg) conversionById.set(r.id, evaluateConversion(r, allProg));
 
     const calcALE = (impact?: number, prob?: number) => {
         if (!impact || !prob) return 0;
@@ -687,23 +694,46 @@ export function ProgrammeRiskRegister() {
             key: '_indicators' as any,
             label: 'Ind',
             align: 'center',
-            render: (_v, r) => (
-                <div className="flex flex-col gap-1.5 items-center">
-                    {r.escalated && (
-                        <span className="font-mono px-2 py-0.5 bg-rose-100 text-rose-700 border border-rose-200 rounded text-[9px] font-bold flex items-center gap-1 shadow-sm shadow-rose-200/50 uppercase tracking-wider">
-                            <Flag className="w-2.5 h-2.5 fill-current" /> ESC
-                        </span>
-                    )}
-                    {r.convertedToIssue && (
-                        <span className="font-mono px-2 py-0.5 bg-amber-100 text-amber-700 border border-amber-200 rounded text-[9px] font-bold flex items-center gap-1 shadow-sm shadow-amber-200/50 uppercase tracking-wider">
-                            <AlertTriangle className="w-2.5 h-2.5 fill-current" /> ISSUE
-                        </span>
-                    )}
-                    {!r.escalated && !r.convertedToIssue && (
-                        <span className="text-slate-300">—</span>
-                    )}
-                </div>
-            ),
+            render: (_v, r) => {
+                const conv = conversionById.get(r.id);
+                const trending = !!conv?.isTrending;
+                return (
+                    <div className="flex flex-col gap-1.5 items-center">
+                        {r.escalated && (
+                            <span className="font-mono px-2 py-0.5 bg-rose-100 text-rose-700 border border-rose-200 rounded text-[9px] font-bold flex items-center gap-1 shadow-sm shadow-rose-200/50 uppercase tracking-wider">
+                                <Flag className="w-2.5 h-2.5 fill-current" /> ESC
+                            </span>
+                        )}
+                        {r.convertedToIssue && (
+                            <span className="font-mono px-2 py-0.5 bg-amber-100 text-amber-700 border border-amber-200 rounded text-[9px] font-bold flex items-center gap-1 shadow-sm shadow-amber-200/50 uppercase tracking-wider">
+                                <AlertTriangle className="w-2.5 h-2.5 fill-current" /> ISSUE
+                            </span>
+                        )}
+                        {trending && !r.convertedToIssue && (
+                            <span className="font-mono px-2 py-0.5 bg-orange-100 text-orange-700 border border-orange-200 rounded text-[9px] font-bold flex items-center gap-1 shadow-sm shadow-orange-200/50 uppercase tracking-wider">
+                                <TrendingUp className="w-2.5 h-2.5" /> Trending
+                                <InfoTooltip
+                                    content={
+                                        <div>
+                                            <div className="font-semibold mb-1">
+                                                Trending toward an issue — why:
+                                            </div>
+                                            <ul className="list-disc pl-4 space-y-0.5">
+                                                {(conv?.reasons || []).map((reason, i) => (
+                                                    <li key={i}>{reason}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    }
+                                />
+                            </span>
+                        )}
+                        {!r.escalated && !r.convertedToIssue && !trending && (
+                            <span className="text-slate-300">—</span>
+                        )}
+                    </div>
+                );
+            },
         },
         {
             key: '_age' as any,
@@ -1075,7 +1105,9 @@ export function ProgrammeRiskRegister() {
                     rowClassName={(r) => {
                         const base = r._source === 'project'
                             ? 'bg-orange-50/30 hover:bg-orange-50/50'
-                            : '';
+                            : conversionById.get(r.id)?.isTrending
+                                ? 'bg-orange-50/40 hover:bg-orange-50/60'
+                                : '';
                         const pending = isRowPending(r.id)
                             ? ' opacity-60 pointer-events-none'
                             : '';
