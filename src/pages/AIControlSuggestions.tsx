@@ -13,6 +13,7 @@ import {
     Shield,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import ValidateButton from '../components/validation/ValidateButton';
 import toast from 'react-hot-toast';
 import { analyzeControls, analyzeContextSentence } from '../services/aiService';
 import { clsx } from 'clsx';
@@ -54,6 +55,14 @@ export function AIControlSuggestions() {
 
     const highRisks = risks.filter(r => r.status === 'Open' && (r.residualRating || 0) >= 12);
 
+    // Fact-Check / Validation gate (Q4=A) — one passing fact-check unlocks the Add buttons.
+    const mitigationCtxId = (activeProject as any)?.id || (activeProgramme as any)?.id || '';
+    const mitigationValidation = useStore((s) => s.validationsByKey[`mitigation:${mitigationCtxId}`] ?? null);
+    const isMitigationValidationBlocked =
+        !!mitigationCtxId &&
+        suggestedControls.length > 0 &&
+        (mitigationValidation?.status ?? 'unchecked') !== 'validated';
+
     const runAutomatedAnalysis = async () => {
         if (highRisks.length === 0) {
             setError('No high-rated open risks to analyze.');
@@ -88,6 +97,10 @@ export function AIControlSuggestions() {
     };
 
     const addControl = (riskId: string, suggestion: string) => {
+        if (isMitigationValidationBlocked) {
+            toast.error('Please fact-check & validate the mitigation strategy before adding controls.');
+            return;
+        }
         const risk = risks.find(r => r.id === riskId);
         if (!risk) return;
         const newControls = risk.controls && risk.controls !== 'None'
@@ -500,6 +513,22 @@ export function AIControlSuggestions() {
                                 </motion.span>
                             </div>
 
+                            {mitigationCtxId && (
+                                <div className="px-0.5">
+                                    <ValidateButton
+                                        surface="mitigation"
+                                        targetId={mitigationCtxId}
+                                        contextId={mitigationCtxId}
+                                        label="Mitigation & control strategy"
+                                        content={() =>
+                                            suggestedControls
+                                                .map((sc: any) => `${sc.riskTitle || sc.riskId}: ${(sc.suggestions || []).join('; ')}`)
+                                                .join('\n')
+                                        }
+                                    />
+                                </div>
+                            )}
+
                             <motion.div
                                 variants={listVariants}
                                 initial="hidden" animate="visible"
@@ -570,7 +599,7 @@ export function AIControlSuggestions() {
 
                                                             <motion.button
                                                                 onClick={() => addControl(item.riskId, s)}
-                                                                disabled={isRiskPending(item.riskId)}
+                                                                disabled={isRiskPending(item.riskId) || isMitigationValidationBlocked}
                                                                 title="Add to risk"
                                                                 initial={{ opacity: 0 }}
                                                                 whileHover={{ scale: 1.1, backgroundColor: '#4f46e5', borderColor: '#4f46e5', color: '#ffffff' }}

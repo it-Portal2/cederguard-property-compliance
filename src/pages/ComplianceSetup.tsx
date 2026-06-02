@@ -18,6 +18,7 @@ import {
 } from "../lib/roles";
 import { api, ApiError } from "../lib/api";
 import toast from "react-hot-toast";
+import ValidateButton from "../components/validation/ValidateButton";
 import { AIErrorAlert } from "../components/AIErrorAlert";
 import { AIInquiryPopup } from "../components/AIInquiryPopup";
 
@@ -138,6 +139,15 @@ export function ComplianceSetup() {
     isComplianceLocked,
     setComplianceLocked,
   } = useStore();
+
+  // Fact-Check / Validation gate — block publishing until the assessment is validated.
+  const complianceCtxId = activeProjectId || activeProgrammeId || "";
+  const complianceValidation = useStore(
+    (s) => s.validationsByKey[`compliance:${complianceCtxId}`] ?? null,
+  );
+  const isComplianceValidationBlocked =
+    !!complianceCtxId &&
+    (complianceValidation?.status ?? "unchecked") !== "validated";
 
   const activeDetails =
     (activeProjectId
@@ -1167,6 +1177,13 @@ export function ComplianceSetup() {
   };
 
   const publishFramework = async () => {
+    // Approval gate (Q1=A): block publishing until validated by a PM+.
+    if (isComplianceValidationBlocked) {
+      toast.error(
+        "Please run the fact-check and validate the assessment before publishing.",
+      );
+      return;
+    }
     setLoading(true);
     try {
       const contextId = activeProjectId || activeProgrammeId;
@@ -1701,9 +1718,38 @@ export function ComplianceSetup() {
                   </div>
 
                   <div className="flex flex-col sm:flex-row items-center gap-4 pt-8">
+                    {complianceCtxId && (
+                      <ValidateButton
+                        surface="compliance"
+                        targetId={complianceCtxId}
+                        contextId={complianceCtxId}
+                        label="Compliance assessment"
+                        content={() =>
+                          (complianceItems || [])
+                            .map(
+                              (i: any) =>
+                                `${i.reg || i.name || i.id}: ${i.req || ""}`,
+                            )
+                            .join("\n")
+                        }
+                        ratingsContext={() =>
+                          (complianceItems || [])
+                            .map(
+                              (i: any) =>
+                                `${i.reg || i.id}: risk ${i.risk || "?"}`,
+                            )
+                            .join("\n")
+                        }
+                      />
+                    )}
                     <button
                       onClick={publishFramework}
-                      disabled={loading}
+                      disabled={loading || isComplianceValidationBlocked}
+                      title={
+                        isComplianceValidationBlocked
+                          ? "Fact-check & validate before publishing"
+                          : undefined
+                      }
                       className="flex items-center gap-3 px-10 py-5 bg-emerald-500 text-white rounded-lg font-medium text-sm hover:bg-emerald-600 transition-all   /20 disabled:opacity-50"
                     >
                       {loading && !loadingStep ? (

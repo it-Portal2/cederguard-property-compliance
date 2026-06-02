@@ -30,6 +30,8 @@ import { stripMarkdown } from "../lib/utils";
 import { calculateMatrixScore } from "../data/riskScoringMatrix";
 import { api, ApiError } from "../lib/api";
 import { AIErrorAlert } from "../components/AIErrorAlert";
+import ValidateButton from "../components/validation/ValidateButton";
+import toast from "react-hot-toast";
 
 export function AIRiskID() {
   const {
@@ -61,6 +63,20 @@ export function AIRiskID() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const fromInitiation = searchParams.get("from") === "initiation";
+
+  // Fact-Check / Validation gate — block finalising AI risks until validated.
+  const validationCtxId =
+    activeProjectId ||
+    activeProgrammeId ||
+    searchParams.get("projectId") ||
+    searchParams.get("programmeId") ||
+    "";
+  const riskValidation = useStore(
+    (s) => s.validationsByKey[`risk:${validationCtxId}`] ?? null,
+  );
+  const isRiskValidationBlocked =
+    !!validationCtxId &&
+    (riskValidation?.status ?? "unchecked") !== "validated";
   const activeDetails =
     (activeProjectId
       ? projects.find((p) => p.id === activeProjectId)
@@ -315,6 +331,14 @@ export function AIRiskID() {
     "Portfolio";
 
   const finalize = async (skipEmptyCheck = false) => {
+    // Approval gate (Q1=A): block finalising new AI risks until the analysis
+    // has been fact-checked AND validated by a PM+.
+    if (isRiskValidationBlocked && safeSuggestedRisks.some((r) => !r.exists)) {
+      toast.error(
+        "Please run the fact-check and validate the analysis before approving.",
+      );
+      return;
+    }
     try {
       setIsFinalizing(true);
       let finalAccepted = acceptedRisks;
@@ -1206,6 +1230,34 @@ export function AIRiskID() {
             </div>
 
             <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
+              {validationCtxId && (
+                <ValidateButton
+                  surface="risk"
+                  targetId={validationCtxId}
+                  contextId={validationCtxId}
+                  label={`Risk analysis — ${activeName}`}
+                  content={() =>
+                    safeSuggestedRisks
+                      .map(
+                        (r: any) =>
+                          `${r.title || r.name || r.id}: ${stripMarkdown(
+                            r.description || r.cause || r.req || "",
+                          )}`,
+                      )
+                      .join("\n")
+                  }
+                  ratingsContext={() =>
+                    safeSuggestedRisks
+                      .map(
+                        (r: any) =>
+                          `${r.title || r.id}: gross ${
+                            r.grossRating ?? r.grossScore ?? "?"
+                          }, residual ${r.residualRating ?? r.netScore ?? "?"}`,
+                      )
+                      .join("\n")
+                  }
+                />
+              )}
               <button
                 onClick={() => {
                   setIsAcceptingAll(true);
@@ -1241,7 +1293,17 @@ export function AIRiskID() {
               </button>
               <button
                 onClick={() => finalize()}
-                disabled={isFinalizing || isAcceptingAll}
+                disabled={
+                  isFinalizing ||
+                  isAcceptingAll ||
+                  (isRiskValidationBlocked &&
+                    safeSuggestedRisks.some((r) => !r.exists))
+                }
+                title={
+                  isRiskValidationBlocked
+                    ? "Fact-check & validate before approving"
+                    : undefined
+                }
                 className="flex-1 sm:flex-none justify-center px-2 sm:px-8 py-2.5 sm:py-3 bg-slate-900 text-white text-[10px] sm:text-sm font-medium rounded-lg hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/40 active:scale-95 flex items-center gap-1.5 sm:gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed break-words text-center leading-tight"
               >
                 {isFinalizing ? (

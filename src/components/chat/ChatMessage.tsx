@@ -3,6 +3,7 @@ import { motion } from "motion/react";
 import { Copy, Check, AlertCircle, Loader2 } from "lucide-react";
 import { clsx } from "clsx";
 import { CitationChip } from "./CitationChip";
+import ValidateButton from "../validation/ValidateButton";
 import { AiActivityTimeline } from "./AiActivityTimeline";
 import type { DisplayMessage } from "../../hooks/useChatStream";
 
@@ -333,6 +334,18 @@ export function ChatMessage({ message }: ChatMessageProps) {
             {message.citations!.map((c) => (
               <CitationChip key={`${c.kind}-${c.id}`} citation={c} />
             ))}
+          </div>
+        )}
+
+        {/* Advisory fact-check (Q1=A / chat) — verify the answer + show sources. */}
+        {!isUser && !message.isStreaming && message.text && message.id && (
+          <div className="pt-1">
+            <ValidateButton
+              surface="chat"
+              targetId={message.id}
+              label="Chat answer"
+              content={message.text}
+            />
           </div>
         )}
       </div>

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { analyzeContextSentence } from "../services/aiService";
 import { useStore } from "../store/useStore";
+import ValidateButton from "../components/validation/ValidateButton";
 import { clsx } from "clsx";
 import toast from "react-hot-toast";
 
@@ -75,6 +76,14 @@ export function AIComplianceOutlook() {
   const contextName = activeProject?.name || activeProgramme?.name || null;
   const hasContext  = !!(activeProjectId || activeProgrammeId);
 
+  // Fact-Check / Validation gate (Q4=A) — one passing fact-check unlocks Add / Add All.
+  const outlookCtxId = activeProjectId || activeProgrammeId || "";
+  const outlookValidation = useStore((s) => s.validationsByKey[`outlook:${outlookCtxId}`] ?? null);
+  const isOutlookValidationBlocked =
+    !!outlookCtxId &&
+    suggestions.length > 0 &&
+    (outlookValidation?.status ?? "unchecked") !== "validated";
+
   const runAnalysis = async () => {
     if (!sentence.trim()) return;
     setError("");
@@ -93,6 +102,10 @@ export function AIComplianceOutlook() {
   };
 
   const addOne = async (idx: number) => {
+    if (isOutlookValidationBlocked) {
+      toast.error("Please fact-check & validate the posture outlook before adding.");
+      return;
+    }
     if (addedIndices.has(idx) || addingIndex !== null || addingAll || !hasContext) return;
     const item = suggestions[idx];
     setAddingIndex(idx);
@@ -118,6 +131,10 @@ export function AIComplianceOutlook() {
   };
 
   const addAll = async () => {
+    if (isOutlookValidationBlocked) {
+      toast.error("Please fact-check & validate the posture outlook before adding.");
+      return;
+    }
     if (!hasContext || addingAll) return;
     const remaining = suggestions
       .map((_, i) => i)
@@ -394,6 +411,25 @@ export function AIComplianceOutlook() {
                 </motion.span>
               </div>
 
+              {outlookCtxId && (
+                <div className="px-0.5">
+                  <ValidateButton
+                    surface="outlook"
+                    targetId={outlookCtxId}
+                    contextId={outlookCtxId}
+                    label="Compliance posture outlook"
+                    content={() =>
+                      suggestions
+                        .map((s) => `${s.reg}: ${s.req} (${s.domain}, ${s.risk})`)
+                        .join("\n")
+                    }
+                    ratingsContext={() =>
+                      suggestions.map((s) => `${s.reg}: risk ${s.risk}`).join("\n")
+                    }
+                  />
+                </div>
+              )}
+
               {/* Suggestion cards */}
               <motion.div
                 variants={listVariants}
@@ -525,7 +561,7 @@ export function AIComplianceOutlook() {
 
                   <motion.button
                     onClick={addAll}
-                    disabled={!hasContext || addingAll || remainingCount === 0}
+                    disabled={!hasContext || addingAll || remainingCount === 0 || isOutlookValidationBlocked}
                     whileHover={hasContext && remainingCount > 0 ? { scale: 1.03, backgroundColor: "#f1f5f9" } : {}}
                     whileTap={hasContext && remainingCount > 0 ? { scale: 0.97 } : {}}
                     transition={{ type: "spring", stiffness: 500, damping: 28 }}

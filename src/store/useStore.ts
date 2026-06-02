@@ -35,6 +35,11 @@ import {
   getWorkstreamId,
 } from "../data/riskTaxonomy";
 import { api } from "../lib/api";
+import {
+  type ValidationRecord,
+  type ValidationSurface,
+  validationKey,
+} from "../lib/validation";
 import { getGrossScore, getResidualScore } from "../lib/riskMetrics";
 import { isAtLeastClientAdmin } from "../lib/roles";
 import { generateId, isValidDateString } from "../lib/utils";
@@ -700,6 +705,44 @@ export interface AppState {
   deleteComplianceItem: (id: string) => Promise<void>;
   bulkDeleteComplianceItems: (ids: string[]) => Promise<void>;
 
+  // Fact-Check / Validation — keyed by `${surface}:${targetId}` (validationKey).
+  validationsByKey: Record<string, ValidationRecord | null>;
+  runFactCheck: (payload: {
+    surface: ValidationSurface | string;
+    targetType?: string;
+    targetId: string;
+    contextId?: string | null;
+    label?: string;
+    content: string;
+    ratingsContext?: string;
+  }) => Promise<ValidationRecord | null>;
+  loadValidation: (
+    surface: string,
+    targetId: string,
+  ) => Promise<ValidationRecord | null>;
+  setValidationStatus: (
+    surface: string,
+    targetId: string,
+    status: "validated" | "rejected",
+    note?: string,
+  ) => Promise<void>;
+  attachValidationSource: (
+    surface: string,
+    targetId: string,
+    attachment: {
+      kind: "link" | "file";
+      title?: string;
+      url?: string;
+      base64?: string;
+      mime?: string;
+    },
+  ) => Promise<void>;
+  removeValidationSource: (
+    surface: string,
+    targetId: string,
+    url: string,
+  ) => Promise<void>;
+
   // Risk Management
   risks: RiskItem[];
   setRisks: (risks: RiskItem[]) => void;
@@ -856,6 +899,40 @@ export const useStore = create<AppState>((set, get) => {
     });
 
   return {
+  // ── Fact-Check / Validation ──────────────────────────────────────────
+  validationsByKey: {},
+  runFactCheck: async (payload) => {
+    const res: any = await api.validationRunFactCheck(payload);
+    const rec: ValidationRecord | null = res?.record ?? null;
+    if (rec) {
+      const key = validationKey(
+        payload.surface as ValidationSurface,
+        payload.targetId,
+      );
+      set((s) => ({ validationsByKey: { ...s.validationsByKey, [key]: rec } }));
+    }
+    return rec;
+  },
+  loadValidation: async (surface, targetId) => {
+    const res: any = await api.validationGet(surface, targetId);
+    const rec: ValidationRecord | null = res?.record ?? null;
+    const key = validationKey(surface as ValidationSurface, targetId);
+    set((s) => ({ validationsByKey: { ...s.validationsByKey, [key]: rec } }));
+    return rec;
+  },
+  setValidationStatus: async (surface, targetId, status, note) => {
+    await api.validationSetStatus(surface, targetId, status, note);
+    await get().loadValidation(surface, targetId);
+  },
+  attachValidationSource: async (surface, targetId, attachment) => {
+    await api.validationAttachSource(surface, targetId, attachment);
+    await get().loadValidation(surface, targetId);
+  },
+  removeValidationSource: async (surface, targetId, url) => {
+    await api.validationRemoveAttachment(surface, targetId, url);
+    await get().loadValidation(surface, targetId);
+  },
+
   user: null,
   clientId: null,
   portfolioInfo: null,

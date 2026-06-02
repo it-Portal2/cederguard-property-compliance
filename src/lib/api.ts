@@ -179,6 +179,41 @@ export const api = {
     callApi("analyzeControls", { prompt, config }),
   chatWithAI: (messages: any[]) => callApi("chatWithAI", { messages }),
 
+  // ── Fact-Check / Validation ──────────────────────────────────────────
+  // runFactCheck makes TWO AI calls (web gather + structure) → long timeout.
+  validationRunFactCheck: (payload: {
+    surface: string;
+    targetType?: string;
+    targetId: string;
+    contextId?: string | null;
+    label?: string;
+    content: string;
+    ratingsContext?: string;
+  }) => callApi("validationRunFactCheck", payload, 120000),
+  validationGet: (surface: string, targetId: string) =>
+    callApi("validationGet", { surface, targetId }),
+  validationGetForContext: (contextId?: string | null) =>
+    callApi("validationGetForContext", { contextId }),
+  validationSetStatus: (
+    surface: string,
+    targetId: string,
+    status: "validated" | "rejected",
+    note?: string,
+  ) => callApi("validationSetStatus", { surface, targetId, status, note }),
+  validationAttachSource: (
+    surface: string,
+    targetId: string,
+    attachment: {
+      kind: "link" | "file";
+      title?: string;
+      url?: string;
+      base64?: string;
+      mime?: string;
+    },
+  ) => callApi("validationAttachSource", { surface, targetId, attachment }),
+  validationRemoveAttachment: (surface: string, targetId: string, url: string) =>
+    callApi("validationRemoveAttachment", { surface, targetId, url }),
+
   saveData: (collection: string, data: any, projectId?: string | null) =>
     callApi("saveData", { collection, data, projectId }),
   getData: (collection: string, projectId?: string | null) =>

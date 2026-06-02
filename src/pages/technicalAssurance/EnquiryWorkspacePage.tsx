@@ -39,6 +39,7 @@ import ConfirmDialog from "../../components/table/ConfirmDialog";
 import { ReasonDialog } from "../../components/governance/ReasonDialog";
 import { ShareEnquiryModal } from "../../components/technicalAssurance/ShareEnquiryModal";
 import { useStore } from "../../store/useStore";
+import ValidateButton from "../../components/validation/ValidateButton";
 import { isComplianceLead } from "../../lib/roles";
 import {
   TabStrip,
@@ -176,6 +177,15 @@ export function TacEnquiryWorkspacePage() {
   // from the same Zustand store other governance / risk surfaces use.
   const projects = useStore((s) => s.projects);
   const user = useStore((s) => s.user);
+  // Fact-Check / Validation gate — block closing a technical analysis until validated.
+  const techValidation = useStore(
+    (s) => s.validationsByKey[`technical:${enquiry?.id ?? ""}`] ?? null,
+  );
+  const hasDeliverable = !!(deliverable && (deliverable as any).content);
+  const isTechValidationBlocked =
+    !!enquiry?.id &&
+    hasDeliverable &&
+    (techValidation?.status ?? "unchecked") !== "validated";
   const projectIsHRB = useMemo(() => {
     if (!enquiry?.projectId) return false;
     const proj = projects.find((p: any) => p?.id === enquiry.projectId);
@@ -259,6 +269,13 @@ export function TacEnquiryWorkspacePage() {
   // status to Closed; the workspace renders read-only afterwards.
   const handleCloseConfirm = useCallback(async () => {
     if (!enquiry || closing) return;
+    if (isTechValidationBlocked) {
+      toast.error(
+        "Please run the fact-check and validate the analysis before closing.",
+      );
+      setCloseOpen(false);
+      return;
+    }
     setClosing(true);
     try {
       const r = await api.tacCloseEnquiry(enquiry.id);
@@ -275,7 +292,7 @@ export function TacEnquiryWorkspacePage() {
       toast.error(e?.message ?? "Failed to close enquiry");
       setClosing(false);
     }
-  }, [enquiry, closing, load]);
+  }, [enquiry, closing, load, isTechValidationBlocked]);
 
   // Share-for-review decisions.
   const handleApproveShare = useCallback(async () => {
@@ -616,6 +633,24 @@ export function TacEnquiryWorkspacePage() {
                 <Compass className="h-4 w-4" />
                 Generate insight
               </button>
+            )}
+            {/* Fact-check & validate the AI analysis before closing (Q1=A). */}
+            {hasDeliverable && enquiry?.id && (
+              <ValidateButton
+                surface="technical"
+                targetId={enquiry.id}
+                contextId={enquiry.projectId || ""}
+                label={`Technical analysis — ${(enquiry as any).title || enquiry.id}`}
+                content={() => {
+                  try {
+                    return JSON.stringify(
+                      (deliverable as any)?.content ?? {},
+                    ).slice(0, 12000);
+                  } catch {
+                    return String((deliverable as any)?.content ?? "");
+                  }
+                }}
+              />
             )}
             {/* Close enquiry — allowed from Open / AwaitingReview / Approved.
                 For HRB projects the server writes a Golden Thread chain doc

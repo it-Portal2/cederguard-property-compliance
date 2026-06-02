@@ -1,0 +1,104 @@
+// ValidateButton — the drop-in Fact-Check / Validate control for any AI surface.
+// Shows the live validation status; clicking runs the fact-check (if not already
+// run) and opens the FactCheckPanel in a modal. Surfaces use the companion
+// `useValidationGate` hook to block their approve/submit action until validated.
+
+import { useState } from "react";
+import { clsx } from "clsx";
+import toast from "react-hot-toast";
+import { ShieldCheck, ShieldAlert, ShieldQuestion, Loader2 } from "lucide-react";
+import { useValidationGate } from "../../hooks/useValidationGate";
+import FactCheckPanel from "./FactCheckPanel";
+
+type ContentArg = string | (() => string);
+const resolveArg = (v?: ContentArg) =>
+  typeof v === "function" ? v() : v;
+
+export default function ValidateButton({
+  surface,
+  targetId,
+  contextId,
+  label,
+  content,
+  ratingsContext,
+  className,
+  disabled,
+}: {
+  surface: string;
+  targetId: string;
+  contextId?: string | null;
+  label?: string;
+  /** The AI output to verify — string or lazy getter (evaluated on click). */
+  content: ContentArg;
+  /** Optional ratings/scores for the Q6 sanity-check — string or lazy getter. */
+  ratingsContext?: ContentArg;
+  className?: string;
+  disabled?: boolean;
+}) {
+  const gate = useValidationGate(surface, targetId);
+  const [open, setOpen] = useState(false);
+  const [running, setRunning] = useState(false);
+
+  const start = async () => {
+    setOpen(true);
+    if (!gate.record && !running) {
+      setRunning(true);
+      try {
+        await gate.runFactCheck({
+          content: String(resolveArg(content) || "").slice(0, 12000),
+          contextId,
+          label,
+          ratingsContext: resolveArg(ratingsContext),
+          targetType: surface,
+        });
+      } catch (e: any) {
+        toast.error(e?.message || "Fact-check failed");
+      } finally {
+        setRunning(false);
+      }
+    }
+  };
+
+  const pill =
+    gate.status === "validated"
+      ? { Icon: ShieldCheck, cls: "text-emerald-700 bg-emerald-50 border-emerald-200", text: "Validated" }
+      : gate.status === "awaiting_validation"
+        ? { Icon: ShieldAlert, cls: "text-amber-700 bg-amber-50 border-amber-200", text: "Awaiting validation" }
+        : gate.status === "rejected"
+          ? { Icon: ShieldAlert, cls: "text-red-700 bg-red-50 border-red-200", text: "Rejected" }
+          : { Icon: ShieldQuestion, cls: "text-slate-700 bg-white border-slate-200", text: "Fact-check" };
+  const Icon = running ? Loader2 : pill.Icon;
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={start}
+        disabled={disabled}
+        title="Fact-check & validate before approving"
+        className={clsx(
+          "inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-lg border transition hover:shadow-sm disabled:opacity-50",
+          pill.cls,
+          className,
+        )}
+      >
+        <Icon className={clsx("w-4 h-4", running && "animate-spin")} />
+        {running ? "Checking…" : pill.text}
+      </button>
+      {open && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={(e) => e.target === e.currentTarget && setOpen(false)}
+        >
+          <FactCheckPanel
+            surface={surface}
+            targetId={targetId}
+            record={gate.record}
+            running={running}
+            onClose={() => setOpen(false)}
+          />
+        </div>
+      )}
+    </>
+  );
+}
