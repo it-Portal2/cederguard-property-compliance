@@ -258,10 +258,38 @@ export const validationRoutes: Record<string, Handler> = {
   validationRunFactCheck, // B3
 
   // B4 — read a single validation by surface + targetId.
-  validationGet: stub("validationGet"),
+  validationGet: async (req, res, ctx) => {
+    if (!ctx.uid) return res.status(401).json({ error: "Unauthorized" });
+    const { surface, targetId } = req.body || {};
+    if (!surface || !targetId)
+      return res.status(400).json({ error: "Missing surface or targetId" });
+    const id = validationDocId(ctx.primaryUid, String(surface), String(targetId));
+    const doc = await ctx.db.collection(VALIDATIONS_COLLECTION).doc(id).get();
+    if (!doc.exists) return res.status(200).json({ success: true, record: null });
+    const data: any = doc.data();
+    if (data?.clientId !== ctx.primaryUid)
+      return res.status(403).json({ error: "Forbidden" });
+    return res.status(200).json({ success: true, record: { id: doc.id, ...data } });
+  },
 
   // B4 — read all validations for a project/programme context.
-  validationGetForContext: stub("validationGetForContext"),
+  // Equality-only filters (clientId [+ contextId]) so Firestore serves it via
+  // single-field index merge — NO composite index required. Sorted in memory.
+  validationGetForContext: async (req, res, ctx) => {
+    if (!ctx.uid) return res.status(401).json({ error: "Unauthorized" });
+    const { contextId } = req.body || {};
+    let q: any = ctx.db
+      .collection(VALIDATIONS_COLLECTION)
+      .where("clientId", "==", ctx.primaryUid);
+    if (contextId) q = q.where("contextId", "==", String(contextId));
+    const snap = await q.get();
+    const records = snap.docs
+      .map((d: any) => ({ id: d.id, ...d.data() }))
+      .sort((a: any, b: any) =>
+        String(b.initiatedAt || "").localeCompare(String(a.initiatedAt || "")),
+      );
+    return res.status(200).json({ success: true, records });
+  },
 
   // B5 — PM+ marks a record validated / rejected (gated).
   validationSetStatus: stub("validationSetStatus"),
