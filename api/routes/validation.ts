@@ -15,7 +15,11 @@ import { FieldValue } from "firebase-admin/firestore";
 import { ApiContext, parseAIResponse } from "../lib/context.js";
 import { runAIOperation } from "../lib/aiOperationRouter.js";
 import { logActivity } from "../lib/activityLog.js";
+import { uploadAsset, deleteAsset } from "../lib/storage.js";
 import { ROLE_STRINGS } from "../../src/lib/roleConstants.js";
+
+/** Per-file cap for validation attachments (Vercel 4.5 MB body / base64 inflation). */
+const VALIDATION_MAX_FILE_BYTES = 3 * 1024 * 1024; // 3 MB
 
 // Server-side mirror of roles.ts `isAtLeastPM` (PM and above). Kept inline
 // because roles.ts pulls in Vite `import.meta.env` and can't run server-side.
@@ -368,8 +372,139 @@ export const validationRoutes: Record<string, Handler> = {
   },
 
   // B6 — attach a source link or uploaded file to a record (Q7=A).
-  validationAttachSource: stub("validationAttachSource"),
+  validationAttachSource: async (req, res, ctx) => {
+    if (!ctx.uid) return res.status(401).json({ error: "Unauthorized" });
+    const { surface, targetId, attachment } = req.body || {};
+    if (!surface || !targetId || !attachment)
+      return res
+        .status(400)
+        .json({ error: "Missing surface, targetId or attachment" });
+
+    const id = validationDocId(ctx.primaryUid, String(surface), String(targetId));
+    const ref = ctx.db.collection(VALIDATIONS_COLLECTION).doc(id);
+    const doc = await ref.get();
+    if (!doc.exists)
+      return res.status(404).json({ error: "Validation record not found" });
+    if ((doc.data() as any)?.clientId !== ctx.primaryUid)
+      return res.status(403).json({ error: "Forbidden" });
+
+    const now = new Date().toISOString();
+    const userName =
+      ctx.userData?.displayName || ctx.userData?.name || null;
+    let entry: any;
+
+    if (attachment.kind === "link") {
+      if (!attachment.url)
+        return res.status(400).json({ error: "Missing link url" });
+      entry = {
+        kind: "link",
+        url: String(attachment.url),
+        title: String(attachment.title || attachment.url),
+        addedBy: ctx.uid,
+        addedAt: now,
+      };
+    } else if (attachment.kind === "file") {
+      if (!attachment.base64)
+        return res.status(400).json({ error: "Missing file data" });
+      const raw = String(attachment.base64);
+      const payload = raw.includes(",") ? raw.split(",")[1] : raw;
+      const buffer = Buffer.from(payload, "base64");
+      if (buffer.length > VALIDATION_MAX_FILE_BYTES)
+        return res.status(413).json({
+          error: `File too large. Maximum is ${VALIDATION_MAX_FILE_BYTES / 1024 / 1024} MB.`,
+        });
+      const safeName = String(attachment.title || "document")
+        .replace(/[^A-Za-z0-9._-]/g, "_")
+        .slice(0, 80);
+      const path = `validations/${ctx.primaryUid}/${id}/${Date.now()}-${safeName}`;
+      const { url } = await uploadAsset(
+        path,
+        buffer,
+        String(attachment.mime || "application/octet-stream"),
+        { makePublic: true },
+      );
+      entry = {
+        kind: "file",
+        url,
+        title: String(attachment.title || safeName),
+        storagePath: path,
+        addedBy: ctx.uid,
+        addedAt: now,
+      };
+    } else {
+      return res.status(400).json({ error: "attachment.kind must be 'link' or 'file'" });
+    }
+
+    await ref.update({
+      attachments: FieldValue.arrayUnion(entry),
+      events: FieldValue.arrayUnion({
+        type: "source_added",
+        by: ctx.uid,
+        byName: userName,
+        at: now,
+      }),
+    });
+    await logActivity(ctx, "validation_source_added", {
+      category: "update",
+      entityType: String(surface),
+      entityId: String(targetId),
+      entityName: (doc.data() as any)?.label || `${surface} fact-check`,
+      details: { kind: entry.kind },
+    });
+    return res.status(200).json({ success: true, attachment: entry });
+  },
 
   // B6 — remove an attached source (and its GCS object if a file).
-  validationRemoveAttachment: stub("validationRemoveAttachment"),
+  validationRemoveAttachment: async (req, res, ctx) => {
+    if (!ctx.uid) return res.status(401).json({ error: "Unauthorized" });
+    const { surface, targetId, url } = req.body || {};
+    if (!surface || !targetId || !url)
+      return res.status(400).json({ error: "Missing surface, targetId or url" });
+
+    const id = validationDocId(ctx.primaryUid, String(surface), String(targetId));
+    const ref = ctx.db.collection(VALIDATIONS_COLLECTION).doc(id);
+    const doc = await ref.get();
+    if (!doc.exists)
+      return res.status(404).json({ error: "Validation record not found" });
+    const data: any = doc.data();
+    if (data?.clientId !== ctx.primaryUid)
+      return res.status(403).json({ error: "Forbidden" });
+
+    const attachments: any[] = Array.isArray(data?.attachments)
+      ? data.attachments
+      : [];
+    const target = attachments.find((a) => a.url === url);
+    if (!target)
+      return res.status(404).json({ error: "Attachment not found" });
+    // Clean up the GCS object for uploaded files (close the orphan).
+    if (target.kind === "file" && target.storagePath) {
+      try {
+        await deleteAsset(target.storagePath);
+      } catch (e: any) {
+        console.warn(
+          "[validationRemoveAttachment] deleteAsset failed:",
+          e?.message ?? e,
+        );
+      }
+    }
+    const now = new Date().toISOString();
+    const userName =
+      ctx.userData?.displayName || ctx.userData?.name || null;
+    await ref.update({
+      attachments: attachments.filter((a) => a.url !== url),
+      events: FieldValue.arrayUnion({
+        type: "source_removed",
+        by: ctx.uid,
+        byName: userName,
+        at: now,
+      }),
+    });
+    await logActivity(ctx, "validation_source_removed", {
+      category: "update",
+      entityType: String(surface),
+      entityId: String(targetId),
+      entityName: data?.label || `${surface} fact-check`,
+    });
+    return res.status(200).json({ success: true });
+  },
 };
