@@ -64,12 +64,31 @@ export interface AIOperationOptions {
    * operator can verify which model handled which legacy AI op end-to-end.
    */
   action?: string;
+  /**
+   * When true, enable provider web search on this call (OpenRouter web plugin /
+   * Gemini googleSearch grounding) and return any source URLs in
+   * `result.citations`. Intended for the free-form TEXT "gather" half of the
+   * two-call fact-check — do NOT pair with a responseSchema (JSON mode +
+   * grounding is rejected by the providers; the Gemini path drops the schema
+   * defensively). Best-effort: a web failure never throws, it yields `[]`.
+   */
+  webSearch?: boolean;
+}
+
+/** A web source URL surfaced by provider grounding (OpenRouter / Gemini). */
+export interface WebCitation {
+  kind: "web";
+  url: string;
+  title: string;
+  snippet?: string;
 }
 
 export interface AIOperationResult {
   text: string;
   modelUsed: string;
   backend: "openrouter" | "google-direct";
+  /** Web sources captured when `webSearch` was requested (otherwise `[]`). */
+  citations: WebCitation[];
 }
 
 /**
@@ -101,13 +120,13 @@ export async function runAIOperation(
     for (const entry of enabledOps) {
       console.info(`${tag} trying admin entry id=${entry.id} model=${entry.modelString}`);
       try {
-        const text = await callOpenRouterChatCompletion(
+        const { text, citations } = await callOpenRouterChatCompletion(
           opts.ctx,
           entry.modelString,
           opts,
         );
         console.info(`${tag} ✓ answered via openrouter[${entry.modelString}] (admin entry id=${entry.id})`);
-        return { text, modelUsed: entry.modelString, backend: "openrouter" };
+        return { text, modelUsed: entry.modelString, backend: "openrouter", citations };
       } catch (err) {
         if (!isRetryable(err)) {
           console.error(`${tag} entry ${entry.id} failed non-retryably, propagating:`, (err as any)?.message ?? err);
@@ -123,13 +142,13 @@ export async function runAIOperation(
     // ── Step 2 — hardcoded free auto-router via OpenRouter ───────────
     console.info(`${tag} admin list exhausted — trying free auto-router (${FREE_AUTOROUTER_ID})`);
     try {
-      const text = await callOpenRouterChatCompletion(
+      const { text, citations } = await callOpenRouterChatCompletion(
         opts.ctx,
         FREE_AUTOROUTER_ID,
         opts,
       );
       console.info(`${tag} ✓ answered via openrouter[${FREE_AUTOROUTER_ID}] (safety-net auto-router)`);
-      return { text, modelUsed: FREE_AUTOROUTER_ID, backend: "openrouter" };
+      return { text, modelUsed: FREE_AUTOROUTER_ID, backend: "openrouter", citations };
     } catch (err) {
       console.warn(
         `${tag} free auto-router failed, falling through to Gemini direct:`,
@@ -143,7 +162,12 @@ export async function runAIOperation(
   try {
     const result = await callGoogleDirect(opts);
     console.info(`${tag} ✓ answered via ${result.modelUsed} (safety-net Gemini direct)`);
-    return { text: result.text, modelUsed: result.modelUsed, backend: "google-direct" };
+    return {
+      text: result.text,
+      modelUsed: result.modelUsed,
+      backend: "google-direct",
+      citations: result.citations,
+    };
   } catch (err) {
     console.error(`${tag} ✗ all AI providers failed`);
     throw new Error(
@@ -190,7 +214,7 @@ async function callOpenRouterChatCompletion(
   _ctx: ApiContext,
   modelString: string,
   opts: AIOperationOptions,
-): Promise<string> {
+): Promise<{ text: string; citations: WebCitation[] }> {
   const apiKey = (process.env.OPENROUTER_API_KEY ?? "").trim();
   if (!apiKey) throw new Error("OPENROUTER_API_KEY not configured");
 
@@ -265,6 +289,12 @@ async function callOpenRouterChatCompletion(
   if (isJsonMode && !schemaIsArray) {
     requestParams.response_format = { type: "json_object" };
   }
+  // Enable OpenRouter's Exa-backed web plugin when the caller asked for web
+  // sourcing (the two-call fact-check's Call 1). Source URLs come back as
+  // `message.annotations[].url_citation`. Default 5 results (~$0.005/request).
+  if (opts.webSearch) {
+    requestParams.plugins = [{ id: "web" }];
+  }
 
   const completion = await withTimeout(
     client.chat.completions.create(requestParams),
@@ -272,8 +302,11 @@ async function callOpenRouterChatCompletion(
     `OpenRouter[${modelString}] timed out`,
   );
   const text = completion.choices?.[0]?.message?.content ?? "";
+  const citations = opts.webSearch
+    ? extractOpenRouterCitations(completion.choices?.[0]?.message)
+    : [];
   console.info(
-    `[aiOperationRouter] ${modelString} response length=${text.length} preview=${JSON.stringify(text.slice(0, 200))}`,
+    `[aiOperationRouter] ${modelString} response length=${text.length} citations=${citations.length} preview=${JSON.stringify(text.slice(0, 200))}`,
   );
   if (!text) {
     // Surface as retryable so the cascade falls through.
@@ -340,14 +373,14 @@ async function callOpenRouterChatCompletion(
       );
     }
   }
-  return text;
+  return { text, citations };
 }
 
 // ── Gemini-direct call ────────────────────────────────────────────────────
 
 async function callGoogleDirect(
   opts: AIOperationOptions,
-): Promise<{ text: string; modelUsed: string }> {
+): Promise<{ text: string; modelUsed: string; citations: WebCitation[] }> {
   const envKey = (process.env.GEMINI_API_KEY ?? "").trim();
   const userBackupKey = (opts.ctx.userData?.geminiBackupKey ?? "").trim();
   const keys = [envKey, userBackupKey].filter((k) => k.length > 0);
@@ -369,6 +402,15 @@ async function callGoogleDirect(
   };
   if (cfg.responseMimeType) generationConfig.responseMimeType = cfg.responseMimeType;
   if (cfg.responseSchema) generationConfig.responseSchema = cfg.responseSchema;
+  // Failover parity for web sourcing: enable Google Search grounding when the
+  // caller asked for web search. Grounding + a JSON responseSchema are mutually
+  // exclusive on Gemini, so drop the schema here (webSearch is only used for the
+  // free-form Call-1 gather, which has no schema — this is purely defensive).
+  if (opts.webSearch) {
+    delete generationConfig.responseSchema;
+    delete generationConfig.responseMimeType;
+    generationConfig.tools = [{ googleSearch: {} }];
+  }
 
   const parts: any[] = [{ text: opts.prompt }];
   for (const p of opts.inlineParts ?? []) {
@@ -396,7 +438,8 @@ async function callGoogleDirect(
         empty.status = 502;
         throw empty;
       }
-      return { text, modelUsed: `gemini-direct/${modelName}` };
+      const citations = opts.webSearch ? extractGeminiCitations(result) : [];
+      return { text, modelUsed: `gemini-direct/${modelName}`, citations };
     } catch (err) {
       lastErr = err;
       console.warn(
@@ -415,6 +458,51 @@ async function callGoogleDirect(
     }
   }
   throw lastErr ?? new Error("Gemini direct unavailable");
+}
+
+// ── Web-citation extraction (best-effort — never throws) ───────────────────
+
+/** Map OpenRouter `message.annotations[].url_citation` → WebCitation[]. */
+function extractOpenRouterCitations(message: any): WebCitation[] {
+  try {
+    const anns = message?.annotations;
+    if (!Array.isArray(anns)) return [];
+    const out: WebCitation[] = [];
+    for (const a of anns) {
+      const u = a?.url_citation;
+      if (a?.type === "url_citation" && u?.url) {
+        out.push({
+          kind: "web",
+          url: String(u.url),
+          title: String(u.title || u.url),
+          snippet:
+            typeof u.content === "string" ? u.content.slice(0, 500) : undefined,
+        });
+      }
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+/** Map Gemini `groundingMetadata.groundingChunks[].web` → WebCitation[]. */
+function extractGeminiCitations(result: any): WebCitation[] {
+  try {
+    const chunks =
+      result?.candidates?.[0]?.groundingMetadata?.groundingChunks;
+    if (!Array.isArray(chunks)) return [];
+    const out: WebCitation[] = [];
+    for (const c of chunks) {
+      const w = c?.web;
+      if (w?.uri) {
+        out.push({ kind: "web", url: String(w.uri), title: String(w.title || w.uri) });
+      }
+    }
+    return out;
+  } catch {
+    return [];
+  }
 }
 
 // ── Misc helpers ──────────────────────────────────────────────────────────
