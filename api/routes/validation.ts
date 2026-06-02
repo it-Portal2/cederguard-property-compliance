@@ -11,9 +11,28 @@
 // Boundary: ALL AI work goes through api/lib/aiOperationRouter.ts — NEVER
 // api/routes/ai.ts (out of bounds).
 
+import { FieldValue } from "firebase-admin/firestore";
 import { ApiContext, parseAIResponse } from "../lib/context.js";
 import { runAIOperation } from "../lib/aiOperationRouter.js";
 import { logActivity } from "../lib/activityLog.js";
+import { ROLE_STRINGS } from "../../src/lib/roleConstants.js";
+
+// Server-side mirror of roles.ts `isAtLeastPM` (PM and above). Kept inline
+// because roles.ts pulls in Vite `import.meta.env` and can't run server-side.
+const PM_PLUS = new Set<string>([
+  ROLE_STRINGS.ADMIN,
+  ROLE_STRINGS.CLIENT_ADMIN,
+  ROLE_STRINGS.PROJECT_MANAGER,
+  ROLE_STRINGS.SENIOR_PM,
+  ROLE_STRINGS.SENIOR_PROJECT_MANAGER,
+  ROLE_STRINGS.ASSISTANT_PM,
+  ROLE_STRINGS.PROJECT_COORDINATOR,
+]);
+
+/** PM and above (or super-admin) may clear validation (Q3=A). */
+function canValidate(ctx: ApiContext): boolean {
+  return !!ctx.isAdmin || PM_PLUS.has(String(ctx.userData?.role || ""));
+}
 
 /** Firestore collection holding one ValidationRecord per fact-checked artifact. */
 export const VALIDATIONS_COLLECTION = "validations";
@@ -292,7 +311,61 @@ export const validationRoutes: Record<string, Handler> = {
   },
 
   // B5 — PM+ marks a record validated / rejected (gated).
-  validationSetStatus: stub("validationSetStatus"),
+  validationSetStatus: async (req, res, ctx) => {
+    if (!ctx.uid) return res.status(401).json({ error: "Unauthorized" });
+    const { surface, targetId, status, note } = req.body || {};
+    if (status !== "validated" && status !== "rejected")
+      return res
+        .status(400)
+        .json({ error: "status must be 'validated' or 'rejected'" });
+    if (!surface || !targetId)
+      return res.status(400).json({ error: "Missing surface or targetId" });
+    if (!canValidate(ctx))
+      return res.status(403).json({
+        error: "Only Project Manager and above can validate.",
+      });
+
+    const id = validationDocId(ctx.primaryUid, String(surface), String(targetId));
+    const ref = ctx.db.collection(VALIDATIONS_COLLECTION).doc(id);
+    const doc = await ref.get();
+    if (!doc.exists)
+      return res.status(404).json({ error: "Validation record not found" });
+    const data: any = doc.data();
+    if (data?.clientId !== ctx.primaryUid)
+      return res.status(403).json({ error: "Forbidden" });
+
+    const now = new Date().toISOString();
+    const userName =
+      ctx.userData?.displayName ||
+      ctx.userData?.name ||
+      ctx.userData?.companyName ||
+      null;
+    await ref.update({
+      status,
+      validatedBy: ctx.uid,
+      validatedAt: now,
+      events: FieldValue.arrayUnion({
+        type: status,
+        by: ctx.uid,
+        byName: userName,
+        at: now,
+        note: note ? String(note) : null,
+      }),
+    });
+
+    await logActivity(
+      ctx,
+      status === "validated" ? "validation_validated" : "validation_rejected",
+      {
+        category: "approve",
+        entityType: String(surface),
+        entityId: String(targetId),
+        entityName: data?.label || `${surface} fact-check`,
+        details: { note: note ? String(note) : null },
+      },
+    );
+    return res.status(200).json({ success: true, status });
+  },
 
   // B6 — attach a source link or uploaded file to a record (Q7=A).
   validationAttachSource: stub("validationAttachSource"),
