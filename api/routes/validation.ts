@@ -338,6 +338,12 @@ export const validationRoutes: Record<string, Handler> = {
     if (data?.clientId !== ctx.primaryUid)
       return res.status(403).json({ error: "Forbidden" });
 
+    // Idempotency: re-applying the status it's already in is a no-op — skip the
+    // re-stamp + duplicate audit-log entry. (Flipping to the other status is fine.)
+    if (data?.status === status) {
+      return res.status(200).json({ success: true, status, unchanged: true });
+    }
+
     const now = new Date().toISOString();
     const userName =
       ctx.userData?.displayName ||

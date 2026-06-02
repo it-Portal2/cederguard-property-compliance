@@ -354,22 +354,32 @@ export default function FactCheckPanel({
               <>
                 <button
                   onClick={onReject}
-                  disabled={!!busy}
-                  className="text-sm font-medium px-3.5 py-2 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50"
+                  disabled={!!busy || status === "rejected"}
+                  title={
+                    status === "rejected" ? "Already rejected" : undefined
+                  }
+                  className="text-sm font-medium px-3.5 py-2 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {busy === "reject" ? "…" : "Reject"}
+                  {busy === "reject"
+                    ? "…"
+                    : status === "rejected"
+                      ? "Rejected"
+                      : "Reject"}
                 </button>
                 <button
                   onClick={onValidate}
-                  disabled={!!busy}
-                  className="text-sm font-medium px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white inline-flex items-center gap-1.5 disabled:opacity-50"
+                  disabled={!!busy || status === "validated"}
+                  title={
+                    status === "validated" ? "Already validated" : undefined
+                  }
+                  className="text-sm font-medium px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white inline-flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {busy === "validate" ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <ShieldCheck className="w-4 h-4" />
                   )}
-                  Validate
+                  {status === "validated" ? "Validated" : "Validate"}
                 </button>
               </>
             )}
