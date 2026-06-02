@@ -4,6 +4,7 @@
 // `useValidationGate` hook to block their approve/submit action until validated.
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { clsx } from "clsx";
 import toast from "react-hot-toast";
 import { ShieldCheck, ShieldAlert, SearchCheck, Loader2 } from "lucide-react";
@@ -100,20 +101,26 @@ export default function ValidateButton({
         <Icon className={clsx("w-4 h-4", running && "animate-spin")} />
         {running ? "Checking…" : pill.text}
       </button>
-      {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={(e) => e.target === e.currentTarget && setOpen(false)}
-        >
-          <FactCheckPanel
-            surface={surface}
-            targetId={targetId}
-            record={gate.record}
-            running={running}
-            onClose={() => setOpen(false)}
-          />
-        </div>
-      )}
+      {open &&
+        createPortal(
+          // Portalled to <body> so the overlay escapes any transformed/animated
+          // ancestor (framer-motion sets `transform`, which would otherwise make
+          // `position: fixed` anchor to that ancestor and drop the modal to the
+          // bottom). Same rationale as TrendingTooltip.
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+            onClick={(e) => e.target === e.currentTarget && setOpen(false)}
+          >
+            <FactCheckPanel
+              surface={surface}
+              targetId={targetId}
+              record={gate.record}
+              running={running}
+              onClose={() => setOpen(false)}
+            />
+          </div>,
+          document.body,
+        )}
     </>
   );
 }
