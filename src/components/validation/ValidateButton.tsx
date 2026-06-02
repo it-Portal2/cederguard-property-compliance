@@ -6,7 +6,7 @@
 import { useState } from "react";
 import { clsx } from "clsx";
 import toast from "react-hot-toast";
-import { ShieldCheck, ShieldAlert, Sparkles, Loader2 } from "lucide-react";
+import { ShieldCheck, ShieldAlert, SearchCheck, Loader2 } from "lucide-react";
 import { useValidationGate } from "../../hooks/useValidationGate";
 import FactCheckPanel from "./FactCheckPanel";
 
@@ -69,7 +69,7 @@ export default function ValidateButton({
         : gate.status === "rejected"
           ? { Icon: ShieldAlert, cls: "text-red-700 bg-red-50 border-red-200", text: "Rejected" }
           : {
-              Icon: Sparkles,
+              Icon: SearchCheck,
               cls: "text-white bg-gradient-to-r from-indigo-600 to-violet-600 border-transparent shadow-md shadow-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/40 hover:-translate-y-0.5",
               text: "Fact-check",
             };
