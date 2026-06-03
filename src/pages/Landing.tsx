@@ -355,7 +355,7 @@ export const Landing: React.FC = () => {
                 <div className="absolute top-0 right-0 w-200 h-150 bg-indigo-100/40 dark:bg-indigo-500/10 blur-[120px] rounded-[100%] pointer-events-none" />
                 <div className="absolute bottom-0 left-0 w-150 h-100 bg-purple-100/30 dark:bg-purple-500/10 blur-[120px] rounded-[100%] pointer-events-none" />
 
-                <div className="relative z-10 mx-auto w-full max-w-7xl grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] gap-12 lg:gap-16 items-center">
+                <div className="relative z-10 mx-auto w-full max-w-7xl grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] gap-12 lg:gap-16 items-center">
 
                     {/* LEFT — copy column */}
                     <div className="flex flex-col">
@@ -441,7 +441,7 @@ export const Landing: React.FC = () => {
                             src={`${import.meta.env.BASE_URL}dashboard.png`}
                             alt="CedarGuard Risk Management dashboard preview"
                             title="CedarGuard — Risk Management dashboard"
-                            className="relative w-full h-auto lg:h-[460px] xl:h-[540px] rounded-lg shadow-[0_40px_100px_rgba(0,0,0,0.18)] dark:shadow-[0_40px_100px_rgba(0,0,0,0.6)] border-4 border-white/60 dark:border-white/5 object-cover object-top"
+                            className="relative w-full h-auto rounded-xl shadow-[0_40px_100px_rgba(0,0,0,0.18)] dark:shadow-[0_40px_100px_rgba(0,0,0,0.6)] border border-slate-200/70 dark:border-white/10 ring-1 ring-black/5"
                         />
                     </motion.div>
 
