@@ -4,7 +4,7 @@
 // "validated"), and a runFactCheck helper. Used by ValidateButton and by each
 // surface to disable its approve/submit action until validated.
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useStore } from "../store/useStore";
 import { validationKey, type ValidationSurface } from "../lib/validation";
 
@@ -27,8 +27,24 @@ export function useValidationGate(
   const loadValidation = useStore((s) => s.loadValidation);
   const runFactCheckStore = useStore((s) => s.runFactCheck);
 
+  // `loading` is true until the FIRST status fetch for this target resolves, so
+  // the UI can show a neutral "checking" state instead of flashing the unchecked
+  // CTA on refresh (the content is restored instantly but status loads async).
+  const [loading, setLoading] = useState<boolean>(!!targetId);
+
   useEffect(() => {
-    if (targetId) loadValidation(surface, targetId);
+    if (!targetId) {
+      setLoading(false);
+      return;
+    }
+    let active = true;
+    setLoading(true);
+    Promise.resolve(loadValidation(surface, targetId)).finally(() => {
+      if (active) setLoading(false);
+    });
+    return () => {
+      active = false;
+    };
   }, [surface, targetId, loadValidation]);
 
   const status = record?.status ?? "unchecked";
@@ -48,5 +64,5 @@ export function useValidationGate(
     [surface, targetId, loadValidation],
   );
 
-  return { record, status, isValidated, isBlocked, runFactCheck, refresh };
+  return { record, status, isValidated, isBlocked, loading, runFactCheck, refresh };
 }

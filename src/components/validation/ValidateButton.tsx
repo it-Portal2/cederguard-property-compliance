@@ -74,20 +74,27 @@ export default function ValidateButton({
               cls: "text-white bg-gradient-to-r from-indigo-600 to-violet-600 border-transparent shadow-md shadow-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/40 hover:-translate-y-0.5",
               text: "Fact-check",
             };
-  const isCta = gate.status === "unchecked";
-  const Icon = running ? Loader2 : pill.Icon;
+  // While the persisted status is still loading on refresh, show a neutral
+  // "Checking…" state instead of flashing the unchecked CTA (and block clicks so
+  // we never start a duplicate fact-check before the existing one has loaded).
+  const checking = gate.loading && !gate.record && !running;
+  const displayPill = checking
+    ? { Icon: Loader2, cls: "text-slate-500 bg-white border-slate-200", text: "Checking…" }
+    : pill;
+  const isCta = !checking && gate.status === "unchecked";
+  const Icon = running || checking ? Loader2 : displayPill.Icon;
 
   return (
     <>
       <button
         type="button"
         onClick={start}
-        disabled={disabled}
+        disabled={disabled || checking}
         title="Fact-check & validate before approving"
         className={clsx(
           "relative inline-flex items-center gap-1.5 text-sm rounded-lg border transition-all duration-200 disabled:opacity-50",
           isCta ? "font-semibold px-3.5 py-2" : "font-medium px-3 py-1.5 hover:shadow-sm",
-          pill.cls,
+          displayPill.cls,
           className,
         )}
       >
@@ -98,8 +105,8 @@ export default function ValidateButton({
             <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-violet-300" />
           </span>
         )}
-        <Icon className={clsx("w-4 h-4", running && "animate-spin")} />
-        {running ? "Checking…" : pill.text}
+        <Icon className={clsx("w-4 h-4", (running || checking) && "animate-spin")} />
+        {running || checking ? "Checking…" : displayPill.text}
       </button>
       {open &&
         createPortal(
