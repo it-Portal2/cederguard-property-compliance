@@ -36,6 +36,8 @@ export interface DisplayMessage {
   citations?: Citation[];
   steps?: AiActivityStep[];
   error?: string;
+  /** False when the answer was an off-topic/declined turn → no Fact-check button. */
+  factCheckable?: boolean;
 }
 
 export interface RateLimitState {
@@ -228,7 +230,11 @@ export function useChatStream(scopeContext: ScopeContext | null) {
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantMsgId
-                    ? { ...m, isStreaming: false }
+                    ? {
+                        ...m,
+                        isStreaming: false,
+                        factCheckable: evt.data.factCheckable !== false,
+                      }
                     : m,
                 ),
               );

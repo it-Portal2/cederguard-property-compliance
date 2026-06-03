@@ -49,7 +49,10 @@ export type ChatStreamEvent =
     }
   | { event: "sources"; data: { citations: Citation[] } }
   | { event: "error"; data: { message: string; code?: string; retryAfterSeconds?: number; resetAt?: number } }
-  | { event: "done"; data: { messageId: string | null; remaining?: number } };
+  | {
+      event: "done";
+      data: { messageId: string | null; remaining?: number; factCheckable?: boolean };
+    };
 
 export interface Citation {
   /** Record-type ("risk" | "compliance" | …) for in-app sources, or "web" for an external web source. */

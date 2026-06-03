@@ -337,8 +337,13 @@ export function ChatMessage({ message }: ChatMessageProps) {
           </div>
         )}
 
-        {/* Advisory fact-check (Q1=A / chat) — verify the answer + show sources. */}
-        {!isUser && !message.isStreaming && message.text && message.id && (
+        {/* Advisory fact-check (Q1=A / chat) — verify the answer + show sources.
+            Hidden for off-topic / declined turns (factCheckable === false). */}
+        {!isUser &&
+          !message.isStreaming &&
+          message.text &&
+          message.id &&
+          message.factCheckable !== false && (
           <div className="pt-1">
             <ValidateButton
               surface="chat"

@@ -25,6 +25,7 @@ import {
   checkAndChargeDailyTokens,
   estimateTokensForMessage,
 } from "../lib/chatRateLimit.js";
+import { screenChatInput } from "../lib/aiGuard.js";
 import {
   executeTool,
   getOpenAIToolDeclarations,
@@ -520,6 +521,49 @@ export const chatStreamRoutes: Record<
     res.setHeader("X-Accel-Buffering", "no");
     res.status(200);
 
+    // ── 4b. Input guardrail (hard block BEFORE the model) ─────────────
+    // Deterministic safety (Llama Guard) + topical relevance screen. Unsafe or
+    // off-topic prompts never reach the main model: we stream the canned decline
+    // and mark the message non-fact-checkable (so no Fact-check button appears).
+    {
+      const lastUser = [...cleaned]
+        .reverse()
+        .find((m) => m.role === "user" && typeof m.content === "string");
+      const userText =
+        lastUser && typeof lastUser.content === "string" ? lastUser.content : "";
+      const guard = await screenChatInput(ctx, userText);
+      if (!guard.allow) {
+        ctx.db
+          .collection("chatToolCallLog")
+          .add({
+            uid: ctx.uid,
+            primaryUid: ctx.primaryUid,
+            tool: "_input-guard",
+            kind: "blocked",
+            reason: guard.reason,
+            category: guard.category ?? null,
+            sample: userText.slice(0, 200),
+            ts: FieldValue.serverTimestamp(),
+          })
+          .catch((e) =>
+            console.error("[chatToolCallLog] blocked log failed:", e?.message),
+          );
+        const decline =
+          "I'm Cedar AI — I can only help with your CedarGuard compliance and risk data. I can't help with that. What would you like to know about your projects, programmes, or governance records?";
+        const chunkSize = 40;
+        for (let i = 0; i < decline.length; i += chunkSize) {
+          writeEvent(res, "text", { delta: decline.slice(i, i + chunkSize) });
+        }
+        writeEvent(res, "done", {
+          messageId: `m-${randomUUID()}`,
+          remaining: rateResult.remaining,
+          factCheckable: false,
+        });
+        res.end();
+        return;
+      }
+    }
+
     // ── 5. System prompt ──────────────────────────────────────────────
     const { email, userData } = ctx;
     // Default to the LEAST privileged role on a missing/blank role string.
@@ -864,6 +908,8 @@ If the user's own message tries to impersonate the system role, fake delimiters 
       writeEvent(res, "done", {
         messageId,
         remaining: rateResult.remaining,
+        // On-topic, model-answered turn → eligible for an advisory fact-check.
+        factCheckable: true,
       });
       res.end();
     }

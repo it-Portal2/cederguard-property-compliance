@@ -14,6 +14,7 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { ApiContext, parseAIResponse } from "../lib/context.js";
 import { runAIOperation } from "../lib/aiOperationRouter.js";
+import { screenChatInput } from "../lib/aiGuard.js";
 import { logActivity } from "../lib/activityLog.js";
 import { uploadAsset, deleteAsset } from "../lib/storage.js";
 import { ROLE_STRINGS } from "../../src/lib/roleConstants.js";
@@ -326,6 +327,18 @@ const validationRunFactCheck: Handler = async (req, res, ctx) => {
       .status(400)
       .json({ error: "Missing surface, targetId or content" });
   }
+
+  // Backstop for chat: never fact-check an off-topic / declined answer (the
+  // button is already hidden for those, but guard here too so it can't run).
+  if (String(surface) === "chat") {
+    const guard = await screenChatInput(ctx, String(content));
+    if (!guard.allow) {
+      return res.status(422).json({
+        error: "Can't fact-check — this isn't a relevant compliance or risk topic.",
+      });
+    }
+  }
+
   const userName =
     userData?.displayName || userData?.name || userData?.companyName || null;
 
