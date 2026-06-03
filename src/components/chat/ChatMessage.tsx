@@ -338,12 +338,14 @@ export function ChatMessage({ message }: ChatMessageProps) {
         )}
 
         {/* Advisory fact-check (Q1=A / chat) — verify the answer + show sources.
-            Hidden for off-topic / declined turns (factCheckable === false). */}
+            Hidden for off-topic / declined turns (factCheckable === false) and for
+            answers that surfaced no records (no citations → nothing to verify). */}
         {!isUser &&
           !message.isStreaming &&
           message.text &&
           message.id &&
-          message.factCheckable !== false && (
+          message.factCheckable !== false &&
+          (message.citations?.length ?? 0) > 0 && (
           <div className="pt-1">
             <ValidateButton
               surface="chat"

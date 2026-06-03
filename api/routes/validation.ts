@@ -14,7 +14,6 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { ApiContext, parseAIResponse } from "../lib/context.js";
 import { runAIOperation } from "../lib/aiOperationRouter.js";
-import { screenChatInput } from "../lib/aiGuard.js";
 import { logActivity } from "../lib/activityLog.js";
 import { uploadAsset, deleteAsset } from "../lib/storage.js";
 import { ROLE_STRINGS } from "../../src/lib/roleConstants.js";
@@ -328,13 +327,37 @@ const validationRunFactCheck: Handler = async (req, res, ctx) => {
       .json({ error: "Missing surface, targetId or content" });
   }
 
-  // Backstop for chat: never fact-check an off-topic / declined answer (the
-  // button is already hidden for those, but guard here too so it can't run).
+  // Backstop for chat: only fact-check answers that make EXTERNAL, source-
+  // verifiable claims. A summary of the user's own data ("no results", "all
+  // within limits", a status report) has nothing to verify — refuse cheaply
+  // BEFORE the expensive two-call web check. One small classification call,
+  // fail-open (if the classifier errors, proceed to the full check).
   if (String(surface) === "chat") {
-    const guard = await screenChatInput(ctx, String(content));
-    if (!guard.allow) {
+    let verifiable = true;
+    try {
+      const routed = await runAIOperation({
+        ctx,
+        action: "chatFactCheckGate",
+        prompt:
+          "Decide if a chat answer is worth fact-checking. It is worth it ONLY if it makes EXTERNAL, " +
+          "source-verifiable claims about regulations, legislation, standards, legal duties, deadlines, " +
+          "or thresholds. It is NOT worth it if it merely summarises the user's own data, reports a " +
+          "status, says nothing was found, or says everything is within limits.\n\n" +
+          'Answer with ONLY the single word "yes" or "no".\n\nANSWER:\n' +
+          String(content).slice(0, 2000),
+        config: { temperature: 0, maxOutputTokens: 4 },
+      });
+      verifiable = /\byes\b/i.test(routed.text || "");
+    } catch (e: any) {
+      console.warn(
+        "[validation] chat fact-checkable gate failed (fail-open):",
+        e?.message ?? e,
+      );
+    }
+    if (!verifiable) {
       return res.status(422).json({
-        error: "Can't fact-check — this isn't a relevant compliance or risk topic.",
+        error:
+          "Nothing to fact-check here — this answer reports your own data and makes no external claims to verify.",
       });
     }
   }

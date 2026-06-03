@@ -54,6 +54,7 @@ export default function ValidateButton({
         });
       } catch (e: any) {
         toast.error(e?.message || "Fact-check failed");
+        setOpen(false); // close the modal so only the toast shows
       } finally {
         setRunning(false);
       }
