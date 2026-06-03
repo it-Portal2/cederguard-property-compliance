@@ -43,57 +43,72 @@ export function NewsArticle() {
     );
   }
 
+  const words = article.content
+    .replace(/<[^>]+>/g, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length;
+  const readMinutes = Math.max(1, Math.round(words / 200));
+
   return (
     <div className="min-h-screen bg-white dark:bg-[#030303] text-slate-800 dark:text-slate-300 transition-colors duration-500 selection:bg-indigo-100 dark:selection:bg-cyan-500/30">
       {/* Article Header */}
-      <div className="relative pt-12 md:pt-16 pb-32 bg-slate-50 dark:bg-slate-900/40 border-b border-slate-200 dark:border-white/10 overflow-hidden">
+      <div className="relative pt-10 md:pt-14 pb-12 md:pb-16 bg-slate-50 dark:bg-slate-900/40 border-b border-slate-200 dark:border-white/10 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 dark:from-cyan-500/10 to-transparent opacity-50" />
-        
+
         {/* Decorative elements */}
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-indigo-500/10 dark:bg-cyan-500/10 rounded-full blur-3xl" />
         <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-cyan-500/10 dark:bg-indigo-500/10 rounded-full blur-3xl" />
 
-        <div className="max-w-4xl mx-auto px-6 relative z-10">
+        {/* Constrained to the article measure so the header lines up with the body. */}
+        <div className="max-w-2xl mx-auto px-6 relative z-10">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <Link 
+            <Link
               to="/news"
-              className="inline-flex items-center text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-cyan-400 transition-all mb-12 group bg-white dark:bg-slate-800/50 backdrop-blur-md shadow-sm dark:shadow-none px-5 py-2.5 rounded-lg border border-slate-200 dark:border-white/5 font-bold text-sm"
+              className="inline-flex items-center text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-cyan-400 transition-colors mb-8 group text-sm font-medium"
             >
-              <ArrowLeft className="w-4 h-4 mr-2 transform group-hover:-translate-x-1 transition-transform" />
+              <ArrowLeft className="w-4 h-4 mr-1.5 transform group-hover:-translate-x-1 transition-transform" />
               Back to Insights
             </Link>
           </motion.div>
-          
-          <motion.div 
+
+          <motion.div
             variants={staggerChildren}
             initial="initial"
             animate="animate"
-            className="space-y-8"
+            className="space-y-5"
           >
-            <motion.div variants={fadeInUp} className="flex items-center space-x-6">
-              <span className="px-5 py-2 bg-indigo-100 dark:bg-cyan-500/10 text-indigo-600 dark:text-cyan-400 text-[10px] font-black rounded-full border border-indigo-200 dark:border-cyan-500/20 uppercase tracking-[0.2em]">
+            <motion.div
+              variants={fadeInUp}
+              className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm"
+            >
+              <span className="px-3 py-1 bg-indigo-100 dark:bg-cyan-500/10 text-indigo-700 dark:text-cyan-300 text-[11px] font-semibold rounded-full border border-indigo-200 dark:border-cyan-500/20 uppercase tracking-wide">
                 {article.category}
               </span>
-              <div className="flex items-center text-slate-500 dark:text-slate-400 text-sm font-bold uppercase tracking-widest">
-                <Calendar className="w-4 h-4 mr-2 text-indigo-500 dark:text-cyan-400/50" />
+              <span className="flex items-center text-slate-500 dark:text-slate-400 font-medium">
+                <Calendar className="w-4 h-4 mr-1.5 text-slate-400 dark:text-slate-500" />
                 {article.date}
-              </div>
+              </span>
+              <span className="text-slate-300 dark:text-slate-600">·</span>
+              <span className="text-slate-500 dark:text-slate-400 font-medium">
+                {readMinutes} min read
+              </span>
             </motion.div>
 
-            <motion.h1 
+            <motion.h1
               variants={fadeInUp}
-              className="text-5xl md:text-7xl font-bold text-slate-900 dark:text-white leading-[1.1] mb-8 font-display tracking-tight"
+              className="text-3xl md:text-[2.75rem] font-bold text-slate-900 dark:text-white leading-[1.15] font-display tracking-tight"
             >
               {article.title}
             </motion.h1>
-            
-            <motion.p 
+
+            <motion.p
               variants={fadeInUp}
-              className="text-2xl text-slate-500 dark:text-slate-400 leading-relaxed max-w-3xl font-light italic border-l-4 border-indigo-500/20 dark:border-cyan-500/20 pl-8 py-2"
+              className="text-lg md:text-xl text-slate-600 dark:text-slate-400 leading-relaxed"
             >
               {article.description}
             </motion.p>
@@ -102,22 +117,24 @@ export function NewsArticle() {
       </div>
 
       {/* Article Content */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.8 }}
-        className="max-w-3xl mx-auto px-6 py-32"
+        className="max-w-2xl mx-auto px-6 py-14 md:py-20"
       >
-        <article 
-          className="prose dark:prose-invert prose-2xl max-w-none 
-            prose-headings:text-slate-900 dark:prose-headings:text-white prose-headings:font-bold prose-headings:font-display prose-headings:tracking-tight
-            prose-p:text-slate-600 dark:prose-p:text-slate-400 prose-p:leading-relaxed prose-p:text-xl prose-p:font-light
-            prose-li:text-slate-600 dark:prose-li:text-slate-400 prose-li:text-xl
-            prose-strong:text-slate-900 dark:prose-strong:text-white prose-strong:font-bold
-            prose-a:text-indigo-600 dark:prose-a:text-cyan-400 prose-a:font-bold prose-a:underline decoration-2 underline-offset-4
-            prose-img:rounded-lg prose-img:shadow-2xl prose-img:border prose-img:border-slate-200 dark:prose-img:border-white/10
-            prose-blockquote:border-l-8 prose-blockquote:border-indigo-500 dark:prose-blockquote:border-cyan-500 prose-blockquote:bg-slate-50 dark:bg-slate-900/30 prose-blockquote:py-8 prose-blockquote:px-12 prose-blockquote:rounded-lg prose-blockquote:not-italic prose-blockquote:text-slate-900 dark:prose-blockquote:text-white"
+        <article
+          className="prose prose-lg dark:prose-invert max-w-none
+            prose-headings:font-display prose-headings:tracking-tight prose-headings:text-slate-900 dark:prose-headings:text-white
+            prose-h2:text-2xl prose-h2:font-bold prose-h2:mt-12 prose-h2:mb-4
+            prose-h3:text-xl prose-h3:font-semibold prose-h3:mt-10 prose-h3:mb-3
+            prose-p:text-slate-700 dark:prose-p:text-slate-300 prose-p:leading-[1.8]
+            prose-ul:my-6 prose-li:text-slate-700 dark:prose-li:text-slate-300 prose-li:my-2 prose-li:leading-[1.7]
+            prose-strong:text-slate-900 dark:prose-strong:text-white prose-strong:font-semibold
+            prose-a:text-indigo-600 dark:prose-a:text-cyan-400 prose-a:font-medium prose-a:underline prose-a:underline-offset-2 hover:prose-a:text-indigo-700 dark:hover:prose-a:text-cyan-300
+            prose-blockquote:border-l-4 prose-blockquote:border-indigo-400 dark:prose-blockquote:border-cyan-500/60 prose-blockquote:bg-slate-50 dark:prose-blockquote:bg-white/5 prose-blockquote:py-1 prose-blockquote:px-6 prose-blockquote:rounded-r-lg prose-blockquote:not-italic prose-blockquote:font-normal prose-blockquote:text-slate-700 dark:prose-blockquote:text-slate-200
+            prose-img:rounded-xl prose-img:shadow-lg prose-img:border prose-img:border-slate-200 dark:prose-img:border-white/10"
           dangerouslySetInnerHTML={{ __html: article.content }}
         />
 
