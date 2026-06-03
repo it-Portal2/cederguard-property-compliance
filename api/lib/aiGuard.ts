@@ -18,7 +18,11 @@ import { runAIOperation } from "./aiOperationRouter.js";
 
 // Configurable: any OpenRouter-hosted Llama Guard build. Kept as a const so an
 // operator can swap the exact revision without touching call sites.
-const LLAMA_GUARD_MODEL = "meta-llama/llama-guard-3-8b";
+// NOTE: verified against the live OpenRouter catalog + this account's key —
+// `llama-guard-4-12b` accepts our simple {role:"user"} format and returns
+// "safe" / "unsafe\nS<cat>". (`llama-guard-3-8b` is Cloudflare-only here and
+// 400s on this format, so do not switch back without re-testing the provider.)
+const LLAMA_GUARD_MODEL = "meta-llama/llama-guard-4-12b";
 
 const ON_TOPIC_SCOPE =
   "projects, programmes, risks, issues, compliance items, KRIs, governance records " +
