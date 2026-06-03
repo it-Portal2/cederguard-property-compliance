@@ -121,6 +121,21 @@ function renderMarkdown(text: string): React.ReactNode[] {
   return result;
 }
 
+// ── Markdown table helpers (GitHub-flavoured) ──────────────────────────────
+function splitTableRow(line: string): string[] {
+  let s = line.trim();
+  if (s.startsWith("|")) s = s.slice(1);
+  if (s.endsWith("|")) s = s.slice(0, -1);
+  return s.split("|").map((c) => c.trim());
+}
+function isTableRow(line: string): boolean {
+  return line.trim().includes("|");
+}
+function isSeparatorRow(line: string): boolean {
+  const cells = splitTableRow(line);
+  return cells.length > 0 && cells.every((c) => /^:?-{1,}:?$/.test(c));
+}
+
 function renderInlineSection(text: string, baseKey: number): React.ReactNode[] {
   const lines = text.split("\n");
   const result: React.ReactNode[] = [];
@@ -132,6 +147,65 @@ function renderInlineSection(text: string, baseKey: number): React.ReactNode[] {
     if (!line.trim()) {
       if (i > 0 && result.length > 0) result.push(<br key={`br-${baseKey}-${i}`} />);
       i++;
+      continue;
+    }
+
+    // Markdown table: header row + |---| separator + body rows. Rendered as a
+    // clean, read-only styled table (no actions) instead of raw pipes.
+    if (
+      isTableRow(line) &&
+      i + 1 < lines.length &&
+      isSeparatorRow(lines[i + 1])
+    ) {
+      const header = splitTableRow(line);
+      i += 2; // consume header + separator
+      const rows: string[][] = [];
+      while (
+        i < lines.length &&
+        lines[i].trim() &&
+        isTableRow(lines[i]) &&
+        !isSeparatorRow(lines[i])
+      ) {
+        const cells = splitTableRow(lines[i]);
+        while (cells.length < header.length) cells.push("");
+        rows.push(cells);
+        i++;
+      }
+      result.push(
+        <div
+          key={`tbl-${baseKey}-${i}`}
+          className="my-2 overflow-x-auto rounded-lg border border-slate-200"
+        >
+          <table className="w-full border-collapse text-[13px]">
+            <thead>
+              <tr className="bg-slate-50">
+                {header.map((h, hi) => (
+                  <th
+                    key={hi}
+                    className="text-left font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500 px-2.5 py-1.5 border-b border-slate-200 whitespace-nowrap"
+                  >
+                    {renderInline(h)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, ri) => (
+                <tr key={ri} className={ri % 2 ? "bg-slate-50/40" : ""}>
+                  {row.map((cell, ci) => (
+                    <td
+                      key={ci}
+                      className="px-2.5 py-1.5 border-b border-slate-100 align-top text-slate-700 tabular-nums"
+                    >
+                      {renderInline(cell)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>,
+      );
       continue;
     }
 
