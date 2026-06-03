@@ -1173,6 +1173,14 @@ export function ComplianceSetup() {
   };
 
   const handleFinalise = () => {
+    // Approval gate (Q1=A): can't advance to publication until the AI-identified
+    // requirements have been fact-checked AND validated by a PM+.
+    if (isComplianceValidationBlocked) {
+      toast.error(
+        "Please run the fact-check and validate the requirements before continuing.",
+      );
+      return;
+    }
     // No backend writes here — all data is persisted only when the user publishes.
     // This just advances the UI to the summary/publish step.
     const categoryData = determineProjectCategory(projectInfo);
