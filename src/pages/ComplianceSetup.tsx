@@ -147,7 +147,7 @@ export function ComplianceSetup() {
   const complianceContentStr = (complianceItems || [])
     .map(
       (i: any, idx: number) =>
-        `${idx + 1}. ${i.reg || i.name || i.id}: ${String(i.req || "").slice(0, 280)}`,
+        `${idx + 1}. ${i.reg || i.name || i.id}: ${String(i.req || "").replace(/\s+/g, " ").slice(0, 280)}`,
     )
     .join("\n");
   const complianceValidationTargetId = versionedTargetId(

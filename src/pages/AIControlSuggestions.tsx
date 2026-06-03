@@ -59,7 +59,7 @@ export function AIControlSuggestions() {
     // re-generating requires a fresh check; one passing check unlocks the Add buttons.
     const mitigationCtxId = activeProjectId || activeProgrammeId || (activeProject as any)?.id || (activeProgramme as any)?.id || '';
     const mitigationContentStr = suggestedControls
-        .map((sc: any) => `${sc.riskTitle || sc.riskId}: ${(sc.suggestions || []).join('; ')}`)
+        .map((sc: any, idx: number) => `${idx + 1}. ${sc.riskTitle || sc.riskId}: ${(sc.suggestions || []).join('; ').replace(/\s+/g, ' ')}`)
         .join('\n');
     const mitigationValidationTargetId = versionedTargetId(mitigationCtxId, mitigationContentStr);
     const mitigationValidation = useStore((s) => s.validationsByKey[`mitigation:${mitigationValidationTargetId}`] ?? null);

@@ -80,7 +80,10 @@ export function AIComplianceOutlook() {
   // re-generated outlook requires a fresh check; one passing check unlocks Add / Add All.
   const outlookCtxId = activeProjectId || activeProgrammeId || "";
   const outlookContentStr = suggestions
-    .map((s) => `${s.reg}: ${s.req} (${s.domain}, ${s.risk})`)
+    .map(
+      (s, idx) =>
+        `${idx + 1}. ${s.reg}: ${String(s.req).replace(/\s+/g, " ")} (${s.domain}, ${s.risk})`,
+    )
     .join("\n");
   const outlookValidationTargetId = versionedTargetId(outlookCtxId, outlookContentStr);
   const outlookValidation = useStore((s) => s.validationsByKey[`outlook:${outlookValidationTargetId}`] ?? null);

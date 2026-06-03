@@ -75,10 +75,10 @@ export function AIRiskID() {
     "";
   const riskContentStr = (Array.isArray(suggestedRisks) ? suggestedRisks : [])
     .map(
-      (r: any) =>
-        `${r.title || r.name || r.id}: ${stripMarkdown(
+      (r: any, idx: number) =>
+        `${idx + 1}. ${r.title || r.name || r.id}: ${stripMarkdown(
           r.description || r.cause || r.req || "",
-        )}`,
+        ).replace(/\s+/g, " ")}`,
     )
     .join("\n");
   const riskValidationTargetId = versionedTargetId(

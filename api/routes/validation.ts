@@ -71,6 +71,7 @@ const FACTCHECK_SCHEMA = {
       items: {
         type: "object",
         properties: {
+          index: { type: "number" }, // the input item's number (for 1:1 coverage)
           claim: { type: "string" },
           verdict: { type: "string" }, // supported | unsupported | uncertain
           note: { type: "string" },
@@ -109,6 +110,7 @@ function coerceFactCheck(raw: any, fallbackSummary: string) {
             claim: c.claim,
             verdict: VALID_VERDICTS.has(v) ? v : "uncertain",
             note: typeof c.note === "string" ? c.note : "",
+            ...(typeof c.index === "number" ? { index: c.index } : {}),
           };
         })
     : [];
@@ -228,13 +230,26 @@ async function factCheckChunk(
     config: { temperature: 0.3, maxOutputTokens: 8192 },
   });
 
+  // Parse numbered input items ("12. …") so we can enforce 1:1 coverage.
+  const numbered = chunkText
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((l) => {
+      const m = l.match(/^(\d+)\.\s*(.*)$/);
+      return m ? { idx: Number(m[1]), text: m[2] } : null;
+    })
+    .filter(Boolean) as { idx: number; text: string }[];
+
   // Call 2 — structure the analysis into strict JSON (no web).
   const structurePrompt = [
     "Convert the following compliance fact-check analysis into the required JSON.",
     "verdict must be one of: supported | unsupported | uncertain.",
     "overallConfidence is a number between 0 and 1.",
     "ratingFlags lists any scores/ratings that looked off (empty array if none).",
-    "Include one claim entry for EVERY distinct requirement/item assessed — do not omit or merge any.",
+    numbered.length > 1
+      ? `The items below are NUMBERED. Return EXACTLY one claim per item and set each claim's \`index\` to that item's number. Do NOT skip, merge, or renumber — output ${numbered.length} claims covering indexes ${numbered[0].idx}–${numbered[numbered.length - 1].idx}.\n\nITEMS:\n${numbered.map((n) => `${n.idx}. ${n.text}`).join("\n")}`
+      : "Include one claim entry for EVERY distinct requirement/item assessed — do not omit or merge any.",
     "",
     "ANALYSIS:",
     gather.text.slice(0, FACTCHECK_INPUT_CHARS),
@@ -256,6 +271,31 @@ async function factCheckChunk(
     parseAIResponse(structured.text || "", {}),
     gather.text,
   );
+
+  // Reconcile to EXACTLY one claim per numbered input item — guarantees the
+  // displayed count matches the item count even if the model dropped/merged some.
+  if (numbered.length >= 2) {
+    const byIdx = new Map<number, any>();
+    for (const c of fc.claims) {
+      if (typeof (c as any).index === "number") byIdx.set((c as any).index, c);
+    }
+    const placeholder = (item: { idx: number; text: string }) => ({
+      index: item.idx,
+      claim: item.text.slice(0, 200),
+      verdict: "uncertain" as const,
+      note: "Not explicitly assessed in the analysis — please review.",
+    });
+    if (byIdx.size > 0) {
+      // Index-based: rebuild in item order, back-filling any the model skipped.
+      fc.claims = numbered.map((item) => byIdx.get(item.idx) ?? placeholder(item));
+    } else if (fc.claims.length < numbered.length) {
+      // No indexes returned — pad to the item count from the tail items.
+      for (let i = fc.claims.length; i < numbered.length; i++) {
+        fc.claims.push(placeholder(numbered[i]));
+      }
+    }
+  }
+
   const citations = (gather.citations || []).map((c) => ({
     kind: "web" as const,
     label: c.title || c.url,
