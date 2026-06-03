@@ -355,7 +355,7 @@ export const Landing: React.FC = () => {
                 <div className="absolute top-0 right-0 w-200 h-150 bg-indigo-100/40 dark:bg-indigo-500/10 blur-[120px] rounded-[100%] pointer-events-none" />
                 <div className="absolute bottom-0 left-0 w-150 h-100 bg-purple-100/30 dark:bg-purple-500/10 blur-[120px] rounded-[100%] pointer-events-none" />
 
-                <div className="relative z-10 mx-auto w-full max-w-7xl grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] gap-12 lg:gap-16 items-center">
+                <div className="relative z-10 mx-auto w-full max-w-7xl grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] gap-12 lg:gap-16 items-center">
 
                     {/* LEFT — copy column */}
                     <div className="flex flex-col">
