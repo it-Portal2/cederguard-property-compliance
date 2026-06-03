@@ -132,6 +132,140 @@ function coerceFactCheck(raw: any, fallbackSummary: string) {
   return { claims, ratingFlags, overallConfidence, summary };
 }
 
+// ── Chunked fact-check (covers ANY number of items, not just one window) ───
+
+const FACTCHECK_CHUNK_ITEMS = 25; //   list items per batch
+const FACTCHECK_CONCURRENCY = 3; //    batches in flight at once (120s budget + rate limits)
+const FACTCHECK_MAX_ITEMS = 200; //    hard ceiling (8 batches) — noted if exceeded
+const FACTCHECK_INPUT_CHARS = 24000; // per-call input cap (~6k tokens)
+
+/** Split content into batches: one item per line; prose stays a single batch. */
+function buildFactCheckChunks(content: string): {
+  chunks: string[];
+  droppedNote: string;
+} {
+  const lines = String(content)
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  // Few lines / prose (chat, risk, technical, small lists) → single pass.
+  if (lines.length <= FACTCHECK_CHUNK_ITEMS) {
+    return {
+      chunks: [String(content).slice(0, FACTCHECK_INPUT_CHARS)],
+      droppedNote: "",
+    };
+  }
+  let kept = lines;
+  let droppedNote = "";
+  if (lines.length > FACTCHECK_MAX_ITEMS) {
+    droppedNote = ` Note: ${lines.length} items submitted; the first ${FACTCHECK_MAX_ITEMS} were fact-checked — re-run for the remainder.`;
+    kept = lines.slice(0, FACTCHECK_MAX_ITEMS);
+  }
+  const chunks: string[] = [];
+  for (let i = 0; i < kept.length; i += FACTCHECK_CHUNK_ITEMS) {
+    chunks.push(kept.slice(i, i + FACTCHECK_CHUNK_ITEMS).join("\n"));
+  }
+  return { chunks, droppedNote };
+}
+
+/** Run async tasks with a fixed max concurrency, preserving input order. */
+async function runWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  worker: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let next = 0;
+  async function lane(): Promise<void> {
+    while (next < items.length) {
+      const i = next++;
+      results[i] = await worker(items[i], i);
+    }
+  }
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, () => lane()),
+  );
+  return results;
+}
+
+/** One gather→structure fact-check pass over a single chunk of content. */
+async function factCheckChunk(
+  ctx: ApiContext,
+  chunkText: string,
+  surface: string,
+  ratingsContext?: string,
+): Promise<{
+  claims: any[];
+  ratingFlags: any[];
+  overallConfidence: number;
+  summary: string;
+  citations: any[];
+  backend: string;
+}> {
+  // Call 1 — web-grounded gather (free-form text, web search ON).
+  const gatherPrompt = [
+    "You are a compliance fact-checker for a UK construction / property compliance & risk platform.",
+    `Below is an AI-generated "${surface}" output. Identify every factual claim it makes (named regulations, legal duties, statutory deadlines, numeric thresholds, obligations) and verify each against authoritative UK sources.`,
+    "Use web search and prefer primary sources: legislation.gov.uk, gov.uk, HSE, the Building Safety Regulator, and the relevant regulators.",
+    ratingsContext
+      ? `Also review these stated ratings/scores and FLAG any that look inconsistent or out of line — do NOT change them, only note them for human review:\n${String(ratingsContext).slice(0, 1500)}`
+      : "",
+    "",
+    "CONTENT TO VERIFY:",
+    chunkText.slice(0, FACTCHECK_INPUT_CHARS),
+    "",
+    "Verify EVERY distinct item/requirement listed above — do not skip or merge items.",
+    "Write a thorough analysis: for each claim state whether it is supported, unsupported, or uncertain, and cite the source you relied on. End with a one-paragraph overall assessment and your confidence (0-100%).",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const gather = await runAIOperation({
+    ctx,
+    prompt: gatherPrompt,
+    webSearch: true,
+    action: "validationFactCheckGather",
+    config: { temperature: 0.3, maxOutputTokens: 8192 },
+  });
+
+  // Call 2 — structure the analysis into strict JSON (no web).
+  const structurePrompt = [
+    "Convert the following compliance fact-check analysis into the required JSON.",
+    "verdict must be one of: supported | unsupported | uncertain.",
+    "overallConfidence is a number between 0 and 1.",
+    "ratingFlags lists any scores/ratings that looked off (empty array if none).",
+    "Include one claim entry for EVERY distinct requirement/item assessed — do not omit or merge any.",
+    "",
+    "ANALYSIS:",
+    gather.text.slice(0, FACTCHECK_INPUT_CHARS),
+  ].join("\n");
+
+  const structured = await runAIOperation({
+    ctx,
+    prompt: structurePrompt,
+    action: "validationFactCheckStructure",
+    config: {
+      temperature: 0.1,
+      maxOutputTokens: 8192,
+      responseMimeType: "application/json",
+      responseSchema: FACTCHECK_SCHEMA,
+    },
+  });
+
+  const fc = coerceFactCheck(
+    parseAIResponse(structured.text || "", {}),
+    gather.text,
+  );
+  const citations = (gather.citations || []).map((c) => ({
+    kind: "web" as const,
+    label: c.title || c.url,
+    url: c.url,
+    title: c.title,
+    snippet: c.snippet,
+  }));
+  return { ...fc, citations, backend: structured.backend };
+}
+
 // ── B3 — the two-call fact-check engine ────────────────────────────────────
 
 const validationRunFactCheck: Handler = async (req, res, ctx) => {
@@ -152,76 +286,68 @@ const validationRunFactCheck: Handler = async (req, res, ctx) => {
       .status(400)
       .json({ error: "Missing surface, targetId or content" });
   }
-  // Generous cap so large compliance sets (e.g. 39+ requirements) all reach the
-  // model — the old 8000 truncated to ~30 items. ~24k chars ≈ ~6k tokens.
-  const safeContent = String(content).slice(0, 24000);
   const userName =
     userData?.displayName || userData?.name || userData?.companyName || null;
 
   try {
-    // ── Call 1 — web-grounded gather (free-form text, web search ON) ───────
-    const gatherPrompt = [
-      "You are a compliance fact-checker for a UK construction / property compliance & risk platform.",
-      `Below is an AI-generated "${surface}" output. Identify every factual claim it makes (named regulations, legal duties, statutory deadlines, numeric thresholds, obligations) and verify each against authoritative UK sources.`,
-      "Use web search and prefer primary sources: legislation.gov.uk, gov.uk, HSE, the Building Safety Regulator, and the relevant regulators.",
-      ratingsContext
-        ? `Also review these stated ratings/scores and FLAG any that look inconsistent or out of line — do NOT change them, only note them for human review:\n${String(ratingsContext).slice(0, 1500)}`
-        : "",
-      "",
-      "CONTENT TO VERIFY:",
-      safeContent,
-      "",
-      "Verify EVERY distinct item/requirement listed above — do not skip or merge items; if many are listed, cover them all.",
-      "Write a thorough analysis: for each claim state whether it is supported, unsupported, or uncertain, and cite the source you relied on. End with a one-paragraph overall assessment and your confidence (0-100%).",
-    ]
-      .filter(Boolean)
-      .join("\n");
-
-    const gather = await runAIOperation({
-      ctx,
-      prompt: gatherPrompt,
-      webSearch: true,
-      action: "validationFactCheckGather",
-      config: { temperature: 0.3, maxOutputTokens: 8192 },
-    });
-
-    // ── Call 2 — structure the analysis into strict JSON (no web) ──────────
-    const structurePrompt = [
-      "Convert the following compliance fact-check analysis into the required JSON.",
-      "verdict must be one of: supported | unsupported | uncertain.",
-      "overallConfidence is a number between 0 and 1.",
-      "ratingFlags lists any scores/ratings that looked off (empty array if none).",
-      "Include one claim entry for EVERY distinct requirement/item assessed — do not omit or merge any.",
-      "",
-      "ANALYSIS:",
-      gather.text.slice(0, 24000),
-    ].join("\n");
-
-    const structured = await runAIOperation({
-      ctx,
-      prompt: structurePrompt,
-      action: "validationFactCheckStructure",
-      config: {
-        temperature: 0.1,
-        maxOutputTokens: 8192,
-        responseMimeType: "application/json",
-        responseSchema: FACTCHECK_SCHEMA,
-      },
-    });
-
-    const factCheck = coerceFactCheck(
-      parseAIResponse(structured.text || "", {}),
-      gather.text,
+    // Batch the items so EVERY one is covered regardless of count, then merge.
+    const { chunks, droppedNote } = buildFactCheckChunks(String(content));
+    const partials = await runWithConcurrency(
+      chunks,
+      FACTCHECK_CONCURRENCY,
+      (chunk, i) =>
+        factCheckChunk(
+          ctx,
+          chunk,
+          String(surface),
+          // ratingsContext only on the first batch (avoid repeat score flags).
+          i === 0 && ratingsContext ? String(ratingsContext) : undefined,
+        ),
     );
 
-    // Web citations from Call 1 → unified ValidationCitation shape.
-    const citations = (gather.citations || []).map((c) => ({
-      kind: "web" as const,
-      label: c.title || c.url,
-      url: c.url,
-      title: c.title,
-      snippet: c.snippet,
-    }));
+    const allClaims: any[] = [];
+    const allFlags: any[] = [];
+    const allCitations: any[] = [];
+    const summaries: string[] = [];
+    let confSum = 0;
+    let confWeight = 0;
+    let backend = "";
+    for (const p of partials) {
+      allClaims.push(...p.claims);
+      allFlags.push(...p.ratingFlags);
+      allCitations.push(...p.citations);
+      if (p.summary) summaries.push(p.summary);
+      const w = Math.max(1, p.claims.length);
+      confSum += p.overallConfidence * w;
+      confWeight += w;
+      backend = backend || p.backend;
+    }
+
+    // Dedupe citations by url (cap 60).
+    const seenUrls = new Set<string>();
+    const citations: any[] = [];
+    for (const c of allCitations) {
+      if (c.url && !seenUrls.has(c.url)) {
+        seenUrls.add(c.url);
+        citations.push(c);
+        if (citations.length >= 60) break;
+      }
+    }
+
+    const overallConfidence = confWeight
+      ? Math.max(0, Math.min(1, confSum / confWeight))
+      : 0.5;
+    const mergedSummary = (
+      (chunks.length > 1
+        ? `Fact-checked ${allClaims.length} claims across ${chunks.length} batches.${droppedNote} `
+        : "") + (summaries[0] || "")
+    ).slice(0, 1500);
+    const factCheck = {
+      claims: allClaims.slice(0, 1000),
+      ratingFlags: allFlags.slice(0, 200),
+      overallConfidence,
+      summary: mergedSummary,
+    };
 
     const now = new Date().toISOString();
     const recordLabel = String(label || `${surface} fact-check`);
@@ -262,7 +388,8 @@ const validationRunFactCheck: Handler = async (req, res, ctx) => {
         unsupported,
         ratingFlags: factCheck.ratingFlags.length,
         sources: citations.length,
-        backend: structured.backend,
+        batches: chunks.length,
+        backend,
       },
     });
 
