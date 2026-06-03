@@ -161,6 +161,26 @@ export function validationKey(
 }
 
 /**
+ * Tiny stable hash (djb2 → base36) of the AI output. Used to VERSION a
+ * validation by the exact content it checked: a new analysis produces a
+ * different hash ⇒ a different target id ⇒ no record ⇒ a fresh fact-check is
+ * required (the old validation can never silently carry over to new content).
+ */
+export function hashContent(input: string): string {
+  const s = String(input);
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) {
+    h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  }
+  return (h >>> 0).toString(36);
+}
+
+/** Build a content-versioned target id: `${baseId}::${hash(content)}`. */
+export function versionedTargetId(baseId: string, content: string): string {
+  return baseId ? `${baseId}::${hashContent(content)}` : "";
+}
+
+/**
  * True when a surface's final approval/submit action must be blocked.
  * Anything other than an explicit "validated" leaves approval gated.
  */

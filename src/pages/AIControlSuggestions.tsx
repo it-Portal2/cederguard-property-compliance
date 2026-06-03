@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import ValidateButton from '../components/validation/ValidateButton';
+import { versionedTargetId } from '../lib/validation';
 import PageHeader from '../components/PageHeader';
 import toast from 'react-hot-toast';
 import { analyzeControls, analyzeContextSentence } from '../services/aiService';
@@ -54,9 +55,14 @@ export function AIControlSuggestions() {
 
     const highRisks = risks.filter(r => r.status === 'Open' && (r.residualRating || 0) >= 12);
 
-    // Fact-Check / Validation gate (Q4=A) — one passing fact-check unlocks the Add buttons.
+    // Fact-Check / Validation gate (Q4=A) — versioned by the exact suggestions so
+    // re-generating requires a fresh check; one passing check unlocks the Add buttons.
     const mitigationCtxId = activeProjectId || activeProgrammeId || (activeProject as any)?.id || (activeProgramme as any)?.id || '';
-    const mitigationValidation = useStore((s) => s.validationsByKey[`mitigation:${mitigationCtxId}`] ?? null);
+    const mitigationContentStr = suggestedControls
+        .map((sc: any) => `${sc.riskTitle || sc.riskId}: ${(sc.suggestions || []).join('; ')}`)
+        .join('\n');
+    const mitigationValidationTargetId = versionedTargetId(mitigationCtxId, mitigationContentStr);
+    const mitigationValidation = useStore((s) => s.validationsByKey[`mitigation:${mitigationValidationTargetId}`] ?? null);
     const isMitigationValidationBlocked =
         !!mitigationCtxId &&
         suggestedControls.length > 0 &&
@@ -134,14 +140,10 @@ export function AIControlSuggestions() {
                         {mitigationCtxId && suggestedControls.length > 0 && (
                             <ValidateButton
                                 surface="mitigation"
-                                targetId={mitigationCtxId}
+                                targetId={mitigationValidationTargetId}
                                 contextId={mitigationCtxId}
                                 label="Mitigation & control strategy"
-                                content={() =>
-                                    suggestedControls
-                                        .map((sc: any) => `${sc.riskTitle || sc.riskId}: ${(sc.suggestions || []).join('; ')}`)
-                                        .join('\n')
-                                }
+                                content={mitigationContentStr}
                             />
                         )}
                         <AnimatePresence>

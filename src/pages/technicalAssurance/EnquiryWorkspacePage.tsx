@@ -40,6 +40,7 @@ import { ReasonDialog } from "../../components/governance/ReasonDialog";
 import { ShareEnquiryModal } from "../../components/technicalAssurance/ShareEnquiryModal";
 import { useStore } from "../../store/useStore";
 import ValidateButton from "../../components/validation/ValidateButton";
+import { versionedTargetId } from "../../lib/validation";
 import { isComplianceLead } from "../../lib/roles";
 import {
   TabStrip,
@@ -177,11 +178,23 @@ export function TacEnquiryWorkspacePage() {
   // from the same Zustand store other governance / risk surfaces use.
   const projects = useStore((s) => s.projects);
   const user = useStore((s) => s.user);
-  // Fact-Check / Validation gate — block closing a technical analysis until validated.
-  const techValidation = useStore(
-    (s) => s.validationsByKey[`technical:${enquiry?.id ?? ""}`] ?? null,
-  );
+  // Fact-Check / Validation gate — versioned by the exact deliverable so a
+  // re-generated analysis requires a fresh check (old validation can't carry over).
   const hasDeliverable = !!(deliverable && (deliverable as any).content);
+  const techContentStr = (() => {
+    try {
+      return JSON.stringify((deliverable as any)?.content ?? {});
+    } catch {
+      return String((deliverable as any)?.content ?? "");
+    }
+  })();
+  const techValidationTargetId = versionedTargetId(
+    enquiry?.id ?? "",
+    techContentStr,
+  );
+  const techValidation = useStore(
+    (s) => s.validationsByKey[`technical:${techValidationTargetId}`] ?? null,
+  );
   const isTechValidationBlocked =
     !!enquiry?.id &&
     hasDeliverable &&
@@ -638,18 +651,10 @@ export function TacEnquiryWorkspacePage() {
             {hasDeliverable && enquiry?.id && (
               <ValidateButton
                 surface="technical"
-                targetId={enquiry.id}
+                targetId={techValidationTargetId}
                 contextId={enquiry.projectId || ""}
                 label={`Technical analysis — ${(enquiry as any).title || enquiry.id}`}
-                content={() => {
-                  try {
-                    return JSON.stringify(
-                      (deliverable as any)?.content ?? {},
-                    ).slice(0, 12000);
-                  } catch {
-                    return String((deliverable as any)?.content ?? "");
-                  }
-                }}
+                content={techContentStr}
               />
             )}
             {/* Close enquiry — allowed from Open / AwaitingReview / Approved.

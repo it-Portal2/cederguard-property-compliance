@@ -31,6 +31,7 @@ import { calculateMatrixScore } from "../data/riskScoringMatrix";
 import { api, ApiError } from "../lib/api";
 import { AIErrorAlert } from "../components/AIErrorAlert";
 import ValidateButton from "../components/validation/ValidateButton";
+import { versionedTargetId } from "../lib/validation";
 import toast from "react-hot-toast";
 
 export function AIRiskID() {
@@ -64,15 +65,28 @@ export function AIRiskID() {
   const navigate = useNavigate();
   const fromInitiation = searchParams.get("from") === "initiation";
 
-  // Fact-Check / Validation gate — block finalising AI risks until validated.
+  // Fact-Check / Validation gate — versioned by the exact analysis content so a
+  // NEW analysis requires a fresh check (the old validation can't carry over).
   const validationCtxId =
     activeProjectId ||
     activeProgrammeId ||
     searchParams.get("projectId") ||
     searchParams.get("programmeId") ||
     "";
+  const riskContentStr = (Array.isArray(suggestedRisks) ? suggestedRisks : [])
+    .map(
+      (r: any) =>
+        `${r.title || r.name || r.id}: ${stripMarkdown(
+          r.description || r.cause || r.req || "",
+        )}`,
+    )
+    .join("\n");
+  const riskValidationTargetId = versionedTargetId(
+    validationCtxId,
+    riskContentStr,
+  );
   const riskValidation = useStore(
-    (s) => s.validationsByKey[`risk:${validationCtxId}`] ?? null,
+    (s) => s.validationsByKey[`risk:${riskValidationTargetId}`] ?? null,
   );
   const isRiskValidationBlocked =
     !!validationCtxId &&
@@ -1233,19 +1247,10 @@ export function AIRiskID() {
               {validationCtxId && (
                 <ValidateButton
                   surface="risk"
-                  targetId={validationCtxId}
+                  targetId={riskValidationTargetId}
                   contextId={validationCtxId}
                   label={`Risk analysis — ${activeName}`}
-                  content={() =>
-                    safeSuggestedRisks
-                      .map(
-                        (r: any) =>
-                          `${r.title || r.name || r.id}: ${stripMarkdown(
-                            r.description || r.cause || r.req || "",
-                          )}`,
-                      )
-                      .join("\n")
-                  }
+                  content={riskContentStr}
                   ratingsContext={() =>
                     safeSuggestedRisks
                       .map(

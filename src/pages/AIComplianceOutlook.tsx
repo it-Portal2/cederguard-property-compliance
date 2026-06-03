@@ -13,6 +13,7 @@ import {
 import { analyzeContextSentence } from "../services/aiService";
 import { useStore } from "../store/useStore";
 import ValidateButton from "../components/validation/ValidateButton";
+import { versionedTargetId } from "../lib/validation";
 import PageHeader from "../components/PageHeader";
 import { clsx } from "clsx";
 import toast from "react-hot-toast";
@@ -75,9 +76,14 @@ export function AIComplianceOutlook() {
   const contextName = activeProject?.name || activeProgramme?.name || null;
   const hasContext  = !!(activeProjectId || activeProgrammeId);
 
-  // Fact-Check / Validation gate (Q4=A) — one passing fact-check unlocks Add / Add All.
+  // Fact-Check / Validation gate (Q4=A) — versioned by the exact suggestions so a
+  // re-generated outlook requires a fresh check; one passing check unlocks Add / Add All.
   const outlookCtxId = activeProjectId || activeProgrammeId || "";
-  const outlookValidation = useStore((s) => s.validationsByKey[`outlook:${outlookCtxId}`] ?? null);
+  const outlookContentStr = suggestions
+    .map((s) => `${s.reg}: ${s.req} (${s.domain}, ${s.risk})`)
+    .join("\n");
+  const outlookValidationTargetId = versionedTargetId(outlookCtxId, outlookContentStr);
+  const outlookValidation = useStore((s) => s.validationsByKey[`outlook:${outlookValidationTargetId}`] ?? null);
   const isOutlookValidationBlocked =
     !!outlookCtxId &&
     suggestions.length > 0 &&
@@ -399,14 +405,10 @@ export function AIComplianceOutlook() {
                 <div className="px-0.5">
                   <ValidateButton
                     surface="outlook"
-                    targetId={outlookCtxId}
+                    targetId={outlookValidationTargetId}
                     contextId={outlookCtxId}
                     label="Compliance posture outlook"
-                    content={() =>
-                      suggestions
-                        .map((s) => `${s.reg}: ${s.req} (${s.domain}, ${s.risk})`)
-                        .join("\n")
-                    }
+                    content={outlookContentStr}
                     ratingsContext={() =>
                       suggestions.map((s) => `${s.reg}: risk ${s.risk}`).join("\n")
                     }

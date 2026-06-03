@@ -19,6 +19,7 @@ import {
 import { api, ApiError } from "../lib/api";
 import toast from "react-hot-toast";
 import ValidateButton from "../components/validation/ValidateButton";
+import { versionedTargetId } from "../lib/validation";
 import { AIErrorAlert } from "../components/AIErrorAlert";
 import { AIInquiryPopup } from "../components/AIInquiryPopup";
 
@@ -140,10 +141,22 @@ export function ComplianceSetup() {
     setComplianceLocked,
   } = useStore();
 
-  // Fact-Check / Validation gate — block publishing until the assessment is validated.
+  // Fact-Check / Validation gate — versioned by the exact requirement set so a
+  // NEW analysis requires a fresh check (the old validation can't carry over).
   const complianceCtxId = activeProjectId || activeProgrammeId || "";
+  const complianceContentStr = (complianceItems || [])
+    .map(
+      (i: any, idx: number) =>
+        `${idx + 1}. ${i.reg || i.name || i.id}: ${String(i.req || "").slice(0, 280)}`,
+    )
+    .join("\n");
+  const complianceValidationTargetId = versionedTargetId(
+    complianceCtxId,
+    complianceContentStr,
+  );
   const complianceValidation = useStore(
-    (s) => s.validationsByKey[`compliance:${complianceCtxId}`] ?? null,
+    (s) =>
+      s.validationsByKey[`compliance:${complianceValidationTargetId}`] ?? null,
   );
   const isComplianceValidationBlocked =
     !!complianceCtxId &&
@@ -1657,17 +1670,10 @@ export function ComplianceSetup() {
                   </p>
                   <ValidateButton
                     surface="compliance"
-                    targetId={complianceCtxId}
+                    targetId={complianceValidationTargetId}
                     contextId={complianceCtxId}
                     label="Compliance assessment"
-                    content={() =>
-                      (complianceItems || [])
-                        .map(
-                          (i: any, idx: number) =>
-                            `${idx + 1}. ${i.reg || i.name || i.id}: ${String(i.req || "").slice(0, 280)}`,
-                        )
-                        .join("\n")
-                    }
+                    content={complianceContentStr}
                     ratingsContext={() =>
                       (complianceItems || [])
                         .map((i: any) => `${i.reg || i.id}: risk ${i.risk || "?"}`)
