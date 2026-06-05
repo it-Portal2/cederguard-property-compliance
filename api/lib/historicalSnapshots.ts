@@ -29,11 +29,11 @@ import type {
   MonthlySnapshotMeta,
   LegacyArraySnapshot,
   GovernanceDocSnapshot,
-} from "../../src/types/historicalReporting.js";
+} from "../../shared/types/historicalReporting.js";
 import {
   HRC_LEGACY_COLLECTIONS,
   HRC_GOVERNANCE_COLLECTIONS,
-} from "../../src/types/historicalReporting.js";
+} from "../../shared/types/historicalReporting.js";
 
 // ── Retention windows ─────────────────────────────────────────────────────
 // PRD §5: 25y for HRB-flagged clients, 7y standard.

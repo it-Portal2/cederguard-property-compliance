@@ -5,7 +5,7 @@ import { getMessaging } from "firebase-admin/messaging";
 import { getStorage } from "firebase-admin/storage";
 import { resolveBucketName } from "./storage.js";
 import { GoogleGenAI } from "@google/genai";
-import { ROLE_STRINGS } from "../../src/lib/roleConstants.js";
+import { ROLE_STRINGS } from "../../shared/constants/roleConstants.js";
 
 export const maxDuration = 120;
 

@@ -31,7 +31,7 @@ import {
 import {
   HRC_ALL_COLLECTIONS,
   type HrcCollection,
-} from "../../src/types/historicalReporting.js";
+} from "../../shared/types/historicalReporting.js";
 
 // ── Cron auth (mirrors governanceCron.isAuthorisedCronCall) ──────────────
 function isAuthorisedCronCall(req: any, ctx: ApiContext): boolean {

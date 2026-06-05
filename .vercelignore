@@ -1,7 +1,7 @@
 # ──────────────────────────────────────────────────────────────────────
 # .vercelignore — files NOT uploaded to Vercel for the web build.
 # Keep this tight to avoid OOM in Vercel's build container.
-# Vercel needs: src/, api/, public/, index.html, package*.json,
+# Vercel needs: web/, api/, public/, index.html, package*.json,
 # tsconfig.json, vite.config.ts, vercel.json, .env.example.
 # Everything else here is stripped from the deploy bundle.
 # ──────────────────────────────────────────────────────────────────────

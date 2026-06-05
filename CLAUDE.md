@@ -5,6 +5,62 @@ Project: `cedarguard-compliance-suite` — a compliance and risk management SaaS
 
 ---
 
+## ⚠️ STRUCTURE UPDATE (2026-06) — read this BEFORE the file-structure sections below
+
+The repo was restructured into a production-grade, multi-target layout. **The authoritative current
+structure is here; the detailed `web/...` file listings further down predate the feature reorg and are
+mapped below.**
+
+### Top-level layout (each folder = a deployment target or shared code)
+```
+cedar/
+├── web/        ← React frontend (WAS `src/` — renamed). Vite entry: web/main.tsx
+├── api/        ← Vercel serverless backend (STAYS at repo root — Vercel requirement). Unchanged internally.
+├── shared/     ← code imported by BOTH web/ and api/ (relative `.js` imports, NO path alias — Vercel
+│                 serverless does not resolve tsconfig path mappings)
+└── apps/desktop/   ← Electron (unchanged)
+```
+Config (`vercel.json`, `tsconfig.json`, `vite.config.ts`, `package.json`, `firebase.*`, `*.md`) stays at
+the **repo root** — it governs all targets / is read there by tooling. This is intentional, not a gap.
+
+### `shared/` contents (moved out of the old `src/` to fix the api→src boundary violation)
+- `shared/constants/roleConstants.ts`  (was `src/lib/roleConstants.ts`)
+- `shared/types/historicalReporting.ts`  (was `src/types/historicalReporting.ts`)
+- `shared/types/technicalAssurance.ts`  (was `src/types/technicalAssurance.ts`)
+- `shared/lib/composerModels.ts`  (was `src/components/chat/composerModels.ts`)
+- **`riskMetrics.ts` / `validation.ts` / `riskConversion.ts` did NOT move** — they stay in `web/lib/`
+  (they have deps into `web/` and the backend doesn't import them).
+- **Rule:** new code shared by web+api goes in `shared/`, imported via relative `.js` paths. Never
+  `../../web/...` from `api/`. Never a path alias (breaks the Vercel serverless build).
+
+### `web/` is now feature-first
+```
+web/
+├── features/<domain>/          ← per-domain code. Domains:
+│     governance, technicalAssurance, risk, compliance, programmes, projects, reporting, admin, learning, chat
+│     • governance/ + technicalAssurance/ have BOTH pages/ AND components/ (their components were self-contained)
+│     • the other 8 domains have pages/ only (their pages moved here)
+├── components/                 ← SHARED component library (kept here, NOT per-feature): layout shell
+│     (Header, Sidebar, MobileHeader, MobileNav), PageHeader, PageActions, AuthProvider, RoleGuard,
+│     ErrorBoundary, table/ (DynamicTable), validation/ (ValidateButton), common/, dashboard/, chat/,
+│     compliance/, admin/, forms/, historicalReporting/, onboarding/, desktop/, public/
+├── pages/                      ← ONLY Login.tsx, Landing.tsx, public/ (marketing) remain flat (public/auth)
+├── store/  lib/  hooks/  data/  services/  constants/  utils/  types/   ← unchanged locations
+```
+**Mapping for stale refs below:** any `web/pages/<Flat>.tsx` in the listings below now lives at
+`web/features/<domain>/pages/<Flat>.tsx`; `web/pages/governance/*` → `web/features/governance/pages/*`;
+`web/components/governance/*` → `web/features/governance/components/*` (same for technicalAssurance).
+`web/components/<shared subdir>` (table, common, validation, dashboard, etc.) is unchanged.
+
+### Conventions added by the restructure
+- **Feature rule:** a new domain feature is `web/features/<domain>/` (pages, and components only if
+  feature-specific). Cross-cutting/reused components belong in `web/components/` (the shared lib).
+- **Big files** (`useStore.ts`, large `api/routes/*`, `Dashboard.tsx`, `ComplianceSetup.tsx`) were
+  relocated whole, NOT split — splitting them remains a deliberate future task.
+- The verification gate (`npx tsc --noEmit` + `npm run build`) and all other standing rules are unchanged.
+
+---
+
 ## Working Protocol — read before doing anything
 
 ### `tasks.md` is the source of truth for progress
@@ -87,7 +143,7 @@ If anything is blocking or ambiguous, STOP and ask — do not guess.
 ### Infrastructure
 - **Firebase**: Auth, Firestore (database), Firebase Cloud Messaging (push notifications). Storage bucket is `cedar-risk-compliance-suite.firebasestorage.app` (post-Oct-2024 default; NOT the legacy `.appspot.com`).
 - **Vercel**: Deployment (`vercel.json` present). Serverless function body limit is 4.5 MB on all plans (drives the 3 MB per-file upload cap — see Storage conventions below).
-- **PWA**: Service worker via vite-plugin-pwa. Skipped on desktop bundle (guarded by `isDesktop` in `src/main.tsx`).
+- **PWA**: Service worker via vite-plugin-pwa. Skipped on desktop bundle (guarded by `isDesktop` in `web/main.tsx`).
 - **Desktop**: Electron 33 binary at `apps/desktop/main.cjs`. Single-source codebase — same React + Vite renderer, web auth-bridge swapped for desktop OAuth via Google PKCE + loopback HTTP + Firebase REST `signInWithIdp`. Tokens encrypted with `safeStorage` at `<userData>/auth.bin`. See `apps/desktop/` section below + `~/.claude/plans/cuddly-watching-lantern.md` for the full M1.x narrative.
 
 ### Key commands
@@ -117,7 +173,7 @@ If anything is blocking or ambiguous, STOP and ask — do not guess.
 |---|---|
 | `tsconfig.json` | Target ES2022, `@/*` path alias pointing to repo root, bundler resolution |
 | `vite.config.ts` | React + Tailwind + PWA plugins; manual chunk splits (vendor/firebase/utils/viz/docs/ai) |
-| `vitest.config.ts` | Node env, globals, v8 coverage, tests in `api/__tests__/**` and `src/__tests__/**` |
+| `vitest.config.ts` | Node env, globals, v8 coverage, tests in `api/__tests__/**` and `web/__tests__/**` |
 | `firebase.json` | Firebase deployment config — wires `firestore.rules` AND `storage.rules` |
 | `firestore.rules` | Firestore security rules (defence-in-depth — all production access via Admin SDK) |
 | `storage.rules` | Firebase Storage rules — **deny-all-client** (defence-in-depth). No client ever touches Storage Web SDK; uploads go through `uploadAsset()` server-side. Deploy via `firebase deploy --only storage`. |
@@ -135,10 +191,10 @@ If anything is blocking or ambiguous, STOP and ask — do not guess.
 
 ### Root
 ```
-/src/main.tsx                         Bootstrap: React root, PWA registration, global error handler
-/src/App.tsx                          Router: HashRouter on desktop / BrowserRouter on web;
+/web/main.tsx                         Bootstrap: React root, PWA registration, global error handler
+/web/App.tsx                          Router: HashRouter on desktop / BrowserRouter on web;
                                       auth + setup-wizard branching for desktop
-/src/index.css                        Global CSS resets and Tailwind base
+/web/index.css                        Global CSS resets and Tailwind base
 ```
 
 ### `/apps/desktop/` — Electron main-process code (.cjs because main runs CJS)
@@ -195,7 +251,7 @@ devInstall.cjs                      Fast `dev:install` + `dev:install:fast` work
                                     User data in ~/Library/Application Support/ survives both.
 ```
 
-### `/src/components/` — Shared UI components
+### `/web/components/` — Shared UI components
 
 #### Navigation & Layout
 ```
@@ -268,7 +324,7 @@ UserAvatar.tsx                      Shared user avatar: renders <img src={photoU
                                     in new code; always use <UserAvatar/>.
 ```
 
-#### `/src/components/desktop/` — Desktop-only renderer components
+#### `/web/components/desktop/` — Desktop-only renderer components
 ```
 FirstRunWizard.tsx                  Multi-step backend chooser shown on first launch when no
                                     `setupCompletedAt` is present in `<userData>/config.bin`.
@@ -284,7 +340,7 @@ HealthBanner.tsx                    Non-blocking offline indicator. Fires `?acti
                                     Slack/VS Code/GitHub Desktop reference pattern.
 ```
 
-#### `/src/components/dashboard/` — Dashboard primitives (v4-calibrated)
+#### `/web/components/dashboard/` — Dashboard primitives (v4-calibrated)
 ```
 ActivityTimeline.tsx                Recent activity feed with All/Risks/Issues tabs
 AIFollowUpPrompts.tsx               AI follow-up chip strip below the AI panel
@@ -302,7 +358,7 @@ ShimmerSkeleton.tsx                 Animated shimmer placeholder
 These are the canonical typography references. Match their class strings when porting KPI
 tiles / status chips / table headers / sparklines to other pages.
 
-#### `/src/components/admin/` — Admin-only sub-components
+#### `/web/components/admin/` — Admin-only sub-components
 ```
 OverviewTab.tsx       (329 lines)   Admin dashboard overview cards
 UsersTab.tsx                        User list management (role, deactivation)
@@ -322,24 +378,24 @@ constants.tsx                       Admin UI configuration constants. Exports `T
 DetailsModal.tsx                    Admin-specific details modal
 ```
 
-#### `/src/components/compliance/`
+#### `/web/components/compliance/`
 ```
 ComplianceQuestionnaire.tsx         Multi-phase compliance profiler questionnaire form
 AnalysisSummary.tsx   (407 lines)   Displays AI compliance analysis results with scoring
 ```
 
-#### `/src/components/common/`
+#### `/web/components/common/`
 ```
 EmptyState.tsx                      Reusable empty state placeholder (icon + message)
 PremiumAIBanner.tsx                 Upgrade prompt banner for AI features
 ```
 
-#### `/src/components/public/`
+#### `/web/components/public/`
 ```
 PublicLayout.tsx      (281 lines)   Layout wrapper for all public-facing pages
 ```
 
-#### `/src/components/table/` — Canonical table primitives
+#### `/web/components/table/` — Canonical table primitives
 ```
 DynamicTable.tsx                    SINGLE SOURCE OF TRUTH for tabular list pages.
                                     Built-in search, filters, sort, pagination,
@@ -370,7 +426,7 @@ useTableState.ts                    Hooks: useTableFilter, useTableSort,
 
 ---
 
-### `/src/pages/` — Route-level page components
+### `/web/pages/` — Route-level page components
 
 #### Core
 ```
@@ -464,10 +520,10 @@ APIDocs.tsx                         In-app API documentation viewer
 MyTasks.tsx                         Personal task list for logged-in user
 ```
 
-#### `/src/pages/governance/` — Programme Governance page group (sidebar group "Programme Governance")
-These are the ONLY route-level pages that live in a `src/pages/` subfolder (the rest of `src/pages/` is flat).
+#### `/web/pages/governance/` — Programme Governance page group (sidebar group "Programme Governance")
+These are the ONLY route-level pages that live in a `web/pages/` subfolder (the rest of `web/pages/` is flat).
 Import depth is therefore two levels: `import PageHeader from '../../components/PageHeader'`. Sub-components
-live under `src/components/governance/<feature>/` (archive, branding, dashboard, editor, extensions, forwardPlan,
+live under `web/components/governance/<feature>/` (archive, branding, dashboard, editor, extensions, forwardPlan,
 framework, meetings, projectDocs, reports, templates) + shared dialogs/pickers at that folder's root.
 ```
 DashboardPage.tsx                   /governance/dashboard — role-aware briefing + StatsCards (PgM vs PM payload)
@@ -484,8 +540,8 @@ BoardCalendarPage.tsx               /governance/board-calendar — read-only sch
 EditorSandboxPage.tsx               /governance/editor-sandbox — dev/test surface for the editor (PageHeader-EXEMPT)
 ```
 
-#### `/src/pages/technicalAssurance/` — Technical Assurance page group (sidebar group "Technical Assurance")
-Also subfoldered (two-level import depth). Sub-components under `src/components/technicalAssurance/`.
+#### `/web/pages/technicalAssurance/` — Technical Assurance page group (sidebar group "Technical Assurance")
+Also subfoldered (two-level import depth). Sub-components under `web/components/technicalAssurance/`.
 ```
 EnquiriesListPage.tsx               /technical-assurance/enquiries — enquiry list + decision-log PDF export
 EnquiryWorkspacePage.tsx            /technical-assurance/enquiries/:id — detail workspace, BACK-BUTTON header (PageHeader-EXEMPT)
@@ -493,7 +549,7 @@ RfiRegisterPage.tsx                 /technical-assurance/rfis — workspace-wide
 AuditDashboardPage.tsx              /technical-assurance/audit — Compliance Lead audit/feedback review
 ```
 
-#### `/src/components/historicalReporting/` — As-of-month reporting primitives
+#### `/web/components/historicalReporting/` — As-of-month reporting primitives
 Used across governance pages (and elsewhere) to drive historical/point-in-time views.
 ```
 MonthPicker.tsx                     As-of-month selector; drives `asOfMonth` on aggregator endpoints.
@@ -501,9 +557,9 @@ MonthPicker.tsx                     As-of-month selector; drives `asOfMonth` on 
 HistoricalBanner.tsx                Read-only banner shown when a past month is selected.
 CorrectionModal / CorrectionBadge / CorrectionHistory / HistoricalContentSkeleton / HistoricalEmptyState
 ```
-Backed by the `useHistoricalView` / `useHistoricalMonthMulti` hooks in `src/hooks/`.
+Backed by the `useHistoricalView` / `useHistoricalMonthMulti` hooks in `web/hooks/`.
 
-#### `/src/pages/public/` — Public marketing pages
+#### `/web/pages/public/` — Public marketing pages
 ```
 About.tsx             About the company
 Contact.tsx           Contact form page
@@ -515,12 +571,12 @@ Support.tsx           Support/FAQ page
 
 ---
 
-### `/src/store/`
+### `/web/store/`
 ```
 useStore.ts           (2000+ lines) Single Zustand store: all app state, API calls, derived selectors
 ```
 
-### `/src/lib/`
+### `/web/lib/`
 ```
 exportUtils.ts                     SINGLE SOURCE OF TRUTH for client-side Excel export. Exports
                                    `exportContextData(opts: ExportContextOpts)` — filters arrays by
@@ -573,7 +629,7 @@ validation.ts                      SINGLE SOURCE OF TRUTH for the Fact-Check / V
                                    structurally (never imports this).
 ```
 
-#### `/src/lib/auth/` — Platform-agnostic auth bridge
+#### `/web/lib/auth/` — Platform-agnostic auth bridge
 ```
 authBridge.ts                      `IAuthBridge` interface + `Account` type. Selects implementation
                                    at module-load via `isDesktop`. SINGLE SOURCE OF TRUTH for "what
@@ -592,7 +648,7 @@ desktopIpcBridge.ts                Desktop implementation — wraps `window.ceda
                                    `creationTime` field.
 ```
 
-#### `/src/lib/desktop/` — Desktop detection
+#### `/web/lib/desktop/` — Desktop detection
 ```
 isDesktop.ts                       `export const isDesktop = !!(window.cedar ?? VITE_DESKTOP_BUILD)`.
                                    Checked at module-load by authBridge.ts to pick the right
@@ -600,13 +656,13 @@ isDesktop.ts                       `export const isDesktop = !!(window.cedar ?? 
                                    Login.tsx, NotificationWrapper to gate desktop-only behaviour.
 ```
 
-### `/src/services/`
+### `/web/services/`
 ```
 aiService.ts          (300+ lines) AI prompt construction and response parsing (compliance + risk)
 api/cpdContent.ts                  CPD content fetch service
 ```
 
-### `/src/data/` — Static seed/library data
+### `/web/data/` — Static seed/library data
 ```
 complianceData.ts                  100+ compliance item definitions with metadata
 complianceQuestions.ts             Questionnaire phase definitions (questions, options, weights)
@@ -616,20 +672,20 @@ regulationsLibraryData.ts          Regulations library reference data
 newsData.ts                        Static news articles data
 ```
 
-### `/src/constants/`
+### `/web/constants/`
 ```
 ribaStages.ts                      RIBA project stage definitions (0–7)
 ```
 
-### `/src/utils/`
+### `/web/utils/`
 ```
 complianceCategorization.ts        Logic for categorising compliance items by domain/type
 ```
 
-### `/src/hooks/` — Custom React hooks
+### `/web/hooks/` — Custom React hooks
 ```
 useChatStream.ts                   AI-chat streaming hook. Wraps `openChatStream` from
-                                   [src/lib/chatTransport.ts](src/lib/chatTransport.ts) with
+                                   [web/lib/chatTransport.ts](web/lib/chatTransport.ts) with
                                    stateful render-loop, abort support, tool-call + sources
                                    event handling. Consumed by ChatPage.
 useFocusTrap.ts                    Modal/dialog focus trap.
@@ -743,15 +799,15 @@ __tests__/dispatcher.test.ts       Tests for action route dispatching
 ### Oversized Files (urgent)
 | File | Lines | Core issue |
 |---|---|---|
-| `src/pages/ComplianceSetup.tsx` | **2301** | 4-phase form mixing UI, form state, AI API calls, data transformation, and result display all in one file |
-| `src/store/useStore.ts` | **2000+** | Single store with 100+ state properties, 50+ methods, data-fetching logic, and derived selectors — impossible to test in isolation |
-| `src/pages/Dashboard.tsx` | **1281** | Portfolio overview + AI strategic insights + complex data loading + charts all colocated |
-| `src/pages/ComplianceTracker.tsx` | **1237** | Table rendering, inline editing, filter state, and API persistence mixed together |
-| `src/pages/Calendar.tsx` | **1189** | Full calendar with event CRUD, compliance deadline sync, and modal management |
-| `src/pages/ProgrammeInitiation.tsx` | **1069** | Multi-section form: validation, state, API calls, role checks all inline |
-| `src/pages/InvoiceManager.tsx` | **1030** | Invoice CRUD + PDF generation + permission checks in one component |
-| `src/pages/ProjectInitiation.tsx` | **986** | Same pattern as ProgrammeInitiation |
-| `src/pages/RiskSetup.tsx` | **951** | Multi-phase risk profiler with embedded AI calls |
+| `web/pages/ComplianceSetup.tsx` | **2301** | 4-phase form mixing UI, form state, AI API calls, data transformation, and result display all in one file |
+| `web/store/useStore.ts` | **2000+** | Single store with 100+ state properties, 50+ methods, data-fetching logic, and derived selectors — impossible to test in isolation |
+| `web/pages/Dashboard.tsx` | **1281** | Portfolio overview + AI strategic insights + complex data loading + charts all colocated |
+| `web/pages/ComplianceTracker.tsx` | **1237** | Table rendering, inline editing, filter state, and API persistence mixed together |
+| `web/pages/Calendar.tsx` | **1189** | Full calendar with event CRUD, compliance deadline sync, and modal management |
+| `web/pages/ProgrammeInitiation.tsx` | **1069** | Multi-section form: validation, state, API calls, role checks all inline |
+| `web/pages/InvoiceManager.tsx` | **1030** | Invoice CRUD + PDF generation + permission checks in one component |
+| `web/pages/ProjectInitiation.tsx` | **986** | Same pattern as ProgrammeInitiation |
+| `web/pages/RiskSetup.tsx` | **951** | Multi-phase risk profiler with embedded AI calls |
 
 ### Mixed Concerns (UI + State + API in one file)
 - **ComplianceSetup.tsx**: Should be split into Phase1Form/Phase2Form/Phase3Form components, a `useComplianceQuestionnaire` hook, and a results display component.
@@ -767,7 +823,7 @@ __tests__/dispatcher.test.ts       Tests for action route dispatching
 - **URL ↔ store sync**: At least 4 pages manually sync `searchParams.get('projectId')` with `setActiveProjectId` in separate `useEffect` calls — identical pattern repeated, could be one hook.
 
 ### Other Issues
-- `/src/hooks/` is sparsely populated (chat-stream, focus-trap, historical reporting, validation gate). Most cross-page repeated logic (URL↔store sync, filter state, etc.) is still inlined in components instead of factored into hooks.
+- `/web/hooks/` is sparsely populated (chat-stream, focus-trap, historical reporting, validation gate). Most cross-page repeated logic (URL↔store sync, filter state, etc.) is still inlined in components instead of factored into hooks.
 - AI prompt strings (~100 lines each) hardcoded in `aiService.ts` with manual JSON healing (`parseAIResponse`) — fragile and untestable.
 - Only 2 test files exist for the entire application (`context.test.ts`, `dispatcher.test.ts`) — no component tests, no store tests, no utility tests.
 - Magic numbers and status strings scattered (e.g., timeout `120000`, statuses `'Verified'`/`'Pending'`/`'Open'`) instead of named constants.
@@ -777,7 +833,7 @@ __tests__/dispatcher.test.ts       Tests for action route dispatching
 
 ## State Management
 
-All global state lives in a **single Zustand store** at `src/store/useStore.ts`. Components read state with `const { x, setX } = useStore()`.
+All global state lives in a **single Zustand store** at `web/store/useStore.ts`. Components read state with `const { x, setX } = useStore()`.
 
 ### Auth & Identity
 | State Variable | Type | File |
@@ -857,7 +913,7 @@ No `useReducer`, `createContext`, or React Context API used for state. No Redux.
 
 ## API Calls
 
-All frontend API calls go through `src/lib/api.ts` using a single action-dispatch pattern:
+All frontend API calls go through `web/lib/api.ts` using a single action-dispatch pattern:
 
 ```
 POST /api?action={actionName}
@@ -1139,11 +1195,11 @@ Auth: Firebase ID token in Authorization header
 
 ### Folder Structure Patterns
 - Feature sub-folders inside `components/` are lowercase: `admin/`, `compliance/`, `common/`, `public/`, `governance/`, `technicalAssurance/`, `historicalReporting/`, `table/`, `validation/`
-- Most route-level pages are flat in `src/pages/`. The exceptions: `src/pages/governance/` (12 pages) and `src/pages/technicalAssurance/` (4 pages) — subfoldered, so they import shared modules at two-level depth (`'../../components/...'`).
-- `/src/hooks/` holds useChatStream, useFocusTrap, useHistoricalView, useHistoricalMonthMulti, useValidationGate — new cross-page hooks go here
+- Most route-level pages are flat in `web/pages/`. The exceptions: `web/pages/governance/` (12 pages) and `web/pages/technicalAssurance/` (4 pages) — subfoldered, so they import shared modules at two-level depth (`'../../components/...'`).
+- `/web/hooks/` holds useChatStream, useFocusTrap, useHistoricalView, useHistoricalMonthMulti, useValidationGate — new cross-page hooks go here
 - No `contexts/` directory — all context via Zustand store
 - Backend under `/api/` with `lib/` and `routes/` sub-folders
-- Static data under `/src/data/`; app-wide constants under `/src/constants/`
+- Static data under `/web/data/`; app-wide constants under `/web/constants/`
 
 ### Export Style
 - **Components and pages**: `export default function ComponentName()` (default exports)
@@ -1166,7 +1222,7 @@ Auth: Firebase ID token in Authorization header
 
 ### API Call Pattern
 ```ts
-// All calls go through src/lib/api.ts
+// All calls go through web/lib/api.ts
 const result = await api.someAction(params);
 // Which dispatches: POST /api?action=someAction with JSON body
 ```
@@ -1204,10 +1260,10 @@ All user-activity / audit logging goes through the helpers in [`api/lib/activity
 - `tailwind-merge` used where conflicting utility classes need resolution
 - Dark mode via `isDarkMode` store flag + `dark:` variant classes
 - Colour palette mostly Tailwind's `indigo-*`, `slate-*`, `emerald-*`, `red-*`
-- **Scoped CSS exception**: [`src/pages/Login.tsx`](src/pages/Login.tsx) ships a custom OKLCH-palette design under a `.cg-login-root` scope (CSS embedded as a `<style>` block in the component). This is a deliberate exception — Login is on the typography exclusion list and the design uses features (custom OKLCH operations, scoped CSS variables, keyframe animations) that don't translate cleanly to Tailwind. **Do not extend this pattern to other pages** — Tailwind remains the rule everywhere else.
+- **Scoped CSS exception**: [`web/pages/Login.tsx`](web/pages/Login.tsx) ships a custom OKLCH-palette design under a `.cg-login-root` scope (CSS embedded as a `<style>` block in the component). This is a deliberate exception — Login is on the typography exclusion list and the design uses features (custom OKLCH operations, scoped CSS variables, keyframe animations) that don't translate cleanly to Tailwind. **Do not extend this pattern to other pages** — Tailwind remains the rule everywhere else.
 
 ### Page wrapper convention
-- The app shell wraps every authenticated page with `<main className="flex-1 overflow-y-auto p-4 lg:p-6 ...">` containing `<div className="max-w-[1600px] mx-auto">` ([`src/App.tsx`](src/App.tsx)). Pages should **not** add their own page-level padding, `max-w-*`, or `mx-auto` — that double-wraps the layout.
+- The app shell wraps every authenticated page with `<main className="flex-1 overflow-y-auto p-4 lg:p-6 ...">` containing `<div className="max-w-[1600px] mx-auto">` ([`web/App.tsx`](web/App.tsx)). Pages should **not** add their own page-level padding, `max-w-*`, or `mx-auto` — that double-wraps the layout.
 - Canonical page root: `<div className="space-y-6 sm:space-y-8">`. The tighter variant `space-y-5 sm:space-y-6` is reserved for sub-sections, not page roots.
 - `ServiceManagementBar` has been **deleted** (M2.1). Its per-page action items now live in `PageActions` in the `PageHeader` `actions` slot.
 - Every authenticated page must open with `<PageHeader title=... subtitle=... breadcrumbs={[...]} />` as the first child of the page root. Breadcrumb first item = sidebar group name (e.g. "Compliance", "Risk Management", "Account", "Programme Governance", "Technical Assurance"). **Exempt** (keep bespoke headers): full-screen wizards `ComplianceSetup` / `RiskSetup`, the full-screen editor `ReportAuthoringPage`, the dev surface `EditorSandboxPage`, and the back-button detail route `EnquiryWorkspacePage`.
@@ -1219,9 +1275,9 @@ All user-activity / audit logging goes through the helpers in [`api/lib/activity
 - **Header new-context buttons**: `hidden lg:flex` container, text labels `hidden xl:inline` (icon-only at 1024–1279px, full labels at 1280px+).
 
 ### Typography — v4 calibration (load-bearing across the authenticated app)
-**Geist (sans) + Geist Mono** loaded globally via Google Fonts import in [`src/index.css:1`](src/index.css#L1); Tailwind `@theme` maps `--font-sans` and `--font-mono` ([`src/index.css:7-8`](src/index.css)). `font-sans` cascades from the authenticated root in [`src/App.tsx:174`](src/App.tsx#L174).
+**Geist (sans) + Geist Mono** loaded globally via Google Fonts import in [`web/index.css:1`](web/index.css#L1); Tailwind `@theme` maps `--font-sans` and `--font-mono` ([`web/index.css:7-8`](web/index.css)). `font-sans` cascades from the authenticated root in [`web/App.tsx:174`](web/App.tsx#L174).
 
-**Canonical class strings** (lifted from [`src/pages/Dashboard.tsx`](src/pages/Dashboard.tsx) `KpiCard` at line 2349-2459):
+**Canonical class strings** (lifted from [`web/pages/Dashboard.tsx`](web/pages/Dashboard.tsx) `KpiCard` at line 2349-2459):
 - **Eyebrow labels** (small UPPERCASE headings): `font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500`
 - **KPI big-numbers** (stat values): sans Geist + `font-medium ... tabular-nums` — NOT mono
 - **Status chips / badges** (uppercase pills): `font-mono uppercase tracking-wide font-medium` + colour utilities
@@ -1233,8 +1289,8 @@ All user-activity / audit logging goes through the helpers in [`api/lib/activity
 **Bans across the authenticated app:**
 - ❌ `font-black` (weight 900) — looks wrong in Geist Mono. Use `font-semibold` (600) max.
 - ❌ `tracking-widest` / `tracking-tighter` on small uppercase labels. Use `tracking-wide`.
-- ❌ `italic` on regular text. **PRESERVED only on**: PDF/report pages (`ExecutiveReport`, `ProjectReport`, `ProgrammeReport`, `ClientProgrammeReport`, `InvoiceManager`, `Invoices`) and rich-text editor tooling (`src/components/governance/{editor,extensions,templates,meetings,forwardPlan,framework,reports}/`, `src/components/technicalAssurance/`). Default-exclude any file using `jspdf` / `html2canvas`.
-- ❌ Hardcoded score thresholds (`>= 16`, `>= 22`, etc.). Import `SEVERE_SCORE_THRESHOLD` / `MAJOR_SCORE_THRESHOLD` from [`src/lib/riskMetrics.ts`](src/lib/riskMetrics.ts).
+- ❌ `italic` on regular text. **PRESERVED only on**: PDF/report pages (`ExecutiveReport`, `ProjectReport`, `ProgrammeReport`, `ClientProgrammeReport`, `InvoiceManager`, `Invoices`) and rich-text editor tooling (`web/components/governance/{editor,extensions,templates,meetings,forwardPlan,framework,reports}/`, `web/components/technicalAssurance/`). Default-exclude any file using `jspdf` / `html2canvas`.
+- ❌ Hardcoded score thresholds (`>= 16`, `>= 22`, etc.). Import `SEVERE_SCORE_THRESHOLD` / `MAJOR_SCORE_THRESHOLD` from [`web/lib/riskMetrics.ts`](web/lib/riskMetrics.ts).
 
 **Stay sans (Rule 7):**
 - H1 / H2 / H3 page or modal titles: `font-semibold tracking-tight`
@@ -1242,7 +1298,7 @@ All user-activity / audit logging goes through the helpers in [`api/lib/activity
 - Action buttons (primary / secondary CTAs): `font-medium` — drop any inherited uppercase + tracking + bold
 - Form input labels and input fields
 
-**Exclusion list** (never touch for typography sweeps): `src/pages/Landing.tsx`, `src/pages/Login.tsx`, everything under `src/pages/public/`, `src/components/public/`, governance `.ts` extension files (HTML template strings).
+**Exclusion list** (never touch for typography sweeps): `web/pages/Landing.tsx`, `web/pages/Login.tsx`, everything under `web/pages/public/`, `web/components/public/`, governance `.ts` extension files (HTML template strings).
 
 ### Form Handling
 - **No form library** (React Hook Form, Formik, etc. not used)
@@ -1264,7 +1320,7 @@ User action → Component handler → useStore method → api.ts → /api endpoi
 → Firebase Firestore → response → store.set({ ... }) → component re-render
 ```
 
-### Role Values (defined in `src/lib/roles.ts`)
+### Role Values (defined in `web/lib/roles.ts`)
 - `"super_admin"` — platform owner
 - `"admin"` — internal admin (deprecated/same as super_admin in some checks)
 - `"client_admin"` — organisation admin
@@ -1277,22 +1333,22 @@ User action → Component handler → useStore method → api.ts → /api endpoi
 - Interfaces/types defined inline in files that use them (no shared `types/` directory)
 
 ### Risk-metric conventions
-- **Always import score / ALE helpers from [`src/lib/riskMetrics.ts`](src/lib/riskMetrics.ts).** Never re-derive scores inline.
+- **Always import score / ALE helpers from [`web/lib/riskMetrics.ts`](web/lib/riskMetrics.ts).** Never re-derive scores inline.
   - `getGrossScore(risk)` → prefers stored `grossRating`, falls back to `calculateMatrixScore(grossL, grossI)`, then raw `L × I`.
   - `getResidualScore(risk)` → same precedence for residual.
   - `getGrossALE(risk)` / `getResidualALE(risk)` → use stored ALE if present, else recompute from `impact × probability` (handles probability as decimal or percentage).
   - `SEVERE_SCORE_THRESHOLD = 19`, `MAJOR_SCORE_THRESHOLD = 12`.
-- Risk matrix cell colour bands always use `calculateMatrixScore(L, I)` from [`src/data/riskScoringMatrix.ts`](src/data/riskScoringMatrix.ts), never raw `L × I`.
-- `normalizeRisk` in [`src/store/useStore.ts`](src/store/useStore.ts) backfills missing `residualALE` / `grossALE` from `impact × probability` on every risk load — downstream KPI math relies on this. It ALSO (Risk-to-Issue conversion engine) defaults `dependencies` to `[]` and seeds one stable-dated baseline `probHistory` snapshot from the current score when empty — idempotent, runs on every read site.
+- Risk matrix cell colour bands always use `calculateMatrixScore(L, I)` from [`web/data/riskScoringMatrix.ts`](web/data/riskScoringMatrix.ts), never raw `L × I`.
+- `normalizeRisk` in [`web/store/useStore.ts`](web/store/useStore.ts) backfills missing `residualALE` / `grossALE` from `impact × probability` on every risk load — downstream KPI math relies on this. It ALSO (Risk-to-Issue conversion engine) defaults `dependencies` to `[]` and seeds one stable-dated baseline `probHistory` snapshot from the current score when empty — idempotent, runs on every read site.
 
 ### Risk-to-Issue conversion conventions
-- **`RiskItem` carries two engine fields** ([`src/store/useStore.ts`](src/store/useStore.ts)): `dependencies?: string[]` (ids of other risks this one depends on) and `probHistory?: ProbSnapshot[]` (`{ date, grossScore, residualScore, residualProb? }` score snapshots over time). Both are backfilled by `normalizeRisk`; `updateRisk` appends a `probHistory` snapshot whenever the calibrated score changes (the baseline seeded at load means one upward re-score is enough to register a trend). New risks pass through `normalizeRisk` so they get the baseline too.
-- **All "is this risk trending toward an issue?" logic lives in [`src/lib/riskConversion.ts`](src/lib/riskConversion.ts).** Call `evaluateConversion(risk, allRisks)`; never re-implement the heuristics or hardcode the thresholds in a page. Retune the system by editing that file's constants. The engine excludes `Closed` / `convertedToIssue` risks. Scores come from `riskMetrics.ts` only.
+- **`RiskItem` carries two engine fields** ([`web/store/useStore.ts`](web/store/useStore.ts)): `dependencies?: string[]` (ids of other risks this one depends on) and `probHistory?: ProbSnapshot[]` (`{ date, grossScore, residualScore, residualProb? }` score snapshots over time). Both are backfilled by `normalizeRisk`; `updateRisk` appends a `probHistory` snapshot whenever the calibrated score changes (the baseline seeded at load means one upward re-score is enough to register a trend). New risks pass through `normalizeRisk` so they get the baseline too.
+- **All "is this risk trending toward an issue?" logic lives in [`web/lib/riskConversion.ts`](web/lib/riskConversion.ts).** Call `evaluateConversion(risk, allRisks)`; never re-implement the heuristics or hardcode the thresholds in a page. Retune the system by editing that file's constants. The engine excludes `Closed` / `convertedToIssue` risks. Scores come from `riskMetrics.ts` only.
 - **Surfaces (all read from the one engine):** RiskRegister + ProgrammeRiskRegister show a "Trending" badge (with `TrendingTooltip`), an orange row tint, and a "Trending to Issue" StatsCard; RiskAlerts has a "Conversion Watch" alert group + filter tile with a "Convert to issue" button wired to the existing `convertToIssue(riskId)` store action. The dependencies multi-select lives in `RiskModal`.
 
 ### Fact-Check / Validation conventions
 The "Fact Check / Validate" layer sits ON TOP of every AI output (additive — existing flows are untouched). It runs an AI fact-check, attaches sources, flags low confidence, and **blocks final approval until a PM+ validates**.
-- **Types/status/threshold live in [`src/lib/validation.ts`](src/lib/validation.ts) ONLY** (pure module). Don't redefine `ValidationStatus`, `FactCheckResult`, or hardcode the soft-flag threshold — import `CONFIDENCE_SOFT_FLAG` / the helpers.
+- **Types/status/threshold live in [`web/lib/validation.ts`](web/lib/validation.ts) ONLY** (pure module). Don't redefine `ValidationStatus`, `FactCheckResult`, or hardcode the soft-flag threshold — import `CONFIDENCE_SOFT_FLAG` / the helpers.
 - **One Firestore collection: `validations`** — one `ValidationRecord` per `(tenant, surface, content-versioned target)`. The target id is `versionedTargetId(baseId, content)` = `${baseId}::${hashContent(content)}`, so a NEW analysis ⇒ new id ⇒ no record ⇒ a fresh check is REQUIRED (an old validation can never silently carry over to changed content). Re-running the same content overwrites; flipping status is allowed; re-applying the same status is a server-side no-op. Read back by `validationGet` / `validationGetForContext`. Do NOT add a parallel collection.
 - **The AI fact-check is a CHUNKED TWO-CALL pattern, in [`api/routes/validation.ts`](api/routes/validation.ts):** the content is one NUMBERED item per line; it is batched (`FACTCHECK_CHUNK_ITEMS`=25, `FACTCHECK_CONCURRENCY`=3, cap `FACTCHECK_MAX_ITEMS`=200 with a note if exceeded), and each batch runs Call 1 = web-grounded gather via `runAIOperation({ webSearch:true })` → Call 2 = strict-JSON verdict (`responseSchema`, no web) healed by `parseAIResponse`. **1:1 coverage is guaranteed**: the model returns each claim's `index` and the engine reconciles to exactly one claim per numbered item (back-filling any the model skipped as `uncertain`), so the result count always equals the item count. Behaves identically on the OpenRouter→Gemini failover. **Never** route fact-check AI through `api/routes/ai.ts` (out of bounds) — always `aiOperationRouter`.
 - **Web sourcing + citations come from `aiOperationRouter` `webSearch`** (OpenRouter web plugin + Gemini `googleSearch`, normalised to `WebCitation[]`, best-effort). The regulations corpus has NO source URLs, so the AI must never fabricate links — clickable sources are either web-search results or user-attached links/files.
@@ -1300,42 +1356,42 @@ The "Fact Check / Validate" layer sits ON TOP of every AI output (additive — e
 - **PM and above validate** (`canValidate` → `isAtLeastPM`); the server re-checks the role (it can't import `roles.ts`, so it mirrors the PM+ set inline). Every fact-check / validate / reject / attach `logActivity`s (category `update`/`approve`), awaited before the response.
 - **UI:** `<ValidateButton>` portals its `FactCheckPanel` modal to `document.body` (escapes transformed/animated ancestors — same rule as `TrendingTooltip`); shows the eye-catching gradient CTA only when truly `unchecked`, and a neutral disabled **"Checking…"** while `useValidationGate.loading` (the status fetch on refresh) so it never flashes the wrong state or triggers a duplicate run. On a refused/failed check it closes the panel (toast only).
 - **Chat guardrail + fact-check gating:** every chat message is screened by [`api/lib/aiGuard.ts`](api/lib/aiGuard.ts) `screenChatInput` BEFORE the model (hard block, fail-open) — unsafe/off-topic prompts get the canned decline and a `factCheckable:false` flag on the `done` event. The chat Fact-check button shows ONLY when `factCheckable !== false` AND the answer has citations (so "no results / declined" answers show no button). Even then, `validationRunFactCheck` runs a cheap one-call **verifiability gate** for `surface:"chat"` — a data summary / status / "all within limits" answer (no external claims) is refused (422 "Nothing to fact-check…") before the expensive web check.
-- **Chat renders markdown tables** ([`ChatMessage.tsx`](src/components/chat/ChatMessage.tsx) `renderInlineSection`) as a clean read-only styled table (mono-uppercase headers, zebra rows, h-scroll) — NOT `DynamicTable` (too heavy / needs typed columns; AI tables have arbitrary columns).
+- **Chat renders markdown tables** ([`ChatMessage.tsx`](web/components/chat/ChatMessage.tsx) `renderInlineSection`) as a clean read-only styled table (mono-uppercase headers, zebra rows, h-scroll) — NOT `DynamicTable` (too heavy / needs typed columns; AI tables have arbitrary columns).
 
 ### Refresh / skeleton conventions (dashboard surfaces)
 - During `isRefreshing` (or context-switch loaders `isLoadingContent` / `loadingOverview`), every visible content surface should render a skeleton, not freeze with stale data.
 - Setup-pending CTAs (`!isComplianceSetup || !isRiskSetup`) must be **gated on `!isLoadingContent && !loadingOverview && !isRefreshing`** — otherwise they flash during the gap between previous-context-clear and new-context-load.
-- Available skeleton helpers in [`src/pages/Dashboard.tsx`](src/pages/Dashboard.tsx): `SkeletonStatCards`, `SkeletonBar`, `SkeletonTable`, `SkeletonMatrix`, `SkeletonCriticalList`, `SkeletonSidePanel`, `SkeletonProjectsGrid`, `SkeletonRiskSummary`, `SkeletonIssueSummary`.
+- Available skeleton helpers in [`web/pages/Dashboard.tsx`](web/pages/Dashboard.tsx): `SkeletonStatCards`, `SkeletonBar`, `SkeletonTable`, `SkeletonMatrix`, `SkeletonCriticalList`, `SkeletonSidePanel`, `SkeletonProjectsGrid`, `SkeletonRiskSummary`, `SkeletonIssueSummary`.
 
 ### AI inquiry / StrictMode
-- `<React.StrictMode>` is enabled in [`src/main.tsx`](src/main.tsx). Any effect that calls a side-effectful function (API call, navigation) must be **idempotent** or **guarded with a ref**. See [`src/components/AIInquiryPopup.tsx`](src/components/AIInquiryPopup.tsx) — `autoSentRef` prevents StrictMode from firing two AI requests for the same prefilled prompt.
+- `<React.StrictMode>` is enabled in [`web/main.tsx`](web/main.tsx). Any effect that calls a side-effectful function (API call, navigation) must be **idempotent** or **guarded with a ref**. See [`web/components/AIInquiryPopup.tsx`](web/components/AIInquiryPopup.tsx) — `autoSentRef` prevents StrictMode from firing two AI requests for the same prefilled prompt.
 
 ### Table conventions
-- **`DynamicTable` is canonical** for any list page that needs search, filters, pagination, selection, or row/bulk actions. Do not hand-roll `<table>` markup, do not introduce a separate table library, and do not build a page-level confirm modal — DynamicTable ships all of that. Component: [`src/components/table/DynamicTable.tsx`](src/components/table/DynamicTable.tsx); public types: [`src/components/table/types.ts`](src/components/table/types.ts).
+- **`DynamicTable` is canonical** for any list page that needs search, filters, pagination, selection, or row/bulk actions. Do not hand-roll `<table>` markup, do not introduce a separate table library, and do not build a page-level confirm modal — DynamicTable ships all of that. Component: [`web/components/table/DynamicTable.tsx`](web/components/table/DynamicTable.tsx); public types: [`web/components/table/types.ts`](web/components/table/types.ts).
 - **Reference patterns** (copy from these when migrating a new page):
-  - Minimal (no actions, just search + columns): [`src/pages/ProgrammeIssues.tsx:174-189`](src/pages/ProgrammeIssues.tsx#L174)
-  - Full (row actions + bulk actions + filters + `requireConfirm`): [`src/pages/RiskRegister.tsx:843-941`](src/pages/RiskRegister.tsx#L843)
-  - Merged-source feed with cross-field filters: [`src/pages/MyTasks.tsx`](src/pages/MyTasks.tsx)
-- **Confirm dialog**: route destructive actions through `requireConfirm: ConfirmConfig` on the relevant `RowAction` / `BulkAction`. DynamicTable mounts [`ConfirmDialog`](src/components/table/ConfirmDialog.tsx) automatically and awaits the handler with a spinner. Never `window.confirm()`, never build a parallel modal.
-- **Cross-field filter pattern**: `FilterDef.match(rowValue, filterValue)` only receives one row field. When a filter needs multiple fields (e.g. a "timeline" bucket derived from both `status` and `dueDate`), **flatten the bucket onto the row** as a derived `_underscorePrefixed` field at the `useMemo` that builds the data array, then point the filter at that synthetic key. See `_timeline` / `_contextId` / `_isOverdue` in [`src/pages/MyTasks.tsx`](src/pages/MyTasks.tsx). Do not subclass DynamicTable or move filter logic outside it.
+  - Minimal (no actions, just search + columns): [`web/pages/ProgrammeIssues.tsx:174-189`](web/pages/ProgrammeIssues.tsx#L174)
+  - Full (row actions + bulk actions + filters + `requireConfirm`): [`web/pages/RiskRegister.tsx:843-941`](web/pages/RiskRegister.tsx#L843)
+  - Merged-source feed with cross-field filters: [`web/pages/MyTasks.tsx`](web/pages/MyTasks.tsx)
+- **Confirm dialog**: route destructive actions through `requireConfirm: ConfirmConfig` on the relevant `RowAction` / `BulkAction`. DynamicTable mounts [`ConfirmDialog`](web/components/table/ConfirmDialog.tsx) automatically and awaits the handler with a spinner. Never `window.confirm()`, never build a parallel modal.
+- **Cross-field filter pattern**: `FilterDef.match(rowValue, filterValue)` only receives one row field. When a filter needs multiple fields (e.g. a "timeline" bucket derived from both `status` and `dueDate`), **flatten the bucket onto the row** as a derived `_underscorePrefixed` field at the `useMemo` that builds the data array, then point the filter at that synthetic key. See `_timeline` / `_contextId` / `_isOverdue` in [`web/pages/MyTasks.tsx`](web/pages/MyTasks.tsx). Do not subclass DynamicTable or move filter logic outside it.
 - **Pagination default**: `pagination: { enabled: true, pageSize: 25, pageSizeOptions: [10, 25, 50] }` for any list that can plausibly exceed ~50 rows.
 - **Page-level toolbar buttons** (e.g. "Add task", "Capture lesson") belong in DynamicTable's `toolbarActions` slot, not as a sibling above the table. The empty-state CTA is a separate `emptyState.action` slot.
 
 ### Auth / avatar conventions
-- **Avatar rendering**: always use [`<UserAvatar/>`](src/components/UserAvatar.tsx). Never inline `<img src={user.photoURL}/>` — the component handles the `onError` → gradient initials fallback, so stale or revoked URLs never leave a broken-image icon. Three sizes (`sm`/`md`/`lg`) cover all current call sites (Header, Sidebar, MobileHeader).
+- **Avatar rendering**: always use [`<UserAvatar/>`](web/components/UserAvatar.tsx). Never inline `<img src={user.photoURL}/>` — the component handles the `onError` → gradient initials fallback, so stale or revoked URLs never leave a broken-image icon. Three sizes (`sm`/`md`/`lg`) cover all current call sites (Header, Sidebar, MobileHeader).
 - **`photoURL` is the canonical avatar field** on the user profile (set in [`api/routes/profile.ts`](api/routes/profile.ts) whitelist). Do **not** introduce a parallel `avatarUrl` field.
-- **Profile keys are always initialized on first sign-in**: [`src/store/useStore.ts initStore`](src/store/useStore.ts) writes `photoURL` and `displayName` to the Firestore profile doc on first init, even for magic-link sign-ups where Firebase Auth supplies neither (the values may be `null`, but the keys always exist). Downstream code can assume those keys are present on every loaded profile.
-- **Friendly auth errors**: when surfacing Firebase auth failures to the UI, map known error codes to safe copy and fall back to a generic message — never echo raw `err.message`. See `FRIENDLY_AUTH_ERRORS` + `friendlyAuthError()` in [`src/pages/Login.tsx`](src/pages/Login.tsx) for the current mapping.
+- **Profile keys are always initialized on first sign-in**: [`web/store/useStore.ts initStore`](web/store/useStore.ts) writes `photoURL` and `displayName` to the Firestore profile doc on first init, even for magic-link sign-ups where Firebase Auth supplies neither (the values may be `null`, but the keys always exist). Downstream code can assume those keys are present on every loaded profile.
+- **Friendly auth errors**: when surfacing Firebase auth failures to the UI, map known error codes to safe copy and fall back to a generic message — never echo raw `err.message`. See `FRIENDLY_AUTH_ERRORS` + `friendlyAuthError()` in [`web/pages/Login.tsx`](web/pages/Login.tsx) for the current mapping.
 - **Magic-link throttle**: client-side throttle for repeated magic-link submissions is **5 seconds** (`MAGIC_LINK_THROTTLE_MS`), enforced via a `useRef` timestamp in `Login.tsx`. Backend rate limits are layered on top, but the client guard keeps the UX honest.
 
 ### Auth-bridge enforcement (load-bearing for desktop)
 The desktop binary signs in via Electron main-process OAuth, NOT the Firebase Web SDK. That means `auth.currentUser` is **always `null` on desktop** and the Web SDK's `signOut(auth)` is a no-op there. Any code reading those directly will silently break on desktop.
 
 - **Never read `auth.currentUser` directly.** Read `useStore().user` (which is an `Account` from the bridge) or call `authBridge.getCurrentAccount()`. The `Account` type carries `{ uid, email, displayName, photoURL, creationTime }`.
-- **Never call `logout()` from [`src/lib/firebase.ts`](src/lib/firebase.ts) directly.** Call [`authBridge.signOut()`](src/lib/auth/authBridge.ts) — on desktop it propagates to the main process and revokes the Google refresh token; on web it wraps the same `signOut(auth)`. Same for `loginWithGoogle` → `authBridge.signInGoogle()`.
+- **Never call `logout()` from [`web/lib/firebase.ts`](web/lib/firebase.ts) directly.** Call [`authBridge.signOut()`](web/lib/auth/authBridge.ts) — on desktop it propagates to the main process and revokes the Google refresh token; on web it wraps the same `signOut(auth)`. Same for `loginWithGoogle` → `authBridge.signInGoogle()`.
 - **Never use `firebase/storage` Web SDK.** It would fail on desktop (no auth session). All file ops go through the storage convention below.
-- **`onAuthStateChanged(auth, ...)` direct subscriptions are forbidden** outside [`src/lib/auth/firebaseWebBridge.ts`](src/lib/auth/firebaseWebBridge.ts). Use `authBridge.onAuthChange(cb)`.
-- **The five files that consume the bridge correctly** (use as templates): [api.ts](src/lib/api.ts), [chatTransport.ts](src/lib/chatTransport.ts), [Header.tsx](src/components/Header.tsx), [Sidebar.tsx](src/components/Sidebar.tsx), [ProfileSettingsModal.tsx](src/components/ProfileSettingsModal.tsx), [Dashboard.tsx](src/pages/Dashboard.tsx) (reads `user.creationTime` for the onboarding modal — does NOT read `auth.currentUser.metadata.creationTime`).
+- **`onAuthStateChanged(auth, ...)` direct subscriptions are forbidden** outside [`web/lib/auth/firebaseWebBridge.ts`](web/lib/auth/firebaseWebBridge.ts). Use `authBridge.onAuthChange(cb)`.
+- **The five files that consume the bridge correctly** (use as templates): [api.ts](web/lib/api.ts), [chatTransport.ts](web/lib/chatTransport.ts), [Header.tsx](web/components/Header.tsx), [Sidebar.tsx](web/components/Sidebar.tsx), [ProfileSettingsModal.tsx](web/components/ProfileSettingsModal.tsx), [Dashboard.tsx](web/pages/Dashboard.tsx) (reads `user.creationTime` for the onboarding modal — does NOT read `auth.currentUser.metadata.creationTime`).
 
 ### Storage / file uploads — SINGLE PATTERN (load-bearing)
 **Every file upload in the codebase uses the same pattern.** No exceptions. Adding a different pattern means adding a class of bugs we've already fought through and rolled back.
@@ -1365,7 +1421,7 @@ const { url } = await uploadAsset(storagePath, buffer, mime, { makePublic: true 
 - **Downloads = open the stored `url` directly.** No API call, no signing. URLs are stable public-but-unguessable (path includes random IDs + 13-digit timestamps). Same security posture as governance branding.
 - **Deletes that involve a file MUST clean up the GCS object server-side** (see `deleteEvidence` in [api/routes/data.ts](api/routes/data.ts) and `tacRemoveAttachment` in [api/routes/technicalAssurance.ts](api/routes/technicalAssurance.ts) for the pattern).
 - **External-link records** (where `storagePath === 'external-link'`) skip upload entirely; just store the user-pasted URL on the Firestore record.
-- **No `firebase/storage` import anywhere in `src/`.** [src/lib/firebase.ts](src/lib/firebase.ts) deliberately does not export `storage`. Defence-in-depth: [storage.rules](storage.rules) is `allow read, write: if false` so any future direct Web SDK access fails closed.
+- **No `firebase/storage` import anywhere in `web/`.** [web/lib/firebase.ts](web/lib/firebase.ts) deliberately does not export `storage`. Defence-in-depth: [storage.rules](storage.rules) is `allow read, write: if false` so any future direct Web SDK access fails closed.
 
 ### Desktop bridge convention (`window.cedar`)
 The renderer talks to the Electron main process through a single namespaced object exposed via `contextBridge` in [apps/desktop/preload.cjs](apps/desktop/preload.cjs):
@@ -1386,8 +1442,8 @@ window.cedar = {
 ```
 
 - **Never expose raw `process.env` or full `ipcRenderer`** via contextBridge — only specific resolved values + the auth/IPC channels the renderer actually needs (DeepStrike Electron pen-test rule #1).
-- **`window.cedar.apiBaseUrl` is the source of truth for the API host on desktop.** [src/lib/api.ts](src/lib/api.ts) + [src/lib/chatTransport.ts](src/lib/chatTransport.ts) read it directly. Do not duplicate the resolution logic.
-- **`isDesktop` check at module-load** via [src/lib/desktop/isDesktop.ts](src/lib/desktop/isDesktop.ts) — checks `window.cedar` (preload) OR `import.meta.env.VITE_DESKTOP_BUILD` (build-time fallback for edge cases where preload runs after first render).
+- **`window.cedar.apiBaseUrl` is the source of truth for the API host on desktop.** [web/lib/api.ts](web/lib/api.ts) + [web/lib/chatTransport.ts](web/lib/chatTransport.ts) read it directly. Do not duplicate the resolution logic.
+- **`isDesktop` check at module-load** via [web/lib/desktop/isDesktop.ts](web/lib/desktop/isDesktop.ts) — checks `window.cedar` (preload) OR `import.meta.env.VITE_DESKTOP_BUILD` (build-time fallback for edge cases where preload runs after first render).
 - **The dev-against-prod CORS rewrite in [apps/desktop/main.cjs](apps/desktop/main.cjs)** is intentional architecture, not tech debt. Three dev flows coexist by design (see Key commands table above + the comment block in main.cjs).
 - **Renderer logging:** call `window.cedar.log(level, event, payload)` so renderer errors land in the same `main.log` as main-process events.
 
@@ -1405,16 +1461,16 @@ Configured JSON-first in [apps/desktop/logger.cjs](apps/desktop/logger.cjs). Fil
   ```
 - **Established event namespaces:** `auth.signin.{start,success,error,cancelled}`, `auth.signout`, `auth.refresh.{success,error}`, `auth.revoke.{success,error}`, `oauth.loopback.{listening,callback,timeout,error}`, `lifecycle.boot`, `lifecycle.react.crash`, `update.check.*`.
 - **The format function MUST NEVER throw.** electron-log v5 has variable message shapes; the formatter in `logger.cjs` is defensive (try/catch + fallback to `new Date().toISOString()` if `msg.date` is undefined). Don't simplify it.
-- **`ErrorBoundary` Copy Diagnostics** ([src/components/ErrorBoundary.tsx](src/components/ErrorBoundary.tsx) + `diagnostics:get` IPC) bundles the last ~200 lines of `main.log` + sysinfo + React error stack — that's the support payload. Don't add a parallel error-reporting path on desktop.
+- **`ErrorBoundary` Copy Diagnostics** ([web/components/ErrorBoundary.tsx](web/components/ErrorBoundary.tsx) + `diagnostics:get` IPC) bundles the last ~200 lines of `main.log` + sysinfo + React error stack — that's the support payload. Don't add a parallel error-reporting path on desktop.
 
 ### Standing rules for sweeps / refactors
 - **`PageHeader` is the ONLY way to add a page title.** Never add an ad-hoc `<h1>` or title block to an authenticated page. Props: `breadcrumbs` (first item = sidebar group name), `title`, optional `subtitle`, optional `actions` slot.
-- **Risk-to-Issue "trending" logic goes through [`src/lib/riskConversion.ts`](src/lib/riskConversion.ts) `evaluateConversion` ONLY.** Don't re-implement the heuristics or hardcode its thresholds in a page; retune via that file's constants. Scores via `riskMetrics.ts`, never inline.
-- **Fact-Check / Validation goes through [`src/lib/validation.ts`](src/lib/validation.ts) types + [`useValidationGate`](src/hooks/useValidationGate.ts) + [`<ValidateButton/>`](src/components/validation/ValidateButton.tsx).** One `validations` collection, keyed by a **content-versioned** target (`versionedTargetId`) so a new analysis forces a fresh check. The AI fact-check is the **chunked** two-call pattern in [`api/routes/validation.ts`](api/routes/validation.ts) via `aiOperationRouter` (`webSearch`), NEVER `api/routes/ai.ts`, with **1:1 numbered-item reconciliation** (one claim per item). PM+ validates; approval blocked until validated (gate BOTH the submit action and any step→step advance, e.g. `handleFinalise`); everything `logActivity`s. Don't fork the types, add a parallel collection, hardcode the confidence threshold, or send un-numbered/multi-line fact-check content.
+- **Risk-to-Issue "trending" logic goes through [`web/lib/riskConversion.ts`](web/lib/riskConversion.ts) `evaluateConversion` ONLY.** Don't re-implement the heuristics or hardcode its thresholds in a page; retune via that file's constants. Scores via `riskMetrics.ts`, never inline.
+- **Fact-Check / Validation goes through [`web/lib/validation.ts`](web/lib/validation.ts) types + [`useValidationGate`](web/hooks/useValidationGate.ts) + [`<ValidateButton/>`](web/components/validation/ValidateButton.tsx).** One `validations` collection, keyed by a **content-versioned** target (`versionedTargetId`) so a new analysis forces a fresh check. The AI fact-check is the **chunked** two-call pattern in [`api/routes/validation.ts`](api/routes/validation.ts) via `aiOperationRouter` (`webSearch`), NEVER `api/routes/ai.ts`, with **1:1 numbered-item reconciliation** (one claim per item). PM+ validates; approval blocked until validated (gate BOTH the submit action and any step→step advance, e.g. `handleFinalise`); everything `logActivity`s. Don't fork the types, add a parallel collection, hardcode the confidence threshold, or send un-numbered/multi-line fact-check content.
 - **Chat input is guarded by [`api/lib/aiGuard.ts`](api/lib/aiGuard.ts) `screenChatInput` BEFORE the model** (Llama Guard safety + topical, hard-block, fail-open). Don't bypass it or route its classifier through `api/routes/ai.ts`. The chat Fact-check button is gated on `factCheckable` + citations, and chat fact-checks run a verifiability pre-check — don't fact-check pure data-summary / "no results" answers.
-- **Tooltips inside a scroll/overflow container (e.g. a `DynamicTable` cell) must portal out** — use [`TrendingTooltip`](src/components/TrendingTooltip.tsx)'s pattern (`createPortal` to `document.body`, `position:fixed`, `z-40` so it sits above the table but below `z-50` modals/dialogs/dropdowns). The plain `InfoTooltip` gets clipped there.
+- **Tooltips inside a scroll/overflow container (e.g. a `DynamicTable` cell) must portal out** — use [`TrendingTooltip`](web/components/TrendingTooltip.tsx)'s pattern (`createPortal` to `document.body`, `position:fixed`, `z-40` so it sits above the table but below `z-50` modals/dialogs/dropdowns). The plain `InfoTooltip` gets clipped there.
 - **`PageActions` is the ONLY way to add a per-page context dropdown.** Pass `items: ActionItem[]` and `canManage: boolean`. Never roll a custom dropdown for page-level actions.
-- **`exportContextData` in [`src/lib/exportUtils.ts`](src/lib/exportUtils.ts) is the ONLY Excel export helper.** Never write inline XLSX logic in a page. Add new sheet types to `exportUtils.ts`.
+- **`exportContextData` in [`web/lib/exportUtils.ts`](web/lib/exportUtils.ts) is the ONLY Excel export helper.** Never write inline XLSX logic in a page. Add new sheet types to `exportUtils.ts`.
 - **`ServiceManagementBar` is deleted.** Do not recreate it. Its MonthPicker and PageActions patterns replace it entirely.
 - **Never run regex passes on backtick template literals.** A pattern like `(["'`])((?:[^\\]|\\.)*?)\1` matches across newlines inside backticks and corrupts JSX inside `${...}`. Always restrict regex find/replace to single-line `'...'` or `"..."` strings unless the pattern is anchored on a definite per-line attribute.
 - **Never commit with `--no-verify`, never push with `--force` to `main` / `master`.** No model names, no co-authored-by footer in commit messages.
@@ -1422,8 +1478,8 @@ Configured JSON-first in [apps/desktop/logger.cjs](apps/desktop/logger.cjs). Fil
 - **`api/routes/ai.ts` is out of bounds** — standing project rule. Do not edit.
 - **5×5 risk matrix is user-locked** — do not change the layout shape.
 - **Never re-introduce V4 signed PUT/GET URLs against the Storage bucket.** Migration tried + failed in M1.8 with reproducible `SignatureDoesNotMatch` — see plan file. Use base64 → API → `uploadAsset()` per the Storage convention above.
-- **Never import `firebase/storage` in `src/`.** [`src/lib/firebase.ts`](src/lib/firebase.ts) deliberately omits the `storage` export. Defence-in-depth via [`storage.rules`](storage.rules) deny-all is in place too. Server-side: only [`api/lib/storage.ts`](api/lib/storage.ts) `uploadAsset` / `deleteAsset` / `readAssetAsDataUri` may touch Storage.
-- **Never read `auth.currentUser` or call `signOut(auth)` directly in app code.** Use [`authBridge`](src/lib/auth/authBridge.ts) — breaks silently on desktop otherwise.
+- **Never import `firebase/storage` in `web/`.** [`web/lib/firebase.ts`](web/lib/firebase.ts) deliberately omits the `storage` export. Defence-in-depth via [`storage.rules`](storage.rules) deny-all is in place too. Server-side: only [`api/lib/storage.ts`](api/lib/storage.ts) `uploadAsset` / `deleteAsset` / `readAssetAsDataUri` may touch Storage.
+- **Never read `auth.currentUser` or call `signOut(auth)` directly in app code.** Use [`authBridge`](web/lib/auth/authBridge.ts) — breaks silently on desktop otherwise.
 - **`apps/desktop/built-env.cjs` must stay gitignored.** It contains the Google OAuth client secret baked at build time. Never commit, never `git add` it.
 - **Never raise the 3 MB upload cap by editing constants alone.** It's bounded by Vercel's 4.5 MB serverless body limit (not configurable). Raising it requires switching pattern entirely (M-LargeUploads in `handoff.md`).
 - **Activity logging goes through [`api/lib/activityLog.ts`](api/lib/activityLog.ts), awaited BEFORE the response.** Don't write to `activityLogs` ad-hoc, and never move logging to a post-response central dispatcher hook — Vercel tears the invocation down at response end and the write is lost (see the activity-logging convention above).

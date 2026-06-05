@@ -31,7 +31,7 @@ import {
 } from '../lib/frameworkPdfRenderer.js';
 import { readAssetAsDataUri, assetPaths } from '../lib/storage.js';
 import { appendHistoryRow } from '../lib/historyRows.js';
-import type { ChangeKind } from '../../src/types/historicalReporting.js';
+import type { ChangeKind } from '../../shared/types/historicalReporting.js';
 
 const BODY_ID_RE = /^[a-z0-9_-]{1,80}$/i;
 const STAMP_LIKE_RE = /^[a-z0-9_-]{1,80}$/i;

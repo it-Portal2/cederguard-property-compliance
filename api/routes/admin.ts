@@ -1,7 +1,7 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { ApiContext } from '../lib/context.js';
 import crypto from 'crypto';
-import { ROLE_STRINGS, PM_LEVELS } from '../../src/lib/roleConstants.js';
+import { ROLE_STRINGS, PM_LEVELS } from '../../shared/constants/roleConstants.js';
 import {
   CONFIG_DOC_PATH,
   SEED_CONFIG,

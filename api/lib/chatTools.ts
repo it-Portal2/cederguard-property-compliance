@@ -5,7 +5,7 @@
 // calls isAuthorizedForContext where needed.
 
 import type { ApiContext } from "./context.js";
-import { ROLE_STRINGS } from "../../src/lib/roleConstants.js";
+import { ROLE_STRINGS } from "../../shared/constants/roleConstants.js";
 import { FieldValue, FieldPath } from "firebase-admin/firestore";
 
 export type ToolName =

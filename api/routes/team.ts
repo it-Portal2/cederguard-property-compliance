@@ -1,6 +1,6 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { ApiContext } from '../lib/context.js';
-import { ROLE_STRINGS, PM_LEVELS } from '../../src/lib/roleConstants.js';
+import { ROLE_STRINGS, PM_LEVELS } from '../../shared/constants/roleConstants.js';
 import { logActivity } from '../lib/activityLog.js';
 
 const canonicalOf = (role?: string | null): string => {

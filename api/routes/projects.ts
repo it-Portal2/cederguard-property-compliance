@@ -1,6 +1,6 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { ApiContext } from "../lib/context.js";
-import { ROLE_STRINGS } from "../../src/lib/roleConstants.js";
+import { ROLE_STRINGS } from "../../shared/constants/roleConstants.js";
 import { logActivity } from "../lib/activityLog.js";
 
 export const projectRoutes: Record<

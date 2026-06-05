@@ -32,7 +32,7 @@ import {
 import { uploadAsset, readAssetAsDataUri } from '../lib/storage.js';
 import { ensureFpItemFromReport } from './governanceForwardPlan.js';
 import { appendHistoryRow } from '../lib/historyRows.js';
-import type { ChangeKind } from '../../src/types/historicalReporting.js';
+import type { ChangeKind } from '../../shared/types/historicalReporting.js';
 import { logActivity } from '../lib/activityLog.js';
 
 const REPORT_ID_RE = /^[a-z0-9_-]{1,80}$/i;
@@ -1817,7 +1817,7 @@ function shapeReviewer(uid: string, data: any) {
 // ── Senior PM intermediate review ─────────────────────────────
 
 // In this codebase there's only one PM role (`project_manager`); seniority
-// is tracked via `pmLevel === 'senior'`. See [src/lib/roleConstants.ts]
+// is tracked via `pmLevel === 'senior'`. See [shared/constants/roleConstants.ts]
 // PM_LEVELS = ['senior', 'standard', 'assistant', 'coordinator'].
 function isSeniorPmRole(role?: string, pmLevel?: string): boolean {
   return role === 'project_manager' && pmLevel === 'senior';

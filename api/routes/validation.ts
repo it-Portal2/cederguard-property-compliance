@@ -16,7 +16,7 @@ import { ApiContext, parseAIResponse } from "../lib/context.js";
 import { runAIOperation } from "../lib/aiOperationRouter.js";
 import { logActivity } from "../lib/activityLog.js";
 import { uploadAsset, deleteAsset } from "../lib/storage.js";
-import { ROLE_STRINGS } from "../../src/lib/roleConstants.js";
+import { ROLE_STRINGS } from "../../shared/constants/roleConstants.js";
 
 /** Per-file cap for validation attachments (Vercel 4.5 MB body / base64 inflation). */
 const VALIDATION_MAX_FILE_BYTES = 3 * 1024 * 1024; // 3 MB

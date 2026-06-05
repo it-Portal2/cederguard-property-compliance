@@ -8,6 +8,6 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
     },
-    include: ['api/__tests__/**/*.test.ts', 'src/__tests__/**/*.test.ts'],
+    include: ['api/__tests__/**/*.test.ts', 'web/__tests__/**/*.test.ts'],
   },
 });

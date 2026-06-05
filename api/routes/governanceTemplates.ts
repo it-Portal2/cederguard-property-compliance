@@ -19,7 +19,7 @@ import type { ApiContext } from '../lib/context.js';
 import { logActivity } from '../lib/activityLog.js';
 import { SEED_TEMPLATES, type SeedTemplate } from '../lib/templateSeed.js';
 import { appendHistoryRow } from '../lib/historyRows.js';
-import type { ChangeKind } from '../../src/types/historicalReporting.js';
+import type { ChangeKind } from '../../shared/types/historicalReporting.js';
 
 const TEMPLATE_ID_RE = /^[a-z0-9_-]{1,80}$/i;
 const SECTION_ID_RE = /^[a-z0-9_-]{1,80}$/i;

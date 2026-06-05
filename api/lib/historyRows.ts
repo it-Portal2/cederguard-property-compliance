@@ -35,7 +35,7 @@ import type {
   HrcCollection,
   LegacyCollection,
   GovernanceCollection,
-} from "../../src/types/historicalReporting.js";
+} from "../../shared/types/historicalReporting.js";
 
 const LEGACY_HISTORY_COLLECTIONS: Record<LegacyCollection, string> = {
   risks: "risksHistory",

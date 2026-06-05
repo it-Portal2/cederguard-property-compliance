@@ -17,7 +17,7 @@ import type {
   EnquiryAttachment,
   EnquiryStatus,
   RibaStage,
-} from "../../src/types/technicalAssurance.js";
+} from "../../shared/types/technicalAssurance.js";
 
 const SEED_PREFIX = "tac-seed-";
 

@@ -34,7 +34,7 @@ import {
 import {
   FREE_AUTOROUTER_OPENROUTER_ID,
   type ChatModelOption,
-} from "../../src/components/chat/composerModels.js";
+} from "../../shared/lib/composerModels.js";
 import {
   loadAIModelConfig,
   type ChatModelEntry,

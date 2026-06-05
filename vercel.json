@@ -42,7 +42,7 @@
             "destination": "/api/$1"
         },
         {
-            "source": "/((?!api(?:/|$)|@|__|src/|node_modules/|.*\\..*).*)",
+            "source": "/((?!api(?:/|$)|@|__|web/|node_modules/|.*\\..*).*)",
             "destination": "/"
         }
     ],

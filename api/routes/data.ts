@@ -6,7 +6,7 @@ import { uploadAsset } from '../lib/storage.js';
 import {
   HRC_LEGACY_COLLECTIONS,
   type LegacyCollection,
-} from '../../src/types/historicalReporting.js';
+} from '../../shared/types/historicalReporting.js';
 import {
   detectSevereTransitions,
   writeSevereEscalations,

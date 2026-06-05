@@ -32,7 +32,7 @@ import {
   shiftIfNonWorking,
 } from '../lib/ukBankHolidays.js';
 import { appendHistoryRow } from '../lib/historyRows.js';
-import type { ChangeKind } from '../../src/types/historicalReporting.js';
+import type { ChangeKind } from '../../shared/types/historicalReporting.js';
 
 const MEETING_ID_RE = /^[a-z0-9_-]{1,80}$/i;
 
