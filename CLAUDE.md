@@ -48,8 +48,8 @@ web/
 ├── store/  lib/  hooks/  data/  services/  constants/  utils/  types/   ← unchanged locations
 ```
 **Mapping for stale refs below:** any `web/pages/<Flat>.tsx` in the listings below now lives at
-`web/features/<domain>/pages/<Flat>.tsx`; `web/pages/governance/*` → `web/features/governance/pages/*`;
-`web/components/governance/*` → `web/features/governance/components/*` (same for technicalAssurance).
+`web/features/<domain>/pages/<Flat>.tsx`; `web/features/governance/pages/*` → `web/features/governance/pages/*`;
+`web/features/governance/components/*` → `web/features/governance/components/*` (same for technicalAssurance).
 `web/components/<shared subdir>` (table, common, validation, dashboard, etc.) is unchanged.
 
 ### Conventions added by the restructure
@@ -426,13 +426,20 @@ useTableState.ts                    Hooks: useTableFilter, useTableSort,
 
 ---
 
-### `/web/pages/` — Route-level page components
+### Route-level page components — now under `/web/features/<domain>/pages/`
+
+> Post-restructure: these pages live in `web/features/<domain>/pages/` (the `####` category
+> headers below map to the feature domains: Compliance → `features/compliance`, Risk → `features/risk`,
+> Reporting → `features/reporting`, Programme/Project → `features/programmes`/`features/projects`,
+> Admin/Settings → `features/admin`, Learning → `features/learning`, AI → its owning domain, Chat →
+> `features/chat`). **`Login.tsx` and `Landing.tsx` (and `public/`) remain in `web/pages/`** (public/auth).
+> The catalog below is grouped by domain for reference.
 
 #### Core
 ```
-Dashboard.tsx         (1281 lines)  Main dashboard: portfolio KPIs, strategic insights, AI summary
-Login.tsx                           Firebase email/password login form
-Landing.tsx           (826 lines)   Public marketing landing page
+Dashboard.tsx         (1281 lines)  Main dashboard — web/features/reporting/pages/
+Login.tsx                           Firebase email/password login form — web/pages/ (public)
+Landing.tsx           (826 lines)   Public marketing landing page — web/pages/ (public)
 ```
 
 #### Compliance
@@ -520,11 +527,13 @@ APIDocs.tsx                         In-app API documentation viewer
 MyTasks.tsx                         Personal task list for logged-in user
 ```
 
-#### `/web/pages/governance/` — Programme Governance page group (sidebar group "Programme Governance")
-These are the ONLY route-level pages that live in a `web/pages/` subfolder (the rest of `web/pages/` is flat).
-Import depth is therefore two levels: `import PageHeader from '../../components/PageHeader'`. Sub-components
-live under `web/components/governance/<feature>/` (archive, branding, dashboard, editor, extensions, forwardPlan,
-framework, meetings, projectDocs, reports, templates) + shared dialogs/pickers at that folder's root.
+#### `/web/features/governance/pages/` — Programme Governance page group (sidebar group "Programme Governance")
+A feature module under `web/features/` (see the Structure Update at the top of this file). Pages live in
+`web/features/governance/pages/` (depth 4 → `import PageHeader from '../../../components/PageHeader'`); the
+feature's own components live under `web/features/governance/components/<feature>/` (archive, branding,
+dashboard, editor, extensions, forwardPlan, framework, meetings, projectDocs, reports, templates) +
+shared dialogs/pickers at that folder's root. Imports to the shared library use `../../../components/…`,
+to shared/ use `../../../../shared/…`.
 ```
 DashboardPage.tsx                   /governance/dashboard — role-aware briefing + StatsCards (PgM vs PM payload)
 ForwardPlanPage.tsx                 /governance/forward-plan — rolling 28-day key-decision pipeline (5 view modes)
@@ -540,8 +549,9 @@ BoardCalendarPage.tsx               /governance/board-calendar — read-only sch
 EditorSandboxPage.tsx               /governance/editor-sandbox — dev/test surface for the editor (PageHeader-EXEMPT)
 ```
 
-#### `/web/pages/technicalAssurance/` — Technical Assurance page group (sidebar group "Technical Assurance")
-Also subfoldered (two-level import depth). Sub-components under `web/components/technicalAssurance/`.
+#### `/web/features/technicalAssurance/pages/` — Technical Assurance page group (sidebar group "Technical Assurance")
+A feature module under `web/features/` (pages in `pages/`, components in `web/features/technicalAssurance/components/`,
+including `tabs/` and `utils/` subdirs). Same depth/import conventions as the governance feature above.
 ```
 EnquiriesListPage.tsx               /technical-assurance/enquiries — enquiry list + decision-log PDF export
 EnquiryWorkspacePage.tsx            /technical-assurance/enquiries/:id — detail workspace, BACK-BUTTON header (PageHeader-EXEMPT)
@@ -799,15 +809,15 @@ __tests__/dispatcher.test.ts       Tests for action route dispatching
 ### Oversized Files (urgent)
 | File | Lines | Core issue |
 |---|---|---|
-| `web/pages/ComplianceSetup.tsx` | **2301** | 4-phase form mixing UI, form state, AI API calls, data transformation, and result display all in one file |
+| `web/features/compliance/pages/ComplianceSetup.tsx` | **2301** | 4-phase form mixing UI, form state, AI API calls, data transformation, and result display all in one file |
 | `web/store/useStore.ts` | **2000+** | Single store with 100+ state properties, 50+ methods, data-fetching logic, and derived selectors — impossible to test in isolation |
-| `web/pages/Dashboard.tsx` | **1281** | Portfolio overview + AI strategic insights + complex data loading + charts all colocated |
-| `web/pages/ComplianceTracker.tsx` | **1237** | Table rendering, inline editing, filter state, and API persistence mixed together |
-| `web/pages/Calendar.tsx` | **1189** | Full calendar with event CRUD, compliance deadline sync, and modal management |
-| `web/pages/ProgrammeInitiation.tsx` | **1069** | Multi-section form: validation, state, API calls, role checks all inline |
-| `web/pages/InvoiceManager.tsx` | **1030** | Invoice CRUD + PDF generation + permission checks in one component |
-| `web/pages/ProjectInitiation.tsx` | **986** | Same pattern as ProgrammeInitiation |
-| `web/pages/RiskSetup.tsx` | **951** | Multi-phase risk profiler with embedded AI calls |
+| `web/features/reporting/pages/Dashboard.tsx` | **1281** | Portfolio overview + AI strategic insights + complex data loading + charts all colocated |
+| `web/features/compliance/pages/ComplianceTracker.tsx` | **1237** | Table rendering, inline editing, filter state, and API persistence mixed together |
+| `web/features/reporting/pages/Calendar.tsx` | **1189** | Full calendar with event CRUD, compliance deadline sync, and modal management |
+| `web/features/programmes/pages/ProgrammeInitiation.tsx` | **1069** | Multi-section form: validation, state, API calls, role checks all inline |
+| `web/features/admin/pages/InvoiceManager.tsx` | **1030** | Invoice CRUD + PDF generation + permission checks in one component |
+| `web/features/projects/pages/ProjectInitiation.tsx` | **986** | Same pattern as ProgrammeInitiation |
+| `web/features/risk/pages/RiskSetup.tsx` | **951** | Multi-phase risk profiler with embedded AI calls |
 
 ### Mixed Concerns (UI + State + API in one file)
 - **ComplianceSetup.tsx**: Should be split into Phase1Form/Phase2Form/Phase3Form components, a `useComplianceQuestionnaire` hook, and a results display component.
@@ -1194,8 +1204,17 @@ Auth: Firebase ID token in Authorization header
 - **API route files**: camelCase — `auth.ts`, `compliance.ts`, `projects.ts`
 
 ### Folder Structure Patterns
-- Feature sub-folders inside `components/` are lowercase: `admin/`, `compliance/`, `common/`, `public/`, `governance/`, `technicalAssurance/`, `historicalReporting/`, `table/`, `validation/`
-- Most route-level pages are flat in `web/pages/`. The exceptions: `web/pages/governance/` (12 pages) and `web/pages/technicalAssurance/` (4 pages) — subfoldered, so they import shared modules at two-level depth (`'../../components/...'`).
+- **Feature-first** (see the Structure Update at the top): route-level pages live in
+  `web/features/<domain>/pages/` for all 10 domains (governance, technicalAssurance, risk, compliance,
+  programmes, projects, reporting, admin, learning, chat). Only `Login`, `Landing`, and `public/` stay
+  flat in `web/pages/` (public/auth).
+- `web/components/` is the **shared component library** (used across features) — lowercase sub-folders:
+  `layout/`-shell pieces (Header, Sidebar, Mobile*), `common/`, `table/`, `validation/`, `dashboard/`,
+  `admin/`, `compliance/`, `chat/`, `forms/`, `historicalReporting/`, `onboarding/`, `desktop/`, `public/`.
+  (governance/ + technicalAssurance/ components moved INTO their features.)
+- `shared/` (repo root) holds code used by BOTH `web/` and `api/`: `shared/constants/roleConstants.ts`,
+  `shared/types/{historicalReporting,technicalAssurance}.ts`, `shared/lib/composerModels.ts` — relative
+  `.js` imports, never a path alias.
 - `/web/hooks/` holds useChatStream, useFocusTrap, useHistoricalView, useHistoricalMonthMulti, useValidationGate — new cross-page hooks go here
 - No `contexts/` directory — all context via Zustand store
 - Backend under `/api/` with `lib/` and `routes/` sub-folders
@@ -1277,7 +1296,7 @@ All user-activity / audit logging goes through the helpers in [`api/lib/activity
 ### Typography — v4 calibration (load-bearing across the authenticated app)
 **Geist (sans) + Geist Mono** loaded globally via Google Fonts import in [`web/index.css:1`](web/index.css#L1); Tailwind `@theme` maps `--font-sans` and `--font-mono` ([`web/index.css:7-8`](web/index.css)). `font-sans` cascades from the authenticated root in [`web/App.tsx:174`](web/App.tsx#L174).
 
-**Canonical class strings** (lifted from [`web/pages/Dashboard.tsx`](web/pages/Dashboard.tsx) `KpiCard` at line 2349-2459):
+**Canonical class strings** (lifted from [`web/features/reporting/pages/Dashboard.tsx`](web/features/reporting/pages/Dashboard.tsx) `KpiCard` at line 2349-2459):
 - **Eyebrow labels** (small UPPERCASE headings): `font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500`
 - **KPI big-numbers** (stat values): sans Geist + `font-medium ... tabular-nums` — NOT mono
 - **Status chips / badges** (uppercase pills): `font-mono uppercase tracking-wide font-medium` + colour utilities
@@ -1289,7 +1308,7 @@ All user-activity / audit logging goes through the helpers in [`api/lib/activity
 **Bans across the authenticated app:**
 - ❌ `font-black` (weight 900) — looks wrong in Geist Mono. Use `font-semibold` (600) max.
 - ❌ `tracking-widest` / `tracking-tighter` on small uppercase labels. Use `tracking-wide`.
-- ❌ `italic` on regular text. **PRESERVED only on**: PDF/report pages (`ExecutiveReport`, `ProjectReport`, `ProgrammeReport`, `ClientProgrammeReport`, `InvoiceManager`, `Invoices`) and rich-text editor tooling (`web/components/governance/{editor,extensions,templates,meetings,forwardPlan,framework,reports}/`, `web/components/technicalAssurance/`). Default-exclude any file using `jspdf` / `html2canvas`.
+- ❌ `italic` on regular text. **PRESERVED only on**: PDF/report pages (`ExecutiveReport`, `ProjectReport`, `ProgrammeReport`, `ClientProgrammeReport`, `InvoiceManager`, `Invoices`) and rich-text editor tooling (`web/features/governance/components/{editor,extensions,templates,meetings,forwardPlan,framework,reports}/`, `web/features/technicalAssurance/components/`). Default-exclude any file using `jspdf` / `html2canvas`.
 - ❌ Hardcoded score thresholds (`>= 16`, `>= 22`, etc.). Import `SEVERE_SCORE_THRESHOLD` / `MAJOR_SCORE_THRESHOLD` from [`web/lib/riskMetrics.ts`](web/lib/riskMetrics.ts).
 
 **Stay sans (Rule 7):**
@@ -1361,7 +1380,7 @@ The "Fact Check / Validate" layer sits ON TOP of every AI output (additive — e
 ### Refresh / skeleton conventions (dashboard surfaces)
 - During `isRefreshing` (or context-switch loaders `isLoadingContent` / `loadingOverview`), every visible content surface should render a skeleton, not freeze with stale data.
 - Setup-pending CTAs (`!isComplianceSetup || !isRiskSetup`) must be **gated on `!isLoadingContent && !loadingOverview && !isRefreshing`** — otherwise they flash during the gap between previous-context-clear and new-context-load.
-- Available skeleton helpers in [`web/pages/Dashboard.tsx`](web/pages/Dashboard.tsx): `SkeletonStatCards`, `SkeletonBar`, `SkeletonTable`, `SkeletonMatrix`, `SkeletonCriticalList`, `SkeletonSidePanel`, `SkeletonProjectsGrid`, `SkeletonRiskSummary`, `SkeletonIssueSummary`.
+- Available skeleton helpers in [`web/features/reporting/pages/Dashboard.tsx`](web/features/reporting/pages/Dashboard.tsx): `SkeletonStatCards`, `SkeletonBar`, `SkeletonTable`, `SkeletonMatrix`, `SkeletonCriticalList`, `SkeletonSidePanel`, `SkeletonProjectsGrid`, `SkeletonRiskSummary`, `SkeletonIssueSummary`.
 
 ### AI inquiry / StrictMode
 - `<React.StrictMode>` is enabled in [`web/main.tsx`](web/main.tsx). Any effect that calls a side-effectful function (API call, navigation) must be **idempotent** or **guarded with a ref**. See [`web/components/AIInquiryPopup.tsx`](web/components/AIInquiryPopup.tsx) — `autoSentRef` prevents StrictMode from firing two AI requests for the same prefilled prompt.
@@ -1369,11 +1388,11 @@ The "Fact Check / Validate" layer sits ON TOP of every AI output (additive — e
 ### Table conventions
 - **`DynamicTable` is canonical** for any list page that needs search, filters, pagination, selection, or row/bulk actions. Do not hand-roll `<table>` markup, do not introduce a separate table library, and do not build a page-level confirm modal — DynamicTable ships all of that. Component: [`web/components/table/DynamicTable.tsx`](web/components/table/DynamicTable.tsx); public types: [`web/components/table/types.ts`](web/components/table/types.ts).
 - **Reference patterns** (copy from these when migrating a new page):
-  - Minimal (no actions, just search + columns): [`web/pages/ProgrammeIssues.tsx:174-189`](web/pages/ProgrammeIssues.tsx#L174)
-  - Full (row actions + bulk actions + filters + `requireConfirm`): [`web/pages/RiskRegister.tsx:843-941`](web/pages/RiskRegister.tsx#L843)
-  - Merged-source feed with cross-field filters: [`web/pages/MyTasks.tsx`](web/pages/MyTasks.tsx)
+  - Minimal (no actions, just search + columns): [`web/features/programmes/pages/ProgrammeIssues.tsx:174-189`](web/features/programmes/pages/ProgrammeIssues.tsx#L174)
+  - Full (row actions + bulk actions + filters + `requireConfirm`): [`web/features/risk/pages/RiskRegister.tsx:843-941`](web/features/risk/pages/RiskRegister.tsx#L843)
+  - Merged-source feed with cross-field filters: [`web/features/learning/pages/MyTasks.tsx`](web/features/learning/pages/MyTasks.tsx)
 - **Confirm dialog**: route destructive actions through `requireConfirm: ConfirmConfig` on the relevant `RowAction` / `BulkAction`. DynamicTable mounts [`ConfirmDialog`](web/components/table/ConfirmDialog.tsx) automatically and awaits the handler with a spinner. Never `window.confirm()`, never build a parallel modal.
-- **Cross-field filter pattern**: `FilterDef.match(rowValue, filterValue)` only receives one row field. When a filter needs multiple fields (e.g. a "timeline" bucket derived from both `status` and `dueDate`), **flatten the bucket onto the row** as a derived `_underscorePrefixed` field at the `useMemo` that builds the data array, then point the filter at that synthetic key. See `_timeline` / `_contextId` / `_isOverdue` in [`web/pages/MyTasks.tsx`](web/pages/MyTasks.tsx). Do not subclass DynamicTable or move filter logic outside it.
+- **Cross-field filter pattern**: `FilterDef.match(rowValue, filterValue)` only receives one row field. When a filter needs multiple fields (e.g. a "timeline" bucket derived from both `status` and `dueDate`), **flatten the bucket onto the row** as a derived `_underscorePrefixed` field at the `useMemo` that builds the data array, then point the filter at that synthetic key. See `_timeline` / `_contextId` / `_isOverdue` in [`web/features/learning/pages/MyTasks.tsx`](web/features/learning/pages/MyTasks.tsx). Do not subclass DynamicTable or move filter logic outside it.
 - **Pagination default**: `pagination: { enabled: true, pageSize: 25, pageSizeOptions: [10, 25, 50] }` for any list that can plausibly exceed ~50 rows.
 - **Page-level toolbar buttons** (e.g. "Add task", "Capture lesson") belong in DynamicTable's `toolbarActions` slot, not as a sibling above the table. The empty-state CTA is a separate `emptyState.action` slot.
 
@@ -1391,7 +1410,7 @@ The desktop binary signs in via Electron main-process OAuth, NOT the Firebase We
 - **Never call `logout()` from [`web/lib/firebase.ts`](web/lib/firebase.ts) directly.** Call [`authBridge.signOut()`](web/lib/auth/authBridge.ts) — on desktop it propagates to the main process and revokes the Google refresh token; on web it wraps the same `signOut(auth)`. Same for `loginWithGoogle` → `authBridge.signInGoogle()`.
 - **Never use `firebase/storage` Web SDK.** It would fail on desktop (no auth session). All file ops go through the storage convention below.
 - **`onAuthStateChanged(auth, ...)` direct subscriptions are forbidden** outside [`web/lib/auth/firebaseWebBridge.ts`](web/lib/auth/firebaseWebBridge.ts). Use `authBridge.onAuthChange(cb)`.
-- **The five files that consume the bridge correctly** (use as templates): [api.ts](web/lib/api.ts), [chatTransport.ts](web/lib/chatTransport.ts), [Header.tsx](web/components/Header.tsx), [Sidebar.tsx](web/components/Sidebar.tsx), [ProfileSettingsModal.tsx](web/components/ProfileSettingsModal.tsx), [Dashboard.tsx](web/pages/Dashboard.tsx) (reads `user.creationTime` for the onboarding modal — does NOT read `auth.currentUser.metadata.creationTime`).
+- **The five files that consume the bridge correctly** (use as templates): [api.ts](web/lib/api.ts), [chatTransport.ts](web/lib/chatTransport.ts), [Header.tsx](web/components/Header.tsx), [Sidebar.tsx](web/components/Sidebar.tsx), [ProfileSettingsModal.tsx](web/components/ProfileSettingsModal.tsx), [Dashboard.tsx](web/features/reporting/pages/Dashboard.tsx) (reads `user.creationTime` for the onboarding modal — does NOT read `auth.currentUser.metadata.creationTime`).
 
 ### Storage / file uploads — SINGLE PATTERN (load-bearing)
 **Every file upload in the codebase uses the same pattern.** No exceptions. Adding a different pattern means adding a class of bugs we've already fought through and rolled back.
