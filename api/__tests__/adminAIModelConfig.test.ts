@@ -169,6 +169,31 @@ describe('getActiveChatModels', () => {
     expect(res.body?.success).toBe(true);
   });
 
+  it('returns empty list + hasAdminConfig:false when no admin doc exists (no seed substitution)', async () => {
+    const res = makeRes();
+    const ctx = makeCtx({ docExists: false, primaryUid: 'unique-empty-tenant' });
+    await adminRoutes.getActiveChatModels({} as any, res, ctx);
+    expect(res.statusCode).toBe(200);
+    expect(res.body?.success).toBe(true);
+    expect(res.body?.hasAdminConfig).toBe(false);
+    expect(res.body?.chatModels?.length).toBe(0);
+    expect(res.body?.defaultModelId).toBeNull();
+  });
+
+  it('reports hasAdminConfig:true when a curated doc exists', async () => {
+    const res = makeRes();
+    const customDoc = {
+      chatModels: [
+        { id: 'a', label: 'A', group: 'free', backend: 'openrouter', modelString: 'p/a', enabled: true, isDefault: true },
+      ],
+      operationModels: [],
+    };
+    const ctx = makeCtx({ docExists: true, docData: customDoc, primaryUid: 'unique-tenant-flag' });
+    await adminRoutes.getActiveChatModels({} as any, res, ctx);
+    expect(res.statusCode).toBe(200);
+    expect(res.body?.hasAdminConfig).toBe(true);
+  });
+
   it('returns only enabled chat models + the admin-marked default', async () => {
     const res = makeRes();
     const customDoc = {

@@ -25,6 +25,15 @@ import { api } from "../../../lib/api";
 
 const MODEL_STORAGE_KEY = "cedar.chat.model";
 
+// Free-only fallback lineup. When NO admin has curated a model config
+// (server returns hasAdminConfig:false / an empty list) or the fetch fails,
+// the dropdown shows ONLY the usable free rows from the static registry —
+// the disabled premium "coming soon" placeholders are dropped (they belong
+// in the admin panel, not the end-user picker).
+const FREE_FALLBACK_MODELS: ChatModelOption[] = CHAT_MODELS.filter(
+  (m) => !m.disabled,
+);
+
 interface ServerActiveChatEntry {
   id: string;
   label: string;
@@ -100,17 +109,18 @@ const EXAMPLE_PROMPTS = [
 ];
 
 /**
- * First-render seed: the locally-bundled CHAT_MODELS list, with the stored
- * id from localStorage if it matches anything in that fallback. The useEffect
- * below replaces both with the server-fetched lineup as soon as it lands.
+ * First-render seed: the free-only fallback list, with the stored id from
+ * localStorage if it matches a usable (non-disabled) free row. The useEffect
+ * below replaces both with the server-fetched admin lineup as soon as it lands
+ * (or keeps this free fallback if no admin config exists).
  */
 function loadStoredModelAgainstFallback(): string {
   if (typeof window === "undefined") return DEFAULT_MODEL_ID;
   try {
     const raw = window.localStorage.getItem(MODEL_STORAGE_KEY);
     if (!raw) return DEFAULT_MODEL_ID;
-    const match = CHAT_MODELS.find((m) => m.id === raw);
-    if (!match || match.disabled) return DEFAULT_MODEL_ID;
+    const match = FREE_FALLBACK_MODELS.find((m) => m.id === raw);
+    if (!match) return DEFAULT_MODEL_ID;
     return match.id;
   } catch {
     return DEFAULT_MODEL_ID;
@@ -122,12 +132,13 @@ export function ChatPage() {
   const [inputValue, setInputValue] = useState("");
   const [showScrollBtn, setShowScrollBtn] = useState(false);
 
-  // ── Model registry — server-curated, falls back to local registry ──
-  // First render uses the local composerModels.ts list so the dropdown
-  // is never empty. As soon as getActiveChatModels resolves we replace
-  // both `models` and `selectedModel` to honour the admin curation and
-  // reconcile any stale localStorage id against the live lineup.
-  const [models, setModels] = useState<ChatModelOption[]>(CHAT_MODELS);
+  // ── Model registry — admin-curated, falls back to free-only static list ──
+  // First render uses the free-only fallback so the dropdown is never empty.
+  // As soon as getActiveChatModels resolves we either (a) replace with the
+  // admin-curated lineup when one exists, or (b) keep the free-only fallback
+  // when no admin has created any models (empty / hasAdminConfig:false). The
+  // disabled premium placeholders are never surfaced to the end user.
+  const [models, setModels] = useState<ChatModelOption[]>(FREE_FALLBACK_MODELS);
   const [selectedModel, setSelectedModel] = useState<string>(loadStoredModelAgainstFallback);
 
   useEffect(() => {
@@ -137,7 +148,15 @@ export function ChatPage() {
         const res = await api.getActiveChatModels();
         if (cancelled) return;
         const serverEntries: ServerActiveChatEntry[] = Array.isArray(res?.chatModels) ? res.chatModels : [];
-        if (serverEntries.length === 0) return; // keep the local fallback
+        if (serverEntries.length === 0) {
+          // No admin-curated models exist → show ONLY the free fallback rows
+          // and pin the selection to a valid free model.
+          setModels(FREE_FALLBACK_MODELS);
+          setSelectedModel((curr) =>
+            FREE_FALLBACK_MODELS.find((m) => m.id === curr) ? curr : DEFAULT_MODEL_ID,
+          );
+          return;
+        }
         const adminOptions = serverEntries.map(serverEntryToOption);
         setModels(adminOptions);
         // Reconcile the stored selection against the admin lineup.
@@ -152,11 +171,10 @@ export function ChatPage() {
           return adminDefaultId ?? curr;
         });
       } catch (e: any) {
-        // Network / 5xx — stay on the local CHAT_MODELS fallback. The
-        // hardcoded list is exactly what was shipped before this feature,
-        // so users see a working dropdown even when the admin endpoint
-        // is unreachable.
-        console.warn("[ChatPage] getActiveChatModels failed, using local fallback:", e?.message);
+        // Network / 5xx — stay on the free-only fallback so users still see a
+        // working dropdown (no disabled premium placeholders) when the admin
+        // endpoint is unreachable.
+        console.warn("[ChatPage] getActiveChatModels failed, using free fallback:", e?.message);
       }
     })();
     return () => { cancelled = true; };

@@ -606,16 +606,29 @@ export const adminRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =
           success: true,
           chatModels: hit.payload.chatModels,
           defaultModelId: hit.payload.defaultModelId,
+          hasAdminConfig: hit.payload.hasAdminConfig,
           cached: true,
         });
       }
-      const config = await loadAIModelConfig(ctx);
-      const enabled = (config.chatModels || []).filter((m) => m.enabled);
+      // Read the Firestore doc DIRECTLY (not via loadAIModelConfig, which
+      // substitutes the in-memory SEED_CONFIG when the doc is missing). The
+      // dropdown must reflect what an admin has ACTUALLY curated: when no doc
+      // exists we return an empty list + hasAdminConfig:false so the client
+      // falls back to its own free-only static list. (chatStream /
+      // aiOperationRouter keep using loadAIModelConfig's seed fallback, so a
+      // free model picked during this empty state still streams fine.)
+      const snap = await ctx.db.doc(CONFIG_DOC_PATH).get();
+      const data = snap.exists ? (snap.data() as { chatModels?: ChatModelEntry[] } | undefined) : undefined;
+      const hasAdminConfig = !!(snap.exists && data && Array.isArray(data.chatModels));
+      const enabled = hasAdminConfig
+        ? (data!.chatModels || []).filter((m) => m.enabled)
+        : [];
       const defaultEntry: ChatModelEntry | undefined =
         enabled.find((m) => m.isDefault) ?? enabled[0];
       const payload = {
         chatModels: enabled,
         defaultModelId: defaultEntry?.id ?? null,
+        hasAdminConfig,
       };
       _activeChatModelsCache.set(cacheKey, { fetchedAt: now, payload });
       return res.status(200).json({ success: true, ...payload, cached: false });
@@ -658,5 +671,12 @@ export const adminRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =
 const ACTIVE_CHAT_MODELS_TTL_MS = 60 * 1000;
 const _activeChatModelsCache = new Map<
   string,
-  { fetchedAt: number; payload: { chatModels: ChatModelEntry[]; defaultModelId: string | null } }
+  {
+    fetchedAt: number;
+    payload: {
+      chatModels: ChatModelEntry[];
+      defaultModelId: string | null;
+      hasAdminConfig: boolean;
+    };
+  }
 >();
