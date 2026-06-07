@@ -11,6 +11,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Check, ChevronDown } from "lucide-react";
 import { clsx } from "clsx";
+import { ShimmerSkeleton } from "../dashboard/ShimmerSkeleton";
 import type { ChatModelOption } from "../../../shared/lib/composerModels";
 
 interface ModelSelectorProps {
@@ -20,6 +21,8 @@ interface ModelSelectorProps {
   selectedId: string;
   onSelect: (id: string) => void;
   disabled?: boolean;
+  /** First-ever load with no cached list — show a tidy loading state. */
+  loading?: boolean;
 }
 
 export function ModelSelector({
@@ -27,6 +30,7 @@ export function ModelSelector({
   selectedId,
   onSelect,
   disabled,
+  loading,
 }: ModelSelectorProps) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -69,6 +73,11 @@ export function ModelSelector({
     onSelect(option.id);
     setOpen(false);
   };
+
+  // Cold start (no cached lineup yet) — skeleton for the whole picker.
+  if (loading && models.length === 0) {
+    return <ShimmerSkeleton className="h-8 w-32 rounded-lg" />;
+  }
 
   // Defensive — if the parent passes an empty list (admin disabled every
   // entry AND the local fallback also somehow ended up empty), render

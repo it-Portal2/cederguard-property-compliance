@@ -8,7 +8,6 @@ import {
   loadAIModelConfig,
   validateAIModelConfig,
   bumpAIModelConfigCacheBuster,
-  getAIModelConfigCacheBuster,
   type AIModelConfig,
   type ChatModelEntry,
 } from '../lib/aiModelConfig.js';
@@ -594,22 +593,15 @@ export const adminRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =
 
   getActiveChatModels: async (_req, res, ctx) => {
     // Any signed-in user — the dropdown needs to render for everyone.
-    // 60-second in-memory cache keyed by primaryUid + cache-buster.
-    // Cache-buster is bumped by adminUpdateAIModelConfig so the next read
-    // after a super-admin save is fresh.
+    //
+    // NO per-instance in-memory cache: this is a tiny, admin-authoritative
+    // config doc read only when someone opens chat. A per-instance cache made
+    // Vercel's multiple serverless instances disagree (one serving the new
+    // list, another the stale one for up to the TTL), which surfaced in the UI
+    // as a disabled/deleted model flickering in and out. Reading fresh from
+    // Firestore on every request is cheap and strongly consistent, so an admin
+    // add/disable/delete is reflected on the very next read.
     try {
-      const cacheKey = `${ctx.primaryUid}::${getAIModelConfigCacheBuster()}`;
-      const hit = _activeChatModelsCache.get(cacheKey);
-      const now = Date.now();
-      if (hit && now - hit.fetchedAt < ACTIVE_CHAT_MODELS_TTL_MS) {
-        return res.status(200).json({
-          success: true,
-          chatModels: hit.payload.chatModels,
-          defaultModelId: hit.payload.defaultModelId,
-          hasAdminConfig: hit.payload.hasAdminConfig,
-          cached: true,
-        });
-      }
       // Read the Firestore doc DIRECTLY (not via loadAIModelConfig, which
       // substitutes the in-memory SEED_CONFIG when the doc is missing). The
       // dropdown must reflect what an admin has ACTUALLY curated: when no doc
@@ -630,7 +622,6 @@ export const adminRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =
         defaultModelId: defaultEntry?.id ?? null,
         hasAdminConfig,
       };
-      _activeChatModelsCache.set(cacheKey, { fetchedAt: now, payload });
       return res.status(200).json({ success: true, ...payload, cached: false });
     } catch (e: any) {
       console.error('[getActiveChatModels] failed:', e?.message);
@@ -663,20 +654,3 @@ export const adminRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =
     }
   },
 };
-
-// Module-level cache for getActiveChatModels. Keyed by primaryUid so two
-// tenants can't poison each other's view. TTL = 60s; explicit cache-buster
-// (from aiModelConfig.bumpAIModelConfigCacheBuster) is folded into the key
-// so a super-admin save invalidates every in-process slot at once.
-const ACTIVE_CHAT_MODELS_TTL_MS = 60 * 1000;
-const _activeChatModelsCache = new Map<
-  string,
-  {
-    fetchedAt: number;
-    payload: {
-      chatModels: ChatModelEntry[];
-      defaultModelId: string | null;
-      hasAdminConfig: boolean;
-    };
-  }
->();

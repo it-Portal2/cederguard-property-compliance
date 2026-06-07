@@ -25,6 +25,8 @@ interface ChatComposerProps {
   models: ChatModelOption[];
   selectedModel: string;
   onModelChange: (id: string) => void;
+  /** True only on the very first model fetch (no cached list yet). */
+  modelsLoading?: boolean;
   disabled?: boolean;
 }
 
@@ -48,6 +50,7 @@ export function ChatComposer({
   models,
   selectedModel,
   onModelChange,
+  modelsLoading = false,
   disabled = false,
 }: ChatComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -208,6 +211,7 @@ export function ChatComposer({
                 selectedId={selectedModel}
                 onSelect={onModelChange}
                 disabled={isInputDisabled}
+                loading={modelsLoading}
               />
 
               {isStreaming ? (
