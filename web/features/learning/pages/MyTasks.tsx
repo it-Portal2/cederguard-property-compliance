@@ -62,6 +62,8 @@ export function MyTasks() {
     updateComplianceItem,
     projects,
     programmes,
+    activeProjectId,
+    activeProgrammeId,
   } = useStore();
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState<"add" | "edit">("add");
@@ -301,6 +303,20 @@ export function MyTasks() {
     if (!currentTask.title?.trim()) return;
 
     if (modalMode === "add") {
+      // Stamp the active context onto the task exactly like the Calendar's
+      // create flow (Calendar.tsx) so it is correctly associated + labelled:
+      //  - projectId / programmeId drive the context-scoped reload + filters,
+      //  - projectName feeds the Source column (project ?? programme ?? General),
+      //  - owner MUST be set, else the table's manual-task owner filter excludes
+      //    it (it would only surface in the Calendar, which has no owner filter).
+      const contextProjectId = activeProjectId || undefined;
+      const contextProgrammeId = !activeProjectId
+        ? activeProgrammeId || undefined
+        : undefined;
+      const activeProj = projects.find((p) => p.id === activeProjectId);
+      const activeProg = programmes.find((p) => p.id === activeProgrammeId);
+      const contextName =
+        activeProj?.name ?? activeProg?.name ?? "General";
       const task: TaskItem = {
         id: `T-${Date.now()}`,
         title: currentTask.title,
@@ -308,6 +324,11 @@ export function MyTasks() {
         status: "Pending",
         priority: (currentTask.priority as any) || "Medium",
         dueDate: currentTask.dueDate || new Date().toISOString().split("T")[0],
+        owner: user?.id || user?.uid || user?.email,
+        projectId: contextProjectId,
+        programmeId: contextProgrammeId,
+        projectName: contextName,
+        isProgrammeLevel: !!contextProgrammeId,
       };
       addTask(task);
       toast.success("Task created successfully");
@@ -344,6 +365,22 @@ export function MyTasks() {
     }
   };
 
+  // Resolve a human label for the Source column. Prefer the row's own
+  // projectName; otherwise look the context up by id (loaded tasks carry only
+  // projectId/programmeId, not a name); fall back to "General".
+  const contextLabelFor = (r: TaskRow): string => {
+    if (r.projectName) return r.projectName;
+    if (r.projectId) {
+      const p = projects.find((x) => x.id === r.projectId);
+      if (p?.name) return p.name;
+    }
+    if (r.programmeId) {
+      const pg = programmes.find((x) => x.id === r.programmeId);
+      if (pg?.name) return pg.name;
+    }
+    return "General";
+  };
+
   // ── Columns ────────────────────────────────────────────────────────────────
   const columns: ColumnDef<TaskRow>[] = [
     {
@@ -358,7 +395,7 @@ export function MyTasks() {
             <CheckSquare className="w-4 h-4 text-indigo-500 shrink-0" />
           )}
           <span className="font-mono text-[11px] font-medium text-slate-500 uppercase tracking-wide truncate">
-            {r.projectName || "Programme"}
+            {contextLabelFor(r)}
           </span>
         </div>
       ),
