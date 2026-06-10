@@ -139,7 +139,7 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
             {isAdding && (
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 animate-in fade-in slide-in-from-top-2">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div className="col-span-2 md:col-span-1">
+                        <div className="col-span-1 md:col-span-1">
                             <label className="font-mono block text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Milestone Name</label>
                             <input
                                 autoFocus
@@ -236,7 +236,7 @@ export const MilestoneManager: React.FC<MilestoneManagerProps> = ({ milestones =
                             return (
                                 <div key={m.id} className="bg-white border-2 border-indigo-500 rounded-lg p-4 shadow-sm relative">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                        <div className="col-span-2 md:col-span-1">
+                                        <div className="col-span-1 md:col-span-1">
                                             <label className="font-mono block text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Name</label>
                                             <input
                                                 type="text"

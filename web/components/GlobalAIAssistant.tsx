@@ -392,7 +392,7 @@ export function GlobalAIAssistant() {
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-8 right-8 z-[150] bg-indigo-600 text-white p-4 rounded-full shadow-2xl shadow-indigo-500/40 hover:bg-slate-900 transition-all hover:scale-110 active:scale-95 group"
+        className="fixed bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] right-5 lg:bottom-8 lg:right-8 z-[150] bg-indigo-600 text-white p-4 rounded-full shadow-2xl shadow-indigo-500/40 hover:bg-slate-900 transition-all hover:scale-110 active:scale-95 group"
         title="Consult CedarGuard AI"
         aria-label="Open CedarGuard AI Assistant"
       >

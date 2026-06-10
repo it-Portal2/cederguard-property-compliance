@@ -357,7 +357,7 @@ Use precise, formal language appropriate for a board-level risk register. Focus 
                                 <label className={labelCls}>Programme Reference *</label>
                                 <input className={inputCls} value={form.ref} onChange={e => set('ref', e.target.value)} placeholder="e.g. PROG001" />
                             </div>
-                            <div className="col-span-2">
+                            <div className="col-span-1 md:col-span-2">
                                 <label className={labelCls}>Programme Name *</label>
                                 <input className={inputCls} value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. Urban Regeneration Programme" />
                             </div>

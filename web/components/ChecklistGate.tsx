@@ -123,7 +123,7 @@ export function ChecklistGate({ type }: ChecklistGateProps) {
   const hasErrors = items.some(i => i.status === 'error');
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200 shadow-lg overflow-hidden sticky top-6">
+    <div className="bg-white rounded-lg border border-slate-200 shadow-lg overflow-hidden lg:sticky lg:top-6">
       <div className="bg-slate-50/80 px-6 py-6 border-b border-slate-100">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2.5">

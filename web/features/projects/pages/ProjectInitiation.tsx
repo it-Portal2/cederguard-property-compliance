@@ -668,7 +668,7 @@ export function ProjectInitiation() {
             </div>
           )}
           {/* LEFT: FORM SECTION (Column Span 8)*/}
-          <div className="lg:col-span-8 order-2 lg:order-1 space-y-8">
+          <div className="lg:col-span-8 order-1 lg:order-1 space-y-8">
             <form
               onSubmit={handleSubmit}
               className="bg-white border border-slate-200 rounded-lg p-6 md:p-8 space-y-10"
@@ -1383,7 +1383,7 @@ export function ProjectInitiation() {
           </div>
 
           {/* RIGHT: TRACKER SECTION (Column Span 4)*/}
-          <div className="lg:col-span-4 order-1 lg:order-2 sticky top-6">
+          <div className="lg:col-span-4 order-2 lg:order-2 lg:sticky lg:top-6">
             <PublicationChecklist onPublish={handlePublish} loading={publishLoading} />
           </div>
         </div>

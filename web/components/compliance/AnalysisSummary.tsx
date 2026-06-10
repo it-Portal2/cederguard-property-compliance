@@ -365,7 +365,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
 
         {/* ─── Sidebar Dashboard ─── */}
         <div className="lg:col-span-4 space-y-6">
-          <div className="bg-white rounded-lg border border-slate-200 p-8 shadow-xl shadow-slate-200/20 sticky top-32">
+          <div className="bg-white rounded-lg border border-slate-200 p-8 shadow-xl shadow-slate-200/20 lg:sticky lg:top-32">
             <h3 className="text-xl font-semibold text-slate-900 mb-6 tracking-tight flex items-center gap-2">
               Regulation Coverage <Target className="w-4 h-4 text-amber-500" />
             </h3>

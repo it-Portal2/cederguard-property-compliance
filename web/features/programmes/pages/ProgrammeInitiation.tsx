@@ -943,8 +943,8 @@ export function ProgrammeInitiation() {
                     </div>
 
                     {/* ── RIGHT: Sidebar ──────────────────────────────────────────*/}
-                    <div className="w-full lg:w-80 flex-shrink-0 order-first lg:order-last">
-                        <div className="sticky top-20 lg:top-6 z-20">
+                    <div className="w-full lg:w-80 flex-shrink-0 order-last lg:order-last">
+                        <div className="lg:sticky lg:top-6 z-20">
                             <PublicationChecklist onPublish={handlePublish} />
                         </div>
                     </div>

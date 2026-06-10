@@ -187,7 +187,7 @@ export function NewProgramme() {
                             <label className={labelCls}>Board Composition</label>
                             <input name="boardComposition" className={inputCls} placeholder="Housing, Finance, Legal, Technical Leads" />
                         </div>
-                        <div className="col-span-3 md:col-span-1">
+                        <div className="col-span-1 md:col-span-1">
                             <label className={labelCls}>Reporting Cycle</label>
                             <select name="reportingCycle" className={inputCls}>
                                 <option>Monthly to Programme Board</option>
@@ -195,7 +195,7 @@ export function NewProgramme() {
                                 <option>Quarterly</option>
                             </select>
                         </div>
-                        <div className="col-span-3 md:col-span-2">
+                        <div className="col-span-1 md:col-span-2">
                             <label className={labelCls}>Governance Framework</label>
                             <input name="governanceFramework" className={inputCls} placeholder="e.g. LBS Capital Works Governance v3.2" />
                         </div>

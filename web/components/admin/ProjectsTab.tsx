@@ -142,9 +142,9 @@ export function ProjectsTab({ isAdmin, users }: { isAdmin: boolean; users: any[]
     );
 
     return (
-        <div className="flex gap-8 items-start">
+        <div className="flex flex-col lg:flex-row gap-8 lg:items-start">
             {/* ─── Sidebar ──────────────────────────────────────────────────────── */}
-            <div className="w-80 shrink-0 bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden sticky top-24">
+            <div className="w-full lg:w-80 shrink-0 bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden lg:sticky lg:top-24">
                 <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                     <h3 className="font-bold text-slate-800 flex items-center gap-2">
                         <Filter className="w-4 h-4 text-indigo-500" />

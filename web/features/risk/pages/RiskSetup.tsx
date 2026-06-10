@@ -733,7 +733,7 @@ export function RiskSetup() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                     
                     {/* LEFT: FORM SECTION (Column Span 8)*/}
-                    <div className="lg:col-span-8 order-2 lg:order-1 space-y-8">
+                    <div className="lg:col-span-8 order-1 lg:order-1 space-y-8">
                         {!done && (
                             <div className="space-y-10">
                                 {currentQuestions.map((phase, idx) => (
@@ -899,7 +899,7 @@ export function RiskSetup() {
                     </div>
 
                     {/* RIGHT: TRACKER & NAVIGATION SECTION (Column Span 4)*/}
-                    <div className="lg:col-span-4 order-1 lg:order-2 space-y-6 sticky top-6">
+                    <div className="lg:col-span-4 order-2 lg:order-2 space-y-6 lg:sticky lg:top-6">
                         {/* Publication Checklist (Consistency)*/}
                         <PublicationChecklist onPublish={async () => {
                             if (!activeProjectId) return;

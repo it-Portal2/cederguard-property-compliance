@@ -992,7 +992,7 @@ export function Calendar() {
 
         {/* Side Panel - Selected Day Details */}
         <div className="w-full lg:w-80 shrink-0">
-          <div className="bg-white rounded-lg border border-slate-200 shadow-lg p-6 sticky top-6">
+          <div className="bg-white rounded-lg border border-slate-200 shadow-lg p-6 lg:sticky lg:top-6">
             <div className="mb-6">
               <p className="font-mono text-[10px] font-medium text-indigo-600 uppercase tracking-wide mb-1">Schedule for</p>
               <h2 className="text-xl font-semibold text-slate-900">{format(selectedDate, 'EEEE, do MMMM')}</h2>
