@@ -27,6 +27,7 @@ import {
 import { clsx } from "clsx";
 import { RiskModal } from "../../../components/RiskModal";
 import { stripMarkdown } from "../../../lib/utils";
+import { resolveAiScope } from "../../../lib/aiScope";
 import { calculateMatrixScore } from "../../../data/riskScoringMatrix";
 import { api, ApiError } from "../../../lib/api";
 import { AIErrorAlert } from "../../../components/AIErrorAlert";
@@ -235,7 +236,13 @@ export function AIRiskID() {
         }));
         setStrategicRiskAnalysis(strategicResult);
       } else {
-        suggestions = await analyzeRisks(pi, risks);
+        const riskScope = resolveAiScope({
+          activeProjectId,
+          activeProgrammeId,
+          activeProject: projects.find((p) => p.id === activeProjectId),
+          activeProgramme: programmes.find((p) => p.id === activeProgrammeId),
+        });
+        suggestions = await analyzeRisks(pi, risks, riskScope);
         setStrategicRiskAnalysis(null);
       }
 

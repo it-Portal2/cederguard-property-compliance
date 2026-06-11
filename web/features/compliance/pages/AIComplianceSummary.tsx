@@ -4,10 +4,17 @@ import { useStore } from '../../../store/useStore';
 import { DOMAINS } from '../../../data/complianceData';
 import { analyzeComplianceProgress } from '../../../services/aiService';
 import { stripMarkdown } from '../../../lib/utils';
+import { resolveAiScope } from '../../../lib/aiScope';
 
 export function AIComplianceSummary() {
-    const { complianceItems, complianceAnalysis } = useStore();
+    const { complianceItems, complianceAnalysis, activeProjectId, activeProgrammeId, projects, programmes } = useStore();
     const safeItems = Array.isArray(complianceItems) ? complianceItems : [];
+    const aiScope = resolveAiScope({
+        activeProjectId,
+        activeProgrammeId,
+        activeProject: (Array.isArray(projects) ? projects : []).find((p: any) => p.id === activeProjectId),
+        activeProgramme: (Array.isArray(programmes) ? programmes : []).find((p: any) => p.id === activeProgrammeId),
+    });
     const [generating, setGenerating] = useState(false);
     const [aiDomainSummaries, setAiDomainSummaries] = useState<any[]>([]);
     const [aiError, setAiError] = useState<string | null>(null);
@@ -42,7 +49,7 @@ export function AIComplianceSummary() {
         setGenerating(true);
         setAiError(null);
         try {
-            const result = await analyzeComplianceProgress(domainStats);
+            const result = await analyzeComplianceProgress(domainStats, aiScope);
             setAiDomainSummaries(result);
         } catch (e: any) {
             console.error("Failed to generate", e);

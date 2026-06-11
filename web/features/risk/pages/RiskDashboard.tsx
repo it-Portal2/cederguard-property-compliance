@@ -23,6 +23,7 @@ import { AIInquiryPopup } from '../../../components/AIInquiryPopup';
 import { PremiumAIBanner } from '../../../components/common/PremiumAIBanner';
 import PageActions, { type ActionItem } from '../../../components/PageActions';
 import { exportContextData } from '../../../lib/exportUtils';
+import { resolveAiScope } from '../../../lib/aiScope';
 import PageHeader from '../../../components/PageHeader';
 
 const PIE_COLORS: Record<string, string> = {
@@ -203,6 +204,15 @@ export function RiskDashboard() {
   const safeProjects = Array.isArray(projects) ? projects : [];
   const safeProgrammes = Array.isArray(programmes) ? programmes : [];
 
+  // Active scope drives the insight wording + the static "Health" card heading.
+  // This is a RISK surface, so the strategic insight is generated risk-led (T4 focus).
+  const aiScope = resolveAiScope({
+    activeProjectId,
+    activeProgrammeId,
+    activeProject: safeProjects.find(p => p.id === activeProjectId),
+    activeProgramme: safeProgrammes.find(p => p.id === activeProgrammeId),
+  });
+
   // Visibility filtering logic
   const visibleProgrammes = safeProgrammes.filter(pr => {
     if (userIsSuperAdmin) return true;
@@ -279,7 +289,7 @@ export function RiskDashboard() {
           : activeProgrammeId
             ? safeProjects.filter(p => p.programmeId === activeProgrammeId)
             : safeProjects,
-      }, user);
+      }, user, { scope: aiScope, focus: 'risk' });
       setStrategicInsights(result);
     } catch (err: any) {
       // Bug 7 fix: console.error + toast.error
@@ -307,6 +317,13 @@ export function RiskDashboard() {
       setActiveProgramme(prId);
     }
   }, [searchParams, activeProjectId, activeProgrammeId, setActiveProject, setActiveProgramme]);
+
+  // T11: drop stale strategic insights when the active context changes so a
+  // previous project's/programme's outlook never lingers on the new one.
+  React.useEffect(() => {
+    setStrategicInsights(null);
+    setAiError(null);
+  }, [activeProjectId, activeProgrammeId]);
 
   // ─── KPI calculations ───────────────────────────────────────────────────
   const totalRisks = filteredRisks.length;
@@ -500,7 +517,7 @@ export function RiskDashboard() {
 
       <PremiumAIBanner 
         title="Strategic Intelligence Engine"
-        description={`Our advanced neural model is analyzing ${totalRisks} risks and ${filteredIssues.length} issues to generate cross-functional strategic insights and portfolio health metrics.`}
+        description={`Our advanced neural model is analyzing ${totalRisks} risks and ${filteredIssues.length} issues to generate risk-led strategic insights and ${aiScope.noun} health metrics.`}
         buttonText={generatingAI ? "Processing Signals..." : "Generate Strategic Outlook"}
         onAction={handleGenerateStrategicInsights}
         isLoading={generatingAI}
@@ -511,7 +528,7 @@ export function RiskDashboard() {
       {/* Strategic Insights Results*/}
       {strategicInsights && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <StrategicInsightCard title="Portfolio Health" icon={ShieldCheck}>
+          <StrategicInsightCard title={aiScope.healthHeading} icon={ShieldCheck}>
             <div className="flex flex-col items-center text-center p-2">
               <div className="relative w-32 h-32 mb-4">
                 <svg className="w-full h-full -rotate-90">

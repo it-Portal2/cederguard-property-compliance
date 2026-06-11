@@ -957,6 +957,11 @@ export const useStore = create<AppState>((set, get) => {
   lastAnalysisResults: null,
   activeProject: null,
   setActiveProject: (proj) => {
+    // T10: clear stale per-context AI-result state on a context switch. Unlike
+    // complianceAnalysis/lastAnalysisResults (reloaded per-context from the DB),
+    // these AIRiskID in-memory results are NOT refetched, so without this the
+    // previous context's risk insights linger into the new one (the mixup).
+    set({ suggestedRisks: [], strategicRiskAnalysis: null });
     if (typeof proj === "string") {
       const found = get().projects.find((p) => p.id === proj);
       set({
@@ -984,6 +989,9 @@ export const useStore = create<AppState>((set, get) => {
   },
   activeProgramme: null,
   setActiveProgramme: (prog) => {
+    // T10: clear stale per-context AI-result state on a context switch (see
+    // setActiveProject above for the rationale).
+    set({ suggestedRisks: [], strategicRiskAnalysis: null });
     if (typeof prog === "string") {
       const found = get().programmes.find((p) => p.id === prog);
       set({
@@ -1737,6 +1745,9 @@ export const useStore = create<AppState>((set, get) => {
     ]);
   },
   loadProjectData: async (projectId: string, persist: boolean = true) => {
+    // T10: clear stale per-context AI-result state (suggestedRisks /
+    // strategicRiskAnalysis are not reloaded per-context — see setActiveProject).
+    set({ suggestedRisks: [], strategicRiskAnalysis: null });
     // Stale-context guard helper: returns true if the user has navigated away
     // from this project while our async fetches were in-flight.
     // IMPORTANT: only valid AFTER this function has set activeProjectId below.
@@ -2329,6 +2340,8 @@ export const useStore = create<AppState>((set, get) => {
     ]);
   },
   loadProgrammeData: async (programmeId: string, persist: boolean = true) => {
+    // T10: clear stale per-context AI-result state (see setActiveProject).
+    set({ suggestedRisks: [], strategicRiskAnalysis: null });
     // Stale-context guard helper: returns true if the user has navigated away
     // from this programme while our async fetches were in-flight.
     // IMPORTANT: only valid AFTER this function has set activeProgrammeId below.

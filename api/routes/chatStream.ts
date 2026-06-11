@@ -577,6 +577,13 @@ export const chatStreamRoutes: Record<
     // Anything the caller can't access is dropped; client-supplied labels
     // are discarded. See sanitiseScopeContext.
     const safeScopeContext = await sanitiseScopeContext(ctx, scopeContext);
+    // Human-readable scope so the model frames answers to the ACTIVE scope
+    // (a specific project / programme), not just "the organisation".
+    const scopeLabel = safeScopeContext?.projectId
+      ? `Project: ${safeScopeContext.projectName ?? safeScopeContext.projectId}`
+      : safeScopeContext?.programmeId
+        ? `Programme: ${safeScopeContext.programmeName ?? safeScopeContext.programmeId}`
+        : "Portfolio-wide (all accessible data)";
 
     const systemInstruction = `You are Cedar AI, an intelligent assistant built into CedarGuard — a compliance and risk management platform for the built environment (UK construction and property sector).
 
@@ -586,7 +593,7 @@ You help users query and understand their own data: projects, programmes, risks,
 **Role:** ${userRole}
 **Organisation:** ${orgName}
 **Date (UTC):** ${new Date().toISOString().split("T")[0]}
-**Scope context:** ${safeScopeContext ? JSON.stringify(safeScopeContext) : "Portfolio-wide (all accessible data)"}
+**Scope context:** ${scopeLabel}
 
 **Behaviour rules:**
 1. ALWAYS use the available tools to fetch real data before answering factual questions. Never invent or assume data.

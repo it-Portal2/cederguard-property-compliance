@@ -1153,7 +1153,13 @@ export function ProgrammeRiskRegister() {
                     initialQuestion={aiQuestion}
                     context={JSON.stringify({
                         type: 'programme_risks',
-                        risks: allProg.map(r => ({ ...r, desc: stripMarkdown(r.desc || '') })),
+                        // Drop the STALE embedded project/programme NAME strings each
+                        // record carries (kept from creation, not updated on rename) so
+                        // the chat never names the wrong context. Ids/data preserved.
+                        risks: allProg.map((risk) => {
+                            const { project, programme, projectName, programmeName, client, ...r } = risk as any;
+                            return { ...r, desc: stripMarkdown(r.desc || '') };
+                        }),
                         totalGALE,
                         totalRALE,
                         pctReduction,

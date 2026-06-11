@@ -63,6 +63,7 @@ import {
 } from "../../../lib/roles";
 import { clsx } from "clsx";
 import { analyzeStrategicInsights } from "../../../services/aiService";
+import { resolveAiScope } from "../../../lib/aiScope";
 import { stripMarkdown, parseAISuggestion } from "../../../lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 import toast from "react-hot-toast";
@@ -481,6 +482,23 @@ export function Dashboard() {
     (p) => p.id === activeProgrammeId,
   );
 
+  // Scope drives project/programme/portfolio wording in the strategic insight.
+  // The main dashboard is a balanced cross-functional view (T4 focus 'portfolio').
+  const aiScope = resolveAiScope({
+    activeProjectId,
+    activeProgrammeId,
+    activeProject,
+    activeProgramme,
+  });
+
+  // T11: clear stale strategic insights + timestamp when the active context
+  // changes so the previous scope's outlook doesn't linger after a switch.
+  useEffect(() => {
+    setStrategicInsights(null);
+    setAiError(null);
+    setInsightsTimestamp(null);
+  }, [activeProjectId, activeProgrammeId]);
+
   // Refs for derived values that the effect _reads_ but should NOT be deps.
   // These are stable booleans; putting them in the dep array is misleading
   // and can mask bugs when other deps also change in the same tick.
@@ -885,7 +903,7 @@ export function Dashboard() {
           escalated: issueEscalated,
         },
         projects: isProjectManager ? safeProjects : undefined,
-      });
+      }, undefined, { scope: aiScope, focus: 'portfolio' });
       setStrategicInsights(insights);
       setInsightsTimestamp(new Date());
     } catch (err: any) {

@@ -1,4 +1,5 @@
 import { api } from "../lib/api";
+import type { AiScope } from "../lib/aiScope";
 import { KRI_LIST } from "../data/riskData";
 import {
   STRATEGIC_CATEGORIES,
@@ -310,7 +311,14 @@ FORMATTING (STRICT): ABSOLUTELY NO MARKDOWN. ANY IDENTIFIER OR ID MUST BE ON THE
   }
 }
 
-export async function analyzeRisks(projectInfo: any, existingRisks: any[]) {
+export async function analyzeRisks(
+  projectInfo: any,
+  existingRisks: any[],
+  scope?: AiScope,
+) {
+  // Default 'project' — this is the project-scoped risk path (programmes go
+  // through analyzeStrategicRisks). Scope keeps the wording honest if reused.
+  const scopeNoun = scope?.noun ?? "project";
   const risksArray = Array.isArray(existingRisks) ? existingRisks : [];
   const existingRiskTitles = risksArray
     .map((r) => `${r.id}: ${r.title}`)
@@ -331,7 +339,7 @@ export async function analyzeRisks(projectInfo: any, existingRisks: any[]) {
     console.warn("Failed to fetch system mappings for AI", e);
   }
 
-  const prompt = `You are a UK social housing and construction risk expert with 30 years of experience in housing delivery, construction and programme management. A delivery manager has completed a project profile questionnaire. Based on their answers, identify every material risk this project carries across construction, safety, programme, financial, procurement, planning, resident, environmental and regulatory dimensions. Only include risks genuinely indicated by the answers. For each risk, identify the cause, consequence, and who owns it.
+  const prompt = `You are a UK social housing and construction risk expert with 30 years of experience in housing delivery, construction and programme management. A delivery manager has completed a ${scopeNoun} profile questionnaire. Based on their answers, identify every material risk this ${scopeNoun} carries across construction, safety, programme, financial, procurement, planning, resident, environmental and regulatory dimensions. Only include risks genuinely indicated by the answers. For each risk, identify the cause, consequence, and who owns it.
 
 Ensure at least 10 highly specific, realistic risks are provided for a robust, production-grade assessment.
 For every risk, you must be extremely detailed. Each risk description (desc) and rationale MUST be a clean, solid paragraph addressing:
@@ -685,33 +693,77 @@ FORMATTING: NO MARKDOWN. No **bold**, no headers, no bullet points. Plain text o
   }
 }
 
+/** Domain lens for the strategic-insight panels — which domain leads the prose. */
+export type StrategicFocus = "risk" | "compliance" | "portfolio";
+
 export async function analyzeStrategicInsights(
   context: { compliance: any; risks: any; issues: any; projects?: any[] },
   user?: any,
+  opts?: { scope?: AiScope; focus?: StrategicFocus },
 ) {
-  const prompt = `You are a Chief Technology Officer and Compliance Director for a major social housing organization. 
-Analyse the following cross-functional data (Compliance, Risks, and Issues) and provide strategic, high-level corporate insights. 
+  // Defaults preserve the legacy organisation/portfolio framing when a caller
+  // hasn't been updated yet (build stays green pre-T5/T6/T7).
+  const focus: StrategicFocus = opts?.focus ?? "portfolio";
+  const scope = opts?.scope;
+  const possessive = scope?.possessive ?? "this organisation";
+  const healthLabel = scope?.healthLabel ?? "Portfolio Health Score";
+  const isPortfolio = !scope || scope.scope === "portfolio";
+
+  // Individual records carry STALE embedded name strings: a risk's `project` /
+  // `programme` field keeps the name the context had when the record was created
+  // (and is NOT updated on a rename). Serialising them lets the model name the
+  // report after the wrong project — e.g. PROJECT-123's risks still embed an old
+  // name "abcd". Strip those name fields and give the model ONE authoritative
+  // context name. (Summary objects — Dashboard/ExecutiveReport — are left as-is.)
+  const scopeName = scope?.label || (isPortfolio ? "the portfolio" : "this context");
+  const stripStaleNames = (v: any) =>
+    Array.isArray(v)
+      ? v.map((item) => {
+          if (!item || typeof item !== "object") return item;
+          const {
+            project, programme, projectName, programmeName, client,
+            ...rest
+          } = item as Record<string, any>;
+          return rest;
+        })
+      : v;
+
+  // Reweight the prompt so each dashboard leads with ITS OWN domain (the Risk
+  // Dashboard must not headline compliance, etc.).
+  const focusDirective =
+    focus === "risk"
+      ? `ANALYTICAL LENS — RISK-LED: Lead every insight with risk exposure, Key Risk Indicators (KRIs), live issues, and financial exposure (ALE). Treat compliance posture only as supporting context, NEVER the headline. The reader is a risk owner who wants the risk picture first.`
+      : focus === "compliance"
+        ? `ANALYTICAL LENS — COMPLIANCE-LED: Lead every insight with regulatory and compliance posture, gaps, and statutory deadlines. Treat risks and issues only as supporting context. The reader is a compliance lead.`
+        : `ANALYTICAL LENS — BALANCED: Weigh Compliance, Risks, and Issues evenly as a cross-functional executive outlook.`;
+
+  const prompt = `You are a Chief Technology Officer and Compliance Director for a major social housing organisation.
+Analyse the following cross-functional data (Compliance, Risks, and Issues) for ${possessive} and provide strategic, high-level insights.
+
+CONTEXT NAME (AUTHORITATIVE): This report is for "${scopeName}". Refer to the subject ONLY as "${scopeName}". Individual risk / issue / compliance records may contain embedded project or programme name fields — these are STALE and MUST be ignored. NEVER name the report after a value found inside a record.
+
+${focusDirective}
 
 USER ROLE:
 ${user?.role || "Executive"} (${user?.email || "Anonymous"})
 
 DATA OVERVIEW:
-- Compliance Posture: ${JSON.stringify(context.compliance)}
-- Risk Exposure: ${JSON.stringify(context.risks)}
-- Live Issues: ${JSON.stringify(context.issues)}
-${Array.isArray(context.projects) ? `- Portfolio Scale: ${context.projects.length} projects` : ""}
+- Compliance Posture: ${JSON.stringify(stripStaleNames(context.compliance))}
+- Risk Exposure: ${JSON.stringify(stripStaleNames(context.risks))}
+- Live Issues: ${JSON.stringify(stripStaleNames(context.issues))}
+${isPortfolio && Array.isArray(context.projects) ? `- Portfolio Scale: ${context.projects.length} projects` : ""}
 
 Provide a "Strategic Outlook" that synthesizes this information. Focus on:
 1. Identify EXACTLY 3 critical blindspots or intersectional threats. Keep each to ONE brief sentence.
-2. A "Portfolio Health Score" recommendation based on regulatory compliance and risk velocity.
-3. EXACTLY 3 Urgent Strategic Priorities and EXACTLY 3 Suggestions for the Executive Board. ONE brief sentence each. 
+2. A "${healthLabel}" recommendation based on regulatory compliance and risk velocity.
+3. EXACTLY 3 Urgent Strategic Priorities and EXACTLY 3 Suggestions for the Executive Board. ONE brief sentence each.
 4. Maintain a highly concise, punchy style. Make it readable at a glance.
 5. Qualitative assessment of 'Reporting Sentiment' (proactive vs reactive).
 
 INSTRUCTIONS (STRICT COMPLIANCE REQUIRED):
 1. ABSOLUTELY NO MARKDOWN in any string field. No **bold**, no # headers, no _italics_, no \`code\`.
 2. ANY IDENTIFIER OR ID MUST BE ON THE SAME LINE AS ITS LABEL.
-3. Keep the tone extremely professional, objective, and authoritative. AVOUD fluff and unnecessary adjectives.
+3. Keep the tone extremely professional, objective, and authoritative. AVOID fluff and unnecessary adjectives.
 `;
 
   const config = {
@@ -764,8 +816,13 @@ INSTRUCTIONS (STRICT COMPLIANCE REQUIRED):
   }
 }
 
-export async function analyzeComplianceProgress(domainStats: any[]) {
-  const prompt = `You are a Chief Risk Officer. Analyse the following compliance metrics across regulatory domains and provide a highly specific, detailed paragraph for each domain indicating current posture.
+export async function analyzeComplianceProgress(
+  domainStats: any[],
+  scope?: AiScope,
+) {
+  // Anchor the posture to the active scope when known; stays neutral otherwise.
+  const scopePhrase = scope ? ` for ${scope.possessive}` : "";
+  const prompt = `You are a Chief Risk Officer. Analyse the following compliance metrics${scopePhrase} across regulatory domains and provide a highly specific, detailed paragraph for each domain indicating current posture.
   
   For every domain summary, you MUST address:
   - WHAT: The specific status and critical gaps.
@@ -956,9 +1013,14 @@ export async function analyzeComplianceLifecycle(
         `${i.id}|${i.stage_link || "N/A"}|${(i.req || "").slice(0, 50)}|${i.stage || "N/A"}`,
     )
     .join("\n");
-  const prompt = `You are a Senior RIBA Architect and Compliance Lead. Analyse the following project's compliance evolution across RIBA stages 0-7.
-  
-  PROJECT: ${JSON.stringify(projectInfo)}
+  // Callers pass either a full Project (whose `.type` is a building category) or,
+  // for programmes, `{ name, type: 'Programme' }`. Only the programme caller sets
+  // type === 'Programme', so it's a safe scope discriminator (no caller change).
+  const scopeNoun = projectInfo?.type === "Programme" ? "programme" : "project";
+  const scopeLabel = scopeNoun === "programme" ? "PROGRAMME" : "PROJECT";
+  const prompt = `You are a Senior RIBA Architect and Compliance Lead. Analyse the following ${scopeNoun}'s compliance evolution across RIBA stages 0-7.
+
+  ${scopeLabel}: ${JSON.stringify(projectInfo)}
   COMPLIANCE ITEMS: ${compCtx}
   
   TASK:
@@ -1106,9 +1168,13 @@ export async function analyzeComplianceSentiment(
   const compCtx = safeItems
     .map((i) => `${(i.req || "").slice(0, 50)}: ${i.stage || "N/A"}`)
     .join("\n");
-  const prompt = `You are a Regulatory Sentiment Auditor. Assess the qualitative 'Confidence' and 'Sentiment' of the compliance status for this project.
-  
-  PROJECT: ${JSON.stringify(projectInfo)}
+  // Same scope discriminator as analyzeComplianceLifecycle: only the programme
+  // caller passes `type: 'Programme'` (a project's `.type` is a building category).
+  const scopeNoun = projectInfo?.type === "Programme" ? "programme" : "project";
+  const scopeLabel = scopeNoun === "programme" ? "PROGRAMME" : "PROJECT";
+  const prompt = `You are a Regulatory Sentiment Auditor. Assess the qualitative 'Confidence' and 'Sentiment' of the compliance status for this ${scopeNoun}.
+
+  ${scopeLabel}: ${JSON.stringify(projectInfo)}
   CURRENT STATUS:
   ${compCtx}
   
@@ -1119,7 +1185,7 @@ export async function analyzeComplianceSentiment(
   4. Suggest at least 10 'Cultural Shifts' needed for better compliance posture.
   5. For every rationale and cultural shift, you MUST specify the WHAT, WHO, WHEN, HOW, WHERE, and WHY.
   
-  Your tone should be authoritative but objective. Focus on how complete or incomplete requirements impact overall project delivery confidence.
+  Your tone should be authoritative but objective. Focus on how complete or incomplete requirements impact overall ${scopeNoun} delivery confidence.
   FORMATTING (STRICT): ABSOLUTELY NO MARKDOWN in any field. ANY IDENTIFIER OR ID MUST BE ON THE SAME LINE AS ITS LABEL.`;
 
   const config = {
@@ -1213,8 +1279,8 @@ export async function chatWithAI(
     PROJECT PROFILE (questionnaire answers):
     ${JSON.stringify(projectInfo, null, 2)}
 
-    PREVIOUS AI ANALYSIS RESULTS:
-    ${analysisContext ? JSON.stringify(analysisContext, null, 2) : "No analysis performed yet."}
+    PREVIOUS COMPLIANCE ANALYSIS RESULTS (compliance gap analysis only — supporting context; do NOT present these as risk findings):
+    ${analysisContext ? JSON.stringify(analysisContext, null, 2) : "No compliance analysis performed yet."}
 
     ${complianceSection}
 

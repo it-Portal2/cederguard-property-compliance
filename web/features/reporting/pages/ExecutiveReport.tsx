@@ -26,6 +26,7 @@ import { stripMarkdown, parseAISuggestion } from '../../../lib/utils';
 import { useNavigate } from 'react-router';
 import { useEffect, useRef, useState } from 'react';
 import { analyzeStrategicInsights } from '../../../services/aiService';
+import { resolveAiScope } from '../../../lib/aiScope';
 
 
 function fGBP(v: number) {
@@ -64,6 +65,12 @@ export function ExecutiveReport() {
     isGeneratingRef.current = true;
     setLoading(true);
     setAiError(null);
+    // Programme-scoped when a programme is active, else portfolio-wide. The exec
+    // summary is a balanced cross-functional view (T4 focus 'portfolio').
+    const aiScope = resolveAiScope({
+      activeProgrammeId,
+      activeProgramme: safeProgrammes.find(p => p.id === activeProgrammeId),
+    });
     try {
       const insight = await analyzeStrategicInsights({
         risks: {
@@ -83,7 +90,7 @@ export function ExecutiveReport() {
           open: filteredIssues.filter(i => i.status !== '4. Resolved').length,
           escalated: filteredIssues.filter(i => i.status === '2. Escalated').length
         }
-      });
+      }, user, { scope: aiScope, focus: 'portfolio' });
       setAiInsight(insight);
     } catch (e: any) {
       console.error('Failed to get insight:', e);
