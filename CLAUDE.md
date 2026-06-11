@@ -302,6 +302,9 @@ DetailsModal.tsx                    Generic read-only details display modal
 AIErrorAlert.tsx                    Displays structured AI/API error messages
 AIInquiryPopup.tsx                  Chat-style AI inquiry popup
 AIWriter.tsx                        AI content generation interface (drafting text)
+GlobalAIAssistant.tsx               App-wide floating AI-assistant FAB, mounted in the App.tsx
+                                    authenticated shell. Route-aware context label. On mobile it
+                                    floats ABOVE the MobileNav bar (Mobile responsiveness conventions).
 ```
 
 #### Misc
@@ -1075,6 +1078,7 @@ Auth: Firebase ID token in Authorization header
 | `AIErrorAlert` | components/AIErrorAlert.tsx | Formats and displays AI/API errors with recovery suggestions |
 | `AIInquiryPopup` | components/AIInquiryPopup.tsx | Chat popup for asking AI about compliance/risk items |
 | `AIWriter` | components/AIWriter.tsx | AI-assisted text generation (risk descriptions, report text) |
+| `GlobalAIAssistant` | components/GlobalAIAssistant.tsx | App-wide floating AI-assistant FAB (mounted in [`web/App.tsx`](web/App.tsx) authenticated shell). Route-aware context label (`CONTEXT_LABELS`). On mobile it floats above the `MobileNav` bar (see Mobile responsiveness conventions). |
 
 ### Compliance Components
 | Component | File | What it does |
@@ -1293,6 +1297,13 @@ All user-activity / audit logging goes through the helpers in [`api/lib/activity
 - **App shell padding**: `p-4 lg:p-6` (was `p-4 md:p-6` before M2.1).
 - **Header new-context buttons**: `hidden lg:flex` container, text labels `hidden xl:inline` (icon-only at 1024–1279px, full labels at 1280px+).
 
+### Mobile responsiveness conventions (load-bearing — verify any new two-column / form page at 375px)
+Four recurring mobile-break patterns. Every new authenticated page MUST avoid them; a "responsiveness sweep" checks for them.
+- **Reordered sidebars must not pin on mobile, and the primary content comes first.** A right-hand sidebar / status panel that collapses ABOVE the main content on a single-column mobile layout must (1) gate its sticky to desktop — `lg:sticky lg:top-N`, never bare `sticky top-N` (a mobile-pinned panel overlaps the content as you scroll), and (2) order the form/content FIRST on mobile (content `order-1 lg:order-1`, panel `order-2 lg:order-2`; for `flex` layouts, sidebar `order-last`, never `order-first`). Canonical examples: the `PublicationChecklist` sidebars in [`RiskSetup`](web/features/risk/pages/RiskSetup.tsx) / [`ProjectInitiation`](web/features/projects/pages/ProjectInitiation.tsx) / [`ProgrammeInitiation`](web/features/programmes/pages/ProgrammeInitiation.tsx), [`ChecklistGate`](web/components/ChecklistGate.tsx), and the stacked panels in [`Calendar`](web/features/reporting/pages/Calendar.tsx) / [`AnalysisSummary`](web/components/compliance/AnalysisSummary.tsx).
+- **Never put an unprefixed `col-span-2`+ inside a `grid-cols-1` mobile grid.** A base (no `sm:`/`md:`/`lg:` prefix) `col-span-2`/`col-span-3` in a `grid-cols-1 md:grid-cols-N` grid spawns implicit columns and forces sibling fields side-by-side → overlapping labels at 375px. Always write `col-span-1 md:col-span-N` so the cell collapses to one column on mobile. (A `col-span-2` inside a *base* `grid-cols-2` parent is fine — a span is only a grid-buster when it exceeds the base column count.) This was the root cause of the New Programme / Programme Setup / MilestoneManager overlaps.
+- **Fixed-width sidebars must stack on mobile.** A `flex` row holding a fixed-width sidebar (`w-80`) must be `flex-col lg:flex-row` with the sidebar `w-full lg:w-80` and the main column `flex-1 min-w-0`; a bare `flex … w-80` overflows horizontally below `lg` (see [`admin/ProjectsTab`](web/components/admin/ProjectsTab.tsx)).
+- **The global AI-assistant FAB floats above the bottom nav on mobile.** [`GlobalAIAssistant`](web/components/GlobalAIAssistant.tsx) is `fixed bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] right-5 lg:bottom-8 lg:right-8` so it clears the `lg:hidden` `MobileNav` bar (whose reserved height matches the app shell's `pb-[calc(env(safe-area-inset-bottom)+5rem)]`) instead of overlapping the "Projects" tab; at `lg+` (nav hidden) it sits at `bottom-8 right-8`.
+
 ### Typography — v4 calibration (load-bearing across the authenticated app)
 **Geist (sans) + Geist Mono** loaded globally via Google Fonts import in [`web/index.css:1`](web/index.css#L1); Tailwind `@theme` maps `--font-sans` and `--font-mono` ([`web/index.css:7-8`](web/index.css)). `font-sans` cascades from the authenticated root in [`web/App.tsx:174`](web/App.tsx#L174).
 
@@ -1497,6 +1508,7 @@ Configured JSON-first in [apps/desktop/logger.cjs](apps/desktop/logger.cjs). Fil
 - **`PageActions` is the ONLY way to add a per-page context dropdown.** Pass `items: ActionItem[]` and `canManage: boolean`. Never roll a custom dropdown for page-level actions.
 - **`exportContextData` in [`web/lib/exportUtils.ts`](web/lib/exportUtils.ts) is the ONLY Excel export helper.** Never write inline XLSX logic in a page. Add new sheet types to `exportUtils.ts`.
 - **`ServiceManagementBar` is deleted.** Do not recreate it. Its MonthPicker and PageActions patterns replace it entirely.
+- **Mobile responsiveness: honour the four patterns in "Mobile responsiveness conventions" above.** No bare `sticky top-N` on a sidebar that reorders above content (gate to `lg:`, content-first on mobile); no unprefixed `col-span-2+` inside a `grid-cols-1` mobile grid (use `col-span-1 md:col-span-N`); no fixed-width `flex` sidebar that doesn't stack (`flex-col lg:flex-row` + `w-full lg:w-80` + `flex-1 min-w-0`); the `GlobalAIAssistant` FAB stays above the `MobileNav` bar on mobile. Verify any new two-column / multi-field-form page at 375px.
 - **Never run regex passes on backtick template literals.** A pattern like `(["'`])((?:[^\\]|\\.)*?)\1` matches across newlines inside backticks and corrupts JSX inside `${...}`. Always restrict regex find/replace to single-line `'...'` or `"..."` strings unless the pattern is anchored on a definite per-line attribute.
 - **Never commit with `--no-verify`, never push with `--force` to `main` / `master`.** No model names, no co-authored-by footer in commit messages.
 - **Never push without explicit user instruction.** Commit locally; wait for "push".
