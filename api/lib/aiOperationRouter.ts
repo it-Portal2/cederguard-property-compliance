@@ -185,15 +185,28 @@ export async function runAIOperation(
  * to dodge silent free-model degradations. 400s from a specific upstream
  * mean "this model can't handle the request shape we sent" — the next
  * entry might accept it, so advance the cascade instead of giving up.
+ * 402 = OpenRouter "insufficient credits" / "can only afford N tokens" on a
+ * PAID entry — the next entry (a free model, owl-alpha, or Gemini direct on a
+ * SEPARATE key) can still serve the request, so advance rather than abort.
  */
 function isRetryable(err: unknown): boolean {
   if (!err) return false;
   const e = err as any;
   const status = Number(e?.status ?? e?.response?.status ?? 0);
-  if ([400, 429, 502, 503, 504, 529, 404].includes(status)) return true;
+  if ([400, 402, 429, 502, 503, 504, 529, 404].includes(status)) return true;
   const msg = String(e?.message ?? "").toLowerCase();
   if (!msg) return false;
   if (msg.includes("quota") || msg.includes("rate limit")) return true;
+  // OpenRouter credit-exhaustion phrasing (belt-and-suspenders if .status is
+  // missing): "requires more credits", "can only afford N tokens", "add more
+  // credits". A different (free) entry or Gemini direct can still answer.
+  if (
+    msg.includes("more credits") ||
+    msg.includes("can only afford") ||
+    msg.includes("insufficient credit")
+  ) {
+    return true;
+  }
   if (msg.includes("overloaded") || msg.includes("unavailable")) return true;
   if (msg.includes("timed out") || msg.includes("timeout")) return true;
   if (msg.includes("empty response") || msg.includes("empty completion")) return true;
