@@ -1002,7 +1002,7 @@ export function ComplianceTracker() {
               </div>
             )}
             
-            <div className="flex flex-col lg:flex-row gap-8 items-start">
+            <div className="flex flex-col lg:flex-row gap-8 lg:items-start">
               {/* Sidebar */}
               <aside className="w-full lg:w-72 shrink-0 space-y-6 lg:sticky lg:top-24">
               <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm space-y-4">
@@ -1084,10 +1084,10 @@ export function ComplianceTracker() {
             </aside>
 
             {/* Main Content Area */}
-              <div className="flex-1 min-w-0 space-y-6">
+              <div className="w-full lg:w-auto flex-1 min-w-0 space-y-6">
                 <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-200" style={{ maxWidth: '100%' }}>
-                  <table className="w-full text-left min-w-[1000px]">
+                  <table className="w-full text-left min-w-[880px]">
                     <thead>
                       <tr className="font-mono bg-slate-50/50 text-slate-500 text-[10px] font-semibold uppercase tracking-wide border-b border-slate-100">
                         <th className="px-6 py-4 w-12 text-center">
@@ -1098,10 +1098,10 @@ export function ComplianceTracker() {
                             onChange={toggleSelectAll}
                           />
                         </th>
-                        <th className="px-6 py-4 w-[40%] min-w-[300px]">Requirement Details</th>
-                        <th className="px-6 py-4 w-[15%] hidden sm:table-cell">Domain</th>
+                        <th className="px-6 py-4 w-[40%] min-w-[280px]">Requirement Details</th>
+                        <th className="px-6 py-4 w-[15%]">Domain</th>
                         <th className="px-6 py-4 w-[20%] min-w-[150px]">Compliance Stage</th>
-                        <th className="px-6 py-4 w-[15%] hidden md:table-cell">Due Date</th>
+                        <th className="px-6 py-4 w-[15%]">Due Date</th>
                         <th className="px-6 py-4 w-[10%] text-right">Actions</th>
                       </tr>
                     </thead>
@@ -1150,7 +1150,7 @@ export function ComplianceTracker() {
                                 </div>
                               </div>
                             </td>
-                            <td className="px-6 py-4 hidden sm:table-cell">
+                            <td className="px-6 py-4">
                               <div className="flex items-center gap-2">
                                 {(() => {
                                   const d = DOMAINS.find(d => d.id === item.domain);
@@ -1196,7 +1196,7 @@ export function ComplianceTracker() {
                                 )}
                               </div>
                             </td>
-                            <td className="px-6 py-4 hidden md:table-cell">
+                            <td className="px-6 py-4">
                               <div className="flex items-center gap-2 text-slate-500">
                                 <Calendar className="w-3.5 h-3.5" />
                                 <span className={cn("text-[10px] font-bold", !item.dueDate && "text-slate-300")}>
