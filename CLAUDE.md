@@ -795,7 +795,10 @@ routes/technicalAssurance.ts       TAC enquiry CRUD + attachments. `tacAttachFil
                                    uploads via `uploadTacAttachment` (→ uploadAsset makePublic:true),
                                    stores URL on the enquiry's attachments array.
                                    `tacRemoveAttachment` deletes the GCS object then the Firestore
-                                   entry.
+                                   entry. **Per-user enquiry visibility** runs through the
+                                   `isTacElevated(ctx)` + `canViewEnquiry(ctx, doc)` helpers (defined
+                                   beside `loadEnquiryForMutation`) — see the TAC enquiry visibility
+                                   convention below.
 routes/validation.ts               Fact-Check / Validation engine. `validationRunFactCheck` is a
                                    CHUNKED two-call fact-check: `buildFactCheckChunks` splits the content
                                    (one numbered item per line) into batches of `FACTCHECK_CHUNK_ITEMS`
@@ -1289,6 +1292,22 @@ All user-activity / audit logging goes through the helpers in [`api/lib/activity
 - **Coverage is app-wide.** Every CRUD handler logs — compliance, risk, projects/programmes, team, admin, auth, evidence, invoices, AND the Governance + Technical Assurance modules (meetings, forward plan, reports, project docs, framework, templates, enquiries, RFIs, cost rates). Approval transitions log via `writeReportAuditEvent` (governance) + per-handler `logActivity` (TAC). Deliberately NOT logged: meeting sub-item tweaks (minutes/decisions/action-items — captured in meeting history), RFI draft autosave (noisy; only *issued* logs), and the high-volume reads above.
 - New CRUD handlers MUST add a `logActivity` call following this pattern; new event `type`s render automatically (the table humanises `type` and colours by `category` — no enum to extend, though `ACTIVITY_ICONS` in `admin/constants.tsx` can give a nicer label).
 
+### Technical Assurance (TAC) enquiry visibility convention (server-side — load-bearing)
+A TAC enquiry is **owner-scoped**, not just tenant-scoped: a regular user may only see enquiries they **created** OR that are **shared with them**; elevated roles see all. This is enforced in [`api/routes/technicalAssurance.ts`](api/routes/technicalAssurance.ts) by **two helpers defined beside `loadEnquiryForMutation`** — use these, never re-derive the rule inline:
+- **`isTacElevated(ctx)`** → delegates to `isComplianceLeadCtx(ctx)`, i.e. the override set is **Super Admin + Client Admin + Compliance Lead** (the first two are already folded into `isComplianceLeadCtx`).
+- **`canViewEnquiry(ctx, doc)`** → `isTacElevated(ctx) || doc.ownerUid === ctx.uid || doc.shares?.some(s => s.sharedWith === ctx.uid)`. An **owner-less** record (legacy/seeded with no `ownerUid`) matches neither regular branch, so only elevated roles see it — that is the intended default.
+- **One predicate drives BOTH the list filter AND the detail guard**, so what a user sees in the list and what they can open by id/URL can never disagree. `shares[]` is an array-of-objects, so the OR can't be a Firestore query — `canViewEnquiry` is applied **in memory** after a `where clientId == primaryUid` fetch (same pattern as `tacListSharedWithMe` / `tacListAuditFlagged`); no composite index needed.
+
+Where it applies:
+- **List** (`tacListEnquiries`): `.filter(d => canViewEnquiry(ctx, d))` over the tenant fetch.
+- **Detail / deliverable** (`tacGetEnquiry`, `tacGetEnquiryDeliverable`): after the tenant check, `return 403 { code: "FORBIDDEN" }` if `!canViewEnquiry`. Direct-link access is hard-blocked, not just hidden.
+- **Mutations / exports** (`tacUpsertEnquiry` edit, attachments, close, archive, cost CSV, compliance pack, share, golden thread): go through `loadEnquiryForMutation` (owner-or-Client-Admin) — deliberately stricter than view (a share *recipient* can view but not mutate/export).
+- **RFI register** (`tacListRfis`): RFIs have **no owner field**, so visibility is **project-based** — a single-project view requires `ctx.isAuthorizedForContext(projectId)`; the no-project register filters RFIs to projects the user is authorised for (distinct-project authz, one check per project; admin/Client-Admin/PM-of-project resolve via the existing helper). Note: a standalone Compliance Lead (not also admin/Client-Admin) sees only their own-project RFIs — RFI scope is project-based, NOT widened by `isTacElevated`.
+- **Project-scoped outputs** (`tacListProjectReportEnquiries`, `tacExportDecisionLog`): already gated on `ctx.isAuthorizedForContext(projectId)` and stay **project-scoped** (not per-user) so a project report/decision-log is complete for everyone on the project.
+- **Audit/oversight** (`tacListAuditFlagged`, `tacUnlockEnquiry`, flag/resolve) are Compliance-Lead gated; `tacScanCitationIntegrity` is admin gated.
+
+Seed note: `seedTacEnquiriesIfMissing` stamps `ownerUid: ctx.uid` (the first user to open the list) and seeds once per workspace — so the seeder sees the samples and other tenant users correctly don't.
+
 ### Styling
 - Pure **Tailwind CSS v4** (Vite plugin; no `tailwind.config.js`) — no CSS modules, no styled-components, no SCSS
 - `clsx()` for conditional class names: `clsx('base-class', condition && 'extra-class')`
@@ -1543,3 +1562,4 @@ Configured JSON-first in [apps/desktop/logger.cjs](apps/desktop/logger.cjs). Fil
 - **`apps/desktop/built-env.cjs` must stay gitignored.** It contains the Google OAuth client secret baked at build time. Never commit, never `git add` it.
 - **Never raise the 3 MB upload cap by editing constants alone.** It's bounded by Vercel's 4.5 MB serverless body limit (not configurable). Raising it requires switching pattern entirely (M-LargeUploads in `handoff.md`).
 - **Activity logging goes through [`api/lib/activityLog.ts`](api/lib/activityLog.ts), awaited BEFORE the response.** Don't write to `activityLogs` ad-hoc, and never move logging to a post-response central dispatcher hook — Vercel tears the invocation down at response end and the write is lost (see the activity-logging convention above).
+- **TAC enquiry visibility goes through `isTacElevated` + `canViewEnquiry` in [`api/routes/technicalAssurance.ts`](api/routes/technicalAssurance.ts).** A regular user sees only their own + shared-with-them enquiries; elevated (Super Admin / Client Admin / Compliance Lead) see all. Every enquiry **list AND detail/deliverable** read must use `canViewEnquiry` (detail = hard 403, not just hidden); never re-derive the rule inline or fall back to a tenant-only (`clientId`) filter. RFI register visibility is **project-based** (`isAuthorizedForContext`), not owner-based. See the TAC enquiry visibility convention above.

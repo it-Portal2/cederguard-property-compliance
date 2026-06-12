@@ -185,6 +185,26 @@ async function loadEnquiryForMutation(
   return { docRef, doc };
 }
 
+/** Elevated TAC roles see EVERY enquiry in the tenant (oversight). Exactly the
+ *  agreed override set: Super Admin + Client Admin + Compliance Lead —
+ *  `isComplianceLeadCtx` already folds in admin + client-admin. */
+function isTacElevated(ctx: ApiContext): boolean {
+  return isComplianceLeadCtx(ctx);
+}
+
+/** Per-user enquiry visibility predicate — the SINGLE source of truth for both
+ *  the list filter and the detail-access guard, so what a user can see in the
+ *  list and what they can open by link can never disagree. A regular user may
+ *  see an enquiry they OWN or that has been SHARED with them; elevated roles see
+ *  all. An owner-less record matches neither regular condition, so only elevated
+ *  see it. */
+function canViewEnquiry(ctx: ApiContext, doc: any): boolean {
+  if (isTacElevated(ctx)) return true;
+  if (doc?.ownerUid === ctx.uid) return true;
+  const shares: any[] = Array.isArray(doc?.shares) ? doc.shares : [];
+  return shares.some((s) => s?.sharedWith === ctx.uid);
+}
+
 // Endpoint 1: tacListEnquiries ----------------------------------------
 
 async function tacListEnquiries(req: any, res: any, ctx: ApiContext) {
@@ -201,12 +221,18 @@ async function tacListEnquiries(req: any, res: any, ctx: ApiContext) {
       q = q.where("ownerUid", "==", ctx.uid);
     }
     const snap = await q.get();
-    const items = snap.docs.map((d: any) => ({
-      ...d.data(),
-      // Strip the composite Firestore doc id; expose only the bare entity id
-      // (e.g. `tac-abc-1234`) which is what the client routes are built on.
-      id: (d.data()?.id as string) ?? d.id.replace(`${ctx.primaryUid}_`, ""),
-    }));
+    const items = snap.docs
+      .map((d: any) => ({
+        ...d.data(),
+        // Strip the composite Firestore doc id; expose only the bare entity id
+        // (e.g. `tac-abc-1234`) which is what the client routes are built on.
+        id: (d.data()?.id as string) ?? d.id.replace(`${ctx.primaryUid}_`, ""),
+      }))
+      // Per-user visibility: a regular user sees only their own + shared-with-them
+      // enquiries; elevated roles (admin / client-admin / compliance-lead) see all.
+      // `shares[]` is an array of objects, so this OR can't be a Firestore query —
+      // filter in memory (same pattern as tacListSharedWithMe / tacListAuditFlagged).
+      .filter((item: any) => canViewEnquiry(ctx, item));
     return res.status(200).json({ success: true, items });
   } catch (e: any) {
     console.error("[tacListEnquiries] failed:", e);
@@ -245,6 +271,15 @@ async function tacGetEnquiry(req: any, res: any, ctx: ApiContext) {
         success: false,
         error: "Forbidden.",
         code: "CROSS_TENANT",
+      });
+    }
+    // Per-user visibility (Q3): a non-owner / non-recipient / non-elevated user
+    // can't open someone else's enquiry by direct id/URL — hard 403.
+    if (!canViewEnquiry(ctx, doc)) {
+      return res.status(403).json({
+        success: false,
+        error: "Forbidden.",
+        code: "FORBIDDEN",
       });
     }
     await logActivity(ctx, "enquiry_viewed", {
@@ -854,6 +889,15 @@ async function tacGetEnquiryDeliverable(req: any, res: any, ctx: ApiContext) {
         code: "CROSS_TENANT",
       });
     }
+    // Per-user visibility (Q3): block deliverable access to an enquiry the user
+    // can't see — owner, share recipients, and elevated roles only.
+    if (!canViewEnquiry(ctx, enqData)) {
+      return res.status(403).json({
+        success: false,
+        error: "Forbidden.",
+        code: "FORBIDDEN",
+      });
+    }
 
     const tabSnap = await ctx.db
       .collection("enquiries")
@@ -1104,6 +1148,16 @@ async function tacIssueRfi(req: any, res: any, ctx: ApiContext) {
 async function tacListRfis(req: any, res: any, ctx: ApiContext) {
   try {
     const { projectId } = req.body ?? {};
+    // Single-project view: caller must be authorised for that project (Q4).
+    if (projectId && typeof projectId === "string") {
+      if (!(await ctx.isAuthorizedForContext(projectId))) {
+        return res.status(403).json({
+          success: false,
+          error: "Forbidden.",
+          code: "CROSS_TENANT",
+        });
+      }
+    }
     let q: any = ctx.db
       .collection("rfis")
       .where("clientId", "==", ctx.primaryUid);
@@ -1111,9 +1165,34 @@ async function tacListRfis(req: any, res: any, ctx: ApiContext) {
       q = q.where("projectId", "==", projectId);
     }
     const snap = await q.get();
-    const items = snap.docs
-      .map((d: any) => d.data())
-      .sort((a: any, b: any) => (b.issuedAt ?? "").localeCompare(a.issuedAt ?? ""));
+    let rows = snap.docs.map((d: any) => d.data());
+    // Register view (no projectId): RFIs have no owner field, so scope to the
+    // projects the user is authorised for (Q4). Evaluate authorisation once per
+    // distinct project — admin / client-admin / PM-of-project resolve via the
+    // existing helper, so elevated users keep seeing all.
+    if (!projectId) {
+      const distinctProjectIds: string[] = Array.from(
+        new Set(
+          rows
+            .map((r: any) => r?.projectId)
+            .filter((p: any): p is string => typeof p === "string" && !!p),
+        ),
+      );
+      const authzEntries = await Promise.all(
+        distinctProjectIds.map(
+          async (pid) => [pid, await ctx.isAuthorizedForContext(pid)] as const,
+        ),
+      );
+      const authorized = new Set(
+        authzEntries.filter(([, ok]) => ok).map(([pid]) => pid),
+      );
+      rows = rows.filter(
+        (r: any) => typeof r?.projectId === "string" && authorized.has(r.projectId),
+      );
+    }
+    const items = rows.sort((a: any, b: any) =>
+      (b.issuedAt ?? "").localeCompare(a.issuedAt ?? ""),
+    );
     return res.status(200).json({ success: true, items });
   } catch (e: any) {
     console.error("[tacListRfis] failed:", e);
