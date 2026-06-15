@@ -54,7 +54,7 @@ export function CommandPalette({ open, onClose }: Props) {
     programmes,
     setActiveProject,
     setActiveProgramme,
-    loadDemoData,
+    loadDemoProgramme,
     clearData,
   } = useStore();
 
@@ -101,7 +101,7 @@ export function CommandPalette({ open, onClose }: Props) {
 
       // Actions
       { id: 'act-clear', group: 'Actions', label: 'Clear all data', meta: 'destructive', icon: <Trash2 className="w-3.5 h-3.5" />, run: () => { onClose(); void clearData?.(); } },
-      { id: 'act-demo', group: 'Actions', label: 'Load demo data', meta: 'sample dataset', icon: <Database className="w-3.5 h-3.5" />, run: () => { onClose(); void loadDemoData?.(); } },
+      { id: 'act-demo', group: 'Actions', label: 'Load demo data', meta: 'local only', icon: <Database className="w-3.5 h-3.5" />, run: () => { onClose(); loadDemoProgramme?.(); } },
     ];
 
     // Programmes

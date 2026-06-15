@@ -325,6 +325,15 @@ UserAvatar.tsx                      Shared user avatar: renders <img src={photoU
                                     SINGLE SOURCE OF TRUTH for avatar rendering — Header, Sidebar,
                                     MobileHeader all consume this. Never inline an <img photoURL>
                                     in new code; always use <UserAvatar/>.
+DemoDataControls.tsx                Admin-only (isSuperAdmin) "Load demo data ▾" dropdown (Programme
+                                    demo / Project demo) + "Clear demo data" button, mounted in the
+                                    Dashboard hero-header actions slot. Renders null for non-admins.
+                                    Wires to loadDemoProgramme/loadDemoProject/clearDemo. See the
+                                    Demo mode convention below.
+DemoModeBanner.tsx                  App-wide amber "Demo mode" bar, mounted in the App.tsx
+                                    authenticated shell (between <Header> and <main>). Admin-only,
+                                    shown only while a demo is loaded. "Exit demo" → clearDemo;
+                                    the close (X) hides the banner for the session (demo stays loaded).
 ```
 
 #### `/web/components/desktop/` — Desktop-only renderer components
@@ -348,8 +357,13 @@ HealthBanner.tsx                    Non-blocking offline indicator. Fires `?acti
 ActivityTimeline.tsx                Recent activity feed with All/Risks/Issues tabs
 AIFollowUpPrompts.tsx               AI follow-up chip strip below the AI panel
 AnimatedCounter.tsx                 motion-driven count-up for KPI bignums
-ComplianceVelocityChart.tsx         Recharts stacked bar + trend line; range pills 7/30/90;
-                                    buckets by `stage` (live/archived/in progress)
+ComplianceVelocityChart.tsx         Compliance "verifications over time": Recharts bar (items
+                                    verified per day) + cumulative-progress line (dual Y-axis);
+                                    range pills 7/30/90. Buckets by `completedAt` (the day an item
+                                    is moved to Live — stamped by store.updateComplianceItem), NOT
+                                    `dateAdded`: every compliance item is created at once during the
+                                    AI analysis, so "items added" would be one spike. Legend shows
+                                    the current Verified/In-progress/Pending snapshot + "% complete".
 MiniSparkline.tsx                   38px sparkline used in KPI cards
 RibaTimeline.tsx                    Horizontal stage rail (S0..S5) for project view
 RiskBurnDown.tsx                    "Risk outlook · next 90 days" — data-driven projection
@@ -652,6 +666,28 @@ aiScope.ts                         SINGLE SOURCE OF TRUTH for resolving the ACTI
                                    to drive both the AI prompt scope wording AND the static "Health" card
                                    heading. Never hardcode "Portfolio"/"organisation" at project/programme
                                    scope — resolve through this.
+demoMode.ts                        SINGLE SOURCE OF TRUTH for the client-only "Load / Clear demo data"
+                                   feature's persistence. Pure (no React/store/API). State lives ONLY in
+                                   localStorage (works on web AND the Electron desktop renderer's default
+                                   persistent session), NEVER the database. Exports `DEMO_KEY`,
+                                   `DEMO_ID_PREFIX` (= `'cgdemo-'`), `DemoFlag`/`DemoKind` types,
+                                   `getDemoFlag`/`setDemoFlag(kind, prior?)`/`clearDemoFlag`, `isDemoActive`,
+                                   `isDemoId(id)`. **Prefix is `cgdemo-`, NOT `demo-`** — a blanket `demo-`
+                                   would collide with the existing governance seed id `demo-aspen-court`
+                                   (`api/lib/projectGovernanceSeed.ts`); `cgdemo-` is verified unused repo-wide
+                                   so the store guards are inert for real data. `DemoFlag.prior` stashes the
+                                   real context to restore on Clear.
+demoData/index.ts                  SINGLE SOURCE OF TRUTH for the static demo fixtures. Pure data (`import
+                                   type` only). `buildDemoProgramme()` → a Programme (`cgdemo-prog-1`) with
+                                   child projects; `buildDemoProject()` → a standalone Project
+                                   (`cgdemo-proj-solo`). Each returns a `DemoBundle` { programme, projects,
+                                   risks, issues, kris, complianceItems, complianceAnalysis, projectInfo,
+                                   lastAnalysisResults } reusing SEED_RISKS/SEED_ISSUES/SEED_KRIS +
+                                   COMPLIANCE_ITEMS, stamped with the right context ids + realistic
+                                   `stage`/`status`/`dateAdded`/`completedAt` so every dashboard/chart and the
+                                   Compliance/Risk setup pages render as a fully-set-up workspace. Dates are
+                                   scattered with a deterministic sine-hash (no Math.random) so charts look
+                                   varied + reproducible. See the Demo mode convention below.
 ```
 
 #### `/web/lib/auth/` — Platform-agnostic auth bridge
@@ -1537,7 +1573,16 @@ Configured JSON-first in [apps/desktop/logger.cjs](apps/desktop/logger.cjs). Fil
 - **The format function MUST NEVER throw.** electron-log v5 has variable message shapes; the formatter in `logger.cjs` is defensive (try/catch + fallback to `new Date().toISOString()` if `msg.date` is undefined). Don't simplify it.
 - **`ErrorBoundary` Copy Diagnostics** ([web/components/ErrorBoundary.tsx](web/components/ErrorBoundary.tsx) + `diagnostics:get` IPC) bundles the last ~200 lines of `main.log` + sysinfo + React error stack — that's the support payload. Don't add a parallel error-reporting path on desktop.
 
+### Demo mode conventions (client-only "Load / Clear demo data")
+An admin-only product-demo / testing overlay: it injects a complete static dataset into the store so the whole app renders as a fully-populated workspace, and clears back to live data — **without any database writes**. Visible only to Super Admin / Admin (`isSuperAdmin`).
+- **100% client-side, NEVER the DB.** No demo path calls `api.saveData` / `api.savePreference` / any DB write. State persists only via [`web/lib/demoMode.ts`](web/lib/demoMode.ts) to **localStorage** (survives refresh / re-login on web AND the Electron desktop renderer — default persistent session). Only `clearDemo`'s restore issues reads. The old `loadDemoData` store action (which DID write seed data to Firestore) is retired/unused — do not re-wire it.
+- **Two SINGLE-SOURCE modules:** persistence + flag in [`web/lib/demoMode.ts`](web/lib/demoMode.ts); static fixtures in [`web/lib/demoData/index.ts`](web/lib/demoData/index.ts) (`buildDemoProgramme`/`buildDemoProject` → a `DemoBundle`). Don't fabricate demo data inline or add a parallel flag.
+- **Ids use the `cgdemo-` prefix** (`DEMO_ID_PREFIX`), verified unused repo-wide — NOT `demo-` (collides with the `demo-aspen-court` governance seed). `isDemoId(id)` (= starts with `cgdemo-`) and `isDemoActive()` (localStorage flag) gate the store; both are **inert for real data**, so existing flows are unchanged when no demo is loaded.
+- **Store integration** ([`web/store/useStore.ts`](web/store/useStore.ts)): `loadDemoProgramme` / `loadDemoProject` / `clearDemo` actions; local helpers `resolveDemoBundle` / `applyDemoBundle` (merge demo records by id = idempotent; runs `normalizeRisk`; sets active context via raw `set`, never `setActiveProject`/`setActiveProgramme` which persist prefs) / `keepDemo` (re-merges demo rows when a real fetch refreshes the lists). The three loaders (`loadProjectData` / `loadProgrammeData` / `loadAggregateData`) short-circuit at the top on `isDemoId`/`isDemoActive`. `initStore` re-applies the overlay on refresh via a leading `getDemoFlag()` branch. `clearDemo` raises the global `isContextSwitching` overlay and restores the stashed `prior` context directly (no null→aggregate flash).
+- **Demo fixtures must carry the SAME fields the real UI reads**, so charts/KPIs/setup pages are real-driven, not faked: risks/issues get a recent spread `dateAdded`; compliance items get `stage` + `completedAt` (verification day, what the velocity chart buckets by) + `dateAdded`; the bundle includes `projectInfo` (questionnaire answers) + `complianceAnalysis`/`lastAnalysisResults` so Compliance Setup shows answered + analysed, and `riskSetupDone`/`complianceSetupDone: true` so the setup pages show their "complete" state.
+
 ### Standing rules for sweeps / refactors
+- **Demo mode goes through [`web/lib/demoMode.ts`](web/lib/demoMode.ts) + [`web/lib/demoData/index.ts`](web/lib/demoData/index.ts); NEVER write to the DB on a demo path and never use the `demo-` prefix (use `cgdemo-`).** See the Demo mode convention above.
 - **`PageHeader` is the ONLY way to add a page title.** Never add an ad-hoc `<h1>` or title block to an authenticated page. Props: `breadcrumbs` (first item = sidebar group name), `title`, optional `subtitle`, optional `actions` slot.
 - **Risk-to-Issue "trending" logic goes through [`web/lib/riskConversion.ts`](web/lib/riskConversion.ts) `evaluateConversion` ONLY.** Don't re-implement the heuristics or hardcode its thresholds in a page; retune via that file's constants. Scores via `riskMetrics.ts`, never inline.
 - **Fact-Check / Validation goes through [`web/lib/validation.ts`](web/lib/validation.ts) types + [`useValidationGate`](web/hooks/useValidationGate.ts) + [`<ValidateButton/>`](web/components/validation/ValidateButton.tsx).** One `validations` collection, keyed by a **content-versioned** target (`versionedTargetId`) so a new analysis forces a fresh check. The AI fact-check is the **chunked** two-call pattern in [`api/routes/validation.ts`](api/routes/validation.ts) via `aiOperationRouter` (`webSearch`), NEVER `api/routes/ai.ts`, with **1:1 numbered-item reconciliation** (one claim per item). PM+ validates; approval blocked until validated (gate BOTH the submit action and any step→step advance, e.g. `handleFinalise`); everything `logActivity`s. Don't fork the types, add a parallel collection, hardcode the confidence threshold, or send un-numbered/multi-line fact-check content.

@@ -14,7 +14,8 @@ import { clsx } from 'clsx';
 type ComplianceItem = {
   status?: string;
   stage?: string;
-  dateAdded?: string | number | Date;
+  /** Set when an item is moved to Live/Closed (see store.updateComplianceItem). */
+  completedAt?: string | number | Date;
   [k: string]: any;
 };
 
@@ -29,56 +30,62 @@ type Props = {
   onRangeChange?: (r: Range) => void;
 };
 
-function bucketByDay(items: ComplianceItem[], days: number) {
+// Velocity = requirements VERIFIED over time. Bucket by `completedAt`, not
+// creation date — every item is created at once during analysis (a single
+// spike), whereas verification happens over time.
+function bucketByCompletion(items: ComplianceItem[], days: number) {
   const today = new Date();
   today.setHours(23, 59, 59, 999);
-  const buckets: {
-    day: string;
-    verified: number;
-    inProgress: number;
-    pending: number;
-    total: number;
-  }[] = [];
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - i);
-    d.setHours(0, 0, 0, 0);
-    buckets.push({
+  const start = new Date(today);
+  start.setDate(today.getDate() - (days - 1));
+  start.setHours(0, 0, 0, 0);
+
+  const perDay = Array.from({ length: days }, () => 0);
+  let baseline = 0; // verified BEFORE the window (seeds the cumulative line)
+
+  items.forEach((it) => {
+    const raw = it.completedAt;
+    if (!raw) return; // only verified items carry completedAt
+    const d = new Date(raw);
+    if (isNaN(d.getTime())) return;
+    if (d > today) return;
+    if (d < start) {
+      baseline += 1;
+      return;
+    }
+    const idx = Math.floor((d.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    if (idx >= 0 && idx < perDay.length) perDay[idx] += 1;
+  });
+
+  let running = baseline;
+  const data = [];
+  for (let i = 0; i < days; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    running += perDay[i];
+    data.push({
       day: d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
-      verified: 0,
-      inProgress: 0,
-      pending: 0,
-      total: 0,
+      verified: perDay[i],
+      cumulative: running,
     });
   }
 
-  const startMs = new Date(today);
-  startMs.setDate(today.getDate() - (days - 1));
-  startMs.setHours(0, 0, 0, 0);
+  const verifiedInWindow = perDay.reduce((a, b) => a + b, 0);
+  return { data, baseline, verifiedInWindow };
+}
 
+// Current snapshot (not time-bucketed) for the legend + progress %.
+function statusTotals(items: ComplianceItem[]) {
+  let verified = 0;
+  let inProgress = 0;
+  let pending = 0;
   items.forEach((it) => {
-    const raw = it.dateAdded;
-    if (!raw) return;
-    const d = new Date(raw);
-    if (isNaN(d.getTime())) return;
-    if (d < startMs || d > today) return;
-    const idx = Math.floor(
-      (d.getTime() - startMs.getTime()) / (1000 * 60 * 60 * 24),
-    );
-    if (idx < 0 || idx >= buckets.length) return;
     const s = String(it.stage || '').toLowerCase();
-    if (s === 'live' || s === 'archived') {
-      buckets[idx].verified += 1;
-    } else if (s === 'in progress') {
-      buckets[idx].inProgress += 1;
-    } else {
-      buckets[idx].pending += 1;
-    }
-    buckets[idx].total =
-      buckets[idx].verified + buckets[idx].inProgress + buckets[idx].pending;
+    if (s === 'live' || s === 'archived') verified += 1;
+    else if (s === 'in progress') inProgress += 1;
+    else pending += 1;
   });
-
-  return buckets;
+  return { verified, inProgress, pending, total: verified + inProgress + pending };
 }
 
 export function ComplianceVelocityChart({
@@ -94,21 +101,14 @@ export function ComplianceVelocityChart({
     if (onRangeChange) onRangeChange(r);
     if (!isControlled) setInternalRange(r);
   };
-  const data = useMemo(() => bucketByDay(items, range), [items, range]);
-  const totals = useMemo(
-    () =>
-      data.reduce(
-        (acc, d) => ({
-          verified: acc.verified + d.verified,
-          inProgress: acc.inProgress + d.inProgress,
-          pending: acc.pending + d.pending,
-        }),
-        { verified: 0, inProgress: 0, pending: 0 },
-      ),
-    [data],
+
+  const { data, verifiedInWindow } = useMemo(
+    () => bucketByCompletion(items, range),
+    [items, range],
   );
-  const totalAll = totals.verified + totals.inProgress + totals.pending;
-  const hasData = totalAll > 0;
+  const totals = useMemo(() => statusTotals(items), [items]);
+  const pctComplete = totals.total > 0 ? Math.round((totals.verified / totals.total) * 100) : 0;
+  const hasData = verifiedInWindow > 0;
 
   return (
     <div className={clsx('bg-white rounded-lg border border-slate-200', className)}>
@@ -118,7 +118,7 @@ export function ComplianceVelocityChart({
             Compliance velocity
           </h3>
           <p className="text-xs text-slate-500 mt-0.5">
-            Items added across the window, stacked by current status.
+            Requirements verified across the window, with cumulative progress.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -149,7 +149,7 @@ export function ComplianceVelocityChart({
       <div
         className="px-2 h-55"
         role="img"
-        aria-label={`Compliance velocity over the last ${range} days`}
+        aria-label={`Compliance verified over the last ${range} days`}
       >
         {hasData ? (
           <ResponsiveContainer width="100%" height="100%">
@@ -164,7 +164,17 @@ export function ComplianceVelocityChart({
                 minTickGap={24}
               />
               <YAxis
+                yAxisId="left"
                 tick={{ fontSize: 10, fill: '#64748b', fontFamily: 'Geist Mono, ui-monospace, monospace' }}
+                axisLine={false}
+                tickLine={false}
+                width={28}
+                allowDecimals={false}
+              />
+              <YAxis
+                yAxisId="right"
+                orientation="right"
+                tick={{ fontSize: 10, fill: '#94a3b8', fontFamily: 'Geist Mono, ui-monospace, monospace' }}
                 axisLine={false}
                 tickLine={false}
                 width={28}
@@ -181,18 +191,24 @@ export function ComplianceVelocityChart({
                 labelStyle={{ color: '#0f172a', fontWeight: 600 }}
                 cursor={{ fill: 'rgba(99,102,241,0.05)' }}
               />
-              <Bar dataKey="verified" name="Verified" stackId="a" fill="#10b981" fillOpacity={0.85} radius={[0, 0, 0, 0]} />
-              <Bar dataKey="inProgress" name="In progress" stackId="a" fill="#6366f1" fillOpacity={0.85} />
-              <Bar dataKey="pending" name="Pending" stackId="a" fill="#f59e0b" fillOpacity={0.85} radius={[2, 2, 0, 0]} />
+              <Bar
+                yAxisId="left"
+                dataKey="verified"
+                name="Verified that day"
+                fill="#10b981"
+                fillOpacity={0.85}
+                radius={[2, 2, 0, 0]}
+                maxBarSize={28}
+              />
               <Line
+                yAxisId="right"
                 type="monotone"
-                dataKey="total"
-                name="Trend"
-                stroke="#818cf8"
-                strokeWidth={1.5}
-                strokeDasharray="3 3"
+                dataKey="cumulative"
+                name="Cumulative verified"
+                stroke="#6366f1"
+                strokeWidth={2}
                 dot={false}
-                activeDot={false}
+                activeDot={{ r: 3 }}
                 isAnimationActive={false}
               />
             </ComposedChart>
@@ -219,17 +235,17 @@ export function ComplianceVelocityChart({
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
                 </svg>
               </span>
-              <p className="text-sm font-medium text-slate-600">No activity in this window</p>
+              <p className="text-sm font-medium text-slate-600">No verifications in this window</p>
               <p className="mt-0.5 text-xs text-slate-400 max-w-xs">
-                Verified, in-progress, and pending compliance items will plot here as they're added.
+                As requirements are moved to Live, they plot here by the day they were verified.
               </p>
             </div>
           </div>
         )}
       </div>
       <div className="px-5 py-2.5 flex items-center justify-between text-[11px] text-slate-500 font-mono border-t border-slate-100">
-        <span className="tabular-nums">{totalAll} items added · {range}d</span>
-        <span className="tabular-nums">last sync just now</span>
+        <span className="tabular-nums">{verifiedInWindow} verified · {range}d</span>
+        <span className="tabular-nums">{pctComplete}% complete</span>
       </div>
     </div>
   );

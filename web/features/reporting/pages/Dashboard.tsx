@@ -82,6 +82,7 @@ import DynamicTable from "../../../components/table/DynamicTable";
 import TableTooltip from "../../../components/table/TableTooltip";
 import { canCreateProgramme as canCreateProgrammeFn } from "../../../lib/roles";
 import { GetStartedModal } from "../../../components/onboarding/GetStartedModal";
+import DemoDataControls from "../../../components/DemoDataControls";
 import { getOnboardingSteps } from "../../../components/onboarding/onboardingSteps";
 
 function getProjectCardModel(
@@ -235,7 +236,6 @@ export function Dashboard() {
     complianceAnalysis,
     risks,
     issues,
-    loadDemoData,
     clearData,
     user,
     activeProjectId,
@@ -254,7 +254,6 @@ export function Dashboard() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isViewingAsPM = searchParams.get("viewAs") === "pm";
-  const [loadingDemo, setLoadingDemo] = useState(false);
   const [loadingClear, setLoadingClear] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
 
@@ -583,17 +582,6 @@ export function Dashboard() {
     setActiveProgramme,
   ]);
 
-  const handleLoadDemo = async () => {
-    setLoadingDemo(true);
-    try {
-      await loadDemoData();
-    } catch (err) {
-      console.error("Failed to load demo data:", err);
-    } finally {
-      setLoadingDemo(false);
-    }
-  };
-
   const handleClearData = async () => {
     if (!confirmClear) {
       setConfirmClear(true);
@@ -792,8 +780,11 @@ export function Dashboard() {
     return out;
   };
 
-  const complianceSpark = bucketByRange(contextCompliance, effectiveRange, (i) =>
-    compIsComplete(i.stage),
+  // Bucket by `completedAt` (verification day), not dateAdded — items are all
+  // created at once during analysis. (bucketByRange reads dateAdded, so remap.)
+  const complianceSpark = bucketByRange(
+    contextCompliance.map((c: any) => ({ ...c, dateAdded: c.completedAt })),
+    effectiveRange,
   );
   const riskSpark = bucketByRange(contextRisks, effectiveRange, (r) => r.status === "Open");
   const criticalSpark = bucketByRange(
@@ -1128,6 +1119,8 @@ export function Dashboard() {
             </span>
             <span className="sm:hidden">Report</span>
           </Link>
+          {/* Admin-only demo data controls (renders null for non-admins) */}
+          <DemoDataControls />
         </div>
       </div>
 

@@ -69,6 +69,7 @@ import { BillingPanel } from './features/admin/pages/BillingPanel';
 import { MobileHeader } from './components/MobileHeader';
 import { ProfileSettingsModal } from './components/ProfileSettingsModal';
 import { GlobalAIAssistant } from './components/GlobalAIAssistant';
+import DemoModeBanner from './components/DemoModeBanner';
 import { CommandPalette } from './components/CommandPalette';
 
 // Programme Governance (placeholder pages)
@@ -244,6 +245,7 @@ function AppContent() {
         <div className="hidden lg:block print:hidden">
           <Header />
         </div>
+        <DemoModeBanner />
         <main ref={mainRef} className="flex-1 overflow-y-auto p-4 lg:p-6 pb-[calc(env(safe-area-inset-bottom)+5rem)] lg:pb-6 print:overflow-visible print:p-0">
           <div className="max-w-[1600px] mx-auto">
             <Routes>

@@ -3,6 +3,20 @@ import { COMPLIANCE_ITEMS } from "../data/complianceData";
 import { SEED_RISKS, SEED_ISSUES, SEED_KRIS, type KRI } from "../data/riskData";
 import { calculateMatrixScore } from "../data/riskScoringMatrix";
 import toast from "react-hot-toast";
+// Demo mode (client-only; localStorage, never the DB).
+import {
+  isDemoId,
+  isDemoActive,
+  setDemoFlag,
+  clearDemoFlag,
+  getDemoFlag,
+} from "../lib/demoMode";
+import {
+  buildDemoProgramme,
+  buildDemoProject,
+  DEMO_PROJECT_ID,
+  type DemoBundle,
+} from "../lib/demoData";
 
 // surface Severe-escalation notification toast when the server reports
 // it fired Strategic Director alerts. Called from every risks-save path
@@ -810,6 +824,10 @@ export interface AppState {
   complianceAnalysis: any | null;
   loadDemoData: () => Promise<void>;
   clearData: () => Promise<void>;
+  // Demo mode (client-only, localStorage-backed; no DB writes).
+  loadDemoProgramme: () => void;
+  loadDemoProject: () => void;
+  clearDemo: () => Promise<void>;
   loadProjectData: (projectId: string, persist?: boolean) => Promise<void>;
   loadProgrammeData: (programmeId: string, persist?: boolean) => Promise<void>;
   fetchProjects: () => Promise<void>;
@@ -897,6 +915,61 @@ export const useStore = create<AppState>((set, get) => {
       else next.delete(key);
       return { pendingMutations: next };
     });
+
+  // ── Demo mode helpers (client-only; NO api.* calls) ──────────────────────
+  // A project/child id → programme bundle (which contains the children); the
+  // standalone solo id → project bundle.
+  const resolveDemoBundle = (id: string): DemoBundle =>
+    id === DEMO_PROJECT_ID ? buildDemoProject() : buildDemoProgramme();
+
+  // Keep the in-memory demo rows when a real fetch refreshes the lists (the API
+  // never returns them). Inert when no demo is loaded.
+  const keepDemo = <T extends { id: string }>(fresh: T[], current: T[]): T[] => {
+    if (!isDemoActive()) return fresh;
+    const demoRows = current.filter((x) => isDemoId(x.id));
+    if (demoRows.length === 0) return fresh;
+    return [...fresh.filter((x) => !isDemoId(x.id)), ...demoRows];
+  };
+
+  // Inject a demo bundle + set the active context (merge by id = idempotent;
+  // normalizeRisk like the real loaders). `activeId` = the context to show.
+  const applyDemoBundle = (bundle: DemoBundle, activeId: string) => {
+    const normRisks = bundle.risks.map((r) => normalizeRisk(r) as RiskItem);
+    set((s) => {
+      const demoProg = bundle.programme;
+      const programmes = demoProg
+        ? [...s.programmes.filter((p) => p.id !== demoProg.id), demoProg]
+        : s.programmes;
+      const incomingProjIds = new Set(bundle.projects.map((p) => p.id));
+      const projects = [
+        ...s.projects.filter((p) => !incomingProjIds.has(p.id)),
+        ...bundle.projects,
+      ];
+      const asProgramme = !!demoProg && demoProg.id === activeId;
+      const activeProj = asProgramme
+        ? null
+        : bundle.projects.find((p) => p.id === activeId) ||
+          bundle.projects[0] ||
+          null;
+      return {
+        programmes,
+        projects,
+        risks: normRisks,
+        issues: bundle.issues,
+        kris: bundle.kris,
+        complianceItems: bundle.complianceItems,
+        complianceAnalysis: bundle.complianceAnalysis,
+        lastAnalysisResults: bundle.lastAnalysisResults,
+        projectInfo: bundle.projectInfo,
+        suggestedRisks: [],
+        strategicRiskAnalysis: null,
+        activeProgramme: asProgramme ? demoProg! : null,
+        activeProgrammeId: asProgramme ? demoProg!.id : null,
+        activeProject: activeProj,
+        activeProjectId: activeProj ? activeProj.id : null,
+      };
+    });
+  };
 
   return {
   // ── Fact-Check / Validation ──────────────────────────────────────────
@@ -1726,6 +1799,69 @@ export const useStore = create<AppState>((set, get) => {
       api.saveData("tasks", SEED_TASKS_LINKED, seedContextId),
     ]);
   },
+
+  // ── Demo mode (client-only; localStorage-backed; NO database writes) ──────
+  // Admin-triggered. Stashes the real context the admin is on so clearDemo can
+  // restore exactly that view, then overlays the static fixture in memory.
+  loadDemoProgramme: () => {
+    // Preserve the original prior context across re-applies (e.g. on refresh).
+    const existing = getDemoFlag();
+    const prior = existing?.prior ?? {
+      projectId: get().activeProjectId,
+      programmeId: get().activeProgrammeId,
+    };
+    setDemoFlag("programme", prior);
+    const bundle = buildDemoProgramme();
+    applyDemoBundle(bundle, bundle.programme!.id);
+  },
+  loadDemoProject: () => {
+    const existing = getDemoFlag();
+    const prior = existing?.prior ?? {
+      projectId: get().activeProjectId,
+      programmeId: get().activeProgrammeId,
+    };
+    setDemoFlag("project", prior);
+    applyDemoBundle(buildDemoProject(), DEMO_PROJECT_ID);
+  },
+  clearDemo: async () => {
+    const flag = getDemoFlag();
+    const prior = flag?.prior;
+    clearDemoFlag();
+    // Raise the global "Switching context" overlay for the whole restore and go
+    // straight to the prior context (no null → aggregate flash).
+    set((s) => ({
+      isContextSwitching: true,
+      projects: s.projects.filter((p) => !isDemoId(p.id)),
+      programmes: s.programmes.filter((p) => !isDemoId(p.id)),
+      risks: [],
+      issues: [],
+      kris: [],
+      complianceItems: [],
+      complianceAnalysis: null,
+      lastAnalysisResults: null,
+      projectInfo: {},
+      suggestedRisks: [],
+      strategicRiskAnalysis: null,
+      activeProject: null,
+      activeProgramme: null,
+      activeProjectId: prior?.projectId ?? null,
+      activeProgrammeId: prior?.programmeId ?? null,
+    }));
+    // Restore live real data, then drop the overlay once it resolves.
+    try {
+      await get().fetchProjects();
+      await get().fetchProgrammes();
+      if (prior?.projectId) {
+        await get().loadProjectData(prior.projectId, false);
+      } else if (prior?.programmeId) {
+        await get().loadProgrammeData(prior.programmeId, false);
+      } else {
+        await get().loadAggregateData();
+      }
+    } finally {
+      set({ isContextSwitching: false });
+    }
+  },
   clearData: async () => {
     set({
       projects: [],
@@ -1745,6 +1881,11 @@ export const useStore = create<AppState>((set, get) => {
     ]);
   },
   loadProjectData: async (projectId: string, persist: boolean = true) => {
+    // Demo mode: serve the static bundle, never the API (inert for real ids).
+    if (isDemoId(projectId)) {
+      applyDemoBundle(resolveDemoBundle(projectId), projectId);
+      return;
+    }
     // T10: clear stale per-context AI-result state (suggestedRisks /
     // strategicRiskAnalysis are not reloaded per-context — see setActiveProject).
     set({ suggestedRisks: [], strategicRiskAnalysis: null });
@@ -1894,6 +2035,9 @@ export const useStore = create<AppState>((set, get) => {
     ]);
   },
   loadAggregateData: async () => {
+    // Demo mode: don't run the portfolio aggregate (it would wipe the demo
+    // overlay and write null-context prefs to the server).
+    if (isDemoActive()) return;
     set({
       activeProject: null,
       activeProjectId: null,
@@ -2268,7 +2412,14 @@ export const useStore = create<AppState>((set, get) => {
       const restoredProjectId = prefs.activeProjectId;
       const restoredProgrammeId = prefs.activeProgrammeId;
 
-      if (restoredProjectId) {
+      // Demo overlay survives refresh: re-apply the fixture instead of the
+      // server-preference context (leading branch so isInitialized still runs).
+      const demoFlag = getDemoFlag();
+      if (demoFlag) {
+        console.log("Restoring demo overlay:", demoFlag.kind);
+        if (demoFlag.kind === "programme") get().loadDemoProgramme();
+        else get().loadDemoProject();
+      } else if (restoredProjectId) {
         console.log("Restoring active project context:", restoredProjectId);
         await get().loadProjectData(restoredProjectId, false);
       } else if (restoredProgrammeId) {
@@ -2340,6 +2491,11 @@ export const useStore = create<AppState>((set, get) => {
     ]);
   },
   loadProgrammeData: async (programmeId: string, persist: boolean = true) => {
+    // Demo mode: serve the static bundle, never the API. Inert for real ids.
+    if (isDemoId(programmeId)) {
+      applyDemoBundle(resolveDemoBundle(programmeId), programmeId);
+      return;
+    }
     // T10: clear stale per-context AI-result state (see setActiveProject).
     set({ suggestedRisks: [], strategicRiskAnalysis: null });
     // Stale-context guard helper: returns true if the user has navigated away
@@ -2579,7 +2735,7 @@ export const useStore = create<AppState>((set, get) => {
       const res = await api.getProjects();
       if (res?.projects) {
         console.log(`fetchProjects: received ${res.projects.length} projects`);
-        set({ projects: res.projects });
+        set({ projects: keepDemo(res.projects, get().projects) });
 
         // If we got 0 projects but user had previously created one, retry after a delay
         // to handle Firestore index consistency lag
@@ -2591,7 +2747,7 @@ export const useStore = create<AppState>((set, get) => {
                 console.log(
                   `fetchProjects retry: received ${retryRes.projects.length} projects`,
                 );
-                set({ projects: retryRes.projects });
+                set({ projects: keepDemo(retryRes.projects, get().projects) });
               }
             } catch (retryErr) {
               console.error("fetchProjects retry failed", retryErr);
@@ -2611,7 +2767,7 @@ export const useStore = create<AppState>((set, get) => {
       const data = res?.data || res;
       const programmes = Array.isArray(data) ? data : [];
       console.log(`fetchProgrammes: received ${programmes.length} programmes`);
-      set({ programmes });
+      set({ programmes: keepDemo(programmes, get().programmes) });
 
       // Retry on empty results to handle Firestore lag
       if (programmes.length === 0) {
@@ -2624,7 +2780,7 @@ export const useStore = create<AppState>((set, get) => {
               console.log(
                 `fetchProgrammes retry: received ${retryProgrammes.length} programmes`,
               );
-              set({ programmes: retryProgrammes });
+              set({ programmes: keepDemo(retryProgrammes, get().programmes) });
             }
           } catch (retryErr) {
             console.error("fetchProgrammes retry failed", retryErr);
