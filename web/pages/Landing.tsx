@@ -355,7 +355,7 @@ export const Landing: React.FC = () => {
                 <div className="absolute top-0 right-0 w-200 h-150 bg-indigo-100/40 dark:bg-indigo-500/10 blur-[120px] rounded-[100%] pointer-events-none" />
                 <div className="absolute bottom-0 left-0 w-150 h-100 bg-purple-100/30 dark:bg-purple-500/10 blur-[120px] rounded-[100%] pointer-events-none" />
 
-                <div className="relative z-10 mx-auto w-full max-w-7xl grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] gap-12 lg:gap-16 items-center">
+                <div className="relative z-10 mx-auto w-full max-w-7xl grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] gap-12 lg:gap-20 items-center">
 
                     {/* LEFT — copy column */}
                     <div className="flex flex-col">
@@ -438,7 +438,7 @@ export const Landing: React.FC = () => {
                         <motion.img
                             whileHover={{ rotateX: 1, rotateY: -1, scale: 1.01 }}
                             transition={{ duration: 0.5 }}
-                            src={`${import.meta.env.BASE_URL}dashboard.png`}
+                            src={`${import.meta.env.BASE_URL}dashboard.jpg`}
                             alt="CedarGuard Risk Management dashboard preview"
                             title="CedarGuard — Risk Management dashboard"
                             className="relative w-full h-auto rounded-xl shadow-[0_40px_100px_rgba(0,0,0,0.18)] dark:shadow-[0_40px_100px_rgba(0,0,0,0.6)] border border-slate-200/70 dark:border-white/10 ring-1 ring-black/5"
@@ -450,10 +450,10 @@ export const Landing: React.FC = () => {
                         initial={{ opacity: 0, y: 24 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 1, delay: 0.6 }}
-                        className="lg:hidden w-full"
+                        className="lg:hidden w-full max-w-lg mx-auto"
                     >
                         <img
-                            src={`${import.meta.env.BASE_URL}dashboard.png`}
+                            src={`${import.meta.env.BASE_URL}dashboard.jpg`}
                             alt="CedarGuard dashboard preview"
                             className="w-full h-auto rounded-lg shadow-xl border border-slate-200 dark:border-white/10"
                         />
@@ -622,11 +622,11 @@ export const Landing: React.FC = () => {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true, margin: "-100px" }}
                         transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-                        className="w-full mt-24 relative z-20 group hidden md:block"
+                        className="w-full max-w-5xl mx-auto mt-16 sm:mt-24 relative z-20 group block"
                     >
                         <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 via-teal-400 to-indigo-500 rounded-lg blur-lg opacity-20 group-hover:opacity-30 transition-opacity duration-1000" />
                         <img 
-                            src={`${import.meta.env.BASE_URL}compliance.png`}
+                            src={`${import.meta.env.BASE_URL}dashboard.jpg`}
                             alt="Cedar Guard Regulatory Reference - UK Social Housing and Construction Framework" 
                             title="Automated Regulatory Compliance Audit Interface" 
                             className="relative w-full h-auto rounded-lg shadow-2xl border-4 border-white/40 dark:border-white/5 object-cover object-top transition-transform duration-1000 group-hover:scale-[1.01]"

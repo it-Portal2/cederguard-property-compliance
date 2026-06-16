@@ -112,6 +112,76 @@ const productTabs = [
             },
         ],
     },
+    {
+        id: 'technical',
+        label: 'Technical Companion',
+        accent: 'violet',
+        theme: 'from-violet-500/10 to-transparent',
+        border: 'border-violet-500/20',
+        iconColor: 'text-violet-400',
+        features: [
+            {
+                icon: ScanSearch,
+                title: 'Technical Enquiries',
+                desc: 'Raise, route and resolve technical enquiries per scheme, each with a complete, exportable decision log.',
+            },
+            {
+                icon: ClipboardList,
+                title: 'RFI Register',
+                desc: 'A workspace-wide register of Requests for Information, tracked from issue through to formal response.',
+            },
+            {
+                icon: History,
+                title: 'Decision Log & Audit',
+                desc: 'An immutable record of every technical decision, with Compliance-Lead audit and feedback review.',
+            },
+            {
+                icon: UploadCloud,
+                title: 'Golden-Thread Evidence',
+                desc: 'Attach drawings, certificates and reports to each enquiry — preserving the golden thread of information.',
+            },
+            {
+                icon: Users,
+                title: 'Scoped Access',
+                desc: 'Owner-scoped visibility: users see their own and shared enquiries, while compliance leads see everything.',
+            },
+        ],
+    },
+    {
+        id: 'resource',
+        label: 'Resource & Capacity Planner',
+        accent: 'emerald',
+        theme: 'from-emerald-500/10 to-transparent',
+        border: 'border-emerald-500/20',
+        iconColor: 'text-emerald-400',
+        features: [
+            {
+                icon: BarChart,
+                title: 'FTE Demand Forecast',
+                desc: 'Quarter-by-quarter resourcing demand derived from scheme dates, complexity and a configurable rate card.',
+            },
+            {
+                icon: Scale,
+                title: 'Capacity Planning',
+                desc: 'Compare available supply per role against forecast demand to flag shortfalls and surplus before they bite.',
+            },
+            {
+                icon: Building2,
+                title: 'Scheme Register',
+                desc: 'Maintain every scheme with key dates, complexity and home counts — or bulk-import the whole programme from Excel.',
+            },
+            {
+                icon: LayoutGrid,
+                title: 'Stage Timeline',
+                desc: 'A visual Gantt of each scheme across its Site, Design, Construction and Defects stages over the full horizon.',
+            },
+            {
+                icon: Target,
+                title: 'Editable Assumptions',
+                desc: 'Tune the FTE rate card, overhead and annual-leave uplifts, and complexity mapping — all in one place.',
+            },
+        ],
+    },
 ];
 
 const aiFeatures = [
@@ -232,14 +302,14 @@ export const Product: React.FC = () => {
 
                     {/* Tab Navigation */}
                     <div className="flex justify-center mb-20">
-                        <div className="inline-flex gap-2 p-2 bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-white/5 rounded-lg backdrop-blur-xl shadow-2xl dark:shadow-none">
+                        <div className="inline-flex max-w-full gap-1.5 overflow-x-auto p-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-white/5 rounded-xl backdrop-blur-xl shadow-xl dark:shadow-none">
                             {productTabs.map(t => (
                                 <button
                                     key={t.id}
                                     onClick={() => setActiveTab(t.id)}
-                                    className={`px-8 py-4 rounded-lg text-sm font-black transition-all duration-500 tracking-widest uppercase ${activeTab === t.id
-                                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-950 shadow-xl shadow-indigo-500/10'
-                                        : 'text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5'
+                                    className={`shrink-0 whitespace-nowrap rounded-lg px-5 py-2.5 text-xs font-bold uppercase tracking-wide transition-all duration-300 ${activeTab === t.id
+                                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-950 shadow-md shadow-indigo-500/10'
+                                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5'
                                         }`}
                                 >
                                     {t.label}
@@ -420,15 +490,15 @@ export const Product: React.FC = () => {
                                 "We didn't just add AI; we built the platform around it. Our intelligence layer automates the high-value manual work that typically costs organisations thousands in consultant fees."
                             </p>
 
-                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 w-full">
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 w-full">
                                 {aiFeatures.map((f, i) => (
-                                    <motion.div 
-                                        key={i} 
+                                    <motion.div
+                                        key={i}
                                         whileHover={{ y: -10 }}
-                                        className="bg-white/5 border border-white/10 rounded-lg p-8 backdrop-blur-md group hover:bg-white/10 hover:border-cyan-500/30 transition-all duration-500 shadow-xl"
+                                        className="bg-white/5 border border-white/10 rounded-lg p-5 sm:p-8 text-center backdrop-blur-md group hover:bg-white/10 hover:border-cyan-500/30 transition-all duration-500 shadow-xl"
                                     >
                                         <f.icon className="w-10 h-10 text-cyan-400 mb-6 mx-auto opacity-70 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500" />
-                                        <div className="text-[10px] font-black uppercase tracking-[0.3em] text-white/50 group-hover:text-cyan-400 transition-colors">{f.title}</div>
+                                        <div className="text-[10px] font-black uppercase tracking-widest leading-relaxed wrap-break-word text-white/50 group-hover:text-cyan-400 transition-colors">{f.title}</div>
                                     </motion.div>
                                 ))}
                             </div>
