@@ -43,6 +43,7 @@ import {
   MessageSquare,
   ShieldCheck,
   Search,
+  SlidersHorizontal,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { useStore } from "../store/useStore";
@@ -234,6 +235,8 @@ export function Sidebar() {
       setOpenGroup("Reports");
     } else if (path.startsWith("/governance")) {
       setOpenGroup("Programme Governance");
+    } else if (path.startsWith("/resource-planner")) {
+      setOpenGroup("Resource Planner");
     } else if (
       path.startsWith("/setup/workspace") ||
       path.startsWith("/team") ||
@@ -506,6 +509,42 @@ export function Sidebar() {
                     iconClass="text-indigo-600"
                   />
                 )}
+              </NavGroup>
+            )}
+
+            {/* RESOURCE PLANNER — tenant-wide FTE demand & capacity */}
+            {hasCoreAccess && (
+              <NavGroup
+                label="Resource Planner"
+                isAdmin={hasCoreAccess}
+                isOpen={openGroup === "Resource Planner"}
+                onToggle={() => toggleGroup("Resource Planner")}
+              >
+                <NavItem
+                  to="/resource-planner/dashboard"
+                  icon={LayoutDashboard}
+                  label="Dashboard"
+                />
+                <NavItem
+                  to="/resource-planner/schemes"
+                  icon={ClipboardList}
+                  label="Scheme Register"
+                />
+                <NavItem
+                  to="/resource-planner/forecast"
+                  icon={TrendingUp}
+                  label="Demand Forecast"
+                />
+                <NavItem
+                  to="/resource-planner/timeline"
+                  icon={CalendarIcon}
+                  label="Timeline"
+                />
+                <NavItem
+                  to="/resource-planner/assumptions"
+                  icon={SlidersHorizontal}
+                  label="Assumptions"
+                />
               </NavGroup>
             )}
 

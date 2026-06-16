@@ -95,6 +95,11 @@ import { TacEnquiryWorkspacePage } from './features/technicalAssurance/pages/Enq
 import { TacRfiRegisterPage } from './features/technicalAssurance/pages/RfiRegisterPage';
 import { TacAuditDashboardPage } from './features/technicalAssurance/pages/AuditDashboardPage';
 import { ComplianceLeadGuard } from './features/technicalAssurance/components/ComplianceLeadGuard';
+import ResourcePlannerDashboardPage from './features/resourcePlanner/pages/DashboardPage';
+import SchemeRegisterPage from './features/resourcePlanner/pages/SchemeRegisterPage';
+import DemandForecastPage from './features/resourcePlanner/pages/DemandForecastPage';
+import ResourceTimelinePage from './features/resourcePlanner/pages/TimelinePage';
+import ResourceAssumptionsPage from './features/resourcePlanner/pages/AssumptionsPage';
 import { ChatPage } from './features/chat/pages/ChatPage';
 
 // Desktop-shell support
@@ -311,6 +316,14 @@ function AppContent() {
               <Route path="/reporting/project" element={<ProjectReport />} />
               <Route path="/reporting/programme" element={<ClientProgrammeReport />} />
               <Route path="/reporting/programme-report" element={<ProgrammeReport />} />
+
+              {/* Resource Planner — view = any signed-in user; edits gated in-page */}
+              <Route path="/resource-planner" element={<Navigate to="/resource-planner/dashboard" replace />} />
+              <Route path="/resource-planner/dashboard" element={<ResourcePlannerDashboardPage />} />
+              <Route path="/resource-planner/schemes" element={<SchemeRegisterPage />} />
+              <Route path="/resource-planner/forecast" element={<DemandForecastPage />} />
+              <Route path="/resource-planner/timeline" element={<ResourceTimelinePage />} />
+              <Route path="/resource-planner/assumptions" element={<ResourceAssumptionsPage />} />
 
               {/* SaaS & Admin*/}
               <Route path="/admin/*" element={<RoleGuard requireAdmin><AdminPanel /></RoleGuard>} />

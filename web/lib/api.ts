@@ -218,6 +218,20 @@ export const api = {
     callApi("saveData", { collection, data, projectId }),
   getData: (collection: string, projectId?: string | null) =>
     callApi("getData", { collection, projectId }),
+
+  // Resource Planner (tenant-scoped schemes + assumptions + Excel import)
+  resourceListSchemes: () => callApi("resourceListSchemes"),
+  resourceUpsertScheme: (scheme: any) =>
+    callApi("resourceUpsertScheme", { scheme }),
+  resourceDeleteScheme: (id: string) =>
+    callApi("resourceDeleteScheme", { id }),
+  resourceGetAssumptions: () => callApi("resourceGetAssumptions"),
+  resourceSaveAssumptions: (assumptions: any) =>
+    callApi("resourceSaveAssumptions", { assumptions }),
+  resourceImportSchemesDryRun: (base64: string) =>
+    callApi("resourceImportSchemesDryRun", { base64 }, 120000),
+  resourceImportSchemesCommit: (base64: string) =>
+    callApi("resourceImportSchemesCommit", { base64 }, 120000),
   clientGetProgrammesByManager: (supervisorId: string) =>
     callApi("clientGetProgrammesByManager", { supervisorId }),
   clientGetMySupervisors: () => callApi("clientGetMySupervisors"),

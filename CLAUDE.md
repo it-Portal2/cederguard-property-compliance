@@ -37,8 +37,8 @@ the **repo root** — it governs all targets / is read there by tooling. This is
 ```
 web/
 ├── features/<domain>/          ← per-domain code. Domains:
-│     governance, technicalAssurance, risk, compliance, programmes, projects, reporting, admin, learning, chat
-│     • governance/ + technicalAssurance/ have BOTH pages/ AND components/ (their components were self-contained)
+│     governance, technicalAssurance, risk, compliance, programmes, projects, reporting, admin, learning, chat, resourcePlanner
+│     • governance/, technicalAssurance/ + resourcePlanner/ have BOTH pages/ AND components/ (their components were self-contained)
 │     • the other 8 domains have pages/ only (their pages moved here)
 ├── components/                 ← SHARED component library (kept here, NOT per-feature): layout shell
 │     (Header, Sidebar, MobileHeader, MobileNav), PageHeader, PageActions, AuthProvider, RoleGuard,
@@ -576,6 +576,33 @@ RfiRegisterPage.tsx                 /technical-assurance/rfis — workspace-wide
 AuditDashboardPage.tsx              /technical-assurance/audit — Compliance Lead audit/feedback review
 ```
 
+#### `/web/features/resourcePlanner/` — Resource Planner page group (sidebar group "Resource Planner")
+A feature module that rebuilds the "Resource Profile" Excel FTE-forecasting model as 5 pages. Pages in
+`pages/`, components in `components/` (same depth/import conventions as governance/TAC). The maths lives
+in the pure lib `web/lib/resourcePlanner/` (above); pages/store NEVER re-derive demand inline. View = any
+signed-in user; **create/edit/delete/import + assumptions = Client Admin / Programme Manager / Super
+Admin** (store `canManageResourcePlanner()` = `isAtLeastProgrammeManager`). Tenant-scoped data, so NOT
+reset on project/programme switch.
+```
+pages/DashboardPage.tsx             /resource-planner/dashboard — KPIs (StatsCard) + Recharts FTE-by-FY
+                                    (stacked by role) + FTE-by-complexity + capacity supply-vs-demand;
+                                    shared SchemeFilters; skeleton while `!resourcePlannerLoaded`.
+pages/SchemeRegisterPage.tsx        /resource-planner/schemes — DynamicTable register + SchemeModal
+                                    (add/edit) + ImportModal (Excel import). Edit gated.
+pages/DemandForecastPage.tsx        /resource-planner/forecast — per-quarter DemandGrid (By role /
+                                    complexity / scheme) + filters + peak/total summary.
+pages/TimelinePage.tsx              /resource-planner/timeline — GanttTimeline (per-scheme stage bands).
+pages/AssumptionsPage.tsx           /resource-planner/assumptions — RateCardEditor (5 roles × 4 stages ×
+                                    6 bands) + complexity-map editor + overhead/leave % + capacity supply
+                                    + horizon. Edit gated (Read-only badge otherwise).
+components/RpEmptyState.tsx         Shared empty state (stacked tiles + page icon + optional "+" badge +
+                                    title/description + optional CTA via `showAction`). Reused by the
+                                    Dashboard / Forecast / Timeline pages.
+components/SchemeFilters.tsx        Shared Programme/Batch/Route/Status/Complexity filter bar +
+                                    `applySchemeFilters` (used by Dashboard, Forecast, Timeline).
+components/{RateCardEditor,SchemeModal,ImportModal,DemandGrid,GanttTimeline}.tsx   per-page building blocks.
+```
+
 #### `/web/components/historicalReporting/` — As-of-month reporting primitives
 Used across governance pages (and elsewhere) to drive historical/point-in-time views.
 ```
@@ -688,6 +715,35 @@ demoData/index.ts                  SINGLE SOURCE OF TRUTH for the static demo fi
                                    Compliance/Risk setup pages render as a fully-set-up workspace. Dates are
                                    scattered with a deterministic sine-hash (no Math.random) so charts look
                                    varied + reproducible. See the Demo mode convention below.
+```
+
+#### `/web/lib/resourcePlanner/` — Resource Planner FTE demand engine (pure, riskMetrics-style)
+SINGLE SOURCE OF TRUTH for the Resource Planner's FTE resource-demand model (rebuilt from the
+"Resource Profile" Excel workbook). Pure — no React/store/API imports; named exports + JSDoc.
+```
+types.ts                           `Role` (SPM/PM/APM/StrategicLead/DefectsPM), `ComplexityBand`
+                                   (Small/Mid/Large/Complex/S106-GLA/DP), `Stage` (S1–S4),
+                                   `ResourceScheme`, `RateCard`, `ResourceAssumptions`, `DemandMatrix`,
+                                   `CapacityResult`, axis/aggregate types.
+constants.ts                       `ROLES`/`ROLE_LABELS`, `STAGES`/`STAGE_LABELS`/`STAGE_RIBA`,
+                                   `COMPLEXITY_BANDS`, `FY_BASE_YEAR=2016`, `FY_START_MONTH=4`,
+                                   `DEFAULT_RATE_CARD` (seeded verbatim from the ASSUMPTIONS tab:
+                                   S1=col P, S2=W, S3=AD, S4=AK; StrategicLead+DefectsPM rows all 0 for
+                                   the PgM to fill; S106/GLA-S1=0), `DEFAULT_COMPLEXITY_MAP`,
+                                   `DEFAULT_OVERHEAD_PCT=0.2`, `DEFAULT_LEAVE_PCT=0.15`.
+quarters.ts                        April-fiscal-year quarter maths (Q1=Apr–Jun): `dateToFyQuarterIndex`
+                                   (parses `YYYY-MM-DD` as LOCAL to avoid TZ drift at quarter edges),
+                                   `quarterIndexToLabel`, `fyOfIndex`/`financialYearOf`, `fyLabel`,
+                                   `buildQuarterAxis`, `horizonFromIndices`. Mirrors the sheet's EG/EJ.
+compute.ts                         `normalizeScheme` (resolve complexity band, derive all-homes),
+                                   `schemeStageBoundaries`, `stageAtQuarter` (S1: PlanningSubmitted→
+                                   min(PlanningAchieved,SoS); S2:→SoS; S3:SoS→Handover; S4:Handover→EOD
+                                   incl; MISSING boundary ⇒ that stage contributes 0 FTE),
+                                   `computeDemandMatrix`, `applyOverheadAndLeave` (flat % uplift),
+                                   `aggregateByFinancialYear`, `complexityAtQuarter`, `peakQuarterFte`,
+                                   `totalFte`, `computeCapacity` (supply-vs-demand by role), and
+                                   `buildResourcePlan` — the one-shot entry the store memoises (derives
+                                   the horizon from data when unset). Verified by `web/__tests__/resourcePlanner.test.ts`.
 ```
 
 #### `/web/lib/auth/` — Platform-agnostic auth bridge
@@ -812,6 +868,11 @@ lib/aiGuard.ts                     Chat input guardrail (defense-in-depth, runs 
                                    down. Off-topic guard still works on the Gemini fallback (topical uses
                                    the router cascade); Llama Guard is OpenRouter-only (Gemini's native
                                    safety filters cover that path).
+lib/resourceSchemeXlsxImport.ts    Resource Planner scheme importer (mirrors the governance
+                                   `forwardPlanXlsxImport` pattern): header auto-detect, `FIELD_ALIASES`
+                                   mapping the PROGRAMME PROFILE columns → scheme fields, Excel-serial→ISO
+                                   dates, error/warning flags (blank name ⇒ error/skip; blank complexity
+                                   ⇒ warning). Parse-only — the commit route writes.
 routes/index.ts                    Aggregates all route handler maps
 routes/auth.ts                     API key generate/revoke, user account deletion
 routes/ai.ts                       Gemini calls with retry, dual-key fallback, quota handling.
@@ -852,6 +913,16 @@ routes/validation.ts               Fact-Check / Validation engine. `validationRu
                                    `validationGet` / `validationGetForContext` (equality-only filters →
                                    no composite index), `validationAttachSource` / `validationRemoveAttachment`
                                    (link or file via `uploadAsset`, 3 MB cap). All writes `logActivity`.
+routes/resourcePlanner.ts          Resource Planner CRUD — TENANT-scoped (`clientId === ctx.primaryUid`,
+                                   the same key as TAC/programmes). `resourceListSchemes` (read, any
+                                   signed-in tenant user; in-memory sort, no composite index),
+                                   `resourceUpsertScheme`/`resourceDeleteScheme`,
+                                   `resourceGetAssumptions`/`resourceSaveAssumptions` (one
+                                   `resourceAssumptions/{primaryUid}` doc per tenant), and the Excel
+                                   import `resourceImportSchemes{DryRun,Commit}`. Writes are gated to
+                                   `canManageRP` (= isClientAdmin || `programme_manager`) with a
+                                   cross-tenant doc-hijack guard; all `logActivity` awaited BEFORE the
+                                   response. Collections: `resourceSchemes`, `resourceAssumptions`.
 __tests__/context.test.ts          Tests for API context creation
 __tests__/dispatcher.test.ts       Tests for action route dispatching
 ```
@@ -962,6 +1033,20 @@ All global state lives in a **single Zustand store** at `web/store/useStore.ts`.
 | `lessonsLearned` | `any[]` | useStore.ts |
 | `cpdModules` | `any[]` | useStore.ts |
 | `pricingConfig` | `PricingConfig \| null` | useStore.ts |
+
+### Resource Planner (tenant-scoped; NOT reset on context switch)
+| State Variable | Type | File |
+|---|---|---|
+| `resourceSchemes` | `ResourceScheme[]` | useStore.ts |
+| `resourceAssumptions` | `ResourceAssumptions \| null` | useStore.ts |
+| `resourcePlannerLoading` | `boolean` | useStore.ts |
+| `resourcePlannerLoaded` | `boolean` | useStore.ts |
+
+Actions: `loadResourcePlanner(force?)` (parallel list+assumptions, `normalizeScheme` each, falls back to
+`buildDefaultAssumptions` when none saved), `saveResourceScheme`, `deleteResourceScheme`,
+`saveResourceAssumptions`, `canManageResourcePlanner()`. Client API methods (`web/lib/api.ts`):
+`resourceListSchemes` / `resourceUpsertScheme` / `resourceDeleteScheme` / `resourceGetAssumptions` /
+`resourceSaveAssumptions` / `resourceImportSchemes{DryRun,Commit}`.
 
 ### Local Component State (representative examples)
 Individual pages manage transient local state via `useState`. Common patterns:
@@ -1260,9 +1345,9 @@ Auth: Firebase ID token in Authorization header
 
 ### Folder Structure Patterns
 - **Feature-first** (see the Structure Update at the top): route-level pages live in
-  `web/features/<domain>/pages/` for all 10 domains (governance, technicalAssurance, risk, compliance,
-  programmes, projects, reporting, admin, learning, chat). Only `Login`, `Landing`, and `public/` stay
-  flat in `web/pages/` (public/auth).
+  `web/features/<domain>/pages/` for all 11 domains (governance, technicalAssurance, risk, compliance,
+  programmes, projects, reporting, admin, learning, chat, resourcePlanner). Only `Login`, `Landing`, and
+  `public/` stay flat in `web/pages/` (public/auth).
 - `web/components/` is the **shared component library** (used across features) — lowercase sub-folders:
   `layout/`-shell pieces (Header, Sidebar, Mobile*), `common/`, `table/`, `validation/`, `dashboard/`,
   `admin/`, `compliance/`, `chat/`, `forms/`, `historicalReporting/`, `onboarding/`, `desktop/`, `public/`.
@@ -1583,6 +1668,7 @@ An admin-only product-demo / testing overlay: it injects a complete static datas
 
 ### Standing rules for sweeps / refactors
 - **Demo mode goes through [`web/lib/demoMode.ts`](web/lib/demoMode.ts) + [`web/lib/demoData/index.ts`](web/lib/demoData/index.ts); NEVER write to the DB on a demo path and never use the `demo-` prefix (use `cgdemo-`).** See the Demo mode convention above.
+- **Resource Planner FTE/demand maths goes through the pure lib [`web/lib/resourcePlanner/`](web/lib/resourcePlanner/) (`buildResourcePlan` / `computeDemandMatrix`); never re-derive demand, quarter indices or the rate card inline in a page.** Retune via `constants.ts` (rate card seeded from the Excel ASSUMPTIONS tab; April fiscal year; missing date ⇒ 0 FTE; unmapped complexity ⇒ 0 FTE). Schemes + assumptions are TENANT-scoped via [`api/routes/resourcePlanner.ts`](api/routes/resourcePlanner.ts) (`clientId === primaryUid`) — NOT the user-scoped generic `saveData`; edits gated to `isAtLeastProgrammeManager` (Client Admin / Programme Manager / Super Admin), view open to any signed-in user. Reuse [`RpEmptyState`](web/features/resourcePlanner/components/RpEmptyState.tsx) + [`SchemeFilters`](web/features/resourcePlanner/components/SchemeFilters.tsx) across its pages.
 - **`PageHeader` is the ONLY way to add a page title.** Never add an ad-hoc `<h1>` or title block to an authenticated page. Props: `breadcrumbs` (first item = sidebar group name), `title`, optional `subtitle`, optional `actions` slot.
 - **Risk-to-Issue "trending" logic goes through [`web/lib/riskConversion.ts`](web/lib/riskConversion.ts) `evaluateConversion` ONLY.** Don't re-implement the heuristics or hardcode its thresholds in a page; retune via that file's constants. Scores via `riskMetrics.ts`, never inline.
 - **Fact-Check / Validation goes through [`web/lib/validation.ts`](web/lib/validation.ts) types + [`useValidationGate`](web/hooks/useValidationGate.ts) + [`<ValidateButton/>`](web/components/validation/ValidateButton.tsx).** One `validations` collection, keyed by a **content-versioned** target (`versionedTargetId`) so a new analysis forces a fresh check. The AI fact-check is the **chunked** two-call pattern in [`api/routes/validation.ts`](api/routes/validation.ts) via `aiOperationRouter` (`webSearch`), NEVER `api/routes/ai.ts`, with **1:1 numbered-item reconciliation** (one claim per item). PM+ validates; approval blocked until validated (gate BOTH the submit action and any step→step advance, e.g. `handleFinalise`); everything `logActivity`s. Don't fork the types, add a parallel collection, hardcode the confidence threshold, or send un-numbered/multi-line fact-check content.

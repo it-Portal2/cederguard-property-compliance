@@ -55,8 +55,24 @@ import {
   validationKey,
 } from "../lib/validation";
 import { getGrossScore, getResidualScore } from "../lib/riskMetrics";
-import { isAtLeastClientAdmin } from "../lib/roles";
+import { isAtLeastClientAdmin, isAtLeastProgrammeManager } from "../lib/roles";
 import { generateId, isValidDateString } from "../lib/utils";
+import type {
+  ResourceScheme,
+  ResourceAssumptions,
+} from "../lib/resourcePlanner/types";
+import {
+  DEFAULT_RATE_CARD,
+  DEFAULT_COMPLEXITY_MAP,
+  DEFAULT_OVERHEAD_PCT,
+  DEFAULT_LEAVE_PCT,
+  FY_BASE_YEAR,
+} from "../lib/resourcePlanner/constants";
+import { horizonFromIndices } from "../lib/resourcePlanner/quarters";
+import {
+  normalizeScheme,
+  schemeBoundaryIndices,
+} from "../lib/resourcePlanner/compute";
 import { authBridge } from "../lib/auth/authBridge";
 import { enqueueBestEffort } from "./mutations";
 
@@ -903,7 +919,40 @@ export interface AppState {
 
   // Management Permission Helper
   canManageContext: () => boolean;
+
+  // Resource Planner (tenant-scoped: schemes + assumptions)
+  resourceSchemes: ResourceScheme[];
+  resourceAssumptions: ResourceAssumptions | null;
+  resourcePlannerLoading: boolean;
+  resourcePlannerLoaded: boolean;
+  loadResourcePlanner: (force?: boolean) => Promise<void>;
+  saveResourceScheme: (scheme: ResourceScheme) => Promise<ResourceScheme>;
+  deleteResourceScheme: (id: string) => Promise<void>;
+  saveResourceAssumptions: (assumptions: ResourceAssumptions) => Promise<void>;
+  canManageResourcePlanner: () => boolean;
 }
+
+/**
+ * Build a fully-populated assumptions object from the seed rate card, defaulting
+ * the horizon to the schemes' data range (answer 9-C). Used when a tenant has no
+ * saved assumptions yet so the pages always have something to compute from.
+ */
+const buildDefaultAssumptions = (
+  schemes: ResourceScheme[],
+): ResourceAssumptions => {
+  const idxs = schemes.flatMap(schemeBoundaryIndices);
+  const horizon = idxs.length
+    ? horizonFromIndices(idxs)
+    : { startFy: FY_BASE_YEAR, endFy: FY_BASE_YEAR + 10 };
+  return {
+    rateCard: DEFAULT_RATE_CARD,
+    complexityMap: DEFAULT_COMPLEXITY_MAP,
+    overheadPct: DEFAULT_OVERHEAD_PCT,
+    leavePct: DEFAULT_LEAVE_PCT,
+    horizon,
+    supplyByRole: {},
+  };
+};
 
 export const useStore = create<AppState>((set, get) => {
   // Shared pending-mutation setter — replaces the Set atomically so Zustand
@@ -2948,6 +2997,76 @@ export const useStore = create<AppState>((set, get) => {
     set({ pricingConfig: next });
     const contextId = get().activeProjectId || get().activeProgrammeId;
     await api.saveData("pricingConfig", next, contextId);
+  },
+
+  // ---- Resource Planner (tenant-scoped) -------------------------------------
+  resourceSchemes: [],
+  resourceAssumptions: null,
+  resourcePlannerLoading: false,
+  resourcePlannerLoaded: false,
+
+  loadResourcePlanner: async (force = false) => {
+    if (get().resourcePlannerLoading) return;
+    if (get().resourcePlannerLoaded && !force) return;
+    set({ resourcePlannerLoading: true });
+    try {
+      const [schemesRes, assumpRes] = await Promise.all([
+        api.resourceListSchemes(),
+        api.resourceGetAssumptions(),
+      ]);
+      const schemes: ResourceScheme[] = ((schemesRes?.schemes as any[]) || []).map(
+        (s) => normalizeScheme(s),
+      );
+      const persisted = (assumpRes?.assumptions as ResourceAssumptions) || null;
+      const assumptions = persisted
+        ? { ...buildDefaultAssumptions(schemes), ...persisted }
+        : buildDefaultAssumptions(schemes);
+      set({
+        resourceSchemes: schemes,
+        resourceAssumptions: assumptions,
+        resourcePlannerLoaded: true,
+      });
+    } catch (e) {
+      console.error("loadResourcePlanner failed", e);
+    } finally {
+      set({ resourcePlannerLoading: false });
+    }
+  },
+
+  saveResourceScheme: async (scheme) => {
+    const res = await api.resourceUpsertScheme(scheme);
+    const id = res?.id || scheme.id;
+    const saved = normalizeScheme(
+      { ...scheme, id },
+      get().resourceAssumptions?.complexityMap,
+    );
+    set((s) => {
+      const exists = s.resourceSchemes.some((x) => x.id === id);
+      const list = exists
+        ? s.resourceSchemes.map((x) => (x.id === id ? saved : x))
+        : [...s.resourceSchemes, saved];
+      list.sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+      return { resourceSchemes: list };
+    });
+    return saved;
+  },
+
+  deleteResourceScheme: async (id) => {
+    await api.resourceDeleteScheme(id);
+    set((s) => ({
+      resourceSchemes: s.resourceSchemes.filter((x) => x.id !== id),
+    }));
+  },
+
+  saveResourceAssumptions: async (assumptions) => {
+    await api.resourceSaveAssumptions(assumptions);
+    set({ resourceAssumptions: assumptions });
+  },
+
+  canManageResourcePlanner: () => {
+    const { user } = get();
+    if (!user) return false;
+    return isAtLeastProgrammeManager(user.role || user.profile?.role);
   },
 
   canManageContext: () => {
