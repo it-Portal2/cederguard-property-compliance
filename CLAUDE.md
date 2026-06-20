@@ -410,7 +410,24 @@ PremiumAIBanner.tsx                 Upgrade prompt banner for AI features
 #### `/web/components/public/`
 ```
 PublicLayout.tsx      (281 lines)   Layout wrapper for all public-facing pages
+MarketingImage.tsx                  SINGLE SOURCE OF TRUTH for responsive imagery on the marketing
+                                    pages. A `<picture>` wrapper that serves AVIF → WebP → JPEG with
+                                    `srcset`/`sizes` from PRE-GENERATED variants in `public/marketing/`
+                                    (`<base>-{960,1600}.{avif,webp,jpg}`), lazy-loads + `decoding=async`
+                                    by default (`priority` ⇒ eager + `fetchpriority=high` for an LCP image),
+                                    and takes explicit `width`/`height` to avoid CLS. Props: `base`
+                                    (path under public/ WITHOUT the `-<w>.<ext>` suffix, e.g.
+                                    `marketing/suite-multidevice`), `alt`, `width`, `height`, `sizes?`,
+                                    `className?`, `priority?`. Used by Landing's `ShowcaseBand`
+                                    (alternating image+heading+sub "feature spotlight" tiles) and the
+                                    Product deep-dive cards.
 ```
+
+**`public/marketing/`** — optimised marketing screenshots. Each source ships 6 static variants
+(`-960`/`-1600` × `avif`/`webp`/`jpg`); a visitor downloads ONE (best format the browser supports × the
+right width). Generated once with `sharp` (the one-off script was removed after running — regenerate ad-hoc
+if new shots are added: resize ≤2000px, AVIF q≈62 / WebP q≈80 / JPEG q≈78). Never reference a raw
+multi-MB original from a marketing page — always go through `<MarketingImage>`.
 
 #### `/web/components/table/` — Canonical table primitives
 ```
@@ -1188,6 +1205,7 @@ Auth: Firebase ID token in Authorization header
 | `PageHeader` | components/PageHeader.tsx | **Canonical** page-level header with breadcrumbs, H1, subtitle, and optional `actions` slot |
 | `PageActions` | components/PageActions.tsx | **Canonical** "Actions & options" dropdown — per-page context actions + data export |
 | `PublicLayout` | components/public/PublicLayout.tsx | Wrapper with public header/footer for marketing pages |
+| `MarketingImage` | components/public/MarketingImage.tsx | **Canonical** responsive `<picture>` (AVIF→WebP→JPEG + srcset/sizes, lazy, CLS-safe) for marketing-page imagery; variants live in `public/marketing/` |
 
 ### Auth & Route Control
 | Component | File | What it does |
@@ -1670,6 +1688,7 @@ An admin-only product-demo / testing overlay: it injects a complete static datas
 - **Demo mode goes through [`web/lib/demoMode.ts`](web/lib/demoMode.ts) + [`web/lib/demoData/index.ts`](web/lib/demoData/index.ts); NEVER write to the DB on a demo path and never use the `demo-` prefix (use `cgdemo-`).** See the Demo mode convention above.
 - **Resource Planner FTE/demand maths goes through the pure lib [`web/lib/resourcePlanner/`](web/lib/resourcePlanner/) (`buildResourcePlan` / `computeDemandMatrix`); never re-derive demand, quarter indices or the rate card inline in a page.** Retune via `constants.ts` (rate card seeded from the Excel ASSUMPTIONS tab; April fiscal year; missing date ⇒ 0 FTE; unmapped complexity ⇒ 0 FTE). Schemes + assumptions are TENANT-scoped via [`api/routes/resourcePlanner.ts`](api/routes/resourcePlanner.ts) (`clientId === primaryUid`) — NOT the user-scoped generic `saveData`; edits gated to `isAtLeastProgrammeManager` (Client Admin / Programme Manager / Super Admin), view open to any signed-in user. Reuse [`RpEmptyState`](web/features/resourcePlanner/components/RpEmptyState.tsx) + [`SchemeFilters`](web/features/resourcePlanner/components/SchemeFilters.tsx) across its pages.
 - **`PageHeader` is the ONLY way to add a page title.** Never add an ad-hoc `<h1>` or title block to an authenticated page. Props: `breadcrumbs` (first item = sidebar group name), `title`, optional `subtitle`, optional `actions` slot.
+- **Marketing-page imagery goes through [`<MarketingImage>`](web/components/public/MarketingImage.tsx) with pre-generated variants in `public/marketing/`.** Never reference a raw multi-MB image from a marketing page or hand-roll a `<picture>`/`<img>` there — `MarketingImage` is the single source of truth for the AVIF→WebP→JPEG + responsive-srcset + lazy + CLS-safe pattern. New marketing shots: drop the source in `public/marketing/`, generate the 6 `sharp` variants (`-{960,1600}.{avif,webp,jpg}`), and reference by `base`. (Photographic device shots go in Landing's alternating `ShowcaseBand` spotlight tiles or the Product deep-dive cards — not a bento grid; bento is for clean UI tiles, not desk-scene photos.)
 - **Risk-to-Issue "trending" logic goes through [`web/lib/riskConversion.ts`](web/lib/riskConversion.ts) `evaluateConversion` ONLY.** Don't re-implement the heuristics or hardcode its thresholds in a page; retune via that file's constants. Scores via `riskMetrics.ts`, never inline.
 - **Fact-Check / Validation goes through [`web/lib/validation.ts`](web/lib/validation.ts) types + [`useValidationGate`](web/hooks/useValidationGate.ts) + [`<ValidateButton/>`](web/components/validation/ValidateButton.tsx).** One `validations` collection, keyed by a **content-versioned** target (`versionedTargetId`) so a new analysis forces a fresh check. The AI fact-check is the **chunked** two-call pattern in [`api/routes/validation.ts`](api/routes/validation.ts) via `aiOperationRouter` (`webSearch`), NEVER `api/routes/ai.ts`, with **1:1 numbered-item reconciliation** (one claim per item). PM+ validates; approval blocked until validated (gate BOTH the submit action and any step→step advance, e.g. `handleFinalise`); everything `logActivity`s. Don't fork the types, add a parallel collection, hardcode the confidence threshold, or send un-numbered/multi-line fact-check content.
 - **Chat input is guarded by [`api/lib/aiGuard.ts`](api/lib/aiGuard.ts) `screenChatInput` BEFORE the model** (Llama Guard safety + topical, hard-block, fail-open). Don't bypass it or route its classifier through `api/routes/ai.ts`. The chat Fact-check button is gated on `factCheckable` + citations, and chat fact-checks run a verifiability pre-check — don't fact-check pure data-summary / "no results" answers.
