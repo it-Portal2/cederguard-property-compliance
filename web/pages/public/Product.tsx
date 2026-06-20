@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router';
 import { ClipboardList, BarChart, Activity, ShieldPlus, Bell, ClipboardCheck, ShieldCheck, Library, Database, UploadCloud, PieChart, FileText, Building2, Users, LayoutDashboard, ArrowRight, ScanSearch, Shield, CheckCircle2, LayoutGrid, Target, Globe, Lock, History, Scale, GraduationCap } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import MarketingImage from '../../components/public/MarketingImage';
 
 /* ═══════════════════════════════════════════════════
    PRODUCT DATA
@@ -394,15 +395,8 @@ export const Product: React.FC = () => {
                                 className="relative group"
                             >
                                 <div className="absolute -inset-10 bg-indigo-500/20 dark:bg-cyan-500/20 blur-[100px] rounded-full opacity-20 group-hover:opacity-40 transition-opacity duration-1000" />
-                                <div className="relative rounded-lg bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 p-12 shadow-2xl aspect-square flex flex-col items-center justify-center overflow-hidden transition-all duration-700 backdrop-blur-xl group-hover:scale-[1.02]">
-                                    <div className="relative">
-                                        <div className="absolute -inset-8 bg-indigo-500/10 blur-3xl rounded-full" />
-                                        <BarChart className="w-32 h-32 text-indigo-600/30 dark:text-cyan-400/30 mb-8 mx-auto relative z-10" />
-                                    </div>
-                                    <div className="text-sm font-black uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500">Risk Matrix Visualization</div>
-                                    <div className="mt-8 flex gap-3">
-                                        {[1,2,3].map(i => <div key={i} className="w-12 h-2 rounded-full bg-slate-200 dark:bg-white/5" />)}
-                                    </div>
+                                <div className="relative rounded-lg bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 shadow-2xl aspect-square overflow-hidden transition-all duration-700 group-hover:scale-[1.02]">
+                                    <MarketingImage base="marketing/risk-register-tablets" alt="CedarGuard risk register and risk dashboard on two tablets" width={1600} height={1280} sizes="(min-width: 1024px) 560px, 90vw" className="absolute inset-0 h-full w-full object-cover object-center" />
                                 </div>
                             </motion.div>
                         </div>
@@ -417,15 +411,8 @@ export const Product: React.FC = () => {
                                 className="relative group order-2 lg:order-1"
                             >
                                 <div className="absolute -inset-10 bg-teal-500/20 blur-[100px] rounded-full opacity-20 group-hover:opacity-40 transition-opacity duration-1000" />
-                                <div className="relative rounded-lg bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 p-12 shadow-2xl aspect-square flex flex-col items-center justify-center overflow-hidden transition-all duration-700 backdrop-blur-xl group-hover:scale-[1.02]">
-                                    <div className="relative">
-                                        <div className="absolute -inset-8 bg-teal-500/10 blur-3xl rounded-full" />
-                                        <ShieldCheck className="w-32 h-32 text-teal-600/30 dark:text-teal-400/30 mb-8 mx-auto relative z-10" />
-                                    </div>
-                                    <div className="text-sm font-black uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500">Golden Thread Audit Trail</div>
-                                    <div className="mt-8 flex gap-3">
-                                        {[1,2,3].map(i => <div key={i} className="w-12 h-2 rounded-full bg-slate-200 dark:bg-white/5" />)}
-                                    </div>
+                                <div className="relative rounded-lg bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 shadow-2xl aspect-square overflow-hidden transition-all duration-700 group-hover:scale-[1.02]">
+                                    <MarketingImage base="marketing/compliance-tablet-person" alt="Person holding a tablet showing the CedarGuard compliance tracker" width={1600} height={1600} sizes="(min-width: 1024px) 560px, 90vw" className="absolute inset-0 h-full w-full object-cover object-center" />
                                 </div>
                             </motion.div>
                             <motion.div

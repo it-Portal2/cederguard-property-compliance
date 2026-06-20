@@ -2,6 +2,56 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowRight, ChevronDown, ChevronRight, Check } from 'lucide-react';
+import MarketingImage from '../components/public/MarketingImage';
+
+/** Alternating "feature spotlight" tile — a contained bento-style card with a
+ *  balanced text side (eyebrow + heading + supporting line) and the product shot
+ *  on the other, zig-zagging L/R by `flip`. The pattern Linear/Stripe/Framer use
+ *  for photographic product shots: organised, captioned, never bare filler. */
+function ShowcaseBand({
+    base, alt, eyebrow, heading, sub, flip = false, width = 1600, height = 1600,
+}: {
+    base: string; alt: string; eyebrow: string; heading: string; sub: string;
+    flip?: boolean; width?: number; height?: number;
+}) {
+    return (
+        <div className="px-6 py-8 sm:py-12">
+            <div className="mx-auto max-w-6xl overflow-hidden rounded-3xl border border-slate-200/70 dark:border-white/5 bg-white/60 dark:bg-white/[0.02] backdrop-blur-sm p-6 sm:p-10 lg:p-14">
+                <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-16">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, margin: "-100px" }}
+                        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                        className={flip ? 'lg:order-2' : ''}
+                    >
+                        <p className="text-[10px] font-medium tracking-[0.2em] text-indigo-600 dark:text-white/40 uppercase mb-5">{eyebrow}</p>
+                        <h3 className="text-3xl md:text-4xl font-medium tracking-tight text-slate-900 dark:text-white leading-[1.15] mb-5">{heading}</h3>
+                        <p className="text-base md:text-lg text-slate-500 dark:text-white/50 font-light leading-relaxed max-w-md">{sub}</p>
+                    </motion.div>
+
+                    <motion.div
+                        initial={{ opacity: 0, y: 30 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true, margin: "-100px" }}
+                        transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+                        className={`relative group ${flip ? 'lg:order-1' : ''}`}
+                    >
+                        <div className="absolute -inset-1.5 rounded-2xl bg-gradient-to-tr from-indigo-500 via-cyan-400 to-purple-500 opacity-15 blur-2xl dark:opacity-25 transition-opacity duration-1000 group-hover:opacity-25" />
+                        <MarketingImage
+                            base={base}
+                            alt={alt}
+                            width={width}
+                            height={height}
+                            sizes="(min-width: 1024px) 480px, 90vw"
+                            className="relative block w-full h-auto rounded-2xl shadow-2xl ring-1 ring-black/5 dark:ring-white/10 border border-slate-200/70 dark:border-white/10"
+                        />
+                    </motion.div>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 /* ═══════════════════════════════════════════════════
    UX MASTERPIECE: ANIMATION & STYLING CONSTANTS
@@ -573,6 +623,14 @@ export const Landing: React.FC = () => {
                 </div>
             </section>
 
+            <ShowcaseBand
+                base="marketing/risk-dashboard-desktop"
+                alt="CedarGuard risk and strategic intelligence dashboard on a desktop monitor"
+                eyebrow="Real-time risk"
+                heading="Your whole risk picture, live."
+                sub="Every programme risk scored, escalated and trending in one dashboard — so nothing slips."
+            />
+
             {/* ── COMPLIANCE ── */}
             <section id="compliance" className="py-40 px-6 border-t border-slate-200 dark:border-white/[0.03] bg-slate-50 dark:bg-white/[0.01]">
                 <div className="max-w-7xl mx-auto">
@@ -635,6 +693,15 @@ export const Landing: React.FC = () => {
                 </div>
             </section>
 
+            <ShowcaseBand
+                base="marketing/compliance-resource-duo"
+                alt="CedarGuard compliance tracker and resource planner across monitor and tablet"
+                eyebrow="Compliance + resource"
+                heading="Compliance and capacity, together."
+                sub="Track statutory obligations and forecast delivery resource side by side, on any screen."
+                flip
+            />
+
             {/* ── PLATFORM TEASER ── */}
             <section className="py-40 px-6 border-t border-slate-200 dark:border-white/[0.03]">
                 <div className="max-w-7xl mx-auto">
@@ -677,6 +744,14 @@ export const Landing: React.FC = () => {
                     </div>
                 </div>
             </section>
+
+            <ShowcaseBand
+                base="marketing/suite-multidevice"
+                alt="CedarGuard suite across desktop, tablet and mobile devices"
+                eyebrow="Any device"
+                heading="The programme in your pocket."
+                sub="Desktop, tablet or mobile — the full CedarGuard suite goes wherever the work happens."
+            />
 
             {/* ── WHY AI ── */}
             <section className="py-40 px-6 border-t border-slate-200 dark:border-white/[0.03] bg-slate-50 dark:bg-white/[0.01]">
@@ -771,6 +846,16 @@ export const Landing: React.FC = () => {
                     </motion.div>
                 </div>
             </section>
+
+            <ShowcaseBand
+                base="marketing/programme-dashboard-laptop"
+                alt="CedarGuard programme dashboard and project initiation on laptop and mobile"
+                eyebrow="End to end"
+                heading="From first brief to board pack."
+                sub="Project initiation through to a board-ready programme dashboard, in one connected flow."
+                flip
+            />
+
             {/* ── COMPARISON ── */}
             <ComparisonSection />
 
@@ -836,6 +921,14 @@ export const Landing: React.FC = () => {
                     </div>
                 </div>
             </section>
+
+            <ShowcaseBand
+                base="marketing/governance-reports-tablet"
+                alt="CedarGuard governance reports and statutory templates on a tablet"
+                eyebrow="Board-ready"
+                heading="Reporting that's committee-ready."
+                sub="Statutory report templates and governance evidence, generated and ready to present."
+            />
 
             {/* ── FAQ ── */}
             <FAQSection />
