@@ -303,8 +303,10 @@ AIErrorAlert.tsx                    Displays structured AI/API error messages
 AIInquiryPopup.tsx                  Chat-style AI inquiry popup
 AIWriter.tsx                        AI content generation interface (drafting text)
 GlobalAIAssistant.tsx               App-wide floating AI-assistant FAB, mounted in the App.tsx
-                                    authenticated shell. Route-aware context label. On mobile it
-                                    floats ABOVE the MobileNav bar (Mobile responsiveness conventions).
+                                    authenticated shell. Route-aware context label + `domain`
+                                    (via resolveAiDomain) passed to AIInquiryPopup for the per-page
+                                    DOMAIN LOCK. On mobile it floats ABOVE the MobileNav bar (Mobile
+                                    responsiveness conventions).
 ```
 
 #### Misc
@@ -710,6 +712,17 @@ aiScope.ts                         SINGLE SOURCE OF TRUTH for resolving the ACTI
                                    to drive both the AI prompt scope wording AND the static "Health" card
                                    heading. Never hardcode "Portfolio"/"organisation" at project/programme
                                    scope — resolve through this.
+aiDomain.ts                        SINGLE SOURCE OF TRUTH for resolving the ACTIVE ROUTE → the AI DOMAIN a
+                                   per-page AI surface must stay within. Pure (no React/store), mirrors
+                                   `aiScope.ts`. `resolveAiDomain(pathname)` → `'risk' | 'compliance' |
+                                   'general'`: `/risk/*` + `/monitoring/*` + `/ai/controls` (risk-mitigation
+                                   tool) → 'risk'; `/compliance/*` + `/regulations` + `/ai/compliance` →
+                                   'compliance'; `/regulations/cpd` + `/training` + everything else (dashboard,
+                                   reports, governance, `/chat`) → 'general'. Drives the DOMAIN LOCK on the
+                                   floating assistant (`AIInquiryPopup` `domain` prop) + the `chatWithAI`
+                                   `domain` arg, so a risk page's AI never surfaces compliance and vice versa.
+                                   Scope (`aiScope.ts`) = which entity; domain (this) = which subject area —
+                                   orthogonal, used together.
 demoMode.ts                        SINGLE SOURCE OF TRUTH for the client-only "Load / Clear demo data"
                                    feature's persistence. Pure (no React/store/API). State lives ONLY in
                                    localStorage (works on web AND the Electron desktop renderer's default
@@ -1232,7 +1245,7 @@ Auth: Firebase ID token in Authorization header
 | `AIErrorAlert` | components/AIErrorAlert.tsx | Formats and displays AI/API errors with recovery suggestions |
 | `AIInquiryPopup` | components/AIInquiryPopup.tsx | Chat popup for asking AI about compliance/risk items |
 | `AIWriter` | components/AIWriter.tsx | AI-assisted text generation (risk descriptions, report text) |
-| `GlobalAIAssistant` | components/GlobalAIAssistant.tsx | App-wide floating AI-assistant FAB (mounted in [`web/App.tsx`](web/App.tsx) authenticated shell). Route-aware context label (`CONTEXT_LABELS`). On mobile it floats above the `MobileNav` bar (see Mobile responsiveness conventions). |
+| `GlobalAIAssistant` | components/GlobalAIAssistant.tsx | App-wide floating AI-assistant FAB (mounted in [`web/App.tsx`](web/App.tsx) authenticated shell). Route-aware context label (`CONTEXT_LABELS`) + `domain` (via [`resolveAiDomain`](web/lib/aiDomain.ts)) for the per-page DOMAIN LOCK. On mobile it floats above the `MobileNav` bar (see Mobile responsiveness conventions). |
 
 ### Compliance Components
 | Component | File | What it does |
@@ -1567,8 +1580,13 @@ The chat model dropdown is **admin-curated and fetched fresh — no caching, no 
 ### AI insight scope & domain-focus conventions (load-bearing)
 Every AI-generated insight must (a) name the **correct scope** and (b) **lead with the page's own domain**. Two rules:
 - **Scope wording comes from [`web/lib/aiScope.ts`](web/lib/aiScope.ts) `resolveAiScope` ONLY** — never hardcode "Portfolio"/"organisation" at project/programme scope. project → "this project"/"Project Health"; programme → "this programme"/"Programme Health"; portfolio → "this organisation"/"Portfolio Health". The page computes the scope from `activeProjectId`/`activeProgrammeId` and passes it to the AI service AND uses it for the static "Health" card heading (so the label and the prose always agree).
-- **`analyzeStrategicInsights(context, user, opts)` takes `{ scope?: AiScope; focus?: 'risk'|'compliance'|'portfolio' }`** ([`web/services/aiService.ts`](web/services/aiService.ts)). `focus` re-weights the prompt so each surface leads with its own domain: RiskDashboard passes `focus:'risk'` (risk/KRIs/issues/ALE first, compliance as context), Dashboard + ExecutiveReport pass `focus:'portfolio'` (balanced). Defaults (`focus:'portfolio'`, no scope) preserve legacy output. Compliance lifecycle/sentiment ([`analyzeComplianceLifecycle`/`analyzeComplianceSentiment`]) derive scope from the `type:'Programme'` field callers already pass (only the programme caller sets it). `analyzeContextSentence` is deliberately scope-AGNOSTIC (it analyses a user free-text sentence, not the active context).
-- **Stale per-context AI state is cleared on a context switch.** `suggestedRisks` / `strategicRiskAnalysis` are AIRiskID in-memory results NOT reloaded per-context, so `setActiveProject`/`setActiveProgramme`/`loadProjectData`/`loadProgrammeData` reset them ([`web/store/useStore.ts`](web/store/useStore.ts)); RiskDashboard + Dashboard also reset their local `strategicInsights` on `activeProjectId`/`activeProgrammeId` change. Otherwise the previous context's insights linger (a "mixup").
+- **`analyzeStrategicInsights(context, user, opts)` takes `{ scope?: AiScope; focus?: 'risk'|'compliance'|'portfolio' }`** ([`web/services/aiService.ts`](web/services/aiService.ts)). `focus` re-weights the prompt so each surface leads with its own domain: RiskDashboard passes `focus:'risk'` (risk/KRIs/issues/ALE first), Dashboard + ExecutiveReport pass `focus:'portfolio'` (balanced). Defaults (`focus:'portfolio'`, no scope) preserve legacy output. Compliance lifecycle/sentiment ([`analyzeComplianceLifecycle`/`analyzeComplianceSentiment`]) derive scope from the `type:'Programme'` field callers already pass (only the programme caller sets it). `analyzeContextSentence` is deliberately scope-AGNOSTIC (it analyses a user free-text sentence, not the active context).
+- **Per-page DOMAIN LOCK (hard, not just `focus` re-weighting).** A single-domain page's AI must NEVER surface the other domain — a risk page's AI shows no compliance, a compliance page's AI shows no risks/issues. The domain comes from [`web/lib/aiDomain.ts`](web/lib/aiDomain.ts) `resolveAiDomain(pathname)` and the OTHER domain's data is WITHHELD at the source (not demoted):
+  - **Floating assistant** ([`AIInquiryPopup.tsx`](web/components/AIInquiryPopup.tsx)): takes a `domain` prop ([`GlobalAIAssistant`](web/components/GlobalAIAssistant.tsx) passes it; per-page callers fall back to `resolveAiDomain(location.pathname)`). `buildContextData` returns `compliance: null` on a risk page / `risks:null, issues:null` on a compliance page, and withholds `lastAnalysisResults` (compliance gap analysis) on risk pages. `chatWithAI(..., domain)` then injects a "DOMAIN LOCK — RISK/COMPLIANCE ONLY" directive (default `'general'` = all data, unchanged).
+  - **Insight panels**: RiskDashboard passes `compliance: null` into `analyzeStrategicInsights` (keeps `focus:'risk'`) so its summary can't reference compliance.
+  - **The dedicated `/chat` page + `api/lib/chatTools.ts` stay GENERAL (cross-domain) by design** — chat tools are gated by role only, not page; do not domain-gate them.
+- **`buildContextData` programme scope must include child-project rows** (`isProgLevel || belongsToProgProject`, mirroring [`Dashboard.tsx`](web/features/reporting/pages/Dashboard.tsx) ~L620) — filtering on `programmeId === activeProgrammeId` alone silently drops every child-project risk/compliance/issue at programme scope.
+- **Stale per-context AI state is cleared on a context switch.** `suggestedRisks` / `strategicRiskAnalysis` are AIRiskID in-memory results NOT reloaded per-context, so `setActiveProject`/`setActiveProgramme`/`loadProjectData`/`loadProgrammeData` **and `loadAggregateData` (portfolio switch)** reset them — `loadAggregateData` also clears `complianceAnalysis`/`lastAnalysisResults` ([`web/store/useStore.ts`](web/store/useStore.ts)); RiskDashboard + Dashboard also reset their local `strategicInsights` on `activeProjectId`/`activeProgrammeId` change. Otherwise the previous context's insights linger (a "mixup").
 - **Stale embedded names — resolve at the AI boundary, NEVER mutate the record.** Risk/issue records carry a denormalised `project`/`programme` NAME captured at creation and not updated on rename, so a risk on a renamed project can still embed the OLD name and the AI would name the report after it. **Fix at the prompt boundary only:** pass the authoritative `scope.label` as the CONTEXT NAME and strip the embedded `project`/`programme`/`projectName`/`programmeName`/`client` fields from any record array before serialising (see `stripStaleNames` in `analyzeStrategicInsights`, and the strip in [`ProgrammeRiskRegister.tsx`](web/features/programmes/pages/ProgrammeRiskRegister.tsx) chat context). **Do NOT "fix the root cause" by overwriting `r.project`/`r.programme` in the store** — that field is AMBIGUOUS (`ProgrammeContext.tsx` matches `p.id === r.project` as an ID; `RiskTracker.tsx` groups by it), so mutating it to always-name breaks those consumers. The backend chat tools already enrich rows with a fresh name lookup keyed by id ([`api/lib/chatTools.ts`](api/lib/chatTools.ts)).
 
 ### Refresh / skeleton conventions (dashboard surfaces)
@@ -1703,6 +1721,7 @@ An admin-only product-demo / testing overlay: it injects a complete static datas
 - **`api/routes/ai.ts` is out of bounds** — standing project rule. Do not edit.
 - **5×5 risk matrix is user-locked** — do not change the layout shape.
 - **AI insight scope/wording goes through [`web/lib/aiScope.ts`](web/lib/aiScope.ts) `resolveAiScope`; each dashboard leads with its own `focus` domain.** Never hardcode "Portfolio"/"organisation" at project/programme scope; never make a risk page headline compliance (or vice versa). See "AI insight scope & domain-focus conventions".
+- **Per-page AI domain goes through [`web/lib/aiDomain.ts`](web/lib/aiDomain.ts) `resolveAiDomain`; a single-domain page's AI HARD-WITHHOLDS the other domain's data** (risk page → no compliance, compliance page → no risks/issues — for the floating `AIInquiryPopup` AND the insight panels), correct for BOTH project and programme (programme scope must include child-project rows). The `/chat` page + `api/lib/chatTools.ts` stay general/cross-domain. See "AI insight scope & domain-focus conventions".
 - **Stale embedded `project`/`programme` NAMES are fixed at the AI prompt boundary, NEVER by mutating the record.** Pass the authoritative `scope.label` + strip the embedded name fields before serialising (`stripStaleNames`). Do NOT overwrite `r.project`/`r.programme` in the store — that field is used as an ID by some consumers (`ProgrammeContext`, `RiskTracker`) and mutating it to a name breaks them.
 - **`aiOperationRouter` `isRetryable` treats `402` / insufficient-credit errors as advance-cascade**, not fatal — a paid OpenRouter entry that runs out of credits must fall through to the free models / owl-alpha / Gemini-direct. Don't re-classify 402 as non-retryable.
 - **Never cache or stale-while-revalidate the AI chat model picker.** `getActiveChatModels` reads `adminConfig/aiModelConfig` fresh per request (no per-instance cache); the client fetches once on mount + skeleton + renders once (no `localStorage` list cache, no focus revalidation). Re-adding any cache reintroduces the model flicker — see "AI chat model picker conventions".
