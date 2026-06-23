@@ -275,11 +275,9 @@ export function RiskDashboard() {
       ).length;
 
       const result = await analyzeStrategicInsights({
-        compliance: {
-          total: activeCompliance.length,
-          completed: complianceComplete,
-          context: activeProject?.name || activeProg?.name || 'Portfolio',
-        },
+        // Risk dashboard insight is risk-only: withhold compliance entirely so
+        // the summary can never headline or reference compliance posture.
+        compliance: null,
         risks: filteredRisks,
         issues: filteredIssues,
         // Bug 5 fix: filter out undefined if project not found

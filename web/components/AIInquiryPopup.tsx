@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router';
 import { X, ScanSearch, Send, MessageSquare, ShieldCheck, Loader2, ServerCog, HelpCircle, ArrowRight, AlertTriangle, Copy, Check } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useStore } from '../store/useStore';
@@ -6,6 +7,7 @@ import { stripMarkdown } from '../lib/utils';
 import { chatWithAI } from '../services/aiService';
 import { calculateMatrixScore } from '../data/riskScoringMatrix';
 import { SEVERE_SCORE_THRESHOLD, getGrossScore } from '../lib/riskMetrics';
+import { resolveAiDomain, type AiDomain } from '../lib/aiDomain';
 
 interface Message {
   id: string;
@@ -24,9 +26,12 @@ interface AIInquiryPopupProps {
    *  Only set by GlobalAIAssistant when the popup opens on a governance route.
    *  Existing per-page callers omit this and behave exactly as before. */
   pageContext?: { kind: string; payload: any } | null;
+  /** Locks the assistant to one domain (risk → no compliance, compliance → no
+   *  risk, general → both). When omitted it's derived from the current route. */
+  domain?: AiDomain;
 }
 
-export function AIInquiryPopup({ isOpen: controlledIsOpen, onClose: controlledOnClose, context, initialQuestion, trigger, pageContext }: AIInquiryPopupProps) {
+export function AIInquiryPopup({ isOpen: controlledIsOpen, onClose: controlledOnClose, context, initialQuestion, trigger, pageContext, domain: domainProp }: AIInquiryPopupProps) {
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   
   const isControlled = controlledIsOpen !== undefined;
@@ -57,25 +62,90 @@ export function AIInquiryPopup({ isOpen: controlledIsOpen, onClose: controlledOn
     complianceItems,
     risks,
     issues,
+    projects,
     activeProject,
     activeProgramme,
     activeProjectId,
     activeProgrammeId,
   } = useStore();
 
+  const location = useLocation();
+  const domain: AiDomain = domainProp ?? resolveAiDomain(location.pathname);
+  const isRiskContext = domain === 'risk';
+  const isComplianceContext = domain === 'compliance';
+
   const buildContextData = () => {
     const activeEntity = activeProject || activeProgramme;
     const isProject = !!activeProject;
+    const safeProjects = Array.isArray(projects) ? projects : [];
 
-    const ctxCompliance = (Array.isArray(complianceItems) ? complianceItems : []).filter((c) =>
-      activeProjectId ? c.projectId === activeProjectId : c.programmeId === activeProgrammeId
-    );
-    const ctxRisks = (Array.isArray(risks) ? risks : []).filter((r) =>
-      activeProjectId ? r.projectId === activeProjectId : r.programmeId === activeProgrammeId
-    );
-    const ctxIssues = (Array.isArray(issues) ? issues : []).filter((i) =>
-      activeProjectId ? i.projectId === activeProjectId : i.programmeId === activeProgrammeId
-    );
+    // Scope to the active context. Programme scope includes BOTH programme-level
+    // rows AND rows of the programme's child projects (mirrors Dashboard).
+    const inContext = (item: any) => {
+      if (activeProjectId) return item.projectId === activeProjectId;
+      if (activeProgrammeId) {
+        const isProgLevel = item.programmeId === activeProgrammeId;
+        const belongsToProgProject = safeProjects.some(
+          (p) => p.id === item.projectId && p.programmeId === activeProgrammeId
+        );
+        return isProgLevel || belongsToProgProject;
+      }
+      return true; // portfolio: all accessible rows
+    };
+
+    const ctxCompliance = (Array.isArray(complianceItems) ? complianceItems : []).filter(inContext);
+    const ctxRisks = (Array.isArray(risks) ? risks : []).filter(inContext);
+    const ctxIssues = (Array.isArray(issues) ? issues : []).filter(inContext);
+
+    const compliance = {
+      total: ctxCompliance.length,
+      complete: ctxCompliance.filter((c) => (c as any).stage === 'Complete').length,
+      inProgress: ctxCompliance.filter((c) => (c as any).stage === 'In Progress').length,
+      notStarted: ctxCompliance.filter((c) => (c as any).stage === 'Not Started').length,
+      highRiskOpen: ctxCompliance.filter(
+        (c) => c.risk === 'High' && (c as any).stage !== 'Complete'
+      ).length,
+      topHighRisk: ctxCompliance
+        .filter((c) => c.risk === 'High' && (c as any).stage !== 'Complete')
+        .slice(0, 5)
+        .map((c) => ({
+          reg: (c as any).reg,
+          req: (c as any).req?.substring(0, 80),
+          domain: c.domain,
+        })),
+    };
+
+    const riskData = {
+      total: ctxRisks.length,
+      open: ctxRisks.filter((r) => r.status === 'Open').length,
+      highSeverity: ctxRisks.filter(
+        (r) => getGrossScore(r) >= SEVERE_SCORE_THRESHOLD
+      ).length,
+      topOpen: ctxRisks
+        .filter((r) => r.status === 'Open')
+        .sort((a, b) => (b.grossRating ?? 0) - (a.grossRating ?? 0))
+        .slice(0, 5)
+        .map((r) => ({
+          title: r.title,
+          category: r.category,
+          rating: getGrossScore(r),
+          owner: r.owner,
+        })),
+    };
+
+    const issueData = {
+      total: ctxIssues.length,
+      open: ctxIssues.filter((i) => i.status !== '4. Resolved').length,
+      escalated: ctxIssues.filter((i) => i.status === '2. Escalated').length,
+      topOpen: ctxIssues
+        .filter((i) => i.status !== '4. Resolved')
+        .slice(0, 5)
+        .map((i) => ({
+          title: (i as any).title || i.desc?.substring(0, 50),
+          status: i.status,
+          owner: i.owner,
+        })),
+    };
 
     return {
       entity: activeEntity
@@ -94,53 +164,11 @@ export function AIInquiryPopup({ isOpen: controlledIsOpen, onClose: controlledOn
             riskSetupDone: !!(activeEntity as any).riskSetupDone,
           }
         : null,
-      compliance: {
-        total: ctxCompliance.length,
-        complete: ctxCompliance.filter((c) => (c as any).stage === 'Complete').length,
-        inProgress: ctxCompliance.filter((c) => (c as any).stage === 'In Progress').length,
-        notStarted: ctxCompliance.filter((c) => (c as any).stage === 'Not Started').length,
-        highRiskOpen: ctxCompliance.filter(
-          (c) => c.risk === 'High' && (c as any).stage !== 'Complete'
-        ).length,
-        topHighRisk: ctxCompliance
-          .filter((c) => c.risk === 'High' && (c as any).stage !== 'Complete')
-          .slice(0, 5)
-          .map((c) => ({
-            reg: (c as any).reg,
-            req: (c as any).req?.substring(0, 80),
-            domain: c.domain,
-          })),
-      },
-      risks: {
-        total: ctxRisks.length,
-        open: ctxRisks.filter((r) => r.status === 'Open').length,
-        highSeverity: ctxRisks.filter(
-          (r) => getGrossScore(r) >= SEVERE_SCORE_THRESHOLD
-        ).length,
-        topOpen: ctxRisks
-          .filter((r) => r.status === 'Open')
-          .sort((a, b) => (b.grossRating ?? 0) - (a.grossRating ?? 0))
-          .slice(0, 5)
-          .map((r) => ({
-            title: r.title,
-            category: r.category,
-            rating: getGrossScore(r),
-            owner: r.owner,
-          })),
-      },
-      issues: {
-        total: ctxIssues.length,
-        open: ctxIssues.filter((i) => i.status !== '4. Resolved').length,
-        escalated: ctxIssues.filter((i) => i.status === '2. Escalated').length,
-        topOpen: ctxIssues
-          .filter((i) => i.status !== '4. Resolved')
-          .slice(0, 5)
-          .map((i) => ({
-            title: (i as any).title || i.desc?.substring(0, 50),
-            status: i.status,
-            owner: i.owner,
-          })),
-      },
+      // Hard domain lock: a risk page never sees compliance; a compliance page
+      // never sees risks/issues; general pages see everything.
+      compliance: domain === 'risk' ? null : compliance,
+      risks: domain === 'compliance' ? null : riskData,
+      issues: domain === 'compliance' ? null : issueData,
     };
   };
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -149,14 +177,17 @@ export function AIInquiryPopup({ isOpen: controlledIsOpen, onClose: controlledOn
   // initialQuestion → two assistant replies.
   const autoSentRef = useRef(false);
 
-  const isRiskContext = context ? context.includes('programme_risks') : false;
-
   useEffect(() => {
     if (isOpen && messages.length === 0) {
+      const focusBlurb = isRiskContext
+        ? 'your risk register, issues and escalations'
+        : isComplianceContext
+          ? 'your compliance posture and regulatory requirements'
+          : 'your compliance, risk and issues data';
       const welcomeMsg: Message = {
         id: 'welcome',
         role: 'assistant',
-        content: `Hello! I'm CedarGuard AI. I have context on your current ${isRiskContext ? 'programme risk register' : projectInfo.name ? 'project profile' : 'compliance setup'}. How can I assist you with your ${isRiskContext ? 'risk escalations and posture' : 'regulatory requirements'} today?`,
+        content: `Hello! I'm CedarGuard AI. I have context on ${focusBlurb}. How can I assist you today?`,
         timestamp: new Date()
       };
       setMessages([welcomeMsg]);
@@ -195,8 +226,11 @@ export function AIInquiryPopup({ isOpen: controlledIsOpen, onClose: controlledOn
     setIsTyping(true);
 
     try {
-      // Use the new chatWithAI service for dynamic, context-aware responses
-      const response = await chatWithAI(text, projectInfo, context, lastAnalysisResults, user, buildContextData(), pageContext ?? null);
+      // Use the new chatWithAI service for dynamic, context-aware responses.
+      // lastAnalysisResults is compliance gap analysis — withhold it on a risk
+      // page so it can't bleed compliance findings into a risk answer.
+      const scopedAnalysis = domain === 'risk' ? null : lastAnalysisResults;
+      const response = await chatWithAI(text, projectInfo, context, scopedAnalysis, user, buildContextData(), pageContext ?? null, domain);
       
       const assistantMsg: Message = {
         id: (Date.now() + 1).toString(),
@@ -243,7 +277,7 @@ export function AIInquiryPopup({ isOpen: controlledIsOpen, onClose: controlledOn
                 CedarGuard AI <span className="bg-indigo-500/20 text-indigo-400 text-[9px] px-2 py-0.5 rounded-full border border-indigo-500/30">Assistant</span>
               </h3>
               <p className="text-slate-400 font-mono text-[10px] uppercase font-medium tracking-wide mt-0.5">
-                Context: {isRiskContext ? 'Programme Risk Intelligence' : 'Compliance Intelligence'}
+                Context: {isRiskContext ? 'Risk Intelligence' : isComplianceContext ? 'Compliance Intelligence' : 'Compliance & Risk Intelligence'}
               </p>
             </div>
           </div>
@@ -330,44 +364,65 @@ export function AIInquiryPopup({ isOpen: controlledIsOpen, onClose: controlledOn
           <div className="mt-4 flex flex-wrap gap-2">
             {isRiskContext ? (
               <>
-                <button 
+                <button
                   onClick={() => handleSend("What are our highest priority ESCALATED risks?")}
                   className="px-3 py-1.5 bg-rose-50 text-rose-700 rounded-lg font-mono text-[10px] font-medium uppercase hover:bg-rose-100 transition-colors border border-rose-100"
                 >
                   Highest Priority?
                 </button>
-                <button 
-                  onClick={() => handleSend("Summarize the risk reduction across the programme")}
+                <button
+                  onClick={() => handleSend("Summarize the risk reduction across this context")}
                   className="px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg font-mono text-[10px] font-medium uppercase hover:bg-amber-100 transition-colors border border-amber-100"
                 >
                   Risk Reduction
                 </button>
-                <button 
-                  onClick={() => handleSend("Suggest mitigations for commercial risks")}
+                <button
+                  onClick={() => handleSend("Suggest mitigations for our top open risks")}
                   className="px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg font-mono text-[10px] font-medium uppercase hover:bg-indigo-100 transition-colors border border-indigo-100"
                 >
                   Mitigations
                 </button>
               </>
-            ) : (
+            ) : isComplianceContext ? (
               <>
-                <button 
-                  onClick={() => handleSend("What are the key HRB risks?")}
+                <button
+                  onClick={() => handleSend("What are the key HRB compliance requirements?")}
                   className="px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg font-mono text-[10px] font-medium uppercase hover:bg-indigo-100 transition-colors border border-indigo-100"
                 >
-                  HRB Risks?
+                  HRB Requirements?
                 </button>
-                <button 
+                <button
                   onClick={() => handleSend("BSA Gateway 2 requirements")}
                   className="px-3 py-1.5 bg-violet-50 text-violet-700 rounded-lg font-mono text-[10px] font-medium uppercase hover:bg-violet-100 transition-colors border border-violet-100"
                 >
                   BSA Gateway 2
                 </button>
-                <button 
+                <button
                   onClick={() => handleSend("Golden Thread standards")}
                   className="px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg font-mono text-[10px] font-medium uppercase hover:bg-emerald-100 transition-colors border border-emerald-100"
                 >
                   Golden Thread
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => handleSend("What needs my attention most right now?")}
+                  className="px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg font-mono text-[10px] font-medium uppercase hover:bg-indigo-100 transition-colors border border-indigo-100"
+                >
+                  What needs attention?
+                </button>
+                <button
+                  onClick={() => handleSend("Summarize our compliance status")}
+                  className="px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg font-mono text-[10px] font-medium uppercase hover:bg-emerald-100 transition-colors border border-emerald-100"
+                >
+                  Compliance Status
+                </button>
+                <button
+                  onClick={() => handleSend("What are our highest priority risks?")}
+                  className="px-3 py-1.5 bg-rose-50 text-rose-700 rounded-lg font-mono text-[10px] font-medium uppercase hover:bg-rose-100 transition-colors border border-rose-100"
+                >
+                  Top Risks?
                 </button>
               </>
             )}

@@ -1,5 +1,6 @@
 import { api } from "../lib/api";
 import type { AiScope } from "../lib/aiScope";
+import type { AiDomain } from "../lib/aiDomain";
 import { KRI_LIST } from "../data/riskData";
 import {
   STRATEGIC_CATEGORIES,
@@ -1228,6 +1229,7 @@ export async function chatWithAI(
   user?: any,
   contextData?: any,
   pageContext?: { kind: string; payload: any } | null,
+  domain: AiDomain = "general",
 ) {
   // Extract real data for more specific context
   const analysisContext = lastAnalysis
@@ -1268,6 +1270,15 @@ export async function chatWithAI(
     ? `GOVERNANCE DATA (live, scoped to current page):\nKind: ${pageContext.kind}\n${JSON.stringify(pageContext.payload, null, 2)}`
     : "";
 
+  // Domain lock: on a single-domain page the caller withholds the other
+  // domain's data entirely, so the model must not stray into it.
+  const domainDirective =
+    domain === "risk"
+      ? `DOMAIN LOCK — RISK ONLY: Answer strictly about risks, issues, KRIs and mitigations. Do NOT discuss compliance or regulatory posture (none is provided here). If asked about compliance, state it is out of scope for this page and direct the user to the Compliance section.`
+      : domain === "compliance"
+        ? `DOMAIN LOCK — COMPLIANCE ONLY: Answer strictly about compliance and regulatory posture. Do NOT discuss the risk register, issues or KRIs (none is provided here). If asked about risks, state it is out of scope for this page and direct the user to the Risk section.`
+        : "";
+
   const prompt = `
     You are CedarGuard AI, a professional compliance and risk expert for the Cedar Property Compliance & Risk Manager Suite.
 
@@ -1292,7 +1303,9 @@ export async function chatWithAI(
 
     CURRENT PAGE/USER CONTEXT:
     ${context || "General Overview"}
-    
+
+    ${domainDirective}
+
     USER QUERY:
     "${query}"
     

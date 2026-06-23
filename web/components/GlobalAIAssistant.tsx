@@ -3,6 +3,7 @@ import { useLocation, matchPath } from 'react-router';
 import { ScanSearch } from 'lucide-react';
 import { AIInquiryPopup } from './AIInquiryPopup';
 import { api } from '../lib/api';
+import { resolveAiDomain } from '../lib/aiDomain';
 
 // Routes where a per-page AI button already exists OR where AI doesn't fit.
 // Returning `null` here means the global button does NOT render — guarantees no
@@ -356,6 +357,7 @@ export function GlobalAIAssistant() {
   }, [pathname]);
 
   const contextLabel = useMemo(() => deriveContextLabel(pathname), [pathname]);
+  const aiDomain = useMemo(() => resolveAiDomain(pathname), [pathname]);
 
   // Lazy-fetch governance data when the popup opens on a governance route.
   // Cached in state for the open session; refetched on each fresh open so the
@@ -387,6 +389,7 @@ export function GlobalAIAssistant() {
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
         context={contextLabel}
+        domain={aiDomain}
         pageContext={pageContext}
       />
       <button

@@ -2092,6 +2092,12 @@ export const useStore = create<AppState>((set, get) => {
       activeProjectId: null,
       activeProgramme: null,
       activeProgrammeId: null,
+      // Drop the previous context's AI results so they can't bleed into the
+      // portfolio view (mirrors loadProjectData / loadProgrammeData).
+      suggestedRisks: [],
+      strategicRiskAnalysis: null,
+      complianceAnalysis: null,
+      lastAnalysisResults: null,
     });
 
     // Stale-context guard: aggregate is "current" only when both IDs are null.
