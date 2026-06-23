@@ -27,6 +27,7 @@ import {
   LogOut,
   ChevronDown,
   FileBarChart,
+  Gauge,
   LayoutTemplate,
   Plus,
   Target,
@@ -534,6 +535,11 @@ export function Sidebar() {
                   to="/resource-planner/forecast"
                   icon={TrendingUp}
                   label="Demand Forecast"
+                />
+                <NavItem
+                  to="/resource-planner/capacity"
+                  icon={Gauge}
+                  label="Capacity"
                 />
                 <NavItem
                   to="/resource-planner/timeline"

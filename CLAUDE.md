@@ -596,30 +596,49 @@ AuditDashboardPage.tsx              /technical-assurance/audit — Compliance Le
 ```
 
 #### `/web/features/resourcePlanner/` — Resource Planner page group (sidebar group "Resource Planner")
-A feature module that rebuilds the "Resource Profile" Excel FTE-forecasting model as 5 pages. Pages in
+A feature module that rebuilds the "Resource Profile" Excel FTE-forecasting model as 6 pages. Pages in
 `pages/`, components in `components/` (same depth/import conventions as governance/TAC). The maths lives
 in the pure lib `web/lib/resourcePlanner/` (above); pages/store NEVER re-derive demand inline. View = any
-signed-in user; **create/edit/delete/import + assumptions = Client Admin / Programme Manager / Super
-Admin** (store `canManageResourcePlanner()` = `isAtLeastProgrammeManager`). Tenant-scoped data, so NOT
-reset on project/programme switch.
+signed-in user; **create/edit/delete/import + assumptions + capacity inputs = Client Admin / Programme
+Manager / Super Admin** (store `canManageResourcePlanner()` = `isAtLeastProgrammeManager`). Tenant-scoped
+data, so NOT reset on project/programme switch.
 ```
-pages/DashboardPage.tsx             /resource-planner/dashboard — KPIs (StatsCard) + Recharts FTE-by-FY
-                                    (stacked by role) + FTE-by-complexity + capacity supply-vs-demand;
+pages/DashboardPage.tsx             /resource-planner/dashboard — KPIs (StatsCard): Schemes, Total homes,
+                                    Peak quarter FTE, Total FTE-quarters, Total cost (£), Peak headcount
+                                    (3×2 grid) + Recharts FTE-by-FY (stacked by role) + FTE-by-complexity
+                                    + cost-by-FY bars + capacity supply-vs-demand; FteExplainer panel;
                                     shared SchemeFilters; skeleton while `!resourcePlannerLoaded`.
 pages/SchemeRegisterPage.tsx        /resource-planner/schemes — DynamicTable register + SchemeModal
                                     (add/edit) + ImportModal (Excel import). Edit gated.
 pages/DemandForecastPage.tsx        /resource-planner/forecast — per-quarter DemandGrid (By role /
-                                    complexity / scheme) + filters + peak/total summary.
-pages/TimelinePage.tsx              /resource-planner/timeline — GanttTimeline (per-scheme stage bands).
+                                    complexity / scheme) + FTE/£/People unit toggle + filters +
+                                    peak/total summary + FteExplainer. In the By-role view, when
+                                    resources-in-post exist, renders Actual + Variance rows under each
+                                    Demand row (and totals).
+pages/CapacityPage.tsx              /resource-planner/capacity — "By role": in-post vs required FTE per
+                                    role per quarter (red/green balance grid) + editable ResourcesInPostGrid.
+                                    "By person": PeopleCapacityGrid ("who can take on more"). Summary
+                                    StatsCards per view. Save persists in-post + person availability via
+                                    the assumptions doc. Edit gated.
+pages/TimelinePage.tsx              /resource-planner/timeline — GanttTimeline (per-scheme stage bands)
+                                    with calendar-date hover + "today" column marker.
 pages/AssumptionsPage.tsx           /resource-planner/assumptions — RateCardEditor (5 roles × 4 stages ×
-                                    6 bands) + complexity-map editor + overhead/leave % + capacity supply
-                                    + horizon. Edit gated (Read-only badge otherwise).
+                                    6 bands) + complexity-map editor + overhead/leave % + costing (day
+                                    rate £ + working days/quarter) + capacity supply + horizon. Edit gated.
 components/RpEmptyState.tsx         Shared empty state (stacked tiles + page icon + optional "+" badge +
-                                    title/description + optional CTA via `showAction`). Reused by the
-                                    Dashboard / Forecast / Timeline pages.
+                                    title/description + optional CTA via `showAction`). Reused across pages.
 components/SchemeFilters.tsx        Shared Programme/Batch/Route/Status/Complexity filter bar +
-                                    `applySchemeFilters` (used by Dashboard, Forecast, Timeline).
-components/{RateCardEditor,SchemeModal,ImportModal,DemandGrid,GanttTimeline}.tsx   per-page building blocks.
+                                    `applySchemeFilters` (used by Dashboard, Forecast, Timeline, Capacity).
+components/FteExplainer.tsx         Collapsible "What do these numbers mean?" panel (client FTE copy + a
+                                    live overhead/leave uplift worked example, e.g. 0.20 → 0.27). Props
+                                    `overheadPct`/`leavePct`; presentational. On Dashboard + Demand Forecast.
+components/ResourcesInPostGrid.tsx  Editable role × quarter "resources in post" grid (controlled; today
+                                    highlight; read-only renders plain numbers). The shared capacity/actuals input.
+components/PeopleCapacityGrid.tsx   Person × quarter committed-vs-availability grid (green headroom / red
+                                    over-allocated) with an inline editable availability (FTE) per person.
+components/DemandGrid.tsx           Per-quarter matrix; `unit` ('fte'|'gbp'|'people') + `perQ` props
+                                    (values supplied as FTE, £/people derived; tint normalised on FTE).
+components/{RateCardEditor,SchemeModal,ImportModal,GanttTimeline}.tsx   other per-page building blocks.
 ```
 
 #### `/web/components/historicalReporting/` — As-of-month reporting primitives
@@ -753,27 +772,39 @@ SINGLE SOURCE OF TRUTH for the Resource Planner's FTE resource-demand model (reb
 ```
 types.ts                           `Role` (SPM/PM/APM/StrategicLead/DefectsPM), `ComplexityBand`
                                    (Small/Mid/Large/Complex/S106-GLA/DP), `Stage` (S1–S4),
-                                   `ResourceScheme`, `RateCard`, `ResourceAssumptions`, `DemandMatrix`,
-                                   `CapacityResult`, axis/aggregate types.
+                                   `ResourceScheme`, `RateCard`, `ResourceAssumptions` (rate card,
+                                   complexity map, overhead/leave %, horizon, `supplyByRole`, + costing
+                                   `dayRate`/`workingDaysPerQuarter`, + `inPostByRoleQuarter` and
+                                   `personAvailability`), `DemandMatrix`, `CapacityResult`,
+                                   `PersonCapacityRow`, `CostResult`/`HeadcountResult`, axis/aggregate types.
 constants.ts                       `ROLES`/`ROLE_LABELS`, `STAGES`/`STAGE_LABELS`/`STAGE_RIBA`,
                                    `COMPLEXITY_BANDS`, `FY_BASE_YEAR=2016`, `FY_START_MONTH=4`,
                                    `DEFAULT_RATE_CARD` (seeded verbatim from the ASSUMPTIONS tab:
                                    S1=col P, S2=W, S3=AD, S4=AK; StrategicLead+DefectsPM rows all 0 for
                                    the PgM to fill; S106/GLA-S1=0), `DEFAULT_COMPLEXITY_MAP`,
-                                   `DEFAULT_OVERHEAD_PCT=0.2`, `DEFAULT_LEAVE_PCT=0.15`.
+                                   `DEFAULT_OVERHEAD_PCT=0.2`, `DEFAULT_LEAVE_PCT=0.15`,
+                                   `DEFAULT_DAY_RATE=250`, `DEFAULT_WORKING_DAYS_PER_QUARTER=65`.
 quarters.ts                        April-fiscal-year quarter maths (Q1=Apr–Jun): `dateToFyQuarterIndex`
                                    (parses `YYYY-MM-DD` as LOCAL to avoid TZ drift at quarter edges),
-                                   `quarterIndexToLabel`, `fyOfIndex`/`financialYearOf`, `fyLabel`,
-                                   `buildQuarterAxis`, `horizonFromIndices`. Mirrors the sheet's EG/EJ.
+                                   `quarterIndexToLabel`, `quarterCalendarLabel` (→ "Apr–Jun 2026",
+                                   Q4 rolls to next calendar year), `currentFyQuarterIndex` (the "today"
+                                   marker), `fyOfIndex`/`financialYearOf`, `fyLabel`, `buildQuarterAxis`,
+                                   `horizonFromIndices`. Mirrors the sheet's EG/EJ.
 compute.ts                         `normalizeScheme` (resolve complexity band, derive all-homes),
                                    `schemeStageBoundaries`, `stageAtQuarter` (S1: PlanningSubmitted→
                                    min(PlanningAchieved,SoS); S2:→SoS; S3:SoS→Handover; S4:Handover→EOD
                                    incl; MISSING boundary ⇒ that stage contributes 0 FTE),
                                    `computeDemandMatrix`, `applyOverheadAndLeave` (flat % uplift),
                                    `aggregateByFinancialYear`, `complexityAtQuarter`, `peakQuarterFte`,
-                                   `totalFte`, `computeCapacity` (supply-vs-demand by role), and
-                                   `buildResourcePlan` — the one-shot entry the store memoises (derives
-                                   the horizon from data when unset). Verified by `web/__tests__/resourcePlanner.test.ts`.
+                                   `totalFte`, `computeCost` (FTE × workingDays × dayRate; per-qtr/per-FY/
+                                   total, on the uplifted matrix), `computeHeadcount` (peak FTE → whole
+                                   people, ceil), `computeCapacity` (supply-vs-demand by role; per-quarter
+                                   supply from `inPostByRoleQuarter`, falls back to flat `supplyByRole`),
+                                   `ASSIGNMENT_ROLE_FIELDS`/`personKey`/`computePeopleCapacity` (person
+                                   committed load from scheme assignment fields + `bySchemeRole`, vs
+                                   availability default 1.0), and `buildResourcePlan` — the one-shot entry
+                                   the store memoises (also returns `cost`+`headcount`; derives the horizon
+                                   from data when unset). Verified by `web/__tests__/resourcePlanner.test.ts`.
 ```
 
 #### `/web/lib/auth/` — Platform-agnostic auth bridge
@@ -1073,10 +1104,15 @@ All global state lives in a **single Zustand store** at `web/store/useStore.ts`.
 | `resourcePlannerLoaded` | `boolean` | useStore.ts |
 
 Actions: `loadResourcePlanner(force?)` (parallel list+assumptions, `normalizeScheme` each, falls back to
-`buildDefaultAssumptions` when none saved), `saveResourceScheme`, `deleteResourceScheme`,
-`saveResourceAssumptions`, `canManageResourcePlanner()`. Client API methods (`web/lib/api.ts`):
-`resourceListSchemes` / `resourceUpsertScheme` / `resourceDeleteScheme` / `resourceGetAssumptions` /
-`resourceSaveAssumptions` / `resourceImportSchemes{DryRun,Commit}`.
+`buildDefaultAssumptions` when none saved — which seeds the rate card, complexity map, overhead/leave,
+horizon AND `dayRate`/`workingDaysPerQuarter`/`inPostByRoleQuarter`/`personAvailability`),
+`saveResourceScheme`, `deleteResourceScheme`, `saveResourceAssumptions`, `canManageResourcePlanner()`.
+Client API methods (`web/lib/api.ts`): `resourceListSchemes` / `resourceUpsertScheme` /
+`resourceDeleteScheme` / `resourceGetAssumptions` / `resourceSaveAssumptions` /
+`resourceImportSchemes{DryRun,Commit}`. **Costing, "resources in post" (capacity/actuals) and
+per-person availability all live ON the assumptions doc** — saved via `saveResourceAssumptions`; there is
+deliberately NO new collection or API action for them (`api/routes/resourcePlanner.ts` stores the whole
+`assumptions` object).
 
 ### Local Component State (representative examples)
 Individual pages manage transient local state via `useState`. Common patterns:
@@ -1704,7 +1740,7 @@ An admin-only product-demo / testing overlay: it injects a complete static datas
 
 ### Standing rules for sweeps / refactors
 - **Demo mode goes through [`web/lib/demoMode.ts`](web/lib/demoMode.ts) + [`web/lib/demoData/index.ts`](web/lib/demoData/index.ts); NEVER write to the DB on a demo path and never use the `demo-` prefix (use `cgdemo-`).** See the Demo mode convention above.
-- **Resource Planner FTE/demand maths goes through the pure lib [`web/lib/resourcePlanner/`](web/lib/resourcePlanner/) (`buildResourcePlan` / `computeDemandMatrix`); never re-derive demand, quarter indices or the rate card inline in a page.** Retune via `constants.ts` (rate card seeded from the Excel ASSUMPTIONS tab; April fiscal year; missing date ⇒ 0 FTE; unmapped complexity ⇒ 0 FTE). Schemes + assumptions are TENANT-scoped via [`api/routes/resourcePlanner.ts`](api/routes/resourcePlanner.ts) (`clientId === primaryUid`) — NOT the user-scoped generic `saveData`; edits gated to `isAtLeastProgrammeManager` (Client Admin / Programme Manager / Super Admin), view open to any signed-in user. Reuse [`RpEmptyState`](web/features/resourcePlanner/components/RpEmptyState.tsx) + [`SchemeFilters`](web/features/resourcePlanner/components/SchemeFilters.tsx) across its pages.
+- **Resource Planner FTE/demand/cost/capacity maths goes through the pure lib [`web/lib/resourcePlanner/`](web/lib/resourcePlanner/) (`buildResourcePlan` / `computeDemandMatrix` / `computeCost` / `computeHeadcount` / `computeCapacity` / `computePeopleCapacity`); never re-derive demand, cost, quarter indices or the rate card inline in a page.** Retune via `constants.ts` (rate card seeded from the Excel ASSUMPTIONS tab; April fiscal year; missing date ⇒ 0 FTE; unmapped complexity ⇒ 0 FTE; `DEFAULT_DAY_RATE=250`, `DEFAULT_WORKING_DAYS_PER_QUARTER=65`). **Cost = `FTE × workingDaysPerQuarter × dayRate` on the UPLIFTED demand** — never reduce days again for leave (the FTE already carries the +leave uplift). **Headcount = `ceil(peak-quarter FTE)`** to whole people. **ONE shared manually-entered input — `inPostByRoleQuarter` ("resources in post", role × quarter) — drives BOTH the Capacity view AND the Actual-under-Demand rows on the Forecast** (mirrors the workbook). **Person-level capacity** (`computePeopleCapacity`) derives committed load from the scheme assignment NAME fields via `ASSIGNMENT_ROLE_FIELDS` + `bySchemeRole` (no per-person actuals exist anywhere); availability defaults to 1.0 FTE per person. Schemes + assumptions (incl. costing/in-post/availability — all on the assumptions doc) are TENANT-scoped via [`api/routes/resourcePlanner.ts`](api/routes/resourcePlanner.ts) (`clientId === primaryUid`) — NOT the user-scoped generic `saveData`; edits gated to `isAtLeastProgrammeManager` (Client Admin / Programme Manager / Super Admin), view open to any signed-in user. Reuse [`RpEmptyState`](web/features/resourcePlanner/components/RpEmptyState.tsx) + [`SchemeFilters`](web/features/resourcePlanner/components/SchemeFilters.tsx) across its pages; the [`FteExplainer`](web/features/resourcePlanner/components/FteExplainer.tsx) panel is the canonical place to explain FTE/uplift.
 - **`PageHeader` is the ONLY way to add a page title.** Never add an ad-hoc `<h1>` or title block to an authenticated page. Props: `breadcrumbs` (first item = sidebar group name), `title`, optional `subtitle`, optional `actions` slot.
 - **Marketing-page imagery goes through [`<MarketingImage>`](web/components/public/MarketingImage.tsx) with pre-generated variants in `public/marketing/`.** Never reference a raw multi-MB image from a marketing page or hand-roll a `<picture>`/`<img>` there — `MarketingImage` is the single source of truth for the AVIF→WebP→JPEG + responsive-srcset + lazy + CLS-safe pattern. New marketing shots: drop the source in `public/marketing/`, generate the 6 `sharp` variants (`-{960,1600}.{avif,webp,jpg}`), and reference by `base`. (Photographic device shots go in Landing's alternating `ShowcaseBand` spotlight tiles or the Product deep-dive cards — not a bento grid; bento is for clean UI tiles, not desk-scene photos.)
 - **Risk-to-Issue "trending" logic goes through [`web/lib/riskConversion.ts`](web/lib/riskConversion.ts) `evaluateConversion` ONLY.** Don't re-implement the heuristics or hardcode its thresholds in a page; retune via that file's constants. Scores via `riskMetrics.ts`, never inline.

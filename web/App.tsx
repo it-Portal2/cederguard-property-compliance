@@ -100,6 +100,7 @@ import SchemeRegisterPage from './features/resourcePlanner/pages/SchemeRegisterP
 import DemandForecastPage from './features/resourcePlanner/pages/DemandForecastPage';
 import ResourceTimelinePage from './features/resourcePlanner/pages/TimelinePage';
 import ResourceAssumptionsPage from './features/resourcePlanner/pages/AssumptionsPage';
+import ResourceCapacityPage from './features/resourcePlanner/pages/CapacityPage';
 import { ChatPage } from './features/chat/pages/ChatPage';
 
 // Desktop-shell support
@@ -322,6 +323,7 @@ function AppContent() {
               <Route path="/resource-planner/dashboard" element={<ResourcePlannerDashboardPage />} />
               <Route path="/resource-planner/schemes" element={<SchemeRegisterPage />} />
               <Route path="/resource-planner/forecast" element={<DemandForecastPage />} />
+              <Route path="/resource-planner/capacity" element={<ResourceCapacityPage />} />
               <Route path="/resource-planner/timeline" element={<ResourceTimelinePage />} />
               <Route path="/resource-planner/assumptions" element={<ResourceAssumptionsPage />} />
 

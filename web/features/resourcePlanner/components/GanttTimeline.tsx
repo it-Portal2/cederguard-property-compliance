@@ -2,6 +2,10 @@ import {
   schemeStageBoundaries,
   stageAtQuarter,
 } from "../../../lib/resourcePlanner/compute";
+import {
+  quarterCalendarLabel,
+  currentFyQuarterIndex,
+} from "../../../lib/resourcePlanner/quarters";
 import { STAGE_LABELS, STAGES } from "../../../lib/resourcePlanner/constants";
 import type {
   QuarterAxisEntry,
@@ -31,6 +35,9 @@ export default function GanttTimeline({
     else fyGroups.push({ fyLabel: q.fyLabel, span: 1 });
   }
 
+  const todayIdx = currentFyQuarterIndex();
+  const todayInRange = axis.some((q) => q.index === todayIdx);
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-3">
@@ -43,6 +50,13 @@ export default function GanttTimeline({
             {s} · {STAGE_LABELS[s]}
           </span>
         ))}
+        {todayInRange && (
+          <span className="inline-flex items-center gap-1.5 text-[12px] text-indigo-600">
+            <span className="inline-block h-3 w-0.5 rounded-sm bg-indigo-500" />
+            Today
+          </span>
+        )}
+        <span className="text-[11px] text-slate-400">Hover a quarter for its calendar dates.</span>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
@@ -66,14 +80,22 @@ export default function GanttTimeline({
               ))}
             </tr>
             <tr>
-              {axis.map((q) => (
-                <th
-                  key={q.index}
-                  className="bg-slate-50 px-1 py-1 text-center font-mono text-[10px] font-medium text-slate-400 border-b border-slate-100 min-w-[22px]"
-                >
-                  {q.quarterOfFy}
-                </th>
-              ))}
+              {axis.map((q) => {
+                const isToday = q.index === todayIdx;
+                return (
+                  <th
+                    key={q.index}
+                    title={`${quarterCalendarLabel(q.fy, q.quarterOfFy)} · ${q.label}${isToday ? " · Today" : ""}`}
+                    className={`px-1 py-1 text-center font-mono text-[10px] font-medium border-b min-w-[22px] ${
+                      isToday
+                        ? "bg-indigo-50 text-indigo-600 border-indigo-200"
+                        : "bg-slate-50 text-slate-400 border-slate-100"
+                    }`}
+                  >
+                    {q.quarterOfFy}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
@@ -86,11 +108,17 @@ export default function GanttTimeline({
                   </td>
                   {axis.map((q) => {
                     const stage = stageAtQuarter(q.index, b);
+                    const isToday = q.index === todayIdx;
+                    const cal = quarterCalendarLabel(q.fy, q.quarterOfFy);
                     return (
                       <td
                         key={q.index}
-                        className="p-0 border-l border-slate-50"
-                        title={stage ? `${scheme.name} · ${stage}` : undefined}
+                        className={`p-0 ${isToday ? "border-l-2 border-indigo-300" : "border-l border-slate-50"}`}
+                        title={
+                          stage
+                            ? `${scheme.name} · ${stage} · ${cal} (${q.label})`
+                            : `${cal} (${q.label})`
+                        }
                       >
                         <div
                           className="h-5"

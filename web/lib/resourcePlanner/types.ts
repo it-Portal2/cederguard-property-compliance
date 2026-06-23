@@ -95,6 +95,22 @@ export interface ResourceAssumptions {
   horizon: HorizonConfig;
   /** Available FTE per role (optional, drives the capacity shortfall/surplus view). */
   supplyByRole?: SupplyByRole;
+  /** Day-rate (£) used to convert FTE → cost. Single rate for all roles. */
+  dayRate?: number;
+  /** Working days that equal 1.0 FTE in one quarter (FTE × this × dayRate = cost). */
+  workingDaysPerQuarter?: number;
+  /**
+   * Resources in post (actual / established), per role → absolute quarter index →
+   * FTE. The SINGLE shared input that drives BOTH the Capacity view (supply vs
+   * required) AND the Actual-under-Demand comparison. Manually entered.
+   */
+  inPostByRoleQuarter?: Partial<Record<Role, Record<number, number>>>;
+  /**
+   * Per-person availability (FTE), keyed by the normalized person key (see
+   * `personKey` in compute.ts). Default 1.0 when a person is unset. Drives the
+   * person-level "who can take on more" view.
+   */
+  personAvailability?: Record<string, number>;
 }
 
 /** One column on the quarter axis. */
@@ -152,4 +168,28 @@ export interface CapacityResult {
   byQuarter: CapacityQuarter[];
   /** Worst (most negative) balance per role across the axis. */
   worstByRole: Record<Role, number>;
+}
+
+/** One person's committed load vs availability across the axis ("can they take more?"). */
+export interface PersonCapacityRow {
+  /** Normalized key (lowercased, single-spaced). */
+  key: string;
+  /** Display name (original casing). */
+  name: string;
+  /** Distinct roles the person is assigned across schemes. */
+  roles: Role[];
+  /** Number of schemes the person is assigned to. */
+  schemeCount: number;
+  /** Availability FTE (default 1.0). */
+  availability: number;
+  /** Committed (planned) FTE per axis position, summed across their schemes/roles. */
+  committedByQuarter: number[];
+  /** availability − committed per axis position (negative = over-allocated). */
+  headroomByQuarter: number[];
+  /** Highest committed FTE in any single quarter. */
+  peakCommitted: number;
+  /** Worst (most negative) headroom across the axis. */
+  minHeadroom: number;
+  /** True if the person has spare capacity in any quarter. */
+  hasHeadroom: boolean;
 }

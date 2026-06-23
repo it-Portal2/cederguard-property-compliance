@@ -66,6 +66,8 @@ import {
   DEFAULT_COMPLEXITY_MAP,
   DEFAULT_OVERHEAD_PCT,
   DEFAULT_LEAVE_PCT,
+  DEFAULT_DAY_RATE,
+  DEFAULT_WORKING_DAYS_PER_QUARTER,
   FY_BASE_YEAR,
 } from "../lib/resourcePlanner/constants";
 import { horizonFromIndices } from "../lib/resourcePlanner/quarters";
@@ -951,6 +953,10 @@ const buildDefaultAssumptions = (
     leavePct: DEFAULT_LEAVE_PCT,
     horizon,
     supplyByRole: {},
+    dayRate: DEFAULT_DAY_RATE,
+    workingDaysPerQuarter: DEFAULT_WORKING_DAYS_PER_QUARTER,
+    inPostByRoleQuarter: {},
+    personAvailability: {},
   };
 };
 

@@ -6,6 +6,7 @@ import {
 import {
   dateToFyQuarterIndex,
   quarterIndexToLabel,
+  quarterCalendarLabel,
   fyLabel,
   buildQuarterAxis,
 } from "../lib/resourcePlanner/quarters";
@@ -14,6 +15,9 @@ import {
   resolveComplexityBand,
   computeDemandMatrix,
   buildResourcePlan,
+  computeCost,
+  computeHeadcount,
+  computePeopleCapacity,
 } from "../lib/resourcePlanner/compute";
 import type {
   ResourceAssumptions,
@@ -67,6 +71,12 @@ describe("quarters — April fiscal-year maths", () => {
     expect(dateToFyQuarterIndex(null)).toBeNull();
     expect(dateToFyQuarterIndex("")).toBeNull();
     expect(dateToFyQuarterIndex("not-a-date")).toBeNull();
+  });
+  it("renders calendar month-range labels per quarter (Q4 rolls to next year)", () => {
+    expect(quarterCalendarLabel(2026, 1)).toBe("Apr–Jun 2026");
+    expect(quarterCalendarLabel(2026, 2)).toBe("Jul–Sep 2026");
+    expect(quarterCalendarLabel(2026, 3)).toBe("Oct–Dec 2026");
+    expect(quarterCalendarLabel(2026, 4)).toBe("Jan–Mar 2027");
   });
 });
 
@@ -184,6 +194,71 @@ describe("buildResourcePlan — rollups & uplift (answers 21-A, 5-A)", () => {
   });
 });
 
+describe("cost + headcount (Point 2: quantify)", () => {
+  const axis = buildQuarterAxis(2026, 2027);
+  const matrix = computeDemandMatrix([normalizeScheme(fullMid)], DEFAULT_RATE_CARD, axis);
+
+  it("cost = FTE × working-days × day-rate, totalled and by FY", () => {
+    const cost = computeCost(matrix, 250, 65);
+    // total FTE (no uplift) = 3.4 ⇒ 3.4 × 65 × 250 = 55,250
+    expect(cost.total).toBeCloseTo(3.4 * 65 * 250, 2);
+    // peak quarter (0.7 FTE) ⇒ 0.7 × 65 × 250
+    expect(cost.totalByQuarter[1]).toBeCloseTo(0.7 * 65 * 250, 2);
+    const fy2026 = cost.byFinancialYear.find((f) => f.fy === 2026)!;
+    expect(fy2026.cost).toBeCloseTo(2.5 * 65 * 250, 2);
+  });
+
+  it("headcount rounds the peak quarter up to whole people", () => {
+    const hc = computeHeadcount(matrix);
+    expect(hc.peakFte).toBeCloseTo(0.7, 5);
+    expect(hc.peakPeople).toBe(1); // ceil(0.7)
+    expect(hc.peakLabel).toBe("2026-27 Q2");
+  });
+
+  it("buildResourcePlan exposes cost (uplifted) + headcount", () => {
+    const plan = buildResourcePlan([fullMid], { ...assumptions(0.2, 0.15), dayRate: 250, workingDaysPerQuarter: 65 });
+    // uplifted total FTE 4.59 ⇒ cost on the uplifted figure
+    expect(plan.cost.total).toBeCloseTo(4.59 * 65 * 250, 1);
+    expect(plan.headcount.peakPeople).toBe(1); // peak 0.945 ⇒ ceil = 1
+  });
+});
+
+describe("people capacity (3B: who can take on more)", () => {
+  it("derives a person's committed load from scheme assignments", () => {
+    const scheme: ResourceScheme = { ...fullMid, id: "s1", projectManager: "Jane Doe", seniorPM: "Sam Lee" };
+    const plan = buildResourcePlan([scheme], assumptions(0, 0));
+    const people = computePeopleCapacity(plan, [scheme], {});
+    const jane = people.find((p) => p.key === "jane doe")!;
+    expect(jane.name).toBe("Jane Doe");
+    expect(jane.roles).toContain("PM");
+    // PM Mid curve, no uplift
+    expectArr(jane.committedByQuarter, [0.3, 0.3, 0.3, 0.3, 0.2, 0.2, 0, 0]);
+    expect(jane.availability).toBe(1.0);
+    expect(jane.headroomByQuarter[0]).toBeCloseTo(0.7, 5);
+    expect(jane.hasHeadroom).toBe(true);
+  });
+
+  it("applies an availability override and flags over-allocation", () => {
+    const scheme: ResourceScheme = { ...fullMid, id: "s1", projectManager: "Jane Doe" };
+    const plan = buildResourcePlan([scheme], assumptions(0, 0));
+    const people = computePeopleCapacity(plan, [scheme], { "jane doe": 0.2 });
+    const jane = people.find((p) => p.key === "jane doe")!;
+    expect(jane.availability).toBe(0.2);
+    // PM peaks at 0.3 > 0.2 ⇒ worst headroom negative
+    expect(jane.minHeadroom).toBeCloseTo(0.2 - 0.3, 5);
+  });
+
+  it("sums commitment across multiple schemes", () => {
+    const s1: ResourceScheme = { ...fullMid, id: "s1", projectManager: "Jane Doe" };
+    const s2: ResourceScheme = { ...fullMid, id: "s2", projectManager: "Jane Doe" };
+    const plan = buildResourcePlan([s1, s2], assumptions(0, 0));
+    const people = computePeopleCapacity(plan, [s1, s2], {});
+    const jane = people.find((p) => p.key === "jane doe")!;
+    expect(jane.schemeCount).toBe(2);
+    expect(jane.committedByQuarter[0]).toBeCloseTo(0.6, 5); // 0.3 + 0.3
+  });
+});
+
 describe("capacity — supply vs demand by role (answer 19-A)", () => {
   it("flags shortfall when supply is below peak demand", () => {
     const plan = buildResourcePlan([fullMid], {
@@ -194,5 +269,25 @@ describe("capacity — supply vs demand by role (answer 19-A)", () => {
     expect(plan.capacity.worstByRole.PM).toBeCloseTo(-0.05, 5);
     // SPM has no supply set ⇒ negative wherever there is demand
     expect(plan.capacity.worstByRole.SPM).toBeLessThan(0);
+  });
+
+  it("uses per-quarter resources-in-post when provided (overrides flat supply)", () => {
+    // PM demand (no uplift): [0.3,0.3,0.3,0.3,0.2,0.2,0,0] across FY2026-27 Q1..FY2027-28 Q4.
+    // idx 40 = FY2026-27 Q1. Put 1.0 PM in post at idx 40 ⇒ surplus there.
+    const plan = buildResourcePlan([fullMid], {
+      ...assumptions(0, 0),
+      supplyByRole: { PM: 0 },
+      inPostByRoleQuarter: { PM: { 40: 1.0 } },
+    });
+    const q40 = plan.capacity.byQuarter.find(
+      (c) => c.role === "PM" && c.quarter === 40,
+    )!;
+    expect(q40.supply).toBeCloseTo(1.0, 5);
+    expect(q40.balance).toBeCloseTo(1.0 - 0.3, 5); // surplus
+    // a quarter with no in-post entry falls back to the flat supply (0)
+    const q41 = plan.capacity.byQuarter.find(
+      (c) => c.role === "PM" && c.quarter === 41,
+    )!;
+    expect(q41.supply).toBeCloseTo(0, 5);
   });
 });

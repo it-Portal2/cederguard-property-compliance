@@ -1,4 +1,8 @@
 import type { QuarterAxisEntry } from "../../../lib/resourcePlanner/types";
+import {
+  quarterCalendarLabel,
+  currentFyQuarterIndex,
+} from "../../../lib/resourcePlanner/quarters";
 
 export interface GridRow {
   key: string;
@@ -8,7 +12,19 @@ export interface GridRow {
   strong?: boolean;
 }
 
+/** Display unit for the cells. Values are always supplied as FTE; £/people are derived. */
+export type GridUnit = "fte" | "gbp" | "people";
+
 const fmtFte = (v: number) => (v ? String(Math.round(v * 100) / 100) : "");
+const gbp = (v: number) => "£" + Math.round(v).toLocaleString("en-GB");
+
+/** Format one FTE cell value in the chosen unit. `perQ` = workingDays × dayRate. */
+function fmtCell(v: number, unit: GridUnit, perQ: number): string {
+  if (!v) return "";
+  if (unit === "gbp") return gbp(v * perQ);
+  if (unit === "people") return String(Math.ceil(v - 1e-9));
+  return fmtFte(v);
+}
 
 /**
  * A horizontally-scrollable demand matrix: sticky first column (the row label),
@@ -18,10 +34,20 @@ const fmtFte = (v: number) => (v ? String(Math.round(v * 100) / 100) : "");
 export default function DemandGrid({
   axis,
   rows,
+  unit = "fte",
+  perQ = 0,
 }: {
   axis: QuarterAxisEntry[];
   rows: GridRow[];
+  unit?: GridUnit;
+  perQ?: number;
 }) {
+  const todayIdx = currentFyQuarterIndex();
+  // Tint normalised on FTE (unit-independent) so colour intensity is stable across units.
+  const maxV = rows.reduce(
+    (m, r) => r.values.reduce((mm, v) => (v > mm ? v : mm), m),
+    0,
+  );
   // Group consecutive quarters by financial year for the top header tier.
   const fyGroups: { fyLabel: string; span: number }[] = [];
   for (const q of axis) {
@@ -52,14 +78,22 @@ export default function DemandGrid({
             ))}
           </tr>
           <tr>
-            {axis.map((q) => (
-              <th
-                key={q.index}
-                className="bg-slate-50 px-2 py-1 text-center font-mono text-[10px] font-medium text-slate-400 border-b border-slate-100 min-w-[44px]"
-              >
-                Q{q.quarterOfFy}
-              </th>
-            ))}
+            {axis.map((q) => {
+              const isToday = q.index === todayIdx;
+              return (
+                <th
+                  key={q.index}
+                  title={`${quarterCalendarLabel(q.fy, q.quarterOfFy)} · ${q.label}${isToday ? " · Today" : ""}`}
+                  className={`px-2 py-1 text-center font-mono text-[10px] font-medium border-b min-w-[44px] ${
+                    isToday
+                      ? "bg-indigo-50 text-indigo-600 border-indigo-200"
+                      : "bg-slate-50 text-slate-400 border-slate-100"
+                  }`}
+                >
+                  Q{q.quarterOfFy}
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody>
@@ -85,12 +119,12 @@ export default function DemandGrid({
                   key={i}
                   className="px-2 py-1.5 text-center font-mono tabular-nums text-slate-700 border-l border-slate-50"
                   style={
-                    v
-                      ? { backgroundColor: `rgba(79,70,229,${Math.min(0.18, v * 0.12)})` }
+                    v && maxV
+                      ? { backgroundColor: `rgba(79,70,229,${Math.min(0.18, (v / maxV) * 0.18)})` }
                       : undefined
                   }
                 >
-                  {fmtFte(v)}
+                  {fmtCell(v, unit, perQ)}
                 </td>
               ))}
             </tr>

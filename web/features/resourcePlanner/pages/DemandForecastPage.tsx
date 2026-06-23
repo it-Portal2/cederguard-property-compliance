@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Building2, FilterX } from "lucide-react";
 import PageHeader from "../../../components/PageHeader";
 import { useStore } from "../../../store/useStore";
-import DemandGrid, { type GridRow } from "../components/DemandGrid";
+import DemandGrid, { type GridRow, type GridUnit } from "../components/DemandGrid";
+import FteExplainer from "../components/FteExplainer";
 import RpEmptyState from "../components/RpEmptyState";
 import SchemeFilters, {
   applySchemeFilters,
@@ -24,6 +25,12 @@ const VIEWS: { key: View; label: string }[] = [
   { key: "scheme", label: "By scheme" },
 ];
 
+const UNITS: { key: GridUnit; label: string }[] = [
+  { key: "fte", label: "FTE" },
+  { key: "gbp", label: "£" },
+  { key: "people", label: "People" },
+];
+
 export default function DemandForecastPage() {
   const resourceSchemes = useStore((s) => s.resourceSchemes);
   const resourceAssumptions = useStore((s) => s.resourceAssumptions);
@@ -31,6 +38,11 @@ export default function DemandForecastPage() {
 
   const [filters, setFilters] = useState<SchemeFilterState>(emptySchemeFilters);
   const [view, setView] = useState<View>("role");
+  const [unit, setUnit] = useState<GridUnit>("fte");
+
+  const perQ =
+    (resourceAssumptions?.dayRate ?? 250) *
+    (resourceAssumptions?.workingDaysPerQuarter ?? 65);
 
   useEffect(() => {
     loadResourcePlanner();
@@ -49,12 +61,60 @@ export default function DemandForecastPage() {
   const rows: GridRow[] = useMemo(() => {
     if (!plan) return [];
     if (view === "role") {
-      const r: GridRow[] = ROLES.map((role) => ({
-        key: role,
-        label: ROLE_LABELS[role],
-        values: plan.matrix.byRole[role],
-      }));
-      r.push({ key: "_total", label: "Total", values: plan.matrix.totalByQuarter, strong: true });
+      const inPost = resourceAssumptions?.inPostByRoleQuarter || {};
+      const hasInPost = ROLES.some(
+        (role) => inPost[role] && Object.values(inPost[role]!).some((v) => v),
+      );
+      const r: GridRow[] = [];
+      const totalActual = plan.axis.map(() => 0);
+      ROLES.forEach((role) => {
+        const demand = plan.matrix.byRole[role];
+        r.push({
+          key: role,
+          label: ROLE_LABELS[role],
+          sublabel: hasInPost ? "Demand" : undefined,
+          values: demand,
+        });
+        if (hasInPost) {
+          const actual = plan.axis.map((q) => inPost[role]?.[q.index] ?? 0);
+          actual.forEach((v, i) => (totalActual[i] += v));
+          r.push({
+            key: `${role}_actual`,
+            label: ROLE_LABELS[role],
+            sublabel: "Actual",
+            values: actual,
+          });
+          r.push({
+            key: `${role}_var`,
+            label: ROLE_LABELS[role],
+            sublabel: "Variance",
+            values: actual.map((v, i) => v - demand[i]),
+          });
+        }
+      });
+      r.push({
+        key: "_total",
+        label: "Total",
+        sublabel: hasInPost ? "Demand" : undefined,
+        values: plan.matrix.totalByQuarter,
+        strong: true,
+      });
+      if (hasInPost) {
+        r.push({
+          key: "_total_actual",
+          label: "Total",
+          sublabel: "Actual",
+          values: totalActual,
+          strong: true,
+        });
+        r.push({
+          key: "_total_var",
+          label: "Total",
+          sublabel: "Variance",
+          values: totalActual.map((v, i) => v - plan.matrix.totalByQuarter[i]),
+          strong: true,
+        });
+      }
       return r;
     }
     if (view === "complexity") {
@@ -72,7 +132,7 @@ export default function DemandForecastPage() {
       sublabel: ROLE_LABELS[s.role],
       values: s.quarters,
     }));
-  }, [plan, view]);
+  }, [plan, view, resourceAssumptions]);
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -81,6 +141,13 @@ export default function DemandForecastPage() {
         subtitle="FTE required per quarter (incl. overhead & leave uplift), by role and complexity."
         breadcrumbs={[{ label: "Resource Planner" }, { label: "Demand Forecast" }]}
       />
+
+      {resourceAssumptions && (
+        <FteExplainer
+          overheadPct={resourceAssumptions.overheadPct}
+          leavePct={resourceAssumptions.leavePct}
+        />
+      )}
 
       {plan && (
         <div className="flex flex-wrap items-center gap-3 text-[13px]">
@@ -106,20 +173,37 @@ export default function DemandForecastPage() {
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <SchemeFilters schemes={resourceSchemes} value={filters} onChange={setFilters} />
-        <div className="inline-flex rounded-lg border border-slate-200 p-0.5">
-          {VIEWS.map((v) => (
-            <button
-              key={v.key}
-              onClick={() => setView(v.key)}
-              className={`rounded-md px-3 py-1.5 text-[13px] font-medium ${
-                view === v.key
-                  ? "bg-indigo-600 text-white"
-                  : "text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              {v.label}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex rounded-lg border border-slate-200 p-0.5">
+            {UNITS.map((u) => (
+              <button
+                key={u.key}
+                onClick={() => setUnit(u.key)}
+                className={`rounded-md px-3 py-1.5 text-[13px] font-medium ${
+                  unit === u.key
+                    ? "bg-slate-800 text-white"
+                    : "text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                {u.label}
+              </button>
+            ))}
+          </div>
+          <div className="inline-flex rounded-lg border border-slate-200 p-0.5">
+            {VIEWS.map((v) => (
+              <button
+                key={v.key}
+                onClick={() => setView(v.key)}
+                className={`rounded-md px-3 py-1.5 text-[13px] font-medium ${
+                  view === v.key
+                    ? "bg-indigo-600 text-white"
+                    : "text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -145,7 +229,7 @@ export default function DemandForecastPage() {
           />
         )
       ) : (
-        <DemandGrid axis={plan.axis} rows={rows} />
+        <DemandGrid axis={plan.axis} rows={rows} unit={unit} perQ={perQ} />
       )}
     </div>
   );

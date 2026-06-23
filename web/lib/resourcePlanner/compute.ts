@@ -18,6 +18,8 @@ import {
   DEFAULT_COMPLEXITY_MAP,
   COMPLEXITY_BANDS,
   ROLES,
+  DEFAULT_DAY_RATE,
+  DEFAULT_WORKING_DAYS_PER_QUARTER,
 } from "./constants";
 import {
   buildQuarterAxis,
@@ -30,6 +32,7 @@ import type {
   ComplexityBand,
   DemandMatrix,
   FinancialYearAggregate,
+  PersonCapacityRow,
   RateCard,
   ResourceAssumptions,
   ResourceScheme,
@@ -283,12 +286,16 @@ export function totalFte(matrix: DemandMatrix): number {
 }
 
 /**
- * Supply-vs-demand by role across the axis (answer 19-A). `supplyByRole` is a
- * flat available-FTE figure per role; balance = supply − demand (negative = shortfall).
+ * Supply-vs-demand by role across the axis (answer 19-A). Supply per quarter is
+ * taken from `inPostByRoleQuarter` (role → absolute quarter index → FTE) when
+ * present, else the flat `supplyByRole` figure. balance = supply − demand
+ * (negative = shortfall). The per-quarter `inPostByRoleQuarter` is the shared
+ * "resources in post" input that also feeds the Actual-under-Demand view.
  */
 export function computeCapacity(
   supplyByRole: Partial<Record<Role, number>> | undefined,
   matrix: DemandMatrix,
+  inPostByRoleQuarter?: Partial<Record<Role, Record<number, number>>>,
 ): CapacityResult {
   const byQuarter: CapacityQuarter[] = [];
   const worstByRole = {} as Record<Role, number>;
@@ -296,7 +303,9 @@ export function computeCapacity(
   matrix.axis.forEach((entry, p) => {
     for (const role of ROLES) {
       const demand = matrix.byRole[role][p];
-      const supply = num(supplyByRole?.[role]);
+      const perQuarter = inPostByRoleQuarter?.[role]?.[entry.index];
+      const supply =
+        perQuarter != null ? num(perQuarter) : num(supplyByRole?.[role]);
       const balance = supply - demand;
       byQuarter.push({
         quarter: entry.index,
@@ -313,6 +322,62 @@ export function computeCapacity(
   return { byQuarter, worstByRole };
 }
 
+/** Cost (£) derived from FTE demand: FTE × working-days-per-quarter × day-rate. */
+export interface CostResult {
+  /** Cost per axis position (length === axis.length). */
+  totalByQuarter: number[];
+  byFinancialYear: { fy: number; fyLabel: string; cost: number }[];
+  /** Total cost across the whole horizon. */
+  total: number;
+}
+
+/**
+ * Convert an FTE demand matrix to cost. `cost = FTE × workingDaysPerQuarter ×
+ * dayRate`. The matrix is expected to already carry the overhead/leave uplift,
+ * so working days are NOT reduced again for leave.
+ */
+export function computeCost(
+  matrix: DemandMatrix,
+  dayRate: number = DEFAULT_DAY_RATE,
+  workingDaysPerQuarter: number = DEFAULT_WORKING_DAYS_PER_QUARTER,
+): CostResult {
+  const perQ = num(workingDaysPerQuarter) * num(dayRate);
+  const totalByQuarter = matrix.totalByQuarter.map((fte) => fte * perQ);
+  const byFy = new Map<number, { fy: number; fyLabel: string; cost: number }>();
+  matrix.axis.forEach((entry, p) => {
+    let agg = byFy.get(entry.fy);
+    if (!agg) {
+      agg = { fy: entry.fy, fyLabel: entry.fyLabel, cost: 0 };
+      byFy.set(entry.fy, agg);
+    }
+    agg.cost += totalByQuarter[p];
+  });
+  return {
+    totalByQuarter,
+    byFinancialYear: [...byFy.values()].sort((a, b) => a.fy - b.fy),
+    total: totalByQuarter.reduce((a, b) => a + b, 0),
+  };
+}
+
+/** Headcount view: the peak-quarter FTE expressed as whole people (rounded up). */
+export interface HeadcountResult {
+  /** Highest total FTE in any single quarter. */
+  peakFte: number;
+  /** `ceil(peakFte)` — whole people needed to cover the peak quarter. */
+  peakPeople: number;
+  /** Quarter label of the peak. */
+  peakLabel: string;
+}
+
+export function computeHeadcount(matrix: DemandMatrix): HeadcountResult {
+  const peak = peakQuarterFte(matrix);
+  return {
+    peakFte: peak.fte,
+    peakPeople: Math.ceil(peak.fte - 1e-9),
+    peakLabel: peak.label,
+  };
+}
+
 export interface ResourcePlan {
   axis: DemandMatrix["axis"];
   /** Demand before the overhead/leave uplift. */
@@ -323,6 +388,10 @@ export interface ResourcePlan {
   peak: { axisPos: number; label: string; fte: number };
   totalFte: number;
   capacity: CapacityResult;
+  /** Cost (£) derived from the uplifted demand. */
+  cost: CostResult;
+  /** Peak-quarter headcount (whole people). */
+  headcount: HeadcountResult;
 }
 
 /**
@@ -359,6 +428,107 @@ export function buildResourcePlan(
     byFinancialYear: aggregateByFinancialYear(matrix),
     peak: peakQuarterFte(matrix),
     totalFte: totalFte(matrix),
-    capacity: computeCapacity(assumptions.supplyByRole, matrix),
+    capacity: computeCapacity(
+      assumptions.supplyByRole,
+      matrix,
+      assumptions.inPostByRoleQuarter,
+    ),
+    cost: computeCost(
+      matrix,
+      assumptions.dayRate ?? DEFAULT_DAY_RATE,
+      assumptions.workingDaysPerQuarter ?? DEFAULT_WORKING_DAYS_PER_QUARTER,
+    ),
+    headcount: computeHeadcount(matrix),
   };
+}
+
+/**
+ * Scheme assignment field → the Role that person fills. The five fields exist on
+ * every `ResourceScheme` (informational name fields); this maps them to demand roles.
+ */
+export const ASSIGNMENT_ROLE_FIELDS: Record<string, Role> = {
+  seniorPM: "SPM",
+  projectManager: "PM",
+  assistantPM: "APM",
+  strategicLead: "StrategicLead",
+  defectsPM: "DefectsPM",
+};
+
+/** Normalized person key (lowercase, single-spaced) for de-duping names. */
+export function personKey(name: string): string {
+  return name.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Person-level capacity ("who can take on more"). A person's committed load is
+ * the sum of the demand curves of the schemes they are named on (in their
+ * assigned role) — derived from `plan.matrix.bySchemeRole` (uplifted, consistent
+ * with everything shown). Compared against their availability (default 1.0 FTE).
+ * No per-person actuals exist anywhere, so this is planned-demand vs availability.
+ */
+export function computePeopleCapacity(
+  plan: ResourcePlan,
+  schemes: ResourceScheme[],
+  personAvailability: Record<string, number> = {},
+): PersonCapacityRow[] {
+  const len = plan.axis.length;
+  const srIndex = new Map<string, number[]>();
+  for (const sr of plan.matrix.bySchemeRole) {
+    srIndex.set(`${sr.schemeId}:${sr.role}`, sr.quarters);
+  }
+
+  interface Acc {
+    key: string;
+    name: string;
+    roles: Set<Role>;
+    schemes: Set<string>;
+    committed: number[];
+  }
+  const people = new Map<string, Acc>();
+
+  for (const scheme of schemes) {
+    for (const field of Object.keys(ASSIGNMENT_ROLE_FIELDS)) {
+      const role = ASSIGNMENT_ROLE_FIELDS[field];
+      const rawName = (scheme as any)[field];
+      if (!rawName || typeof rawName !== "string" || !rawName.trim()) continue;
+      const key = personKey(rawName);
+      let acc = people.get(key);
+      if (!acc) {
+        acc = {
+          key,
+          name: rawName.trim(),
+          roles: new Set(),
+          schemes: new Set(),
+          committed: new Array(len).fill(0),
+        };
+        people.set(key, acc);
+      }
+      acc.roles.add(role);
+      acc.schemes.add(scheme.id);
+      const q = srIndex.get(`${scheme.id}:${role}`);
+      if (q) for (let i = 0; i < len; i++) acc.committed[i] += q[i];
+    }
+  }
+
+  const rows: PersonCapacityRow[] = [];
+  for (const acc of people.values()) {
+    const availability = personAvailability[acc.key] ?? 1.0;
+    const headroomByQuarter = acc.committed.map((c) => availability - c);
+    const peakCommitted = acc.committed.reduce((m, v) => (v > m ? v : m), 0);
+    const minHeadroom = headroomByQuarter.reduce((m, v) => (v < m ? v : m), Infinity);
+    rows.push({
+      key: acc.key,
+      name: acc.name,
+      roles: [...acc.roles],
+      schemeCount: acc.schemes.size,
+      availability,
+      committedByQuarter: acc.committed,
+      headroomByQuarter,
+      peakCommitted,
+      minHeadroom: Number.isFinite(minHeadroom) ? minHeadroom : availability,
+      hasHeadroom: headroomByQuarter.some((h) => h > 1e-9),
+    });
+  }
+  rows.sort((a, b) => a.minHeadroom - b.minHeadroom);
+  return rows;
 }

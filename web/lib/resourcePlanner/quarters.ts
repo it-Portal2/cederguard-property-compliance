@@ -77,6 +77,38 @@ export function quarterIndexToLabel(index: number): string {
 
 export const financialYearOf = fyOfIndex;
 
+/** Month-range labels for the four fiscal quarters (FY starts April). */
+const QUARTER_MONTHS: Record<1 | 2 | 3 | 4, string> = {
+  1: "Apr–Jun",
+  2: "Jul–Sep",
+  3: "Oct–Dec",
+  4: "Jan–Mar",
+};
+
+/**
+ * Human calendar label for a fiscal quarter, e.g. `quarterCalendarLabel(2026, 1)`
+ * → "Apr–Jun 2026". Q4 (Jan–Mar) falls in the NEXT calendar year, so it shows
+ * `fy + 1` (e.g. `(2026, 4)` → "Jan–Mar 2027"). Used to make the terse "Q1–Q4"
+ * column headers on the Timeline / Demand Forecast legible.
+ */
+export function quarterCalendarLabel(
+  fy: number,
+  quarterOfFy: 1 | 2 | 3 | 4,
+): string {
+  const calYear = quarterOfFy === 4 ? fy + 1 : fy;
+  return `${QUARTER_MONTHS[quarterOfFy]} ${calYear}`;
+}
+
+/**
+ * Absolute fiscal-quarter index for "now" (current date). Used to draw the
+ * "today" marker on the Timeline / Demand Forecast. Pure apart from reading the
+ * clock; callers pass an explicit `now` in tests for determinism.
+ */
+export function currentFyQuarterIndex(now: Date = new Date()): number {
+  const { fyStart, quarterOfFy } = fyParts(now);
+  return (fyStart - FY_BASE_YEAR) * 4 + (quarterOfFy - 1);
+}
+
 /** Inclusive FY range → ordered quarter axis. */
 export function buildQuarterAxis(
   startFy: number,

@@ -134,3 +134,16 @@ export const DEFAULT_OVERHEAD_PCT = 0.2;
 
 /** Default annual-leave uplift (+15% ≈ 40 days/year, from the sheet). Editable. */
 export const DEFAULT_LEAVE_PCT = 0.15;
+
+/**
+ * Default day-rate (£) used to convert FTE → cost (client answer: "£250/day for
+ * now, editable"). A single rate applied to all roles. Editable on Assumptions.
+ */
+export const DEFAULT_DAY_RATE = 250;
+
+/**
+ * Working days that equal 1.0 FTE for one quarter. The workbook's basis is a
+ * ~260-day working year (40 days leave), so a quarter ≈ 65 days. The FTE already
+ * carries the leave uplift, so days are NOT reduced again. Editable.
+ */
+export const DEFAULT_WORKING_DAYS_PER_QUARTER = 65;

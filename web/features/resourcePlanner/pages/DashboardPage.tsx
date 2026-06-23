@@ -6,8 +6,11 @@ import {
   Sigma,
   AlertTriangle,
   CheckCircle2,
+  PoundSterling,
+  Users,
 } from "lucide-react";
 import RpEmptyState from "../components/RpEmptyState";
+import FteExplainer from "../components/FteExplainer";
 import {
   ResponsiveContainer,
   BarChart,
@@ -46,6 +49,9 @@ const ROLE_COLORS: Record<Role, string> = {
 };
 
 const eyebrow = "font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500";
+
+/** £ with thousands separators, no decimals (cost figures are large). */
+const gbp = (n: number) => "£" + Math.round(n || 0).toLocaleString("en-GB");
 
 /** Shimmer placeholder shown while the planner data loads (avoids a flash of zeros). */
 function DashboardSkeleton() {
@@ -123,6 +129,14 @@ export default function ResourcePlannerDashboardPage() {
       }));
   }, [plan]);
 
+  const costFyData = useMemo(() => {
+    if (!plan) return [] as { fyLabel: string; cost: number }[];
+    return plan.cost.byFinancialYear.filter((fy) => fy.cost > 0.5);
+  }, [plan]);
+  const maxFyCost = costFyData.length
+    ? Math.max(...costFyData.map((f) => f.cost))
+    : 1;
+
   const complexityAtPeak = useMemo(
     () => (plan ? complexityAtQuarter(plan.matrix, plan.peak.axisPos) : null),
     [plan],
@@ -170,8 +184,15 @@ export default function ResourcePlannerDashboardPage() {
         />
       ) : (
         <>
+          {resourceAssumptions && (
+            <FteExplainer
+              overheadPct={resourceAssumptions.overheadPct}
+              leavePct={resourceAssumptions.leavePct}
+            />
+          )}
+
           {/* KPIs */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
             <StatsCard
               title="Schemes"
               value={filtered.length}
@@ -190,6 +211,7 @@ export default function ResourcePlannerDashboardPage() {
               title="Peak quarter FTE"
               value={plan ? Math.round(plan.peak.fte * 10) / 10 : 0}
               description={plan?.peak.label}
+              info="The highest total FTE demanded in any single quarter (incl. overhead & leave uplift). FTE = full-time-equivalent people for that 3-month quarter."
               icon={TrendingUp}
               iconBgClassName="bg-amber-100"
               iconClassName="text-amber-600"
@@ -197,9 +219,28 @@ export default function ResourcePlannerDashboardPage() {
             <StatsCard
               title="Total FTE-quarters"
               value={plan ? Math.round(plan.totalFte * 10) / 10 : 0}
+              info="The sum of FTE across every quarter in the horizon (incl. uplift) — total resourcing effort, not a headcount at one point in time."
               icon={Sigma}
               iconBgClassName="bg-emerald-100"
               iconClassName="text-emerald-600"
+            />
+            <StatsCard
+              title="Total cost"
+              value={plan ? gbp(plan.cost.total) : "£0"}
+              description={`@ ${gbp(resourceAssumptions?.dayRate ?? 250)}/day`}
+              info="FTE × working days per quarter × day rate, summed across the horizon (incl. uplift). Set the day rate and working days on the Assumptions page."
+              icon={PoundSterling}
+              iconBgClassName="bg-rose-100"
+              iconClassName="text-rose-600"
+            />
+            <StatsCard
+              title="Peak headcount"
+              value={plan ? plan.headcount.peakPeople : 0}
+              description={plan ? `${Math.round(plan.headcount.peakFte * 10) / 10} FTE · ${plan.headcount.peakLabel}` : undefined}
+              info="The peak-quarter FTE rounded up to whole people — how many full-time people you'd need to cover the busiest quarter."
+              icon={Users}
+              iconBgClassName="bg-violet-100"
+              iconClassName="text-violet-600"
             />
           </div>
 
@@ -241,6 +282,36 @@ export default function ResourcePlannerDashboardPage() {
                   ))}
                 </BarChart>
               </ResponsiveContainer>
+            )}
+          </div>
+
+          {/* Cost by financial year */}
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
+            <div className={eyebrow}>Cost by financial year</div>
+            <h2 className="text-sm font-semibold text-slate-900 mb-3">
+              Estimated cost (incl. overhead &amp; leave uplift)
+            </h2>
+            {costFyData.length === 0 ? (
+              <p className="py-6 text-center text-sm text-slate-400">
+                No cost in the current horizon.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {costFyData.map((fy) => (
+                  <div key={fy.fyLabel} className="flex items-center gap-2">
+                    <span className="w-20 font-mono text-[12px] text-slate-600">{fy.fyLabel}</span>
+                    <div className="flex-1 h-3 rounded-full bg-slate-100 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-rose-500"
+                        style={{ width: `${Math.round((fy.cost / maxFyCost) * 100)}%` }}
+                      />
+                    </div>
+                    <span className="w-28 text-right font-mono tabular-nums text-[12px] text-slate-700">
+                      {gbp(fy.cost)}
+                    </span>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
 
