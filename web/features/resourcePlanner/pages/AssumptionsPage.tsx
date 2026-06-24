@@ -80,8 +80,13 @@ export default function AssumptionsPage() {
   const setHorizon = (key: "startFy" | "endFy", v: number) =>
     setDraft((d) => (d ? { ...d, horizon: { ...d.horizon, [key]: v } } : d));
 
-  const setCostNum = (key: "dayRate" | "workingDaysPerQuarter", v: number) =>
-    setDraft((d) => (d ? { ...d, [key]: v } : d));
+  const setWorkingDays = (v: number) =>
+    setDraft((d) => (d ? { ...d, workingDaysPerQuarter: v } : d));
+
+  const setDayRate = (role: Role, v: number) =>
+    setDraft((d) =>
+      d ? { ...d, dayRateByRole: { ...(d.dayRateByRole || {}), [role]: v } } : d,
+    );
 
   const setMapBand = (mapKey: string, band: ComplexityBand) =>
     setDraft((d) => {
@@ -243,22 +248,26 @@ export default function AssumptionsPage() {
       <section className="rounded-xl border border-slate-200 bg-white p-4">
         {sectionTitle(
           "Costing",
-          "Day rate & working days",
-          "Cost = FTE × working days per quarter × day rate. FTE already includes the leave uplift, so days are not reduced again.",
+          "Day rate (per role) & working days",
+          "Cost = FTE × working days per quarter × the role's day rate. FTE already includes the leave uplift, so days are not reduced again.",
         )}
         <div className="flex flex-wrap gap-4">
-          <label className="flex items-center gap-2 text-sm text-slate-700">
-            Day rate (£)
-            <input
-              type="number"
-              min={0}
-              step={10}
-              value={draft.dayRate ?? 250}
-              disabled={!editable}
-              onChange={(e) => setCostNum("dayRate", parseFloat(e.target.value) || 0)}
-              className={numCls}
-            />
-          </label>
+          {ROLES.map((role) => (
+            <label key={role} className="flex items-center gap-2 text-sm text-slate-700">
+              {ROLE_LABELS[role]} (£/day)
+              <input
+                type="number"
+                min={0}
+                step={10}
+                value={draft.dayRateByRole?.[role] ?? draft.dayRate ?? 250}
+                disabled={!editable}
+                onChange={(e) => setDayRate(role, parseFloat(e.target.value) || 0)}
+                className={numCls}
+              />
+            </label>
+          ))}
+        </div>
+        <div className="mt-4 flex flex-wrap gap-4 border-t border-slate-100 pt-4">
           <label className="flex items-center gap-2 text-sm text-slate-700">
             Working days / quarter
             <input
@@ -267,9 +276,7 @@ export default function AssumptionsPage() {
               step={1}
               value={draft.workingDaysPerQuarter ?? 65}
               disabled={!editable}
-              onChange={(e) =>
-                setCostNum("workingDaysPerQuarter", parseFloat(e.target.value) || 0)
-              }
+              onChange={(e) => setWorkingDays(parseFloat(e.target.value) || 0)}
               className={numCls}
             />
           </label>

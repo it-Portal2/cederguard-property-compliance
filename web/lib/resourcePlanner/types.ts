@@ -95,8 +95,10 @@ export interface ResourceAssumptions {
   horizon: HorizonConfig;
   /** Available FTE per role (optional, drives the capacity shortfall/surplus view). */
   supplyByRole?: SupplyByRole;
-  /** Day-rate (£) used to convert FTE → cost. Single rate for all roles. */
+  /** LEGACY single day-rate (£) — fallback only. Superseded by `dayRateByRole`. */
   dayRate?: number;
+  /** Day-rate (£) per role used to convert FTE → cost. Unset role → `dayRate` → DEFAULT. */
+  dayRateByRole?: Partial<Record<Role, number>>;
   /** Working days that equal 1.0 FTE in one quarter (FTE × this × dayRate = cost). */
   workingDaysPerQuarter?: number;
   /**

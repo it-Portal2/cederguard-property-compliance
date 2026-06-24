@@ -8,22 +8,25 @@ export interface GridRow {
   key: string;
   label: string;
   sublabel?: string;
+  /** FTE per quarter (drives FTE + People units and the cell tint). */
   values: number[];
+  /** Precomputed £ per quarter (per-role rates) — used for the £ unit. */
+  costValues?: number[];
   strong?: boolean;
 }
 
-/** Display unit for the cells. Values are always supplied as FTE; £/people are derived. */
+/** Display unit for the cells. FTE/people derive from `values`; £ from `costValues`. */
 export type GridUnit = "fte" | "gbp" | "people";
 
 const fmtFte = (v: number) => (v ? String(Math.round(v * 100) / 100) : "");
-const gbp = (v: number) => "£" + Math.round(v).toLocaleString("en-GB");
+const gbp = (v: number) =>
+  v ? "£" + Math.round(v).toLocaleString("en-GB") : "";
 
-/** Format one FTE cell value in the chosen unit. `perQ` = workingDays × dayRate. */
-function fmtCell(v: number, unit: GridUnit, perQ: number): string {
-  if (!v) return "";
-  if (unit === "gbp") return gbp(v * perQ);
-  if (unit === "people") return String(Math.ceil(v - 1e-9));
-  return fmtFte(v);
+/** Format one cell: £ from the precomputed cost, people = ceil(FTE), else FTE. */
+function fmtCell(fte: number, cost: number, unit: GridUnit): string {
+  if (unit === "gbp") return gbp(cost);
+  if (unit === "people") return fte ? String(Math.ceil(fte - 1e-9)) : "";
+  return fmtFte(fte);
 }
 
 /**
@@ -35,12 +38,10 @@ export default function DemandGrid({
   axis,
   rows,
   unit = "fte",
-  perQ = 0,
 }: {
   axis: QuarterAxisEntry[];
   rows: GridRow[];
   unit?: GridUnit;
-  perQ?: number;
 }) {
   const todayIdx = currentFyQuarterIndex();
   // Tint normalised on FTE (unit-independent) so colour intensity is stable across units.
@@ -124,7 +125,7 @@ export default function DemandGrid({
                       : undefined
                   }
                 >
-                  {fmtCell(v, unit, perQ)}
+                  {fmtCell(v, row.costValues?.[i] ?? 0, unit)}
                 </td>
               ))}
             </tr>

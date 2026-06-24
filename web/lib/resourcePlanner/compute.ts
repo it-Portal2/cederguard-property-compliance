@@ -322,27 +322,64 @@ export function computeCapacity(
   return { byQuarter, worstByRole };
 }
 
-/** Cost (£) derived from FTE demand: FTE × working-days-per-quarter × day-rate. */
+/** Cost (£) derived from FTE demand: FTE × working-days-per-quarter × per-role day-rate. */
 export interface CostResult {
   /** Cost per axis position (length === axis.length). */
   totalByQuarter: number[];
+  /** Cost per role per axis position. */
+  byRole: Record<Role, number[]>;
+  /** Cost per complexity band per axis position. */
+  byComplexity: Record<ComplexityBand, number[]>;
+  /** Cost per scheme/role curve. */
+  bySchemeRole: { schemeId: string; role: Role; quarters: number[] }[];
   byFinancialYear: { fy: number; fyLabel: string; cost: number }[];
   /** Total cost across the whole horizon. */
   total: number;
 }
 
 /**
- * Convert an FTE demand matrix to cost. `cost = FTE × workingDaysPerQuarter ×
- * dayRate`. The matrix is expected to already carry the overhead/leave uplift,
- * so working days are NOT reduced again for leave.
+ * Convert an FTE demand matrix to cost. `cost(role) = FTE × workingDaysPerQuarter
+ * × dayRate(role)`, summed across roles. The matrix is expected to already carry
+ * the overhead/leave uplift, so working days are NOT reduced again for leave.
+ * `byComplexity`/`bySchemeRole` £ are walked from `matrix.bySchemeRole` (which
+ * carries both role + complexity) so per-role rates apply correctly to every view.
  */
 export function computeCost(
   matrix: DemandMatrix,
-  dayRate: number = DEFAULT_DAY_RATE,
+  dayRateByRole?: Partial<Record<Role, number>>,
   workingDaysPerQuarter: number = DEFAULT_WORKING_DAYS_PER_QUARTER,
+  fallbackRate: number = DEFAULT_DAY_RATE,
 ): CostResult {
-  const perQ = num(workingDaysPerQuarter) * num(dayRate);
-  const totalByQuarter = matrix.totalByQuarter.map((fte) => fte * perQ);
+  const wd = num(workingDaysPerQuarter);
+  const rate = (role: Role): number => {
+    const r = dayRateByRole?.[role];
+    return num(r != null ? r : fallbackRate);
+  };
+  const len = matrix.axis.length;
+
+  // £ per role (direct from the role-FTE matrix) + grand total.
+  const byRole = {} as Record<Role, number[]>;
+  const totalByQuarter = new Array(len).fill(0);
+  for (const role of ROLES) {
+    const perQ = wd * rate(role);
+    byRole[role] = matrix.byRole[role].map((fte) => fte * perQ);
+    for (let p = 0; p < len; p++) totalByQuarter[p] += byRole[role][p];
+  }
+
+  // £ by complexity + by scheme/role — walk bySchemeRole (carries role + complexity).
+  const byComplexity = {} as Record<ComplexityBand, number[]>;
+  for (const c of COMPLEXITY_BANDS) byComplexity[c] = new Array(len).fill(0);
+  const bySchemeRole: CostResult["bySchemeRole"] = [];
+  for (const sr of matrix.bySchemeRole) {
+    const perQ = wd * rate(sr.role);
+    const quarters = sr.quarters.map((fte) => fte * perQ);
+    bySchemeRole.push({ schemeId: sr.schemeId, role: sr.role, quarters });
+    if (sr.complexity) {
+      const band = byComplexity[sr.complexity];
+      for (let p = 0; p < len; p++) band[p] += quarters[p];
+    }
+  }
+
   const byFy = new Map<number, { fy: number; fyLabel: string; cost: number }>();
   matrix.axis.forEach((entry, p) => {
     let agg = byFy.get(entry.fy);
@@ -352,8 +389,12 @@ export function computeCost(
     }
     agg.cost += totalByQuarter[p];
   });
+
   return {
     totalByQuarter,
+    byRole,
+    byComplexity,
+    bySchemeRole,
     byFinancialYear: [...byFy.values()].sort((a, b) => a.fy - b.fy),
     total: totalByQuarter.reduce((a, b) => a + b, 0),
   };
@@ -435,8 +476,9 @@ export function buildResourcePlan(
     ),
     cost: computeCost(
       matrix,
-      assumptions.dayRate ?? DEFAULT_DAY_RATE,
+      assumptions.dayRateByRole,
       assumptions.workingDaysPerQuarter ?? DEFAULT_WORKING_DAYS_PER_QUARTER,
+      assumptions.dayRate ?? DEFAULT_DAY_RATE,
     ),
     headcount: computeHeadcount(matrix),
   };

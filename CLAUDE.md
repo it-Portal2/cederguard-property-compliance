@@ -623,8 +623,9 @@ pages/CapacityPage.tsx              /resource-planner/capacity — "By role": in
 pages/TimelinePage.tsx              /resource-planner/timeline — GanttTimeline (per-scheme stage bands)
                                     with calendar-date hover + "today" column marker.
 pages/AssumptionsPage.tsx           /resource-planner/assumptions — RateCardEditor (5 roles × 4 stages ×
-                                    6 bands) + complexity-map editor + overhead/leave % + costing (day
-                                    rate £ + working days/quarter) + capacity supply + horizon. Edit gated.
+                                    6 bands) + complexity-map editor + overhead/leave % + costing
+                                    (per-role day rate £ + working days/quarter) + capacity supply +
+                                    horizon. Edit gated.
 components/RpEmptyState.tsx         Shared empty state (stacked tiles + page icon + optional "+" badge +
                                     title/description + optional CTA via `showAction`). Reused across pages.
 components/SchemeFilters.tsx        Shared Programme/Batch/Route/Status/Complexity filter bar +
@@ -636,8 +637,9 @@ components/ResourcesInPostGrid.tsx  Editable role × quarter "resources in post"
                                     highlight; read-only renders plain numbers). The shared capacity/actuals input.
 components/PeopleCapacityGrid.tsx   Person × quarter committed-vs-availability grid (green headroom / red
                                     over-allocated) with an inline editable availability (FTE) per person.
-components/DemandGrid.tsx           Per-quarter matrix; `unit` ('fte'|'gbp'|'people') + `perQ` props
-                                    (values supplied as FTE, £/people derived; tint normalised on FTE).
+components/DemandGrid.tsx           Per-quarter matrix; `unit` ('fte'|'gbp'|'people'); rows carry FTE
+                                    `values` + optional precomputed `costValues` (£, per-role rates);
+                                    people = ceil(FTE); tint normalised on FTE.
 components/{RateCardEditor,SchemeModal,ImportModal,GanttTimeline}.tsx   other per-page building blocks.
 ```
 
@@ -774,7 +776,8 @@ types.ts                           `Role` (SPM/PM/APM/StrategicLead/DefectsPM), 
                                    (Small/Mid/Large/Complex/S106-GLA/DP), `Stage` (S1–S4),
                                    `ResourceScheme`, `RateCard`, `ResourceAssumptions` (rate card,
                                    complexity map, overhead/leave %, horizon, `supplyByRole`, + costing
-                                   `dayRate`/`workingDaysPerQuarter`, + `inPostByRoleQuarter` and
+                                   `dayRateByRole` (per-role £/day; legacy single `dayRate` = fallback) +
+                                   `workingDaysPerQuarter`, + `inPostByRoleQuarter` and
                                    `personAvailability`), `DemandMatrix`, `CapacityResult`,
                                    `PersonCapacityRow`, `CostResult`/`HeadcountResult`, axis/aggregate types.
 constants.ts                       `ROLES`/`ROLE_LABELS`, `STAGES`/`STAGE_LABELS`/`STAGE_RIBA`,
@@ -796,8 +799,10 @@ compute.ts                         `normalizeScheme` (resolve complexity band, d
                                    incl; MISSING boundary ⇒ that stage contributes 0 FTE),
                                    `computeDemandMatrix`, `applyOverheadAndLeave` (flat % uplift),
                                    `aggregateByFinancialYear`, `complexityAtQuarter`, `peakQuarterFte`,
-                                   `totalFte`, `computeCost` (FTE × workingDays × dayRate; per-qtr/per-FY/
-                                   total, on the uplifted matrix), `computeHeadcount` (peak FTE → whole
+                                   `totalFte`, `computeCost` (FTE × workingDays × PER-ROLE dayRate;
+                                   returns per-qtr/per-FY/total + `byRole`/`byComplexity`/`bySchemeRole` £,
+                                   computed by walking `bySchemeRole` so per-role rates apply to every
+                                   view; on the uplifted matrix), `computeHeadcount` (peak FTE → whole
                                    people, ceil), `computeCapacity` (supply-vs-demand by role; per-quarter
                                    supply from `inPostByRoleQuarter`, falls back to flat `supplyByRole`),
                                    `ASSIGNMENT_ROLE_FIELDS`/`personKey`/`computePeopleCapacity` (person
@@ -1740,7 +1745,7 @@ An admin-only product-demo / testing overlay: it injects a complete static datas
 
 ### Standing rules for sweeps / refactors
 - **Demo mode goes through [`web/lib/demoMode.ts`](web/lib/demoMode.ts) + [`web/lib/demoData/index.ts`](web/lib/demoData/index.ts); NEVER write to the DB on a demo path and never use the `demo-` prefix (use `cgdemo-`).** See the Demo mode convention above.
-- **Resource Planner FTE/demand/cost/capacity maths goes through the pure lib [`web/lib/resourcePlanner/`](web/lib/resourcePlanner/) (`buildResourcePlan` / `computeDemandMatrix` / `computeCost` / `computeHeadcount` / `computeCapacity` / `computePeopleCapacity`); never re-derive demand, cost, quarter indices or the rate card inline in a page.** Retune via `constants.ts` (rate card seeded from the Excel ASSUMPTIONS tab; April fiscal year; missing date ⇒ 0 FTE; unmapped complexity ⇒ 0 FTE; `DEFAULT_DAY_RATE=250`, `DEFAULT_WORKING_DAYS_PER_QUARTER=65`). **Cost = `FTE × workingDaysPerQuarter × dayRate` on the UPLIFTED demand** — never reduce days again for leave (the FTE already carries the +leave uplift). **Headcount = `ceil(peak-quarter FTE)`** to whole people. **ONE shared manually-entered input — `inPostByRoleQuarter` ("resources in post", role × quarter) — drives BOTH the Capacity view AND the Actual-under-Demand rows on the Forecast** (mirrors the workbook). **Person-level capacity** (`computePeopleCapacity`) derives committed load from the scheme assignment NAME fields via `ASSIGNMENT_ROLE_FIELDS` + `bySchemeRole` (no per-person actuals exist anywhere); availability defaults to 1.0 FTE per person. Schemes + assumptions (incl. costing/in-post/availability — all on the assumptions doc) are TENANT-scoped via [`api/routes/resourcePlanner.ts`](api/routes/resourcePlanner.ts) (`clientId === primaryUid`) — NOT the user-scoped generic `saveData`; edits gated to `isAtLeastProgrammeManager` (Client Admin / Programme Manager / Super Admin), view open to any signed-in user. Reuse [`RpEmptyState`](web/features/resourcePlanner/components/RpEmptyState.tsx) + [`SchemeFilters`](web/features/resourcePlanner/components/SchemeFilters.tsx) across its pages; the [`FteExplainer`](web/features/resourcePlanner/components/FteExplainer.tsx) panel is the canonical place to explain FTE/uplift.
+- **Resource Planner FTE/demand/cost/capacity maths goes through the pure lib [`web/lib/resourcePlanner/`](web/lib/resourcePlanner/) (`buildResourcePlan` / `computeDemandMatrix` / `computeCost` / `computeHeadcount` / `computeCapacity` / `computePeopleCapacity`); never re-derive demand, cost, quarter indices or the rate card inline in a page.** Retune via `constants.ts` (rate card seeded from the Excel ASSUMPTIONS tab; April fiscal year; missing date ⇒ 0 FTE; unmapped complexity ⇒ 0 FTE; `DEFAULT_DAY_RATE=250`, `DEFAULT_WORKING_DAYS_PER_QUARTER=65`). **Cost = `FTE × workingDaysPerQuarter × PER-ROLE dayRate` on the UPLIFTED demand** (rate via `dayRateByRole[role]` → legacy single `dayRate` → `DEFAULT_DAY_RATE`; working days stays a single shared value) — never reduce days again for leave (the FTE already carries the +leave uplift). `computeCost` returns `byRole`/`byComplexity`/`bySchemeRole` £ (walked from `bySchemeRole`) so the Demand Forecast £ view is exact in every grouping. **Headcount = `ceil(peak-quarter FTE)`** to whole people. **ONE shared manually-entered input — `inPostByRoleQuarter` ("resources in post", role × quarter) — drives BOTH the Capacity view AND the Actual-under-Demand rows on the Forecast** (mirrors the workbook). **Person-level capacity** (`computePeopleCapacity`) derives committed load from the scheme assignment NAME fields via `ASSIGNMENT_ROLE_FIELDS` + `bySchemeRole` (no per-person actuals exist anywhere); availability defaults to 1.0 FTE per person. Schemes + assumptions (incl. costing/in-post/availability — all on the assumptions doc) are TENANT-scoped via [`api/routes/resourcePlanner.ts`](api/routes/resourcePlanner.ts) (`clientId === primaryUid`) — NOT the user-scoped generic `saveData`; edits gated to `isAtLeastProgrammeManager` (Client Admin / Programme Manager / Super Admin), view open to any signed-in user. Reuse [`RpEmptyState`](web/features/resourcePlanner/components/RpEmptyState.tsx) + [`SchemeFilters`](web/features/resourcePlanner/components/SchemeFilters.tsx) across its pages; the [`FteExplainer`](web/features/resourcePlanner/components/FteExplainer.tsx) panel is the canonical place to explain FTE/uplift.
 - **`PageHeader` is the ONLY way to add a page title.** Never add an ad-hoc `<h1>` or title block to an authenticated page. Props: `breadcrumbs` (first item = sidebar group name), `title`, optional `subtitle`, optional `actions` slot.
 - **Marketing-page imagery goes through [`<MarketingImage>`](web/components/public/MarketingImage.tsx) with pre-generated variants in `public/marketing/`.** Never reference a raw multi-MB image from a marketing page or hand-roll a `<picture>`/`<img>` there — `MarketingImage` is the single source of truth for the AVIF→WebP→JPEG + responsive-srcset + lazy + CLS-safe pattern. New marketing shots: drop the source in `public/marketing/`, generate the 6 `sharp` variants (`-{960,1600}.{avif,webp,jpg}`), and reference by `base`. (Photographic device shots go in Landing's alternating `ShowcaseBand` spotlight tiles or the Product deep-dive cards — not a bento grid; bento is for clean UI tiles, not desk-scene photos.)
 - **Risk-to-Issue "trending" logic goes through [`web/lib/riskConversion.ts`](web/lib/riskConversion.ts) `evaluateConversion` ONLY.** Don't re-implement the heuristics or hardcode its thresholds in a page; retune via that file's constants. Scores via `riskMetrics.ts`, never inline.

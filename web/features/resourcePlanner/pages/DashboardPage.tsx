@@ -227,8 +227,8 @@ export default function ResourcePlannerDashboardPage() {
             <StatsCard
               title="Total cost"
               value={plan ? gbp(plan.cost.total) : "£0"}
-              description={`@ ${gbp(resourceAssumptions?.dayRate ?? 250)}/day`}
-              info="FTE × working days per quarter × day rate, summed across the horizon (incl. uplift). Set the day rate and working days on the Assumptions page."
+              description="across all roles"
+              info="FTE × working days per quarter × the role's day rate, summed across roles and the horizon (incl. uplift). Set per-role day rates and working days on the Assumptions page."
               icon={PoundSterling}
               iconBgClassName="bg-rose-100"
               iconClassName="text-rose-600"

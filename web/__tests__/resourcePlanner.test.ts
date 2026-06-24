@@ -198,14 +198,31 @@ describe("cost + headcount (Point 2: quantify)", () => {
   const axis = buildQuarterAxis(2026, 2027);
   const matrix = computeDemandMatrix([normalizeScheme(fullMid)], DEFAULT_RATE_CARD, axis);
 
-  it("cost = FTE × working-days × day-rate, totalled and by FY", () => {
-    const cost = computeCost(matrix, 250, 65);
+  it("cost = FTE × working-days × day-rate (flat rate for all roles), totalled and by FY", () => {
+    const cost = computeCost(matrix, { SPM: 250, PM: 250, APM: 250 }, 65);
     // total FTE (no uplift) = 3.4 ⇒ 3.4 × 65 × 250 = 55,250
     expect(cost.total).toBeCloseTo(3.4 * 65 * 250, 2);
     // peak quarter (0.7 FTE) ⇒ 0.7 × 65 × 250
     expect(cost.totalByQuarter[1]).toBeCloseTo(0.7 * 65 * 250, 2);
     const fy2026 = cost.byFinancialYear.find((f) => f.fy === 2026)!;
     expect(fy2026.cost).toBeCloseTo(2.5 * 65 * 250, 2);
+  });
+
+  it("applies PER-ROLE day rates (PM costed higher than the rest)", () => {
+    const cost = computeCost(matrix, { SPM: 250, PM: 300, APM: 250 }, 65);
+    // PM FTE curve [0.3,0.3,0.3,0.3,0.2,0.2,0,0] @ 300/day; SPM/APM @ 250.
+    expect(cost.byRole.PM[0]).toBeCloseTo(0.3 * 65 * 300, 2);
+    expect(cost.byRole.SPM[0]).toBeCloseTo(0.2 * 65 * 250, 2);
+    // total quarter 0 = SPM 0.2 + APM 0.1 @250 + PM 0.3 @300
+    expect(cost.totalByQuarter[0]).toBeCloseTo((0.2 + 0.1) * 65 * 250 + 0.3 * 65 * 300, 2);
+    // single Mid scheme ⇒ Mid complexity £ equals the grand total per quarter
+    expect(cost.byComplexity.Mid[0]).toBeCloseTo(cost.totalByQuarter[0], 2);
+  });
+
+  it("falls back to the legacy single dayRate for unset roles", () => {
+    // no per-role map ⇒ every role uses fallbackRate (legacy dayRate) = 200
+    const cost = computeCost(matrix, undefined, 65, 200);
+    expect(cost.total).toBeCloseTo(3.4 * 65 * 200, 2);
   });
 
   it("headcount rounds the peak quarter up to whole people", () => {

@@ -16,6 +16,7 @@ import {
   ROLES,
   ROLE_LABELS,
 } from "../../../lib/resourcePlanner/constants";
+import type { Role } from "../../../lib/resourcePlanner/types";
 
 type View = "role" | "complexity" | "scheme";
 
@@ -40,9 +41,9 @@ export default function DemandForecastPage() {
   const [view, setView] = useState<View>("role");
   const [unit, setUnit] = useState<GridUnit>("fte");
 
-  const perQ =
-    (resourceAssumptions?.dayRate ?? 250) *
-    (resourceAssumptions?.workingDaysPerQuarter ?? 65);
+  const wd = resourceAssumptions?.workingDaysPerQuarter ?? 65;
+  const rateOf = (role: Role) =>
+    resourceAssumptions?.dayRateByRole?.[role] ?? resourceAssumptions?.dayRate ?? 250;
 
   useEffect(() => {
     loadResourcePlanner();
@@ -67,28 +68,35 @@ export default function DemandForecastPage() {
       );
       const r: GridRow[] = [];
       const totalActual = plan.axis.map(() => 0);
+      const totalActualCost = plan.axis.map(() => 0);
       ROLES.forEach((role) => {
         const demand = plan.matrix.byRole[role];
+        const demandCost = plan.cost.byRole[role];
         r.push({
           key: role,
           label: ROLE_LABELS[role],
           sublabel: hasInPost ? "Demand" : undefined,
           values: demand,
+          costValues: demandCost,
         });
         if (hasInPost) {
           const actual = plan.axis.map((q) => inPost[role]?.[q.index] ?? 0);
+          const actualCost = actual.map((v) => v * wd * rateOf(role));
           actual.forEach((v, i) => (totalActual[i] += v));
+          actualCost.forEach((v, i) => (totalActualCost[i] += v));
           r.push({
             key: `${role}_actual`,
             label: ROLE_LABELS[role],
             sublabel: "Actual",
             values: actual,
+            costValues: actualCost,
           });
           r.push({
             key: `${role}_var`,
             label: ROLE_LABELS[role],
             sublabel: "Variance",
             values: actual.map((v, i) => v - demand[i]),
+            costValues: actualCost.map((v, i) => v - demandCost[i]),
           });
         }
       });
@@ -97,6 +105,7 @@ export default function DemandForecastPage() {
         label: "Total",
         sublabel: hasInPost ? "Demand" : undefined,
         values: plan.matrix.totalByQuarter,
+        costValues: plan.cost.totalByQuarter,
         strong: true,
       });
       if (hasInPost) {
@@ -105,6 +114,7 @@ export default function DemandForecastPage() {
           label: "Total",
           sublabel: "Actual",
           values: totalActual,
+          costValues: totalActualCost,
           strong: true,
         });
         r.push({
@@ -112,6 +122,7 @@ export default function DemandForecastPage() {
           label: "Total",
           sublabel: "Variance",
           values: totalActual.map((v, i) => v - plan.matrix.totalByQuarter[i]),
+          costValues: totalActualCost.map((v, i) => v - plan.cost.totalByQuarter[i]),
           strong: true,
         });
       }
@@ -122,17 +133,28 @@ export default function DemandForecastPage() {
         key: b,
         label: b,
         values: plan.matrix.byComplexity[b],
+        costValues: plan.cost.byComplexity[b],
       }));
-      r.push({ key: "_total", label: "Total", values: plan.matrix.totalByQuarter, strong: true });
+      r.push({
+        key: "_total",
+        label: "Total",
+        values: plan.matrix.totalByQuarter,
+        costValues: plan.cost.totalByQuarter,
+        strong: true,
+      });
       return r;
     }
+    const costBySchemeRole = new Map(
+      plan.cost.bySchemeRole.map((s) => [`${s.schemeId}:${s.role}`, s.quarters]),
+    );
     return plan.matrix.bySchemeRole.map((s) => ({
       key: `${s.schemeId}:${s.role}`,
       label: s.schemeName,
       sublabel: ROLE_LABELS[s.role],
       values: s.quarters,
+      costValues: costBySchemeRole.get(`${s.schemeId}:${s.role}`),
     }));
-  }, [plan, view, resourceAssumptions]);
+  }, [plan, view, resourceAssumptions, wd]);
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -229,7 +251,7 @@ export default function DemandForecastPage() {
           />
         )
       ) : (
-        <DemandGrid axis={plan.axis} rows={rows} unit={unit} perQ={perQ} />
+        <DemandGrid axis={plan.axis} rows={rows} unit={unit} />
       )}
     </div>
   );
