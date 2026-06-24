@@ -1455,9 +1455,6 @@ export function Dashboard() {
             </motion.div>
           )}
 
-          {/* ─── GOVERNANCE STATUS (scope-aware; governance-enabled users only) ─── */}
-          {(isClientAdmin || isProjectManager) && <DashboardGovernanceCard />}
-
           {/* ─── RISK BURN-DOWN HERO (90-day projection) ─── */}
           {isRiskSetup && isRefreshing ? (
             <SkeletonBar />
@@ -1894,6 +1891,9 @@ export function Dashboard() {
               )}
             </div>
           )}
+
+          {/* ─── GOVERNANCE STATUS (after Recent activity; governance-enabled users only) ─── */}
+          {(isClientAdmin || isProjectManager) && <DashboardGovernanceCard />}
 
           {/* AI Strategic Intelligence — Hidden if no stats available at all */}
           {(isComplianceSetup || isRiskSetup) && (

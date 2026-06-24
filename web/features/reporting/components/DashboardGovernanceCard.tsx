@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { api } from "../../../lib/api";
 import { useStore } from "../../../store/useStore";
+import { isDemoActive } from "../../../lib/demoMode";
+import { buildDemoGovernance } from "../../../lib/demoData";
 
 /**
  * Governance status on the main Dashboard, scope-aware.
@@ -271,6 +273,29 @@ export default function DashboardGovernanceCard() {
     (async () => {
       try {
         const now = new Date();
+
+        // Demo mode is client-only (no DB): the card fetches its own data, so
+        // it can't read the store bundle — use the governance demo fixtures.
+        if (isDemoActive()) {
+          const g = buildDemoGovernance();
+          if (scope === "project") {
+            setReportSummary(null);
+            setDocSummary(
+              summariseDocs(g.projectDocs.filter((d) => d.projectId === activeProjectId)),
+            );
+          } else if (scope === "programme") {
+            setReportSummary(summariseReports(g.reports, g.meetings, now));
+            setDocSummary(
+              summariseDocs(g.projectDocs.filter((d) => childProjectIds.includes(d.projectId))),
+            );
+          } else {
+            setReportSummary(summariseReports(g.reports, g.meetings, now));
+            setDocSummary(null);
+          }
+          setLoading(false);
+          return;
+        }
+
         if (scope === "project") {
           const res = await api.governanceListProjectDocs(activeProjectId!);
           if (stale()) return;

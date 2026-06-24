@@ -378,10 +378,13 @@ These are the canonical typography references. Match their class strings when po
 tiles / status chips / table headers / sparklines to other pages.
 
 **Main-dashboard governance card** — `web/features/reporting/components/DashboardGovernanceCard.tsx`
-is a self-contained, SCOPE-AWARE governance-status card mounted in `Dashboard.tsx` (after the KPI strip),
-gated to `isClientAdmin || isProjectManager` (matches the Governance sidebar group's `hasCoreAccess`). It
-fetches its OWN data per active scope (no `useStore` loader touched) via `governanceListReports` /
-`governanceListMeetings` / `governanceListProjectDocs`, with a stale-guard + own skeleton. **Load-bearing
+is a self-contained, SCOPE-AWARE governance-status card mounted in `Dashboard.tsx` **after the Recent
+activity section** (before the AI Strategic Intelligence panel), gated to `isClientAdmin ||
+isProjectManager` (matches the Governance sidebar group's `hasCoreAccess`). It fetches its OWN data per
+active scope (no `useStore` loader touched) via `governanceListReports` / `governanceListMeetings` /
+`governanceListProjectDocs`, with a stale-guard + own skeleton. **Demo-aware:** when `isDemoActive()` it
+bypasses the API and uses `buildDemoGovernance()` fixtures (scope-filtered), since the card can't read the
+store demo bundle. **Load-bearing
 governance-scoping fact:** governance *reports* are WORKSPACE-wide (no `programmeId`/`projectId`) while
 *Project Governance Docs* are `projectId`-scoped — so the card shows: portfolio → workspace report-status
 summary (+ overdue + next board); programme → that summary (labelled council-wide) + a roll-up of the
@@ -777,7 +780,11 @@ demoData/index.ts                  SINGLE SOURCE OF TRUTH for the static demo fi
                                    `stage`/`status`/`dateAdded`/`completedAt` so every dashboard/chart and the
                                    Compliance/Risk setup pages render as a fully-set-up workspace. Dates are
                                    scattered with a deterministic sine-hash (no Math.random) so charts look
-                                   varied + reproducible. See the Demo mode convention below.
+                                   varied + reproducible. Also exports `buildDemoGovernance()` →
+                                   `{ reports, meetings, projectDocs }` (governance fixtures: workspace-wide
+                                   reports with varied statuses + 2 overdue + a soft-deleted row, upcoming/held
+                                   meetings, per-demo-project docs) consumed CLIENT-SIDE by
+                                   `DashboardGovernanceCard` when `isDemoActive()`. See the Demo mode convention below.
 ```
 
 #### `/web/lib/resourcePlanner/` — Resource Planner FTE demand engine (pure, riskMetrics-style)

@@ -63,6 +63,11 @@ function daysAgoISO(n: number): string {
   return d.toISOString();
 }
 
+// ISO date `n` days from now (for upcoming boards / future targets).
+function daysFromNowISO(n: number): string {
+  return daysAgoISO(-n);
+}
+
 // Deterministic sine-hash in [0,1) — scatters items unevenly so the velocity
 // bars get a varied skyline (no Math.random → reproducible).
 function pseudoRandom(seed: number): number {
@@ -345,6 +350,75 @@ function demoSoloProject(): Project {
     financialThreshold: '£5m+',
     riskRegulatoryProfile: 'Building Safety / Compliance-critical',
     decisionAuthority: 'Delegated Officer',
+  };
+}
+
+// ── Governance demo fixtures ────────────────────────────────────────────────
+// Governance reports are WORKSPACE-wide (no programme/project link); project
+// docs are project-scoped. Consumed CLIENT-SIDE by DashboardGovernanceCard when
+// `isDemoActive()` (the card fetches its own data, so it can't read the store
+// bundle). Shapes mirror what summariseReports / summariseDocs read.
+
+export interface DemoGovernance {
+  reports: any[];
+  meetings: any[];
+  /** Docs across ALL demo project ids; the card filters by the active scope. */
+  projectDocs: any[];
+}
+
+const DEMO_MEETING_BOARD = `${DEMO_ID_PREFIX}mtg-board`;
+
+function demoGovReports(): any[] {
+  // id, status, targetBoardDate, targetMeetingId, softDeleted — varied statuses;
+  // two ACTIVE reports with past target dates → 2 overdue.
+  return [
+    { id: `${DEMO_ID_PREFIX}rep-1`, title: 'Gateway 2 assurance — Beech Rise', scheme: PROGRAMME_NAME, status: 'Draft', targetBoardDate: daysFromNowISO(20), targetMeetingId: null, softDeleted: false },
+    { id: `${DEMO_ID_PREFIX}rep-2`, title: 'Q1 programme delivery update', scheme: PROGRAMME_NAME, status: 'Draft', targetBoardDate: null, targetMeetingId: null, softDeleted: false },
+    { id: `${DEMO_ID_PREFIX}rep-3`, title: 'Fire strategy sign-off', scheme: PROGRAMME_NAME, status: 'InReview', targetBoardDate: null, targetMeetingId: DEMO_MEETING_BOARD, softDeleted: false },
+    { id: `${DEMO_ID_PREFIX}rep-4`, title: 'Decant rehousing plan', scheme: PROGRAMME_NAME, status: 'InReview', targetBoardDate: daysAgoISO(6), targetMeetingId: null, softDeleted: false }, // overdue
+    { id: `${DEMO_ID_PREFIX}rep-5`, title: 'Grant drawdown variation', scheme: PROGRAMME_NAME, status: 'AmendmentsRequested', targetBoardDate: daysAgoISO(12), targetMeetingId: null, softDeleted: false }, // overdue
+    { id: `${DEMO_ID_PREFIX}rep-6`, title: 'Contractor appointment — Maple Gardens', scheme: PROGRAMME_NAME, status: 'Approved', targetBoardDate: daysFromNowISO(8), targetMeetingId: DEMO_MEETING_BOARD, softDeleted: false },
+    { id: `${DEMO_ID_PREFIX}rep-7`, title: 'Annual safety case review', scheme: PROGRAMME_NAME, status: 'Sealed', targetBoardDate: daysAgoISO(40), targetMeetingId: null, softDeleted: false },
+    { id: `${DEMO_ID_PREFIX}rep-8`, title: 'SHDF Wave 2 funding acceptance', scheme: PROGRAMME_NAME, status: 'Sealed', targetBoardDate: daysAgoISO(70), targetMeetingId: null, softDeleted: false },
+    // A soft-deleted row to prove the summariser drops it.
+    { id: `${DEMO_ID_PREFIX}rep-9`, title: 'Superseded draft', scheme: PROGRAMME_NAME, status: 'Draft', targetBoardDate: null, targetMeetingId: null, softDeleted: true },
+  ];
+}
+
+function demoGovMeetings(): any[] {
+  return [
+    { id: DEMO_MEETING_BOARD, governanceBodyLabel: 'Programme Board', date: daysFromNowISO(12), status: 'Scheduled', softDeleted: false },
+    { id: `${DEMO_ID_PREFIX}mtg-assurance`, governanceBodyLabel: 'Assurance Panel', date: daysFromNowISO(33), status: 'Scheduled', softDeleted: false },
+    { id: `${DEMO_ID_PREFIX}mtg-past`, governanceBodyLabel: 'Delivery Board', date: daysAgoISO(9), status: 'Held', softDeleted: false },
+  ];
+}
+
+const DOC_STATUSES = ['Published', 'Published', 'Draft', 'Archived'] as const;
+const DOC_TITLES = [
+  'Terms of Reference acknowledgement',
+  'Decision log',
+  'Change control record',
+  'Board meeting note',
+];
+
+function demoGovDocsFor(projectId: string, seed: number): any[] {
+  return DOC_STATUSES.map((status, i) => ({
+    id: `${DEMO_ID_PREFIX}doc-${seed}-${i}`,
+    projectId,
+    status,
+    title: DOC_TITLES[i % DOC_TITLES.length],
+    updatedAt: daysAgoISO((seed * 5 + i * 3) % 50),
+    softDeleted: false,
+  }));
+}
+
+/** All governance demo fixtures (reports + meetings + project docs for every demo project). */
+export function buildDemoGovernance(): DemoGovernance {
+  const projectIds = [...DEMO_PROGRAMME_CHILD_IDS, DEMO_PROJECT_ID];
+  return {
+    reports: demoGovReports(),
+    meetings: demoGovMeetings(),
+    projectDocs: projectIds.flatMap((pid, i) => demoGovDocsFor(pid, i + 1)),
   };
 }
 
