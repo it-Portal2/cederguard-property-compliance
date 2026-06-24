@@ -377,6 +377,18 @@ ShimmerSkeleton.tsx                 Animated shimmer placeholder
 These are the canonical typography references. Match their class strings when porting KPI
 tiles / status chips / table headers / sparklines to other pages.
 
+**Main-dashboard governance card** — `web/features/reporting/components/DashboardGovernanceCard.tsx`
+is a self-contained, SCOPE-AWARE governance-status card mounted in `Dashboard.tsx` (after the KPI strip),
+gated to `isClientAdmin || isProjectManager` (matches the Governance sidebar group's `hasCoreAccess`). It
+fetches its OWN data per active scope (no `useStore` loader touched) via `governanceListReports` /
+`governanceListMeetings` / `governanceListProjectDocs`, with a stale-guard + own skeleton. **Load-bearing
+governance-scoping fact:** governance *reports* are WORKSPACE-wide (no `programmeId`/`projectId`) while
+*Project Governance Docs* are `projectId`-scoped — so the card shows: portfolio → workspace report-status
+summary (+ overdue + next board); programme → that summary (labelled council-wide) + a roll-up of the
+programme's child-project docs (`projects.filter(p.programmeId === activeProgrammeId)`); project → that
+project's docs. Pure `summariseReports`/`summariseDocs` helpers bucket status and **always drop
+`softDeleted` rows**. List APIs return `{ success, items }` (read `res.items`).
+
 #### `/web/components/admin/` — Admin-only sub-components
 ```
 OverviewTab.tsx       (329 lines)   Admin dashboard overview cards

@@ -83,6 +83,7 @@ import TableTooltip from "../../../components/table/TableTooltip";
 import { canCreateProgramme as canCreateProgrammeFn } from "../../../lib/roles";
 import { GetStartedModal } from "../../../components/onboarding/GetStartedModal";
 import DemoDataControls from "../../../components/DemoDataControls";
+import DashboardGovernanceCard from "../components/DashboardGovernanceCard";
 import { getOnboardingSteps } from "../../../components/onboarding/onboardingSteps";
 
 function getProjectCardModel(
@@ -1453,6 +1454,9 @@ export function Dashboard() {
               />
             </motion.div>
           )}
+
+          {/* ─── GOVERNANCE STATUS (scope-aware; governance-enabled users only) ─── */}
+          {(isClientAdmin || isProjectManager) && <DashboardGovernanceCard />}
 
           {/* ─── RISK BURN-DOWN HERO (90-day projection) ─── */}
           {isRiskSetup && isRefreshing ? (
