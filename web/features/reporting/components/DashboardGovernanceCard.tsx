@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
+import { motion } from "motion/react";
 import {
   FileText,
   FolderGit2,
@@ -150,92 +151,180 @@ const fmtDate = (s: string) => {
       });
 };
 
-function StatusChips({ s }: { s: ReportSummary }) {
-  const chips: { label: string; value: number; tone: string }[] = [
-    { label: "Draft", value: s.draft, tone: "bg-slate-100 text-slate-600" },
-    { label: "In review", value: s.inReview, tone: "bg-sky-100 text-sky-700" },
-    { label: "Amendments", value: s.amendments, tone: "bg-amber-100 text-amber-700" },
-    { label: "Approved", value: s.approved, tone: "bg-indigo-100 text-indigo-700" },
-    { label: "Sealed", value: s.sealed, tone: "bg-emerald-100 text-emerald-700" },
-  ];
-  return (
-    <div className="flex flex-wrap gap-2">
-      {chips.map((c) => (
-        <span
-          key={c.label}
-          className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[12px] font-medium ${c.tone}`}
-        >
-          {c.label}
-          <span className="font-mono tabular-nums font-semibold">{c.value}</span>
-        </span>
-      ))}
-    </div>
-  );
+// ── Presentational primitives ───────────────────────────────────────────────
+
+interface Segment {
+  label: string;
+  value: number;
+  color: string;
 }
 
-function ReportBlock({ s }: { s: ReportSummary }) {
+/** Segmented stacked bar (proportional) + dot legend with counts. */
+function PipelineBar({ segments }: { segments: Segment[] }) {
+  const total = segments.reduce((a, s) => a + s.value, 0);
   return (
-    <div className="space-y-3">
-      <StatusChips s={s} />
-      <div className="flex flex-wrap items-center gap-4 text-[13px]">
-        <span
-          className={`inline-flex items-center gap-1.5 ${
-            s.overdue > 0 ? "text-red-600" : "text-slate-400"
-          }`}
-        >
-          <AlertTriangle className="h-3.5 w-3.5" />
-          <span className="font-mono tabular-nums font-semibold">{s.overdue}</span>
-          overdue
-        </span>
-        <span className="inline-flex items-center gap-1.5 text-slate-500">
-          <CalendarClock className="h-3.5 w-3.5" />
-          {s.nextBoard ? (
-            <>
-              Next board{" "}
-              <span className="font-medium text-slate-700">{fmtDate(s.nextBoard.date)}</span>
-              <span className="text-slate-400">· {s.nextBoard.label}</span>
-            </>
-          ) : (
-            <span className="text-slate-400">No upcoming board</span>
+    <div className="space-y-2.5">
+      <div className="flex h-2.5 w-full gap-px overflow-hidden rounded-full bg-slate-100">
+        {total > 0 &&
+          segments.map((s) =>
+            s.value > 0 ? (
+              <div
+                key={s.label}
+                title={`${s.label}: ${s.value}`}
+                style={{ width: `${(s.value / total) * 100}%`, backgroundColor: s.color }}
+                className="h-full first:rounded-l-full last:rounded-r-full"
+              />
+            ) : null,
           )}
-        </span>
       </div>
-    </div>
-  );
-}
-
-function DocBlock({ d }: { d: DocSummary }) {
-  const tiles: { label: string; value: number; tone: string }[] = [
-    { label: "Draft", value: d.draft, tone: "text-slate-600" },
-    { label: "Published", value: d.published, tone: "text-emerald-700" },
-    { label: "Archived", value: d.archived, tone: "text-slate-400" },
-  ];
-  return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap gap-2">
-        {tiles.map((t) => (
+      <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+        {segments.map((s) => (
           <span
-            key={t.label}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-slate-50 px-2.5 py-1 text-[12px] font-medium text-slate-600"
+            key={s.label}
+            className="inline-flex items-center gap-1.5 text-[12px] text-slate-600"
           >
-            {t.label}
-            <span className={`font-mono tabular-nums font-semibold ${t.tone}`}>
-              {t.value}
+            <span
+              className="h-2 w-2 rounded-full"
+              style={{ backgroundColor: s.color }}
+            />
+            {s.label}
+            <span className="font-mono tabular-nums font-semibold text-slate-800">
+              {s.value}
             </span>
           </span>
         ))}
       </div>
-      {d.latest ? (
-        <p className="text-[12px] text-slate-400">
-          Latest: <span className="text-slate-600">{d.latest.title}</span> ·{" "}
-          {fmtDate(d.latest.updatedAt)}
-        </p>
-      ) : (
-        <p className="text-[12px] text-slate-400">No documents yet.</p>
-      )}
     </div>
   );
 }
+
+function Hero({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="min-w-0">
+      <div className="text-[2rem] font-semibold leading-none tabular-nums text-slate-900">
+        {value}
+      </div>
+      <div className="mt-1 text-[12px] text-slate-500">{label}</div>
+    </div>
+  );
+}
+
+function OverdueStat({ n }: { n: number }) {
+  const bad = n > 0;
+  return (
+    <div className={`rounded-lg px-3 py-1.5 text-center ${bad ? "bg-red-50" : "bg-slate-50"}`}>
+      <div
+        className={`text-lg font-semibold leading-none tabular-nums ${
+          bad ? "text-red-600" : "text-slate-400"
+        }`}
+      >
+        {n}
+      </div>
+      <div
+        className={`mt-1 inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide ${
+          bad ? "text-red-500" : "text-slate-400"
+        }`}
+      >
+        <AlertTriangle className="h-3 w-3" /> Overdue
+      </div>
+    </div>
+  );
+}
+
+function NextBoardStat({ nb }: { nb: ReportSummary["nextBoard"] }) {
+  return (
+    <div className="rounded-lg bg-slate-50 px-3 py-1.5">
+      <div className="text-[13px] font-semibold leading-none text-slate-700 tabular-nums">
+        {nb ? fmtDate(nb.date) : "—"}
+      </div>
+      <div className="mt-1 inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide text-slate-400">
+        <CalendarClock className="h-3 w-3" /> {nb ? nb.label : "No board"}
+      </div>
+    </div>
+  );
+}
+
+const REPORT_COLORS = {
+  draft: "#94a3b8", // slate-400
+  inReview: "#0ea5e9", // sky-500
+  amendments: "#f59e0b", // amber-500
+  approved: "#6366f1", // indigo-500
+  sealed: "#10b981", // emerald-500
+};
+
+function ReportBlock({ s }: { s: ReportSummary }) {
+  const total = s.draft + s.inReview + s.amendments + s.approved + s.sealed;
+  if (total === 0)
+    return <p className="text-[13px] text-slate-400">No reports in the pipeline yet.</p>;
+  const segments: Segment[] = [
+    { label: "Draft", value: s.draft, color: REPORT_COLORS.draft },
+    { label: "In review", value: s.inReview, color: REPORT_COLORS.inReview },
+    { label: "Amendments", value: s.amendments, color: REPORT_COLORS.amendments },
+    { label: "Approved", value: s.approved, color: REPORT_COLORS.approved },
+    { label: "Sealed", value: s.sealed, color: REPORT_COLORS.sealed },
+  ];
+  return (
+    <div className="space-y-4">
+      <div className="flex items-start justify-between gap-3">
+        <Hero value={total} label={total === 1 ? "report" : "reports"} />
+        <div className="flex items-stretch gap-2">
+          <OverdueStat n={s.overdue} />
+          <NextBoardStat nb={s.nextBoard} />
+        </div>
+      </div>
+      <PipelineBar segments={segments} />
+    </div>
+  );
+}
+
+const DOC_COLORS = {
+  draft: "#94a3b8", // slate-400
+  published: "#10b981", // emerald-500
+  archived: "#cbd5e1", // slate-300
+};
+
+function DocBlock({ d }: { d: DocSummary }) {
+  const total = d.draft + d.published + d.archived;
+  if (total === 0)
+    return <p className="text-[13px] text-slate-400">No documents yet.</p>;
+  const segments: Segment[] = [
+    { label: "Draft", value: d.draft, color: DOC_COLORS.draft },
+    { label: "Published", value: d.published, color: DOC_COLORS.published },
+    { label: "Archived", value: d.archived, color: DOC_COLORS.archived },
+  ];
+  return (
+    <div className="space-y-4">
+      <div className="flex items-start justify-between gap-3">
+        <Hero value={total} label={total === 1 ? "document" : "documents"} />
+        {d.latest && (
+          <div className="max-w-[55%] text-right">
+            <div className={eyebrow}>Latest</div>
+            <div className="truncate text-[13px] text-slate-700">{d.latest.title}</div>
+            <div className="text-[11px] tabular-nums text-slate-400">
+              {fmtDate(d.latest.updatedAt)}
+            </div>
+          </div>
+        )}
+      </div>
+      <PipelineBar segments={segments} />
+    </div>
+  );
+}
+
+function LoadingState() {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="h-9 w-16 animate-pulse rounded bg-slate-100" />
+        <div className="h-9 w-40 animate-pulse rounded bg-slate-50" />
+      </div>
+      <div className="h-2.5 w-full animate-pulse rounded-full bg-slate-100" />
+      <div className="h-3 w-2/3 animate-pulse rounded bg-slate-50" />
+    </div>
+  );
+}
+
+// ── Component ────────────────────────────────────────────────────────────────
 
 export default function DashboardGovernanceCard() {
   const activeProjectId = useStore((s) => s.activeProjectId);
@@ -353,19 +442,24 @@ export default function DashboardGovernanceCard() {
         : "Governance · reports";
 
   const link =
-    scope === "project"
-      ? "/governance/project-docs"
-      : "/governance/reports-list";
+    scope === "project" ? "/governance/project-docs" : "/governance/reports-list";
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div className="inline-flex items-center gap-2">
-          {scope === "project" ? (
-            <FolderGit2 className="h-4 w-4 text-indigo-500" />
-          ) : (
-            <FileText className="h-4 w-4 text-indigo-500" />
-          )}
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.2, 0.65, 0.3, 0.9] }}
+      className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5"
+    >
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="inline-flex items-center gap-2.5">
+          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+            {scope === "project" ? (
+              <FolderGit2 className="h-4 w-4" />
+            ) : (
+              <FileText className="h-4 w-4" />
+            )}
+          </span>
           <div>
             <div className={eyebrow}>Governance status</div>
             <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
@@ -373,29 +467,24 @@ export default function DashboardGovernanceCard() {
         </div>
         <Link
           to={link}
-          className="inline-flex items-center gap-1 text-[12px] font-medium text-indigo-600 hover:text-indigo-700"
+          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[12px] font-medium text-indigo-600 hover:bg-indigo-50"
         >
           View <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>
 
       {loading ? (
-        <div className="space-y-3">
-          <div className="h-6 w-3/4 animate-pulse rounded bg-slate-100" />
-          <div className="h-4 w-1/2 animate-pulse rounded bg-slate-50" />
-        </div>
-      ) : scope === "project" ? (
-        docSummary && <DocBlock d={docSummary} />
+        <LoadingState />
       ) : scope === "programme" ? (
-        <div className="space-y-5">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           <div>
-            <div className={`${eyebrow} mb-2`}>Council governance (reports)</div>
+            <div className={`${eyebrow} mb-3`}>Council governance · reports</div>
             {reportSummary && <ReportBlock s={reportSummary} />}
           </div>
-          <div className="border-t border-slate-100 pt-4">
-            <div className={`${eyebrow} mb-2`}>Project documents (this programme)</div>
+          <div className="border-t border-slate-100 pt-5 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
+            <div className={`${eyebrow} mb-3`}>Project documents · this programme</div>
             {childProjectIds.length === 0 ? (
-              <p className="text-[12px] text-slate-400">
+              <p className="text-[13px] text-slate-400">
                 No child projects in this programme.
               </p>
             ) : (
@@ -403,9 +492,11 @@ export default function DashboardGovernanceCard() {
             )}
           </div>
         </div>
+      ) : scope === "project" ? (
+        docSummary && <DocBlock d={docSummary} />
       ) : (
         reportSummary && <ReportBlock s={reportSummary} />
       )}
-    </div>
+    </motion.div>
   );
 }
