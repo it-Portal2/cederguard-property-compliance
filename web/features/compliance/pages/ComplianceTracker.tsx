@@ -231,21 +231,33 @@ export function ComplianceTracker() {
   const [expandedEvidence, setExpandedEvidence] = useState<any[]>([]);
   const [evidenceLoading, setEvidenceLoading] = useState(false);
 
-  // Fetch evidence documents linked to the expanded compliance item
-  const contextId = activeProjectId || activeProgrammeId || 'all';
+  // Composite render key — unique per (project/programme context, item id).
+  // At portfolio scope multiple projects share seed item IDs ("hs-1" etc.),
+  // so using item.id alone produces duplicate React keys which breaks both
+  // domain filtering and the expand animation.
+  const expandKey = (item: ComplianceItem) =>
+    `${item.projectId ?? item.programmeId ?? 'g'}::${item.id}`;
+
+  // Fetch evidence documents linked to the expanded compliance item.
+  // At portfolio scope derive the evidence context from the expanded item's
+  // own projectId rather than passing the invalid sentinel 'all'.
+  const expandedItemCtx = expandedId ? expandedId.split('::')[0] : null;
+  const expandedItemId  = expandedId ? expandedId.split('::').slice(1).join('::') : null;
+  const contextId = activeProjectId || activeProgrammeId ||
+    (expandedItemCtx && expandedItemCtx !== 'g' ? expandedItemCtx : null);
   useEffect(() => {
-    if (!expandedId) { setExpandedEvidence([]); return; }
+    if (!expandedItemId || !contextId) { setExpandedEvidence([]); return; }
     let cancelled = false;
     setEvidenceLoading(true);
     api.getEvidence(contextId).then(res => {
       if (!cancelled && res.success) {
         setExpandedEvidence(
-          (res.data || []).filter((e: any) => e.relatedRequirementId === expandedId)
+          (res.data || []).filter((e: any) => e.relatedRequirementId === expandedItemId)
         );
       }
     }).catch(() => {}).finally(() => { if (!cancelled) setEvidenceLoading(false); });
     return () => { cancelled = true; };
-  }, [expandedId, contextId]);
+  }, [expandedItemId, contextId]);
 
   // Confirmation dialog state — replaces all window.confirm calls
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -1107,13 +1119,13 @@ export function ComplianceTracker() {
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {filteredItems.map(item => (
-                        <React.Fragment key={item.id}>
+                        <React.Fragment key={expandKey(item)}>
                           <tr
                             className={cn(
                               "hover:bg-slate-50/80 transition-all group cursor-pointer",
-                              expandedId === item.id && "bg-slate-50/50"
+                              expandedId === expandKey(item) && "bg-slate-50/50"
                             )}
-                            onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
+                            onClick={() => setExpandedId(expandedId === expandKey(item) ? null : expandKey(item))}
                           >
                             <td className="px-6 py-4">
                               <div className="flex justify-center">
@@ -1238,12 +1250,12 @@ export function ComplianceTracker() {
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
                                 <div className="w-px h-4 bg-slate-200 mx-1" />
-                                <ChevronDown className={cn("w-4 h-4 text-slate-300 transition-transform", expandedId === item.id && "rotate-180")} />
+                                <ChevronDown className={cn("w-4 h-4 text-slate-300 transition-transform", expandedId === expandKey(item) && "rotate-180")} />
                               </div>
                             </td>
                           </tr>
                           <AnimatePresence>
-                            {expandedId === item.id && (
+                            {expandedId === expandKey(item) && (
                               <tr>
                                 <td colSpan={6} className="p-0 border-b border-slate-100 bg-slate-50/30">
                                   <motion.div
