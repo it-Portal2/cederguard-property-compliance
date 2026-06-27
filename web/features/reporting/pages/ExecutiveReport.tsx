@@ -27,6 +27,7 @@ import { useNavigate } from 'react-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { analyzeStrategicInsights } from '../../../services/aiService';
 import { resolveAiScope } from '../../../lib/aiScope';
+import { getResidualScore, SEVERE_SCORE_THRESHOLD, MAJOR_SCORE_THRESHOLD } from '../../../lib/riskMetrics';
 
 
 function fGBP(v: number) {
@@ -124,8 +125,8 @@ export function ExecutiveReport() {
 
   const totalALE = filteredRisks.reduce((s, r) => s + (r.residualALE || 0), 0);
   const openCount = filteredRisks.filter(r => r.status === 'Open').length;
-  const highRisks = filteredRisks.filter(r => (r.residualRating || 0) >= 12);
-  const criticalCount = filteredRisks.filter(r => (r.residualRating || 0) >= 16).length;
+  const highRisks = filteredRisks.filter(r => getResidualScore(r) >= MAJOR_SCORE_THRESHOLD);
+  const criticalCount = filteredRisks.filter(r => getResidualScore(r) >= SEVERE_SCORE_THRESHOLD).length;
 
   const compComplete = filteredCompliance.filter(i => i.stage === 'Live' || i.stage === 'Archived').length;
   const compPct = filteredCompliance.length ? Math.round((compComplete / filteredCompliance.length) * 100) : 0;
@@ -452,7 +453,7 @@ export function ExecutiveReport() {
                         <span
                           className={clsx(
                             'inline-flex items-center justify-center w-9 h-9 rounded-lg text-sm font-semibold shrink-0 tabular-nums',
-                            score >= 16
+                            score >= SEVERE_SCORE_THRESHOLD
                               ? 'bg-rose-100 text-rose-700'
                               : 'bg-amber-100 text-amber-700',
                           )}
