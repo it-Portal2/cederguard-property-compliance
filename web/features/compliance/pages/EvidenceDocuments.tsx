@@ -30,25 +30,39 @@ interface EvidenceRow {
   storagePath: string;
   url: string;
   project: string;
+  linkedType?: string;
+  linkedId?: string;
+  linkedLabel?: string;
   _reqLabel: string;
   _source: string;
   _typeGroup: 'file' | 'link';
 }
 
 /* ── component ───────────────────────────────────────── */
+type EvidenceLink = { linkedType?: string; linkedId?: string; linkedLabel?: string };
+
 export function EvidenceDocuments() {
-  const { activeProjectId, activeProgrammeId, projects, programmes, complianceItems } = useStore();
+  const {
+    activeProjectId, activeProgrammeId, projects, programmes, complianceItems,
+    controls, incidents, risks, tasks, loadControls, loadIncidents,
+  } = useStore();
+
+  useEffect(() => {
+    loadControls();
+    loadIncidents();
+  }, [loadControls, loadIncidents]);
   const [files, setFiles] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
-  const [linkData, setLinkData] = useState({ name: '', url: '', relatedRequirementId: '' });
+  const [linkData, setLinkData] = useState<{ name: string; url: string; relatedRequirementId: string } & EvidenceLink>({ name: '', url: '', relatedRequirementId: '' });
   const [isFileModalOpen, setIsFileModalOpen] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [fileRequirementId, setFileRequirementId] = useState('');
-  const [editData, setEditData] = useState<{ id: string; name: string; relatedRequirementId: string } | null>(null);
+  const [fileLink, setFileLink] = useState<EvidenceLink>({});
+  const [editData, setEditData] = useState<({ id: string; name: string; relatedRequirementId: string } & EvidenceLink) | null>(null);
 
   const contextId = activeProjectId || activeProgrammeId || 'all';
   const isPortfolioView = !activeProjectId && !activeProgrammeId;
@@ -59,6 +73,20 @@ export function EvidenceDocuments() {
       : 'Portfolio Aggregate';
 
   useEffect(() => { fetchDocuments(); }, [contextId]);
+
+  // Escape closes whichever evidence modal is open.
+  useEffect(() => {
+    const anyOpen = isLinkModalOpen || isFileModalOpen || !!editData;
+    if (!anyOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      setIsLinkModalOpen(false);
+      setIsFileModalOpen(false);
+      setEditData(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isLinkModalOpen, isFileModalOpen, editData]);
 
   const fetchDocuments = async () => {
     setLoading(true);
@@ -101,6 +129,7 @@ export function EvidenceDocuments() {
     } else { setError(null); }
     setSelectedFiles(validFiles);
     setFileRequirementId('');
+    setFileLink({});
     setIsFileModalOpen(true);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -133,12 +162,13 @@ export function EvidenceDocuments() {
         await api.addEvidence(contextId, {
           name: file.name, url: '', type: contentType,
           relatedRequirementId: fileRequirementId || undefined,
+          ...fileLink,
           uploadedAt: new Date().toISOString(),
         }, { base64, mime: contentType });
       }
       toast.success(`${selectedFiles.length} file(s) uploaded successfully.`);
       await fetchDocuments();
-      setIsFileModalOpen(false); setSelectedFiles([]); setFileRequirementId('');
+      setIsFileModalOpen(false); setSelectedFiles([]); setFileRequirementId(''); setFileLink({});
     } catch (err: any) {
       const msg = `Upload failed: ${err.message || 'Unknown error'}.`;
       setError(msg); toast.error(msg);
@@ -157,7 +187,9 @@ export function EvidenceDocuments() {
       const urlToSave = linkData.url.startsWith('http') ? linkData.url : `https://${linkData.url}`;
       await api.addEvidence(contextId, {
         name: linkData.name, url: urlToSave, storagePath: 'external-link', size: 0, type: 'link',
-        relatedRequirementId: linkData.relatedRequirementId || undefined, uploadedAt: new Date().toISOString(),
+        relatedRequirementId: linkData.relatedRequirementId || undefined,
+        linkedType: linkData.linkedType, linkedId: linkData.linkedId, linkedLabel: linkData.linkedLabel,
+        uploadedAt: new Date().toISOString(),
       });
       toast.success('External link added.');
       await fetchDocuments();
@@ -174,7 +206,10 @@ export function EvidenceDocuments() {
     try {
       const res = await api.updateEvidence(editData.id, {
         name: editData.name,
-        relatedRequirementId: editData.relatedRequirementId || null
+        relatedRequirementId: editData.relatedRequirementId || null,
+        linkedType: editData.linkedType || null,
+        linkedId: editData.linkedId || null,
+        linkedLabel: editData.linkedLabel || null,
       });
       if (res.success) {
         toast.success('Document updated successfully.');
@@ -237,6 +272,13 @@ export function EvidenceDocuments() {
                 <Shield className="h-3 w-3 shrink-0" />{row._reqLabel}
               </p>
             )}
+            {row.linkedLabel && (
+              <p className="flex items-center gap-1 mt-0.5 text-[11px] text-indigo-500 truncate max-w-[240px]">
+                <LinkIcon className="h-3 w-3 shrink-0" />
+                <span className="font-mono uppercase tracking-wide text-[9px]">{row.linkedType}</span>
+                {row.linkedLabel}
+              </p>
+            )}
           </div>
         </div>
       ),
@@ -288,7 +330,7 @@ export function EvidenceDocuments() {
       key: 'edit',
       label: 'Edit',
       icon: Pencil,
-      onClick: (row) => setEditData({ id: row.id, name: row.name, relatedRequirementId: row.relatedRequirementId }),
+      onClick: (row) => setEditData({ id: row.id, name: row.name, relatedRequirementId: row.relatedRequirementId, linkedType: row.linkedType, linkedId: row.linkedId, linkedLabel: row.linkedLabel }),
     },
     {
       key: 'open',
@@ -389,15 +431,63 @@ export function EvidenceDocuments() {
     );
   };
 
+  /* ── EntityLinkSelector — link evidence to a control / risk / incident / action ── */
+  const EntityLinkSelector = ({ value, onChange }: { value: EvidenceLink; onChange: (v: EvidenceLink) => void }) => {
+    const optionsFor = (type?: string): { id: string; label: string }[] => {
+      switch (type) {
+        case 'Control': return controls.map(c => ({ id: c.id, label: c.title }));
+        case 'Risk': return risks.map(r => ({ id: r.id, label: r.title || r.desc || r.id }));
+        case 'Incident': return incidents.map(i => ({ id: i.id, label: i.title }));
+        case 'Action': return (Array.isArray(tasks) ? tasks : []).map(t => ({ id: t.id, label: t.title }));
+        default: return [];
+      }
+    };
+    const entityOptions = optionsFor(value.linkedType);
+    return (
+      <div className="space-y-1.5">
+        <span className="block text-xs font-medium text-gray-500">Linked record (Optional)</span>
+        <div className="grid grid-cols-2 gap-2">
+          <select
+            aria-label="Linked record type"
+            value={value.linkedType || ''}
+            onChange={e => onChange({ linkedType: e.target.value || undefined, linkedId: undefined, linkedLabel: undefined })}
+            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+          >
+            <option value="">— No record —</option>
+            <option value="Control">Control</option>
+            <option value="Risk">Risk</option>
+            <option value="Incident">Incident</option>
+            <option value="Action">Action</option>
+          </select>
+          <select
+            aria-label="Linked record"
+            value={value.linkedId || ''}
+            disabled={!value.linkedType}
+            onChange={e => {
+              const opt = entityOptions.find(o => o.id === e.target.value);
+              onChange({ ...value, linkedId: e.target.value || undefined, linkedLabel: opt?.label });
+            }}
+            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:opacity-50"
+          >
+            <option value="">{value.linkedType ? '— Select —' : '—'}</option>
+            {entityOptions.map(o => (
+              <option key={o.id} value={o.id}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+    );
+  };
+
   /* ── Modal shell ──────────────────────────────── */
   const Modal = ({ open, onClose, title, description, children }: { open: boolean; onClose: () => void; title: string; description?: string; children: React.ReactNode }) => {
     if (!open) return null;
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={onClose}>
-        <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg border border-gray-200 overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div role="dialog" aria-modal="true" aria-labelledby="evidence-modal-title" className="bg-white rounded-lg shadow-2xl w-full max-w-lg border border-gray-200 overflow-hidden" onClick={e => e.stopPropagation()}>
           <div className="flex items-center justify-between p-5 border-b border-gray-100">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+              <h3 id="evidence-modal-title" className="text-lg font-semibold text-gray-900">{title}</h3>
               {description && <p className="text-sm text-gray-500 mt-0.5">{description}</p>}
             </div>
             <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"><X className="h-4 w-4 text-gray-400" /></button>
@@ -484,6 +574,7 @@ export function EvidenceDocuments() {
               className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
           </div>
           <RequirementSelector value={linkData.relatedRequirementId} onChange={val => setLinkData({ ...linkData, relatedRequirementId: val })} label="Related Requirement (Optional)" />
+          <EntityLinkSelector value={{ linkedType: linkData.linkedType, linkedId: linkData.linkedId, linkedLabel: linkData.linkedLabel }} onChange={v => setLinkData({ ...linkData, ...v })} />
           <div className="flex gap-3 pt-2">
             <button onClick={() => setIsLinkModalOpen(false)}
               className="flex-1 rounded-lg border border-gray-200 bg-gray-50 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors">Cancel</button>
@@ -514,6 +605,7 @@ export function EvidenceDocuments() {
             </div>
           </div>
           <RequirementSelector value={fileRequirementId} onChange={val => setFileRequirementId(val)} label="Related Requirement (Optional)" />
+          <EntityLinkSelector value={fileLink} onChange={setFileLink} />
           <div className="flex gap-3 pt-2">
             <button onClick={() => { setIsFileModalOpen(false); setSelectedFiles([]); setFileRequirementId(''); }}
               className="flex-1 rounded-lg border border-gray-200 bg-gray-50 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors">Cancel</button>
@@ -542,6 +634,10 @@ export function EvidenceDocuments() {
             value={editData?.relatedRequirementId || ''}
             onChange={val => setEditData(prev => prev ? { ...prev, relatedRequirementId: val } : null)}
             label="Linked Requirement"
+          />
+          <EntityLinkSelector
+            value={{ linkedType: editData?.linkedType, linkedId: editData?.linkedId, linkedLabel: editData?.linkedLabel }}
+            onChange={v => setEditData(prev => prev ? { ...prev, ...v } : null)}
           />
           <div className="flex gap-3 pt-2">
             <button onClick={() => setEditData(null)}

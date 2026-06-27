@@ -101,6 +101,9 @@ import DemandForecastPage from './features/resourcePlanner/pages/DemandForecastP
 import ResourceTimelinePage from './features/resourcePlanner/pages/TimelinePage';
 import ResourceAssumptionsPage from './features/resourcePlanner/pages/AssumptionsPage';
 import ResourceCapacityPage from './features/resourcePlanner/pages/CapacityPage';
+import ControlsRegisterPage from './features/controls/pages/ControlsRegisterPage';
+import IncidentsRegisterPage from './features/incidents/pages/IncidentsRegisterPage';
+import LearningEnginePage from './features/learning/pages/LearningEnginePage';
 import { ChatPage } from './features/chat/pages/ChatPage';
 
 // Desktop-shell support
@@ -326,6 +329,17 @@ function AppContent() {
               <Route path="/resource-planner/capacity" element={<ResourceCapacityPage />} />
               <Route path="/resource-planner/timeline" element={<ResourceTimelinePage />} />
               <Route path="/resource-planner/assumptions" element={<ResourceAssumptionsPage />} />
+
+              {/* Controls library — view = any signed-in user; edits gated in-page (PM+) */}
+              <Route path="/controls" element={<Navigate to="/controls/register" replace />} />
+              <Route path="/controls/register" element={<ControlsRegisterPage />} />
+
+              {/* Incident management — log = any signed-in user; close/delete gated (PM+) */}
+              <Route path="/incidents" element={<Navigate to="/incidents/register" replace />} />
+              <Route path="/incidents/register" element={<IncidentsRegisterPage />} />
+
+              {/* Learning & improvement engine — recurrence signals + AI-suggested CAPA actions */}
+              <Route path="/learning/improvement" element={<LearningEnginePage />} />
 
               {/* SaaS & Admin*/}
               <Route path="/admin/*" element={<RoleGuard requireAdmin><AdminPanel /></RoleGuard>} />

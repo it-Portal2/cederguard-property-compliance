@@ -91,3 +91,5 @@ tmp/
 handoff.md
 tasks.md
 WORKFLOW.md
+# Claude scratch plan files
+.claude/plans/

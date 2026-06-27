@@ -1445,6 +1445,95 @@ export function ComplianceTracker() {
                                               </button>
                                            </div>
                                         </div>
+                                        {/* Verification sign-off — owner, evidence-required + completed/reviewed/approved states */}
+                                        <div className="pt-4 mt-1 border-t border-slate-100 space-y-3">
+                                          <div className="flex flex-wrap items-center gap-3">
+                                            <input
+                                              type="text"
+                                              defaultValue={item.owner || ''}
+                                              placeholder="Owner…"
+                                              disabled={!canEditCompliance()}
+                                              onClick={(e) => e.stopPropagation()}
+                                              onBlur={async (e) => {
+                                                const val = e.target.value.trim();
+                                                if (val === (item.owner || '')) return;
+                                                try {
+                                                  await updateComplianceItem(item.id, { owner: val || undefined });
+                                                } catch { toast.error('Something went wrong. Please try again.'); }
+                                              }}
+                                              className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] font-semibold focus:ring-2 focus:ring-indigo-500/10 disabled:bg-slate-50 disabled:text-slate-400"
+                                            />
+                                            <label className="flex items-center gap-1.5 text-[11px] font-medium text-slate-600">
+                                              <input
+                                                type="checkbox"
+                                                checked={!!item.evidenceRequired}
+                                                disabled={!canEditCompliance()}
+                                                onChange={async (e) => {
+                                                  try {
+                                                    await updateComplianceItem(item.id, { evidenceRequired: e.target.checked });
+                                                  } catch { toast.error('Something went wrong. Please try again.'); }
+                                                }}
+                                              />
+                                              Evidence required
+                                            </label>
+                                          </div>
+                                          <div className="flex flex-wrap items-center gap-2">
+                                            <span className={clsx(
+                                              "font-mono px-2 py-1 rounded-lg text-[10px] font-semibold uppercase tracking-wide border",
+                                              (item.stage === 'Live' || item.stage === 'Archived')
+                                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                                : "bg-slate-50 text-slate-400 border-slate-200",
+                                            )}>
+                                              {(item.stage === 'Live' || item.stage === 'Archived') ? '✓ Completed' : 'Not completed'}
+                                            </span>
+                                            <button
+                                              disabled={!canEditCompliance()}
+                                              onClick={async () => {
+                                                const by = currentUser?.displayName || currentUser?.email || currentUser?.uid || 'Unknown';
+                                                try {
+                                                  await updateComplianceItem(item.id, item.reviewedBy
+                                                    ? { reviewedBy: undefined, reviewedAt: undefined }
+                                                    : { reviewedBy: by, reviewedAt: new Date().toISOString() });
+                                                } catch { toast.error('Something went wrong. Please try again.'); }
+                                              }}
+                                              className={clsx(
+                                                "font-mono px-2 py-1 rounded-lg text-[10px] font-semibold uppercase tracking-wide border transition-all disabled:opacity-50 disabled:cursor-not-allowed",
+                                                item.reviewedBy
+                                                  ? "bg-blue-50 text-blue-700 border-blue-200"
+                                                  : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50",
+                                              )}
+                                              title={item.reviewedBy ? `Reviewed by ${item.reviewedBy}` : 'Mark as reviewed'}
+                                            >
+                                              {item.reviewedBy ? '✓ Reviewed' : 'Mark reviewed'}
+                                            </button>
+                                            {canManage && canEditCompliance() && (
+                                              <button
+                                                onClick={async () => {
+                                                  const by = currentUser?.displayName || currentUser?.email || currentUser?.uid || 'Unknown';
+                                                  try {
+                                                    await updateComplianceItem(item.id, item.approvedBy
+                                                      ? { approvedBy: undefined, approvedAt: undefined }
+                                                      : { approvedBy: by, approvedAt: new Date().toISOString() });
+                                                  } catch { toast.error('Something went wrong. Please try again.'); }
+                                                }}
+                                                className={clsx(
+                                                  "font-mono px-2 py-1 rounded-lg text-[10px] font-semibold uppercase tracking-wide border transition-all",
+                                                  item.approvedBy
+                                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                                    : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50",
+                                                )}
+                                                title={item.approvedBy ? `Approved by ${item.approvedBy}` : 'Approve (PM+)'}
+                                              >
+                                                {item.approvedBy ? '✓ Approved' : 'Approve'}
+                                              </button>
+                                            )}
+                                            {!(canManage && canEditCompliance()) && item.approvedBy && (
+                                              <span className="font-mono px-2 py-1 rounded-lg text-[10px] font-semibold uppercase tracking-wide border bg-emerald-50 text-emerald-700 border-emerald-200">
+                                                ✓ Approved
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
                                       </div>
                                     </div>
                                   </motion.div>

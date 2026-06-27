@@ -23,6 +23,9 @@ import { technicalAssuranceRoutes } from './technicalAssurance.js';
 import { chatStreamRoutes } from './chatStream.js';
 import { validationRoutes } from './validation.js';
 import { resourcePlannerRoutes } from './resourcePlanner.js';
+import { controlsRoutes } from './controls.js';
+import { incidentsRoutes } from './incidents.js';
+import { learningRoutes } from './learning.js';
 
 export const allRoutes: Record<string, any> = {
   ...projectRoutes,
@@ -50,4 +53,7 @@ export const allRoutes: Record<string, any> = {
   ...chatStreamRoutes,
   ...validationRoutes,
   ...resourcePlannerRoutes,
+  ...controlsRoutes,
+  ...incidentsRoutes,
+  ...learningRoutes,
 };

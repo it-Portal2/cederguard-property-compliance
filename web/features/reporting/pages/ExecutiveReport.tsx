@@ -28,6 +28,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { analyzeStrategicInsights } from '../../../services/aiService';
 import { resolveAiScope } from '../../../lib/aiScope';
 import { getResidualScore, SEVERE_SCORE_THRESHOLD, MAJOR_SCORE_THRESHOLD } from '../../../lib/riskMetrics';
+import { detectRecurringIncidents, failedControls } from '../../../lib/learning/recurrence';
 
 
 function fGBP(v: number) {
@@ -37,8 +38,35 @@ function fGBP(v: number) {
 
 export function ExecutiveReport() {
   const { risks, projects, activeProgrammeId, programmes, complianceItems, issues, setActiveProgramme, setActiveProject, user } = useStore();
+  const incidents = useStore((s) => s.incidents);
+  const controls = useStore((s) => s.controls);
+  const tasks = useStore((s) => s.tasks);
+  const loadControls = useStore((s) => s.loadControls);
+  const loadIncidents = useStore((s) => s.loadIncidents);
   const navigate = useNavigate();
   const userRole = user?.role || (user as any)?.profile?.role;
+
+  useEffect(() => {
+    loadControls();
+    loadIncidents();
+  }, [loadControls, loadIncidents]);
+
+  // Assurance signals for the report — tenant-wide, honest + data-derived.
+  const assurance = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return {
+      failedControls: failedControls(controls).length,
+      openIncidents: (incidents || []).filter((i) => i.status !== 'Closed').length,
+      recurring: detectRecurringIncidents(incidents || []),
+      overdueCapa: (Array.isArray(tasks) ? tasks : []).filter(
+        (t) => t.capaType && t.status !== 'Completed' && t.dueDate && t.dueDate !== 'No date set' && new Date(t.dueDate) < today,
+      ).length,
+      missingEvidence: (Array.isArray(complianceItems) ? complianceItems : []).filter(
+        (c: any) => c.evidenceRequired && !c.evidence && c.stage !== 'Live' && c.stage !== 'Archived',
+      ).length,
+    };
+  }, [controls, incidents, tasks, complianceItems]);
 
   const safeRisks = Array.isArray(risks) ? risks : [];
   const safeProjects = Array.isArray(projects) ? projects : [];
@@ -298,6 +326,30 @@ export function ExecutiveReport() {
               iconClassName="text-emerald-300"
             />
           </div>
+        </section>
+
+        {/* ─── ASSURANCE SIGNALS ─── */}
+        <section className="print:break-inside-avoid">
+          <h2 className="text-sm font-mono uppercase tracking-wide text-slate-500 mb-3">Assurance signals</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { label: 'Failed controls', value: assurance.failedControls },
+              { label: 'Open incidents', value: assurance.openIncidents },
+              { label: 'Overdue CAPA actions', value: assurance.overdueCapa },
+              { label: 'Items missing evidence', value: assurance.missingEvidence },
+            ].map((s) => (
+              <div key={s.label} className="rounded-lg border border-slate-200 p-4">
+                <p className="font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500">{s.label}</p>
+                <p className={clsx('mt-1 text-2xl font-medium tabular-nums', s.value === 0 ? 'text-slate-400' : 'text-rose-600')}>{s.value}</p>
+              </div>
+            ))}
+          </div>
+          {assurance.recurring.length > 0 && (
+            <p className="mt-3 text-sm text-slate-600">
+              <span className="font-medium">Recurring incident types:</span>{' '}
+              {assurance.recurring.map((c) => `${c.type} (${c.count}×)`).join(', ')}.
+            </p>
+          )}
         </section>
 
         {/* ─── AI STRATEGIC OUTLOOK ─── */}

@@ -43,6 +43,7 @@ import {
   FolderClosed,
   MessageSquare,
   ShieldCheck,
+  Lightbulb,
   Search,
   SlidersHorizontal,
 } from "lucide-react";
@@ -238,6 +239,12 @@ export function Sidebar() {
       setOpenGroup("Programme Governance");
     } else if (path.startsWith("/resource-planner")) {
       setOpenGroup("Resource Planner");
+    } else if (
+      path.startsWith("/controls") ||
+      path.startsWith("/incidents") ||
+      path.startsWith("/learning/improvement")
+    ) {
+      setOpenGroup("Assurance");
     } else if (
       path.startsWith("/setup/workspace") ||
       path.startsWith("/team") ||
@@ -550,6 +557,32 @@ export function Sidebar() {
                   to="/resource-planner/assumptions"
                   icon={SlidersHorizontal}
                   label="Assumptions"
+                />
+              </NavGroup>
+            )}
+
+            {/* ASSURANCE — controls library, incidents (CAPA, checklists, learning to follow) */}
+            {hasCoreAccess && (
+              <NavGroup
+                label="Assurance"
+                isAdmin={hasCoreAccess}
+                isOpen={openGroup === "Assurance"}
+                onToggle={() => toggleGroup("Assurance")}
+              >
+                <NavItem
+                  to="/controls/register"
+                  icon={ShieldCheck}
+                  label="Controls"
+                />
+                <NavItem
+                  to="/incidents/register"
+                  icon={AlertTriangle}
+                  label="Incidents"
+                />
+                <NavItem
+                  to="/learning/improvement"
+                  icon={Lightbulb}
+                  label="Improvement"
                 />
               </NavGroup>
             )}

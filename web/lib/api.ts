@@ -232,6 +232,20 @@ export const api = {
     callApi("resourceImportSchemesDryRun", { base64 }, 120000),
   resourceImportSchemesCommit: (base64: string) =>
     callApi("resourceImportSchemesCommit", { base64 }, 120000),
+
+  // Controls library (tenant-scoped first-class control records)
+  controlsList: () => callApi("controlsList"),
+  controlsUpsert: (control: any) => callApi("controlsUpsert", { control }),
+  controlsDelete: (id: string) => callApi("controlsDelete", { id }),
+
+  // Incident management (tenant-scoped formal incident register)
+  incidentsList: () => callApi("incidentsList"),
+  incidentsUpsert: (incident: any) => callApi("incidentsUpsert", { incident }),
+  incidentsDelete: (id: string) => callApi("incidentsDelete", { id }),
+
+  // Learning & improvement — AI-suggested actions from assurance signals
+  learningSuggestImprovements: (signals: string) =>
+    callApi("learningSuggestImprovements", { signals }, 120000),
   clientGetProgrammesByManager: (supervisorId: string) =>
     callApi("clientGetProgrammesByManager", { supervisorId }),
   clientGetMySupervisors: () => callApi("clientGetMySupervisors"),

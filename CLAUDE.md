@@ -37,9 +37,12 @@ the **repo root** — it governs all targets / is read there by tooling. This is
 ```
 web/
 ├── features/<domain>/          ← per-domain code. Domains:
-│     governance, technicalAssurance, risk, compliance, programmes, projects, reporting, admin, learning, chat, resourcePlanner
-│     • governance/, technicalAssurance/ + resourcePlanner/ have BOTH pages/ AND components/ (their components were self-contained)
-│     • the other 8 domains have pages/ only (their pages moved here)
+│     governance, technicalAssurance, risk, compliance, programmes, projects, reporting, admin, learning, chat,
+│     resourcePlanner, controls, incidents
+│     • governance/, technicalAssurance/, resourcePlanner/, controls/, incidents/ have BOTH pages/ AND components/
+│     • the rest have pages/ only (their pages moved here)
+│     • Assurance capability (Controls/Incidents/CAPA/Checklists/Improvement) spans controls/, incidents/,
+│       learning/ + the CAPA flag on Tasks — see the "Assurance capability" convention below
 ├── components/                 ← SHARED component library (kept here, NOT per-feature): layout shell
 │     (Header, Sidebar, MobileHeader, MobileNav), PageHeader, PageActions, AuthProvider, RoleGuard,
 │     ErrorBoundary, table/ (DynamicTable), validation/ (ValidateButton), common/, dashboard/, chat/,
@@ -1563,7 +1566,8 @@ Four recurring mobile-break patterns. Every new authenticated page MUST avoid th
 - ❌ `font-black` (weight 900) — looks wrong in Geist Mono. Use `font-semibold` (600) max.
 - ❌ `tracking-widest` / `tracking-tighter` on small uppercase labels. Use `tracking-wide`.
 - ❌ `italic` on regular text. **PRESERVED only on**: PDF/report pages (`ExecutiveReport`, `ProjectReport`, `ProgrammeReport`, `ClientProgrammeReport`, `InvoiceManager`, `Invoices`) and rich-text editor tooling (`web/features/governance/components/{editor,extensions,templates,meetings,forwardPlan,framework,reports}/`, `web/features/technicalAssurance/components/`). Default-exclude any file using `jspdf` / `html2canvas`.
-- ❌ Hardcoded score thresholds (`>= 16`, `>= 22`, etc.). Import `SEVERE_SCORE_THRESHOLD` / `MAJOR_SCORE_THRESHOLD` from [`web/lib/riskMetrics.ts`](web/lib/riskMetrics.ts).
+- Hardcoded score thresholds (`>= 16`, `>= 22`, etc.). Import `SEVERE_SCORE_THRESHOLD` / `MAJOR_SCORE_THRESHOLD` from [`web/lib/riskMetrics.ts`](web/lib/riskMetrics.ts).
+-  **"AI-cliché" lucide icons — NEVER use `Sparkles`, `Stars`, `WandSparkles`, `Wand2`/`Wand`, `Zap` (thunderbolt), `Bot`, `BrainCircuit`/`Brain` as decoration.** They read as AI-generated filler. Pick the icon by the *use case*, not the vibe: a generate/refresh action → `RefreshCw`; an idea/suggestion → `Lightbulb`; an improvement/trend → `TrendingUp`; an insight/report → `FileText`/`BarChart`; a warning → `AlertTriangle`. This holds even for genuinely AI-powered features (the feature can be AI; the icon must not scream it). The only acceptable home for a "spark"-type glyph is an explicit brand mark the user asked for — never as a default button/section icon.
 
 **Stay sans (Rule 7):**
 - H1 / H2 / H3 page or modal titles: `font-semibold tracking-tight`
@@ -1769,6 +1773,45 @@ An admin-only product-demo / testing overlay: it injects a complete static datas
 - **Store integration** ([`web/store/useStore.ts`](web/store/useStore.ts)): `loadDemoProgramme` / `loadDemoProject` / `clearDemo` actions; local helpers `resolveDemoBundle` / `applyDemoBundle` (merge demo records by id = idempotent; runs `normalizeRisk`; sets active context via raw `set`, never `setActiveProject`/`setActiveProgramme` which persist prefs) / `keepDemo` (re-merges demo rows when a real fetch refreshes the lists). The three loaders (`loadProjectData` / `loadProgrammeData` / `loadAggregateData`) short-circuit at the top on `isDemoId`/`isDemoActive`. `initStore` re-applies the overlay on refresh via a leading `getDemoFlag()` branch. `clearDemo` raises the global `isContextSwitching` overlay and restores the stashed `prior` context directly (no null→aggregate flash).
 - **Demo fixtures must carry the SAME fields the real UI reads**, so charts/KPIs/setup pages are real-driven, not faked: risks/issues get a recent spread `dateAdded`; compliance items get `stage` + `completedAt` (verification day, what the velocity chart buckets by) + `dateAdded`; the bundle includes `projectInfo` (questionnaire answers) + `complianceAnalysis`/`lastAnalysisResults` so Compliance Setup shows answered + analysed, and `riskSetupDone`/`complianceSetupDone: true` so the setup pages show their "complete" state.
 
+### Assurance capability conventions (Controls / Incidents / CAPA / Evidence / Checklists / Improvement)
+The assurance suite is a 7-part build sitting alongside the existing Risk/Compliance modules. All of it is
+surfaced under the **"Assurance" sidebar group** (`hasCoreAccess`-gated). Load-bearing facts:
+- **Controls** ([`web/features/controls/`](web/features/controls/), [`api/routes/controls.ts`](api/routes/controls.ts)) — first-class
+  control records, **tenant-scoped** (`clientId === ctx.primaryUid`, like resourcePlanner/TAC). `Control` type +
+  `CONTROL_STATUSES` live in `web/features/controls/types.ts`. Status incl. Effective / Partially Effective / Failed /
+  Not Tested / Retired; classified by **compliance group** (the existing `DOMAINS` list, NOT a statutory register);
+  links to regulations + risks (+ an `evidenceIds` contract field). Store slice `controls` + `loadControls`/`saveControl`/
+  `deleteControl`/`canManageControls` (**PM+** = `isAtLeastPM`). View = any signed-in tenant user; edit = PM+. Route `/controls/register`.
+- **Incidents** ([`web/features/incidents/`](web/features/incidents/), [`api/routes/incidents.ts`](api/routes/incidents.ts)) — a
+  SEPARATE regulator-grade register (NOT a rename of the Issues log), tenant-scoped. Fields: type, occurredAt, severity,
+  location, impacts, regulatory relevance, root cause, escalation, lessons, linked risks/controls. **Log/edit = any signed-in
+  tenant user; CLOSING and RE-OPENING (status ↔ 'Closed') + DELETE = PM+** (`isPmPlus` server-side; `canLogIncidents`/
+  `canCloseIncidents` client-side). Route `/incidents/register`.
+- **CAPA** = a flag on the existing **Tasks** action list (Decision C — do NOT fork a 3rd to-do system). `TaskItem` gained
+  `capaType` (Corrective/Preventive/Improvement) + `capaEvidenceRequired`/`capaEscalationRoute`/`capaStatus`/`capaApprovedBy`/
+  `capaApprovedAt`/`capaRejectionReason`. `MyTasks` adds a CAPA column + filter + create-modal section + PM+ approve/reject
+  (`reviewCapaAction`/`canApproveCapa` in the store). `capaFieldsFor()` normalises the block (clearing the type strips all CAPA fields).
+- **Evidence linkage** — evidence records can link to a control/risk/incident/action via `linkedType`/`linkedId`/`linkedLabel`
+  (the `EntityLinkSelector` in [`EvidenceDocuments.tsx`](web/features/compliance/pages/EvidenceDocuments.tsx)). Frontend-only:
+  the server `addEvidence`/`updateEvidence` already spread the document. Still uses the base64→API→`uploadAsset` upload pattern.
+- **Verification checklists** = compliance items ARE the checklist — `ComplianceItem` gained `owner`/`evidenceRequired` +
+  SEPARATE sign-off `reviewedBy`/`reviewedAt`/`approvedBy`/`approvedAt`. "Completed" stays `stage === 'Live'|'Archived'`;
+  Reviewed/Approved are independent. The sign-off controls live in the `ComplianceTracker` expanded editor and are **disabled
+  when `!canEditCompliance()`** (historical/locked views are read-only). Approve = `canManage` (PM+).
+- **Continuous Improvement** ([`LearningEnginePage.tsx`](web/features/learning/pages/LearningEnginePage.tsx), route
+  `/learning/improvement`, sidebar **"Improvement"**) — DISTINCT from the manual **Lessons Learned** repository. Recurrence
+  maths is the pure lib [`web/lib/learning/recurrence.ts`](web/lib/learning/recurrence.ts) (`detectRecurringIncidents` =
+  same type + configurable window; `failedControls`). `api/routes/learning.ts` `learningSuggestImprovements` calls
+  `runAIOperation` (aiOperationRouter, NEVER `routes/ai.ts`) — **AI SUGGESTS only**; the officer approves (creates an
+  Improvement-flagged CAPA task) or dismisses.
+- **Dashboard/reports** surface assurance signals via the self-contained [`AssuranceSignalsCard`](web/features/reporting/components/AssuranceSignalsCard.tsx)
+  (failed controls / open incidents / overdue CAPA / missing evidence / recurring types — skeleton until loaded) + an
+  "Assurance signals" section in `ExecutiveReport`. Honest, data-derived only.
+- **Known trade-off:** CAPA + checklist approvals (`capaApprovedBy`/`approvedBy`/`reviewedBy`) persist through the generic
+  `saveData("tasks"/"complianceItems")` array path, which is **trusted-client** (no per-field server role re-check); the
+  approval is client-gated and read display-only (no server business logic reads it). Regulator-grade server-enforced sign-off
+  would be a deliberate cross-cutting follow-up, not a per-field bolt-on.
+
 ### Standing rules for sweeps / refactors
 - **Demo mode goes through [`web/lib/demoMode.ts`](web/lib/demoMode.ts) + [`web/lib/demoData/index.ts`](web/lib/demoData/index.ts); NEVER write to the DB on a demo path and never use the `demo-` prefix (use `cgdemo-`).** See the Demo mode convention above.
 - **Resource Planner FTE/demand/cost/capacity maths goes through the pure lib [`web/lib/resourcePlanner/`](web/lib/resourcePlanner/) (`buildResourcePlan` / `computeDemandMatrix` / `computeCost` / `computeHeadcount` / `computeCapacity` / `computePeopleCapacity`); never re-derive demand, cost, quarter indices or the rate card inline in a page.** Retune via `constants.ts` (rate card seeded from the Excel ASSUMPTIONS tab; April fiscal year; missing date ⇒ 0 FTE; unmapped complexity ⇒ 0 FTE; `DEFAULT_DAY_RATE=250`, `DEFAULT_WORKING_DAYS_PER_QUARTER=65`). **Cost = `FTE × workingDaysPerQuarter × PER-ROLE dayRate` on the UPLIFTED demand** (rate via `dayRateByRole[role]` → legacy single `dayRate` → `DEFAULT_DAY_RATE`; working days stays a single shared value) — never reduce days again for leave (the FTE already carries the +leave uplift). `computeCost` returns `byRole`/`byComplexity`/`bySchemeRole` £ (walked from `bySchemeRole`) so the Demand Forecast £ view is exact in every grouping. **Headcount = `ceil(peak-quarter FTE)`** to whole people. **ONE shared manually-entered input — `inPostByRoleQuarter` ("resources in post", role × quarter) — drives BOTH the Capacity view AND the Actual-under-Demand rows on the Forecast** (mirrors the workbook). **Person-level capacity** (`computePeopleCapacity`) derives committed load from the scheme assignment NAME fields via `ASSIGNMENT_ROLE_FIELDS` + `bySchemeRole` (no per-person actuals exist anywhere); availability defaults to 1.0 FTE per person. Schemes + assumptions (incl. costing/in-post/availability — all on the assumptions doc) are TENANT-scoped via [`api/routes/resourcePlanner.ts`](api/routes/resourcePlanner.ts) (`clientId === primaryUid`) — NOT the user-scoped generic `saveData`; edits gated to `isAtLeastProgrammeManager` (Client Admin / Programme Manager / Super Admin), view open to any signed-in user. Reuse [`RpEmptyState`](web/features/resourcePlanner/components/RpEmptyState.tsx) + [`SchemeFilters`](web/features/resourcePlanner/components/SchemeFilters.tsx) across its pages; the [`FteExplainer`](web/features/resourcePlanner/components/FteExplainer.tsx) panel is the canonical place to explain FTE/uplift.
@@ -1778,6 +1821,7 @@ An admin-only product-demo / testing overlay: it injects a complete static datas
 - **Fact-Check / Validation goes through [`web/lib/validation.ts`](web/lib/validation.ts) types + [`useValidationGate`](web/hooks/useValidationGate.ts) + [`<ValidateButton/>`](web/components/validation/ValidateButton.tsx).** One `validations` collection, keyed by a **content-versioned** target (`versionedTargetId`) so a new analysis forces a fresh check. The AI fact-check is the **chunked** two-call pattern in [`api/routes/validation.ts`](api/routes/validation.ts) via `aiOperationRouter` (`webSearch`), NEVER `api/routes/ai.ts`, with **1:1 numbered-item reconciliation** (one claim per item). PM+ validates; approval blocked until validated (gate BOTH the submit action and any step→step advance, e.g. `handleFinalise`); everything `logActivity`s. Don't fork the types, add a parallel collection, hardcode the confidence threshold, or send un-numbered/multi-line fact-check content.
 - **Chat input is guarded by [`api/lib/aiGuard.ts`](api/lib/aiGuard.ts) `screenChatInput` BEFORE the model** (Llama Guard safety + topical, hard-block, fail-open). Don't bypass it or route its classifier through `api/routes/ai.ts`. The chat Fact-check button is gated on `factCheckable` + citations, and chat fact-checks run a verifiability pre-check — don't fact-check pure data-summary / "no results" answers.
 - **Tooltips inside a scroll/overflow container (e.g. a `DynamicTable` cell) must portal out** — use [`TrendingTooltip`](web/components/TrendingTooltip.tsx)'s pattern (`createPortal` to `document.body`, `position:fixed`, `z-40` so it sits above the table but below `z-50` modals/dialogs/dropdowns). The plain `InfoTooltip` gets clipped there.
+- **Assurance suite goes through its dedicated modules (see "Assurance capability conventions").** Controls/Incidents are tenant-scoped routes (PM+ to edit/close); CAPA is a FLAG on Tasks (never fork a 3rd to-do list); recurrence/improvement maths is the pure lib `web/lib/learning/recurrence.ts` and `learningSuggestImprovements` routes AI through `aiOperationRouter` (AI suggests, officer approves); "Continuous Improvement" (the engine) is DISTINCT from the manual "Lessons Learned" repository — don't conflate them.
 - **`PageActions` is the ONLY way to add a per-page context dropdown.** Pass `items: ActionItem[]` and `canManage: boolean`. Never roll a custom dropdown for page-level actions.
 - **`exportContextData` in [`web/lib/exportUtils.ts`](web/lib/exportUtils.ts) is the ONLY Excel export helper.** Never write inline XLSX logic in a page. Add new sheet types to `exportUtils.ts`.
 - **`ServiceManagementBar` is deleted.** Do not recreate it. Its MonthPicker and PageActions patterns replace it entirely.

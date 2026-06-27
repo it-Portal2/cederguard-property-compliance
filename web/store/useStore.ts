@@ -55,13 +55,15 @@ import {
   validationKey,
 } from "../lib/validation";
 import { getGrossScore, getResidualScore } from "../lib/riskMetrics";
-import { isAtLeastClientAdmin, isAtLeastProgrammeManager } from "../lib/roles";
+import { isAtLeastClientAdmin, isAtLeastProgrammeManager, isAtLeastPM } from "../lib/roles";
 import { generateId, isValidDateString } from "../lib/utils";
 import type {
   ResourceScheme,
   ResourceAssumptions,
   Role,
 } from "../lib/resourcePlanner/types";
+import type { Control } from "../features/controls/types";
+import type { Incident } from "../features/incidents/types";
 import {
   DEFAULT_RATE_CARD,
   DEFAULT_COMPLEXITY_MAP,
@@ -289,6 +291,13 @@ export interface ComplianceItem {
   status?: string;
   projectId?: string;
   programmeId?: string;
+  // Verification-checklist sign-off (separate from `stage`, which carries "completed" = Live/Archived).
+  owner?: string;
+  evidenceRequired?: boolean;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  approvedBy?: string;
+  approvedAt?: string;
   [key: string]: any;
 }
 
@@ -686,6 +695,15 @@ export interface TaskItem {
   programmeId?: string;
   riskId?: string;
   issueId?: string;
+  // CAPA (Corrective/Preventive/Improvement) flag — when set, the action is part
+  // of the assurance register and gains evidence-required + escalation + PM+ sign-off.
+  capaType?: "Corrective" | "Preventive" | "Improvement";
+  capaEvidenceRequired?: boolean;
+  capaEscalationRoute?: string;
+  capaStatus?: "Pending" | "Approved" | "Rejected";
+  capaApprovedBy?: string;
+  capaApprovedAt?: string;
+  capaRejectionReason?: string;
 }
 
 export interface AppState {
@@ -895,6 +913,12 @@ export interface AppState {
   addTask: (task: TaskItem) => void;
   updateTask: (id: string, updates: Partial<TaskItem>) => void;
   deleteTask: (id: string) => void;
+  reviewCapaAction: (
+    id: string,
+    decision: "Approved" | "Rejected",
+    reason?: string,
+  ) => Promise<void>;
+  canApproveCapa: () => boolean;
 
   // Additional methods
   deleteIssue: (id: string) => Promise<void>;
@@ -934,6 +958,25 @@ export interface AppState {
   deleteResourceScheme: (id: string) => Promise<void>;
   saveResourceAssumptions: (assumptions: ResourceAssumptions) => Promise<void>;
   canManageResourcePlanner: () => boolean;
+
+  // Controls library (tenant-scoped first-class control records)
+  controls: Control[];
+  controlsLoading: boolean;
+  controlsLoaded: boolean;
+  loadControls: (force?: boolean) => Promise<void>;
+  saveControl: (control: Control) => Promise<Control>;
+  deleteControl: (id: string) => Promise<void>;
+  canManageControls: () => boolean;
+
+  // Incident management (tenant-scoped formal incident register)
+  incidents: Incident[];
+  incidentsLoading: boolean;
+  incidentsLoaded: boolean;
+  loadIncidents: (force?: boolean) => Promise<void>;
+  saveIncident: (incident: Incident) => Promise<Incident>;
+  deleteIncident: (id: string) => Promise<void>;
+  canLogIncidents: () => boolean;
+  canCloseIncidents: () => boolean;
 }
 
 /**
@@ -2231,6 +2274,35 @@ export const useStore = create<AppState>((set, get) => {
     await api.saveData("tasks", next, contextId);
   },
 
+  // PM+ sign-off on a CAPA-flagged action (mirrors the governance approval trail).
+  reviewCapaAction: async (id, decision, reason) => {
+    const { tasks, user } = get();
+    if (!isAtLeastPM(user?.role || user?.profile?.role)) {
+      throw new Error("Only a PM or above can review CAPA actions.");
+    }
+    const approver = user?.id || user?.uid || user?.email || "Unknown";
+    const next = tasks.map((t) =>
+      t.id === id
+        ? {
+            ...t,
+            capaStatus: decision,
+            capaApprovedBy: approver,
+            capaApprovedAt: new Date().toISOString(),
+            capaRejectionReason:
+              decision === "Rejected" ? reason || "" : undefined,
+          }
+        : t,
+    );
+    set({ tasks: next });
+    const contextId = get().activeProjectId || get().activeProgrammeId;
+    await api.saveData("tasks", next, contextId);
+  },
+  canApproveCapa: () => {
+    const { user } = get();
+    if (!user) return false;
+    return isAtLeastPM(user.role || user.profile?.role);
+  },
+
   deleteIssue: async (id) => {
     const { issues } = get();
     const next = issues.filter((i) => i.id !== id);
@@ -3084,6 +3156,102 @@ export const useStore = create<AppState>((set, get) => {
     const { user } = get();
     if (!user) return false;
     return isAtLeastProgrammeManager(user.role || user.profile?.role);
+  },
+
+  // ---- Controls library (tenant-scoped) -------------------------------------
+  controls: [],
+  controlsLoading: false,
+  controlsLoaded: false,
+
+  loadControls: async (force = false) => {
+    if (get().controlsLoading) return;
+    if (get().controlsLoaded && !force) return;
+    set({ controlsLoading: true });
+    try {
+      const res = await api.controlsList();
+      const controls = ((res?.controls as Control[]) || []);
+      set({ controls, controlsLoaded: true });
+    } catch (e) {
+      console.error("loadControls failed", e);
+    } finally {
+      set({ controlsLoading: false });
+    }
+  },
+
+  saveControl: async (control) => {
+    const res = await api.controlsUpsert(control);
+    const id = res?.id || control.id;
+    const saved: Control = { ...control, id };
+    set((s) => {
+      const exists = s.controls.some((x) => x.id === id);
+      const list = exists
+        ? s.controls.map((x) => (x.id === id ? saved : x))
+        : [...s.controls, saved];
+      list.sort((a, b) => String(a.title || "").localeCompare(String(b.title || "")));
+      return { controls: list };
+    });
+    return saved;
+  },
+
+  deleteControl: async (id) => {
+    await api.controlsDelete(id);
+    set((s) => ({ controls: s.controls.filter((x) => x.id !== id) }));
+  },
+
+  canManageControls: () => {
+    const { user } = get();
+    if (!user) return false;
+    return isAtLeastPM(user.role || user.profile?.role);
+  },
+
+  // ---- Incident management (tenant-scoped) ----------------------------------
+  incidents: [],
+  incidentsLoading: false,
+  incidentsLoaded: false,
+
+  loadIncidents: async (force = false) => {
+    if (get().incidentsLoading) return;
+    if (get().incidentsLoaded && !force) return;
+    set({ incidentsLoading: true });
+    try {
+      const res = await api.incidentsList();
+      const incidents = ((res?.incidents as Incident[]) || []);
+      set({ incidents, incidentsLoaded: true });
+    } catch (e) {
+      console.error("loadIncidents failed", e);
+    } finally {
+      set({ incidentsLoading: false });
+    }
+  },
+
+  saveIncident: async (incident) => {
+    const res = await api.incidentsUpsert(incident);
+    const id = res?.id || incident.id;
+    const saved: Incident = { ...incident, id };
+    set((s) => {
+      const exists = s.incidents.some((x) => x.id === id);
+      const list = exists
+        ? s.incidents.map((x) => (x.id === id ? saved : x))
+        : [...s.incidents, saved];
+      list.sort((a, b) =>
+        String(b.occurredAt || "").localeCompare(String(a.occurredAt || "")),
+      );
+      return { incidents: list };
+    });
+    return saved;
+  },
+
+  deleteIncident: async (id) => {
+    await api.incidentsDelete(id);
+    set((s) => ({ incidents: s.incidents.filter((x) => x.id !== id) }));
+  },
+
+  // Any signed-in tenant user can log/edit an incident; closing is PM+.
+  canLogIncidents: () => !!get().user,
+  canCloseIncidents: () => {
+    const { user } = get();
+    if (!user) return false;
+    return isAtLeastPM(user.role || user.profile?.role);
   },
 
   canManageContext: () => {

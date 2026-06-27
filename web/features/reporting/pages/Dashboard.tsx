@@ -84,6 +84,7 @@ import { canCreateProgramme as canCreateProgrammeFn } from "../../../lib/roles";
 import { GetStartedModal } from "../../../components/onboarding/GetStartedModal";
 import DemoDataControls from "../../../components/DemoDataControls";
 import DashboardGovernanceCard from "../components/DashboardGovernanceCard";
+import AssuranceSignalsCard from "../components/AssuranceSignalsCard";
 import { getOnboardingSteps } from "../../../components/onboarding/onboardingSteps";
 
 function getProjectCardModel(
@@ -1894,6 +1895,9 @@ export function Dashboard() {
 
           {/* ─── GOVERNANCE STATUS (after Recent activity; governance-enabled users only) ─── */}
           {(isClientAdmin || isProjectManager) && <DashboardGovernanceCard />}
+
+          {/* ─── ASSURANCE SIGNALS (control failures, incidents, overdue CAPA, missing evidence) ─── */}
+          {(isClientAdmin || isProjectManager) && <AssuranceSignalsCard />}
 
           {/* AI Strategic Intelligence — Hidden if no stats available at all */}
           {(isComplianceSetup || isRiskSetup) && (

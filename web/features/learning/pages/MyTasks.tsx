@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Plus,
   Clock,
@@ -43,6 +43,10 @@ interface TaskRow {
   programmeId?: string;
   type: TaskType;
   original?: any;
+  capaType?: TaskItem["capaType"];
+  capaStatus?: TaskItem["capaStatus"];
+  capaEvidenceRequired?: boolean;
+  capaEscalationRoute?: string;
   // Derived for DynamicTable filters — the filter `match` callback only
   // receives one field value, so we flatten the cross-field bucket logic.
   _contextId: string;
@@ -50,24 +54,60 @@ interface TaskRow {
   _isOverdue: boolean;
 }
 
+// Normalise the CAPA block: when a CAPA type is set the action joins the assurance
+// register (defaults to Pending sign-off); clearing the type strips every CAPA field.
+function capaFieldsFor(t: Partial<TaskItem>): Partial<TaskItem> {
+  if (!t.capaType) {
+    return {
+      capaType: undefined,
+      capaEvidenceRequired: undefined,
+      capaEscalationRoute: undefined,
+      capaStatus: undefined,
+      capaApprovedBy: undefined,
+      capaApprovedAt: undefined,
+      capaRejectionReason: undefined,
+    };
+  }
+  return {
+    capaType: t.capaType,
+    capaEvidenceRequired: !!t.capaEvidenceRequired,
+    capaEscalationRoute: t.capaEscalationRoute || "",
+    capaStatus: t.capaStatus || "Pending",
+  };
+}
+
 export function MyTasks() {
   const navigate = useNavigate();
   const {
     user,
     tasks,
+    risks,
+    issues,
     complianceItems,
     addTask,
     updateTask,
     deleteTask,
+    reviewCapaAction,
+    canApproveCapa,
     updateComplianceItem,
     projects,
     programmes,
     activeProjectId,
     activeProgrammeId,
   } = useStore();
+  const canApprove = canApproveCapa();
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState<"add" | "edit">("add");
   const [currentTask, setCurrentTask] = useState<Partial<TaskItem>>({});
+
+  useEffect(() => {
+    if (!showModal) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowModal(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [showModal]);
 
   // Merge manual tasks, actionable compliance items, risk reviews, and issue deadlines.
   const allItems: TaskRow[] = useMemo(() => {
@@ -165,7 +205,6 @@ export function MyTasks() {
       });
 
     // 3. Risk Reviews due.
-    const { risks, issues } = useStore.getState();
     const riskReviews = (Array.isArray(risks) ? risks : [])
       .filter((r) => {
         const isOwner =
@@ -249,7 +288,7 @@ export function MyTasks() {
         return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
       },
     );
-  }, [tasks, complianceItems, user, projects, programmes]);
+  }, [tasks, risks, issues, complianceItems, user, projects, programmes]);
 
   const kpis = useMemo(() => {
     const today = new Date();
@@ -329,11 +368,12 @@ export function MyTasks() {
         programmeId: contextProgrammeId,
         projectName: contextName,
         isProgrammeLevel: !!contextProgrammeId,
+        ...capaFieldsFor(currentTask),
       };
       addTask(task);
       toast.success("Task created successfully");
     } else if (modalMode === "edit" && currentTask.id) {
-      updateTask(currentTask.id, currentTask);
+      updateTask(currentTask.id, { ...currentTask, ...capaFieldsFor(currentTask) });
       toast.success("Task updated successfully");
     }
 
@@ -477,6 +517,43 @@ export function MyTasks() {
         </span>
       ),
     },
+    {
+      key: "capaType",
+      label: "CAPA",
+      width: "150px",
+      render: (_v, r) =>
+        r.capaType ? (
+          <div className="flex flex-col gap-0.5">
+            <span
+              className={clsx(
+                "font-mono px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wide border w-fit",
+                r.capaType === "Corrective"
+                  ? "bg-rose-50 text-rose-700 border-rose-200"
+                  : r.capaType === "Preventive"
+                    ? "bg-blue-50 text-blue-700 border-blue-200"
+                    : "bg-emerald-50 text-emerald-700 border-emerald-200",
+              )}
+            >
+              {r.capaType}
+            </span>
+            <span
+              className={clsx(
+                "font-mono text-[9px] uppercase tracking-wide",
+                r.capaStatus === "Approved"
+                  ? "text-emerald-600"
+                  : r.capaStatus === "Rejected"
+                    ? "text-rose-600"
+                    : "text-amber-600",
+              )}
+            >
+              {r.capaStatus || "Pending"}
+              {r.capaEvidenceRequired ? " · evidence" : ""}
+            </span>
+          </div>
+        ) : (
+          <span className="text-slate-300 text-[11px]">—</span>
+        ),
+    },
   ];
 
   // ── Filters ────────────────────────────────────────────────────────────────
@@ -516,6 +593,20 @@ export function MyTasks() {
         ...projects.map((p) => ({ value: p.id, label: p.name })),
       ],
     },
+    {
+      key: "capaType",
+      label: "CAPA",
+      type: "select",
+      placeholder: "All actions",
+      options: [
+        { value: "__any__", label: "Any CAPA action" },
+        { value: "Corrective", label: "Corrective" },
+        { value: "Preventive", label: "Preventive" },
+        { value: "Improvement", label: "Improvement" },
+      ],
+      match: (rowVal, val) =>
+        val === "__any__" ? !!rowVal : String(rowVal) === String(val),
+    },
   ];
 
   // ── Row actions ────────────────────────────────────────────────────────────
@@ -540,6 +631,52 @@ export function MyTasks() {
       icon: ExternalLink,
       isVisible: (r) => r.type === "compliance",
       onClick: () => navigate("/compliance"),
+    },
+    {
+      key: "capa-approve",
+      label: "Approve CAPA",
+      icon: CheckCircle2,
+      isVisible: (r) =>
+        canApprove &&
+        r.type === "task" &&
+        !!r.capaType &&
+        r.capaStatus !== "Approved",
+      onClick: async (r) => {
+        try {
+          await reviewCapaAction(r.id, "Approved");
+          toast.success(`CAPA action "${r.title}" approved`);
+        } catch (e: any) {
+          toast.error(e?.message || "Could not approve CAPA action");
+        }
+      },
+    },
+    {
+      key: "capa-reject",
+      label: "Reject CAPA",
+      icon: X,
+      isDanger: true,
+      isVisible: (r) =>
+        canApprove &&
+        r.type === "task" &&
+        !!r.capaType &&
+        r.capaStatus !== "Rejected",
+      requireConfirm: {
+        icon: X,
+        variant: "danger" as const,
+        title: "Reject CAPA action",
+        message: (r: TaskRow) =>
+          `Reject the CAPA sign-off for "${r.title}"? It will need re-work and re-submission.`,
+        confirmLabel: "Reject",
+        isDanger: true,
+      },
+      onClick: async (r) => {
+        try {
+          await reviewCapaAction(r.id, "Rejected");
+          toast.success(`CAPA action "${r.title}" rejected`);
+        } catch (e: any) {
+          toast.error(e?.message || "Could not reject CAPA action");
+        }
+      },
     },
     {
       key: "delete",
@@ -682,9 +819,14 @@ export function MyTasks() {
       {/* Add/Edit Task Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-300">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="mytasks-modal-title"
+            className="bg-white rounded-lg shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-300"
+          >
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <h3 className="font-semibold text-slate-800 tracking-tight text-lg">
+              <h3 id="mytasks-modal-title" className="font-semibold text-slate-800 tracking-tight text-lg">
                 {modalMode === "add" ? "Create Workspace Task" : "Edit Task"}
               </h3>
               <button
@@ -694,7 +836,10 @@ export function MyTasks() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-5">
+            <form
+              onSubmit={handleSubmit}
+              className="p-6 space-y-5 max-h-[80vh] overflow-y-auto"
+            >
               <div>
                 <label className="block text-xs font-medium text-slate-500 mb-1.5">
                   Task Title
@@ -765,6 +910,67 @@ export function MyTasks() {
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
                   />
                 </div>
+              </div>
+              <div className="rounded-lg border border-slate-200 p-4 space-y-3 bg-slate-50/50">
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1.5">
+                    CAPA classification
+                  </label>
+                  <select
+                    value={currentTask.capaType || ""}
+                    onChange={(e) =>
+                      setCurrentTask({
+                        ...currentTask,
+                        capaType: (e.target.value ||
+                          undefined) as TaskItem["capaType"],
+                      })
+                    }
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer"
+                  >
+                    <option value="">Not a CAPA action</option>
+                    <option value="Corrective">Corrective</option>
+                    <option value="Preventive">Preventive</option>
+                    <option value="Improvement">Improvement</option>
+                  </select>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Flagging an action adds it to the assurance register and
+                    requires PM+ sign-off.
+                  </p>
+                </div>
+                {currentTask.capaType && (
+                  <>
+                    <label className="flex items-center gap-2 text-sm text-slate-600">
+                      <input
+                        type="checkbox"
+                        checked={!!currentTask.capaEvidenceRequired}
+                        onChange={(e) =>
+                          setCurrentTask({
+                            ...currentTask,
+                            capaEvidenceRequired: e.target.checked,
+                          })
+                        }
+                      />
+                      Evidence required to close
+                    </label>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-500 mb-1.5">
+                        Escalation route
+                      </label>
+                      <input
+                        type="text"
+                        value={currentTask.capaEscalationRoute || ""}
+                        onChange={(e) =>
+                          setCurrentTask({
+                            ...currentTask,
+                            capaEscalationRoute: e.target.value,
+                          })
+                        }
+                        placeholder="Who this escalates to if not closed"
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </>
+                )}
               </div>
               <div className="pt-4 flex gap-3">
                 <button
