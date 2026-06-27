@@ -563,9 +563,9 @@ export function EvidenceDocuments() {
           <Shield className="h-5 w-5 text-indigo-400" />
         </div>
         <div>
-          <h3 className="font-semibold mb-1">Compliance Data Sovereignty</h3>
+          <h3 className="font-semibold mb-1">Compliance Document Trail</h3>
           <p className="text-sm text-slate-400 leading-relaxed max-w-2xl">
-            All uploaded documentation is encrypted at rest and in transit via AES-256. Documents are immutable once registered and tagged with the project's unique forensic identifier for audit chain continuity.
+            All uploaded documentation is transmitted over a secure connection and stored against the project's record. Each document is time-stamped on upload and tagged to its project to support a traceable audit trail.
           </p>
         </div>
       </div>

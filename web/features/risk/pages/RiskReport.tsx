@@ -1,6 +1,7 @@
 import { useStore } from '../../../store/useStore';
 import { format } from 'date-fns';
 import { stripMarkdown } from '../../../lib/utils';
+import { getGrossScore, MAJOR_SCORE_THRESHOLD } from '../../../lib/riskMetrics';
 
 function fGBP(v: number) {
   if (v === null || v === undefined || isNaN(v)) return "—";
@@ -8,11 +9,24 @@ function fGBP(v: number) {
 }
 
 export function RiskReport() {
-  const { risks, issues, projectInfo } = useStore();
+  const { risks: allRisks, issues: allIssues, projects, projectInfo, activeProjectId, activeProgrammeId } = useStore();
+
+  const risks = allRisks.filter(r => {
+    if (activeProjectId) return r.projectId === activeProjectId;
+    if (!activeProgrammeId) return true;
+    const proj = projects.find(p => p.id === r.projectId);
+    return proj?.programmeId === activeProgrammeId || r.programmeId === activeProgrammeId;
+  });
+  const issues = allIssues.filter(i => {
+    if (activeProjectId) return i.projectId === activeProjectId;
+    if (!activeProgrammeId) return true;
+    const proj = projects.find(p => p.id === i.projectId);
+    return proj?.programmeId === activeProgrammeId || i.programmeId === activeProgrammeId;
+  });
 
   const total = risks.length;
   const open = risks.filter(r => r.status === "Open").length;
-  const high = risks.filter(r => r.grossRating >= 16).length;
+  const high = risks.filter(r => getGrossScore(r) >= MAJOR_SCORE_THRESHOLD).length;
   const esc = risks.filter(r => r.escalated).length;
   const tGALE = risks.reduce((s, r) => s + (r.grossALE || 0), 0);
   const tRALE = risks.reduce((s, r) => s + (r.residualALE || 0), 0);

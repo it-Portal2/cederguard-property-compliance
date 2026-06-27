@@ -34,7 +34,7 @@ function fGBP(v: number) {
 
 export function ProgrammeReport() {
     const navigate = useNavigate();
-    const { risks, projects, activeProgrammeId, programmes, user } = useStore();
+    const { risks, issues, projects, activeProgrammeId, programmes, user } = useStore();
     
     // Role check
     const userRole = user?.role || (user as any)?.profile?.role;
@@ -82,7 +82,11 @@ export function ProgrammeReport() {
 
         // Calculations
         const highRisks = progRisks.filter(r => (r.residualRating || 0) >= 16).length;
-        const openIssues = progRisks.filter(r => r.status === 'Open').length; // Simplified issue count from risk status
+        const progProjectIds = new Set(progProjects.map(p => p.id));
+        const progIssues = issues.filter(i =>
+            !activeProgrammeId || i.programmeId === activeProgrammeId || progProjectIds.has(i.projectId)
+        );
+        const openIssues = progIssues.filter(i => i.status !== '4. Resolved').length;
         const totalALE = progRisks.reduce((s, r) => s + (r.residualALE || 0), 0);
         const mitigatedPct = progRisks.length > 0 ? Math.round((progRisks.filter(r => r.status === 'Mitigated' || r.status === 'Closed').length / progRisks.length) * 100) : 0;
         const escalatedFromProjects = progRisks.filter(r => r.escalated).length;
@@ -104,7 +108,7 @@ export function ProgrammeReport() {
             projectCount: progProjects.length,
             programmeName: programmes.find(p => p.id === activeProgrammeId)?.name || 'Global Programme'
         };
-    }, [risks, projects, activeProgrammeId, programmes]);
+    }, [risks, issues, projects, activeProgrammeId, programmes]);
 
     if (!isClientAdmin) {
         return (

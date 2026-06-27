@@ -6,7 +6,7 @@ import { useStore } from '../../../store/useStore';
 import { StatsCard } from '../../../components/common/StatsCard';
 import { format, differenceInDays } from 'date-fns';
 import { KRI_LIST, KRI_OWNERS } from '../../../data/riskData';
-import { getGrossScore } from '../../../lib/riskMetrics';
+import { getGrossScore, SEVERE_SCORE_THRESHOLD, MAJOR_SCORE_THRESHOLD } from '../../../lib/riskMetrics';
 import { evaluateConversion, conversionAction } from '../../../lib/riskConversion';
 import { clsx } from 'clsx';
 import PageHeader from '../../../components/PageHeader';
@@ -19,8 +19,6 @@ export function RiskAlerts() {
 
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
-  const [isSending, setIsSending] = useState(false);
-  const [sendSuccess, setSendSuccess] = useState(false);
   const [convertingId, setConvertingId] = useState<string | null>(null);
 
   const handleConvert = async (riskId: string, alertId: string) => {
@@ -33,15 +31,6 @@ export function RiskAlerts() {
     } finally {
       setConvertingId(null);
     }
-  };
-
-  const handleSendAlerts = () => {
-    setIsSending(true);
-    setTimeout(() => {
-      setIsSending(false);
-      setSendSuccess(true);
-      setTimeout(() => setSendSuccess(false), 3000);
-    }, 1500);
   };
 
   const now = Date.now();
@@ -63,16 +52,16 @@ export function RiskAlerts() {
   // Rules
   filteredRisks.forEach(r => {
     const score = getGrossScore(r);
-    if (score >= 20 && r.status === "Open") {
+    if (score >= SEVERE_SCORE_THRESHOLD && r.status === "Open") {
       allAlerts.push({ id: `sev_open::${r.id}`, group: 'Critical', color: 'red', icon: <ShieldAlert className="w-4 h-4 text-red-500" />, label: 'Severe Risk — Open & Unmitigated', item: r, msg: `${r.id} is rated Severe (${score}) and remains Open. Immediate action required.`, action: 'Escalate to Programme Board and assign immediate mitigation owner.' });
     }
-    if (score >= 16 && r.status === "Open" && !r.dueDate) {
+    if (score >= MAJOR_SCORE_THRESHOLD && r.status === "Open" && !r.dueDate) {
       allAlerts.push({ id: `high_open::${r.id}`, group: 'Critical', color: 'red', icon: <AlertTriangle className="w-4 h-4 text-red-500" />, label: 'Major Risk — Open with No Due Date', item: r, msg: `${r.id} is Major/Severe (${score}) with no due date set.`, action: 'Assign a due date and mitigation owner immediately.' });
     }
     if (r.dueDate && new Date(r.dueDate) < new Date() && r.status !== "Closed" && r.status !== "Mitigated") {
       allAlerts.push({ id: `overdue::${r.id}`, group: 'Critical', color: 'red', icon: <Clock className="w-4 h-4 text-red-500" />, label: 'Risk Overdue — Past Due Date', item: r, msg: `${r.id} was due ${format(new Date(r.dueDate), 'dd MMM yy')} — now ${differenceInDays(new Date(), new Date(r.dueDate))} days overdue.`, action: 'Review risk status and either update due date with justification or close.' });
     }
-    if (r.escalated && r.status === "Open" && score >= 12) {
+    if (r.escalated && r.status === "Open" && score >= MAJOR_SCORE_THRESHOLD) {
       allAlerts.push({ id: `esc_open::${r.id}`, group: 'Critical', color: 'red', icon: <ShieldAlert className="w-4 h-4 text-red-500" />, label: 'Escalated Risk — Still Open', item: r, msg: `${r.id} has been escalated to Programme Register but remains Open (score ${score}).`, action: 'Programme Board to review and agree action or tolerance decision.' });
     }
     if (r.category === "Legal / Regulatory" && (r.title || '').toLowerCase().includes("damp") && r.status === "Open") {
@@ -83,7 +72,7 @@ export function RiskAlerts() {
   // KRI Breach Rules
   KRI_LIST.forEach(kri => {
     const kriRisks = filteredRisks.filter(r => r.kri === kri);
-    const criticalRisks = kriRisks.filter(r => getGrossScore(r) >= 16 && r.status === "Open");
+    const criticalRisks = kriRisks.filter(r => getGrossScore(r) >= MAJOR_SCORE_THRESHOLD && r.status === "Open");
     const overdueRisks = kriRisks.filter(r => r.dueDate && new Date(r.dueDate) < new Date() && r.status !== "Closed");
 
     if (criticalRisks.length > 0) {
@@ -236,23 +225,6 @@ export function RiskAlerts() {
           iconBgClassName="bg-emerald-50 dark:bg-emerald-500/10"
           iconClassName="text-emerald-600 dark:text-emerald-400"
         />
-      </div>
-
-      {/* Web App Notification Routing */}
-      <div className="bg-white p-5 rounded-lg border border-slate-200 flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
-        <div>
-          <h3 className="text-sm font-mono font-medium text-slate-800 uppercase tracking-wide flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-indigo-500" /> Dispatch Push Notifications
-          </h3>
-          <p className="text-xs text-slate-500 mt-1">Send secure web app notifications to all KRI Owners with active alerts.</p>
-        </div>
-        <button 
-          onClick={handleSendAlerts}
-          disabled={isSending || activeAlerts.length === 0}
-          className="px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-lg shadow-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
-        >
-          {isSending ? 'Dispatching...' : sendSuccess ? 'Displatch Successful ✓' : `Push ${activeAlerts.length} Active Alerts`}
-        </button>
       </div>
 
       <div className="flex gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">

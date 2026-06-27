@@ -24,7 +24,7 @@ import { clsx } from 'clsx';
 import { Link } from 'react-router';
 import { stripMarkdown, parseAISuggestion } from '../../../lib/utils';
 import { useNavigate } from 'react-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { analyzeStrategicInsights } from '../../../services/aiService';
 import { resolveAiScope } from '../../../lib/aiScope';
 
@@ -83,7 +83,7 @@ export function ExecutiveReport() {
           total: filteredCompliance.length,
           complete: compComplete,
           pct: compPct,
-          highRisk: filteredCompliance.filter(c => c.stage === 'At Risk').length
+          highRisk: filteredCompliance.filter(c => c.stage === 'Risk Identified' || c.stage === 'Information Gap').length
         },
         issues: {
           total: filteredIssues.length,
@@ -127,10 +127,18 @@ export function ExecutiveReport() {
   const highRisks = filteredRisks.filter(r => (r.residualRating || 0) >= 12);
   const criticalCount = filteredRisks.filter(r => (r.residualRating || 0) >= 16).length;
 
-  const compComplete = filteredCompliance.filter(i => i.stage === 'Complete').length;
+  const compComplete = filteredCompliance.filter(i => i.stage === 'Live' || i.stage === 'Archived').length;
   const compPct = filteredCompliance.length ? Math.round((compComplete / filteredCompliance.length) * 100) : 0;
 
   const currentProgramme = safeProgrammes.find(p => p.id === activeProgrammeId);
+
+  // Deterministic report reference derived from the active programme.
+  const reportRef = useMemo(() => {
+    const seed = activeProgrammeId || 'ALL';
+    let h = 0;
+    for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+    return `EXE-${new Date().getFullYear()}-${1000 + (h % 9000)}`;
+  }, [activeProgrammeId]);
 
   useEffect(() => {
     getInsight();
@@ -198,7 +206,7 @@ export function ExecutiveReport() {
 
             <span className="flex items-center gap-2 text-slate-400">
               <Calendar className="w-4 h-4 text-indigo-300" />
-              Ref: EXE-{new Date().getFullYear()}-{Math.floor(Math.random() * 9000 + 1000)}
+              Ref: {reportRef}
             </span>
           </div>
 
@@ -481,16 +489,12 @@ export function ExecutiveReport() {
                 progressLabel="Complete"
               />
               <StatsCard
-                icon={Calendar}
-                title="Audit readiness"
-                value="98%"
+                icon={Inbox}
+                title="Outstanding items"
+                value={filteredCompliance.length - compComplete}
                 size="sm"
-                iconBgClassName="bg-indigo-50 dark:bg-indigo-500/10"
-                iconClassName="text-indigo-600 dark:text-indigo-400"
-                progress
-                progressValue={98}
-                progressClassName="bg-indigo-500"
-                progressLabel="Ready"
+                iconBgClassName="bg-amber-50 dark:bg-amber-500/10"
+                iconClassName="text-amber-600 dark:text-amber-400"
               />
             </div>
 
@@ -503,7 +507,7 @@ export function ExecutiveReport() {
                   Regulatory trajectory
                 </div>
                 <div className="text-sm font-medium text-white">
-                  Full alignment with UK-GDPR &amp; PCR 2024 frameworks achieved across all projects.
+                  {compComplete} of {filteredCompliance.length} tracked compliance requirements verified ({compPct}%) across the portfolio.
                 </div>
               </div>
             </div>

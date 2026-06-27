@@ -14,6 +14,7 @@ import { clsx } from 'clsx';
 import { StatsCard } from '../../../components/common/StatsCard';
 import { Link, useSearchParams, useNavigate } from 'react-router';
 import { stripMarkdown } from '../../../lib/utils';
+import { getResidualScore, SEVERE_SCORE_THRESHOLD, MAJOR_SCORE_THRESHOLD } from '../../../lib/riskMetrics';
 import { analyzeStrategicInsights } from '../../../services/aiService';
 import { differenceInMonths } from 'date-fns';
 import { isAtLeastClientAdmin, isSuperAdmin, UserRole } from '../../../lib/roles';
@@ -103,8 +104,8 @@ function RiskBadge({ label }: { label: string }) {
 }
 
 function getSeverityLabel(rating: number): string {
-  if (rating >= 20) return 'Severe';
-  if (rating >= 12) return 'Major';
+  if (rating >= SEVERE_SCORE_THRESHOLD) return 'Severe';
+  if (rating >= MAJOR_SCORE_THRESHOLD) return 'Major';
   if (rating >= 8) return 'Moderate';
   if (rating >= 4) return 'Minor';
   return 'Insignificant';
@@ -326,7 +327,7 @@ export function RiskDashboard() {
   // ─── KPI calculations ───────────────────────────────────────────────────
   const totalRisks = filteredRisks.length;
   const openRisks = filteredRisks.filter(r => r.status === 'Open').length;
-  const highSevere = filteredRisks.filter(r => (r.residualRating || 0) >= 12).length;
+  const highSevere = filteredRisks.filter(r => getResidualScore(r) >= MAJOR_SCORE_THRESHOLD).length;
   const escalated = filteredRisks.filter(r => r.status === 'Escalated' || r.escalated).length;
 
   // Removed empty state screen to always show the dashboard layout for all roles.
@@ -345,7 +346,7 @@ export function RiskDashboard() {
 
   // ─── Residual risk severity breakdown ──────────────────────────────────
   const severityBuckets: Record<string, number> = { Insignificant: 0, Minor: 0, Moderate: 0, Major: 0, Severe: 0 };
-  filteredRisks.forEach(r => { severityBuckets[getSeverityLabel(r.residualRating || 0)]++; });
+  filteredRisks.forEach(r => { severityBuckets[getSeverityLabel(getResidualScore(r))]++; });
   const severityRows = Object.entries(severityBuckets).map(([k, v]) => ({ label: k, count: v }));
   const severityPieData = severityRows.filter(r => r.count > 0).map(r => ({ name: r.label, value: r.count }));
 
@@ -928,10 +929,10 @@ export function RiskDashboard() {
         <DashCard>
           <SectionTitle>Immediate Focus — Critical Risks</SectionTitle>
           <div className="p-3">
-            {filteredRisks.filter(r => (r.residualRating || 0) >= 12).length > 0 ? (
+            {filteredRisks.filter(r => getResidualScore(r) >= MAJOR_SCORE_THRESHOLD).length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {/* Bug 9 fix: filter to ≥12 before sorting — prevents non-critical risks appearing here*/}
-                {filteredRisks.filter(r => (r.residualRating || 0) >= 12).sort((a, b) => (b.residualRating || 0) - (a.residualRating || 0)).slice(0, 6).map(r => (
+                {filteredRisks.filter(r => getResidualScore(r) >= MAJOR_SCORE_THRESHOLD).sort((a, b) => (b.residualRating || 0) - (a.residualRating || 0)).slice(0, 6).map(r => (
                   <div key={r.id} className="border border-slate-200 rounded-lg p-3 hover:shadow-md transition-all bg-slate-50 hover:bg-white">
                     <div className="flex justify-between items-start mb-1.5">
                       <span className="text-[11px] font-mono font-medium text-slate-400 whitespace-nowrap tabular-nums">{r.id}</span>

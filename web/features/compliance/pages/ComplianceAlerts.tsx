@@ -44,11 +44,25 @@ export function ComplianceAlerts() {
         return true;
     });
 
+    const isDone = (i: any) => i.stage === 'Live' || i.stage === 'Archived';
+    const isOverdue = (i: any) => {
+        if (!i.dueDate || isDone(i)) return false;
+        const due = new Date(i.dueDate);
+        return !isNaN(due.getTime()) && due.getTime() < Date.now();
+    };
+
     const groups = [
+        {
+            id: 'overdue',
+            label: 'Overdue — Past Due Date',
+            items: contextCompliance.filter(isOverdue),
+            color: 'red',
+            icon: <Clock className="w-5 h-5" />
+        },
         {
             id: 'critical',
             label: 'Critical — High Risk, Not Started',
-            items: contextCompliance.filter(i => i.risk === 'High' && i.stage === 'Not Started'),
+            items: contextCompliance.filter(i => i.risk === 'High' && (i.stage === 'Not Started' || i.stage === 'Information Gap')),
             color: 'red',
             icon: <ShieldAlert className="w-5 h-5" />
         },
@@ -62,14 +76,14 @@ export function ComplianceAlerts() {
         {
             id: 'handover',
             label: 'Handover Actions Pending',
-            items: contextCompliance.filter(i => i.trigger?.toLowerCase().includes('handover') && i.stage !== 'Complete'),
+            items: contextCompliance.filter(i => i.trigger?.toLowerCase().includes('handover') && !isDone(i)),
             color: 'purple',
             icon: <ListChecks className="w-5 h-5" />
         },
         {
             id: 'statutory',
             label: 'Statutory Timescale Actions',
-            items: contextCompliance.filter(i => ['dm', 'lc', 'lr'].includes(i.domain) && i.stage !== 'Complete'),
+            items: contextCompliance.filter(i => ['dm', 'lc', 'lr'].includes(i.domain) && !isDone(i)),
             color: 'rose',
             icon: <AlertTriangle className="w-5 h-5" />
         },
@@ -83,7 +97,7 @@ export function ComplianceAlerts() {
         {
             id: 'funding',
             label: 'Funding Compliance — Milestone Driven',
-            items: contextCompliance.filter(i => ['fc', 'ah'].includes(i.domain) && i.stage !== 'Complete'),
+            items: contextCompliance.filter(i => ['fc', 'ah'].includes(i.domain) && !isDone(i)),
             color: 'cyan',
             icon: <CheckCircle2 className="w-5 h-5" />
         }
@@ -148,7 +162,7 @@ export function ComplianceAlerts() {
                                                         {dom?.abbr}
                                                     </span>
                                                     <span className={clsx("px-2 py-0.5 rounded text-[10px] font-mono font-medium tracking-wide uppercase",
-                                                        item.stage === 'Complete' ? "bg-emerald-50 text-emerald-700" :
+                                                        (item.stage === 'Live' || item.stage === 'Archived') ? "bg-emerald-50 text-emerald-700" :
                                                             item.stage === 'In Progress' ? "bg-amber-50 text-amber-700" :
                                                                 "bg-slate-100 text-slate-600"
                                                     )}>
