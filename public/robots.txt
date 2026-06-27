@@ -1,0 +1,28 @@
+User-agent: *
+Allow: /
+
+# Authenticated application — no public content to index
+Disallow: /login
+Disallow: /dashboard
+Disallow: /setup/
+Disallow: /admin
+Disallow: /projects
+Disallow: /programmes
+Disallow: /project/
+Disallow: /my-tasks
+Disallow: /calendar
+Disallow: /compliance/
+Disallow: /risk/
+Disallow: /monitoring/
+Disallow: /governance/
+Disallow: /technical-assurance/
+Disallow: /resource-planner/
+Disallow: /controls/
+Disallow: /incidents/
+Disallow: /learning/
+Disallow: /regulations
+Disallow: /reports
+Disallow: /billing
+Disallow: /invoices
+
+Sitemap: https://cedarguard.co.uk/sitemap.xml

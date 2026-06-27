@@ -4,6 +4,7 @@ import { Menu, X, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx } from 'clsx';
 import { useStore } from '../../store/useStore';
+import RouteSeo from './RouteSeo';
 
 export const PublicLayout: React.FC = () => {
     const [scrolled, setScrolled] = useState(false);
@@ -71,6 +72,7 @@ export const PublicLayout: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-white text-slate-800 dark:bg-[#030303] dark:text-slate-300 font-sans antialiased selection:bg-indigo-500/30 selection:text-white flex flex-col transition-colors duration-500 relative overflow-x-clip">
+            <RouteSeo />
             {/* Background Decorative Elements */}
             <div className="fixed inset-0 pointer-events-none z-0">
                 <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-indigo-500/5 dark:bg-cyan-500/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2" />
