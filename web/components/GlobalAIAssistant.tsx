@@ -35,6 +35,10 @@ const SKIP_PATHS = new Set<string>([
   '/setup/workspace',
   // Full-page AI Chat — has its own chat surface; floating button would be redundant.
   '/chat',
+  // Assurance pages — the floating assistant is not wanted on these surfaces.
+  '/controls/register',
+  '/incidents/register',
+  '/learning/improvement',
 ]);
 
 // Pattern-based skips (dynamic segments).

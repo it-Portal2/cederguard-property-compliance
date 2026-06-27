@@ -136,12 +136,12 @@ export default function LearningEnginePage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="rounded-lg border border-slate-200 bg-white p-5">
           <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-800">
-            <AlertTriangle className="h-4 w-4 text-amber-500" /> Recurring incidents
-            <span className="ml-auto font-mono text-[11px] text-slate-400">
+            <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" /> Recurring incidents
+            <span className="ml-auto font-mono text-[11px] text-slate-400 shrink-0">
               same type · {RECURRENCE_WINDOW_DAYS}d window
             </span>
           </h3>
-          <div className="mt-3 space-y-2">
+          <div className="mt-3 space-y-2 max-h-72 overflow-y-auto pr-1">
             {!ready ? (
               <p className="text-sm text-slate-400">Loading…</p>
             ) : recurring.length === 0 ? (
@@ -150,10 +150,10 @@ export default function LearningEnginePage() {
               recurring.map((c) => (
                 <div
                   key={c.type}
-                  className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2"
+                  className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2"
                 >
-                  <span className="text-sm text-slate-700">{c.type}</span>
-                  <span className="font-mono text-[11px] font-medium text-rose-600 tabular-nums">
+                  <span className="text-sm text-slate-700 truncate min-w-0">{c.type}</span>
+                  <span className="font-mono text-[11px] font-medium text-rose-600 tabular-nums shrink-0">
                     {c.count}× recurring
                   </span>
                 </div>
@@ -164,9 +164,14 @@ export default function LearningEnginePage() {
 
         <div className="rounded-lg border border-slate-200 bg-white p-5">
           <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-800">
-            <ShieldAlert className="h-4 w-4 text-rose-500" /> Controls needing attention
+            <ShieldAlert className="h-4 w-4 text-rose-500 shrink-0" /> Controls needing attention
+            {ready && failed.length > 0 && (
+              <span className="ml-auto font-mono text-[11px] text-slate-400 tabular-nums shrink-0">
+                {failed.length}
+              </span>
+            )}
           </h3>
-          <div className="mt-3 space-y-2">
+          <div className="mt-3 space-y-2 max-h-72 overflow-y-auto pr-1">
             {!ready ? (
               <p className="text-sm text-slate-400">Loading…</p>
             ) : failed.length === 0 ? (
@@ -177,9 +182,9 @@ export default function LearningEnginePage() {
               failed.map((c) => (
                 <div
                   key={c.id}
-                  className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2"
+                  className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2"
                 >
-                  <span className="text-sm text-slate-700 truncate">{c.title}</span>
+                  <span className="text-sm text-slate-700 truncate min-w-0">{c.title}</span>
                   <span className="font-mono text-[11px] font-medium text-rose-600 shrink-0">
                     {c.status}
                   </span>
