@@ -45,16 +45,20 @@ export default function AssuranceSignalsCard() {
   const incidents = useStore((s) => s.incidents);
   const tasks = useStore((s) => s.tasks);
   const complianceItems = useStore((s) => s.complianceItems);
+  const assuranceAlerts = useStore((s) => s.assuranceAlerts);
   const loadControls = useStore((s) => s.loadControls);
   const loadIncidents = useStore((s) => s.loadIncidents);
+  const loadAssuranceAlerts = useStore((s) => s.loadAssuranceAlerts);
   const controlsLoaded = useStore((s) => s.controlsLoaded);
   const incidentsLoaded = useStore((s) => s.incidentsLoaded);
-  const ready = controlsLoaded && incidentsLoaded;
+  const assuranceLoaded = useStore((s) => s.assuranceLoaded);
+  const ready = controlsLoaded && incidentsLoaded && assuranceLoaded;
 
   useEffect(() => {
     loadControls();
     loadIncidents();
-  }, [loadControls, loadIncidents]);
+    loadAssuranceAlerts();
+  }, [loadControls, loadIncidents, loadAssuranceAlerts]);
 
   const signals = useMemo(() => {
     const today = new Date();
@@ -77,14 +81,18 @@ export default function AssuranceSignalsCard() {
         c.stage !== "Live" &&
         c.stage !== "Archived",
     );
+    const openEscalations = (Array.isArray(assuranceAlerts) ? assuranceAlerts : []).filter(
+      (a) => a.status === "Open" || a.status === "In Review",
+    );
     return {
+      openEscalations: openEscalations.length,
       failed: failed.length,
       openIncidents: openIncidents.length,
       overdueCapa: overdueCapa.length,
       missingEvidence: missingEvidence.length,
       recurring,
     };
-  }, [controls, incidents, tasks, complianceItems]);
+  }, [controls, incidents, tasks, complianceItems, assuranceAlerts]);
 
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-5 sm:p-6 space-y-4">
@@ -99,8 +107,8 @@ export default function AssuranceSignalsCard() {
       </div>
 
       {!ready ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {Array.from({ length: 4 }).map((_, i) => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="rounded-lg border border-slate-200 bg-slate-50 p-3 animate-pulse">
               <div className="h-3 w-20 bg-slate-200 rounded" />
               <div className="mt-2 h-6 w-8 bg-slate-200 rounded" />
@@ -108,7 +116,8 @@ export default function AssuranceSignalsCard() {
           ))}
         </div>
       ) : (
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <Tile label="Open escalations" value={signals.openEscalations} tone="rose" to="/assurance" />
         <Tile label="Failed controls" value={signals.failed} tone="rose" to="/controls/register" />
         <Tile label="Open incidents" value={signals.openIncidents} tone="amber" to="/incidents/register" />
         <Tile label="Overdue CAPA" value={signals.overdueCapa} tone="rose" to="/tasks" />
@@ -136,6 +145,7 @@ export default function AssuranceSignalsCard() {
       )}
 
       {ready &&
+        signals.openEscalations === 0 &&
         signals.failed === 0 &&
         signals.openIncidents === 0 &&
         signals.overdueCapa === 0 &&

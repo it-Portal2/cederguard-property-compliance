@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import PageHeader from "../../../components/PageHeader";
 import { useStore } from "../../../store/useStore";
+import { useEscalateToAssurance } from "../../assurance/useEscalate";
 import { api } from "../../../lib/api";
 import {
   detectRecurringIncidents,
@@ -49,6 +50,8 @@ export default function LearningEnginePage() {
   const activeProgrammeId = useStore((s) => s.activeProgrammeId);
   const projects = useStore((s) => s.projects);
   const programmes = useStore((s) => s.programmes);
+
+  const { canEscalate, escalate, isEscalated, escalatingId } = useEscalateToAssurance();
 
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[] | null>(null);
@@ -147,17 +150,46 @@ export default function LearningEnginePage() {
             ) : recurring.length === 0 ? (
               <p className="text-sm text-slate-400">No recurring incident types.</p>
             ) : (
-              recurring.map((c) => (
-                <div
-                  key={c.type}
-                  className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2"
-                >
-                  <span className="text-sm text-slate-700 truncate min-w-0">{c.type}</span>
-                  <span className="font-mono text-[11px] font-medium text-rose-600 tabular-nums shrink-0">
-                    {c.count}× recurring
-                  </span>
-                </div>
-              ))
+              recurring.map((c) => {
+                const refId = `recurring:${c.type}`;
+                return (
+                  <div
+                    key={c.type}
+                    className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2"
+                  >
+                    <span className="text-sm text-slate-700 truncate min-w-0">{c.type}</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="font-mono text-[11px] font-medium text-rose-600 tabular-nums">
+                        {c.count}× recurring
+                      </span>
+                      {canEscalate && (
+                        <button
+                          onClick={() =>
+                            escalate(
+                              refId,
+                              {
+                                title: `Recurring incident: ${c.type}`,
+                                description: `${c.count} incidents of type "${c.type}" within the recurrence window (latest ${c.latest || "n/a"}).`,
+                                severity: "High",
+                                source: "incident",
+                                failureReason: "incident_occurred",
+                                sourceRef: { kind: "recurringIncident", id: refId, label: c.type },
+                              },
+                              { navigate: false },
+                            )
+                          }
+                          disabled={isEscalated(refId) || escalatingId === refId}
+                          title={isEscalated(refId) ? "Already escalated" : "Escalate to Assurance"}
+                          className="inline-flex items-center gap-1 rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-[11px] font-medium text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
+                        >
+                          <ShieldAlert className="h-3 w-3" />
+                          {isEscalated(refId) ? "Escalated" : "Escalate"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
             )}
           </div>
         </div>
@@ -179,17 +211,48 @@ export default function LearningEnginePage() {
                 No failed or partially-effective controls.
               </p>
             ) : (
-              failed.map((c) => (
-                <div
-                  key={c.id}
-                  className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2"
-                >
-                  <span className="text-sm text-slate-700 truncate min-w-0">{c.title}</span>
-                  <span className="font-mono text-[11px] font-medium text-rose-600 shrink-0">
-                    {c.status}
-                  </span>
-                </div>
-              ))
+              failed.map((c) => {
+                const refId = `control:${c.id}`;
+                return (
+                  <div
+                    key={c.id}
+                    className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2"
+                  >
+                    <span className="text-sm text-slate-700 truncate min-w-0">{c.title}</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="font-mono text-[11px] font-medium text-rose-600">
+                        {c.status}
+                      </span>
+                      {canEscalate && (
+                        <button
+                          onClick={() =>
+                            escalate(
+                              refId,
+                              {
+                                title: c.title,
+                                description: `Control "${c.title}" status: ${c.status}.`,
+                                severity: "High",
+                                source: "control",
+                                failureReason: "control_failed",
+                                sourceRef: { kind: "control", id: refId, label: c.title },
+                                projectId: c.projectId || undefined,
+                                programmeId: c.programmeId || undefined,
+                              },
+                              { navigate: false },
+                            )
+                          }
+                          disabled={isEscalated(refId) || escalatingId === refId}
+                          title={isEscalated(refId) ? "Already escalated" : "Escalate to Assurance"}
+                          className="inline-flex items-center gap-1 rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-[11px] font-medium text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
+                        >
+                          <ShieldAlert className="h-3 w-3" />
+                          {isEscalated(refId) ? "Escalated" : "Escalate"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
             )}
           </div>
         </div>

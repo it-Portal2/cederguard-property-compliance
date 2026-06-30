@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { Plus, Pencil, Trash2, ShieldCheck } from "lucide-react";
+import { Plus, Pencil, Trash2, ShieldCheck, ShieldAlert } from "lucide-react";
 import PageHeader from "../../../components/PageHeader";
 import DynamicTable from "../../../components/table/DynamicTable";
 import { useStore } from "../../../store/useStore";
 import { DOMAINS } from "../../../data/complianceData";
+import { useEscalateToAssurance } from "../../assurance/useEscalate";
 import ControlModal from "../components/ControlModal";
 import {
   CONTROL_STATUSES,
@@ -31,6 +32,7 @@ export default function ControlsRegisterPage() {
   const deleteControl = useStore((s) => s.deleteControl);
   const canManageControls = useStore((s) => s.canManageControls);
   const canManage = canManageControls();
+  const { escalate, isEscalated, escalatingId } = useEscalateToAssurance();
 
   const [editing, setEditing] = useState<Control | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -174,6 +176,27 @@ export default function ControlsRegisterPage() {
   const rowActions: RowAction<Control>[] = canManage
     ? [
         { key: "edit", label: "Edit", icon: Pencil, onClick: openEdit },
+        {
+          key: "escalate",
+          label: (r) =>
+            isEscalated(`control:${r.id}`) ? "Escalated to Assurance" : "Escalate to Assurance",
+          icon: ShieldAlert,
+          // Only a control that isn't holding belongs in the assurance layer.
+          isVisible: (r) => r.status === "Failed" || r.status === "Partially Effective",
+          isDisabled: (r) =>
+            isEscalated(`control:${r.id}`) || escalatingId === `control:${r.id}`,
+          onClick: (r) =>
+            escalate(`control:${r.id}`, {
+              title: r.title,
+              description: `Control "${r.title}" status: ${r.status}.${r.description ? ` ${r.description}` : ""}`,
+              severity: "High",
+              source: "control",
+              failureReason: "control_failed",
+              sourceRef: { kind: "control", id: `control:${r.id}`, label: r.title },
+              projectId: r.projectId || undefined,
+              programmeId: r.programmeId || undefined,
+            }),
+        },
         {
           key: "delete",
           label: "Delete",

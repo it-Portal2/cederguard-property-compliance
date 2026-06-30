@@ -26,6 +26,7 @@ import { resourcePlannerRoutes } from './resourcePlanner.js';
 import { controlsRoutes } from './controls.js';
 import { incidentsRoutes } from './incidents.js';
 import { learningRoutes } from './learning.js';
+import { assuranceRoutes } from './assurance.js';
 
 export const allRoutes: Record<string, any> = {
   ...projectRoutes,
@@ -56,4 +57,5 @@ export const allRoutes: Record<string, any> = {
   ...controlsRoutes,
   ...incidentsRoutes,
   ...learningRoutes,
+  ...assuranceRoutes,
 };

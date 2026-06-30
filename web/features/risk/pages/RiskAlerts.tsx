@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
-import { Link, useSearchParams } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { AlertCircle, Scale, Folder, User, Check, Clock, CheckCircle2, RotateCcw, ShieldAlert, AlertTriangle, ArrowLeft, Bell, Flame, Radar, Landmark, TrendingUp, ArrowRightLeft } from 'lucide-react';
 import { useStore } from '../../../store/useStore';
 import { StatsCard } from '../../../components/common/StatsCard';
@@ -12,7 +12,9 @@ import { clsx } from 'clsx';
 import PageHeader from '../../../components/PageHeader';
 
 export function RiskAlerts() {
-  const { risks, issues, acknowledgedAlerts, snoozedAlerts, ackAlert, snoozeAlert, resetAlerts, convertToIssue, activeProjectId, activeProgrammeId, projects } = useStore();
+  const { risks, issues, acknowledgedAlerts, snoozedAlerts, ackAlert, snoozeAlert, resetAlerts, convertToIssue, activeProjectId, activeProgrammeId, projects, escalateToAssurance, assuranceAlerts } = useStore();
+  const canEscalate = useStore((s) => s.canManageAssurance)();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const fromInitiation = searchParams.get('from') === 'initiation';
   const type = searchParams.get('type') || (activeProjectId ? 'project' : 'programme');
@@ -20,6 +22,7 @@ export function RiskAlerts() {
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
   const [convertingId, setConvertingId] = useState<string | null>(null);
+  const [escalatingId, setEscalatingId] = useState<string | null>(null);
 
   const handleConvert = async (riskId: string, alertId: string) => {
     setConvertingId(alertId);
@@ -30,6 +33,38 @@ export function RiskAlerts() {
       toast.error(err?.message || 'Failed to convert risk. Please try again.');
     } finally {
       setConvertingId(null);
+    }
+  };
+
+  // Escalate a derived alert to the Assurance hub (PM+). Skips a same-alert duplicate
+  // while one is still open/in-review (Q14: warn rather than flood the hub).
+  const handleEscalate = async (a: any) => {
+    const dup = assuranceAlerts.some(
+      (x) => x.sourceRef?.id === a.id && x.status !== 'Resolved' && x.status !== 'Dismissed',
+    );
+    if (dup) {
+      toast.error('This alert is already escalated to Assurance.');
+      return;
+    }
+    setEscalatingId(a.id);
+    try {
+      const severity = a.color === 'red' ? 'Critical' : a.color === 'orange' ? 'High' : 'Medium';
+      await escalateToAssurance({
+        title: a.msg,
+        description: `${a.group} · ${a.label}. Recommended: ${a.action}`,
+        severity,
+        source: 'risk',
+        failureReason: 'alert_not_acted',
+        sourceRef: { kind: 'riskAlert', id: a.id, label: a.group },
+        projectId: a.item?.projectId,
+        programmeId: a.item?.programmeId,
+      });
+      toast.success('Escalated to Assurance — generating actions.');
+      navigate('/assurance');
+    } catch (e: any) {
+      toast.error(e?.message || 'Could not escalate to Assurance.');
+    } finally {
+      setEscalatingId(null);
     }
   };
 
@@ -289,6 +324,17 @@ export function RiskAlerts() {
                     >
                       <ArrowRightLeft className="w-4 h-4" />
                       {convertingId === a.id ? 'Converting…' : 'Convert to issue'}
+                    </button>
+                  )}
+                  {canEscalate && (
+                    <button
+                      onClick={() => handleEscalate(a)}
+                      disabled={escalatingId === a.id}
+                      aria-label="Escalate to Assurance"
+                      className="px-4 py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-bold hover:bg-indigo-100 disabled:opacity-50 transition-colors flex items-center gap-2"
+                    >
+                      <ShieldAlert className="w-4 h-4" />
+                      {escalatingId === a.id ? 'Escalating…' : 'Escalate to Assurance'}
                     </button>
                   )}
                   <button onClick={() => ackAlert(a.id)} className="px-4 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-bold hover:bg-emerald-100 transition-colors flex items-center gap-2">

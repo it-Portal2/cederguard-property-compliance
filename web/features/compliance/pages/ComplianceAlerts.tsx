@@ -1,14 +1,53 @@
-import React from 'react';
+import React, { useState } from 'react';
+import toast from 'react-hot-toast';
 import { useStore } from '../../../store/useStore';
 import { DOMAINS } from '../../../data/complianceData';
 import { ShieldAlert, AlertTriangle, Clock, ListChecks, Info, CheckCircle2, ScanSearch } from 'lucide-react';
 import { clsx } from 'clsx';
 import { stripMarkdown } from '../../../lib/utils';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import PageHeader from '../../../components/PageHeader';
 
 export function ComplianceAlerts() {
     const { complianceItems, complianceAnalysis, activeProjectId, activeProgrammeId } = useStore();
+    const escalateToAssurance = useStore((s) => s.escalateToAssurance);
+    const assuranceAlerts = useStore((s) => s.assuranceAlerts);
+    const canEscalate = useStore((s) => s.canManageAssurance)();
+    const navigate = useNavigate();
+    const [escalatingId, setEscalatingId] = useState<string | null>(null);
+
+    // Escalate a compliance alert to the Assurance hub (PM+). Dedupes per group+item
+    // while an escalation is still open (Q14).
+    const handleEscalate = async (item: any, group: any) => {
+        const refId = `${group.id}:${item.id}`;
+        const dup = assuranceAlerts.some(
+            (x) => x.sourceRef?.id === refId && x.status !== 'Resolved' && x.status !== 'Dismissed',
+        );
+        if (dup) {
+            toast.error('This alert is already escalated to Assurance.');
+            return;
+        }
+        setEscalatingId(refId);
+        try {
+            const severity = group.color === 'red' || group.color === 'rose' ? 'High' : 'Medium';
+            await escalateToAssurance({
+                title: stripMarkdown(item.req || 'Compliance alert').slice(0, 200),
+                description: `${group.label}. Stage: ${item.stage}. Trigger: ${stripMarkdown(item.trigger || '')}`,
+                severity,
+                source: 'compliance',
+                failureReason: 'alert_not_acted',
+                sourceRef: { kind: 'complianceAlert', id: refId, label: group.label },
+                projectId: item.projectId,
+                programmeId: item.programmeId,
+            });
+            toast.success('Escalated to Assurance — generating actions.');
+            navigate('/assurance');
+        } catch (e: any) {
+            toast.error(e?.message || 'Could not escalate to Assurance.');
+        } finally {
+            setEscalatingId(null);
+        }
+    };
 
     if (!activeProjectId && !activeProgrammeId) {
         return (
@@ -185,6 +224,17 @@ export function ComplianceAlerts() {
                                                 <Link to="/compliance/tracker" className="text-center w-full block text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900 border border-slate-200 px-3 py-2 rounded-lg transition-colors">
                                                     View in Tracker →
                                                 </Link>
+                                                {canEscalate && (
+                                                    <button
+                                                        onClick={() => handleEscalate(item, group)}
+                                                        disabled={escalatingId === `${group.id}:${item.id}`}
+                                                        aria-label="Escalate to Assurance"
+                                                        className="mt-2 w-full inline-flex items-center justify-center gap-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-3 py-2 rounded-lg transition-colors disabled:opacity-50"
+                                                    >
+                                                        <ShieldAlert className="w-3.5 h-3.5" />
+                                                        {escalatingId === `${group.id}:${item.id}` ? 'Escalating…' : 'Escalate to Assurance'}
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     );

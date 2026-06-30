@@ -104,6 +104,7 @@ import ResourceCapacityPage from './features/resourcePlanner/pages/CapacityPage'
 import ControlsRegisterPage from './features/controls/pages/ControlsRegisterPage';
 import IncidentsRegisterPage from './features/incidents/pages/IncidentsRegisterPage';
 import LearningEnginePage from './features/learning/pages/LearningEnginePage';
+import AssuranceHubPage from './features/assurance/pages/AssuranceHubPage';
 import { ChatPage } from './features/chat/pages/ChatPage';
 
 // Desktop-shell support
@@ -329,6 +330,9 @@ function AppContent() {
               <Route path="/resource-planner/capacity" element={<ResourceCapacityPage />} />
               <Route path="/resource-planner/timeline" element={<ResourceTimelinePage />} />
               <Route path="/resource-planner/assumptions" element={<ResourceAssumptionsPage />} />
+
+              {/* Assurance escalation hub — view + manage gated in-page (PM+) */}
+              <Route path="/assurance" element={<AssuranceHubPage />} />
 
               {/* Controls library — view = any signed-in user; edits gated in-page (PM+) */}
               <Route path="/controls" element={<Navigate to="/controls/register" replace />} />

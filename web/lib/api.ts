@@ -246,6 +246,14 @@ export const api = {
   // Learning & improvement — AI-suggested actions from assurance signals
   learningSuggestImprovements: (signals: string) =>
     callApi("learningSuggestImprovements", { signals }, 120000),
+
+  // Assurance escalation hub (tenant-scoped escalated alerts + their AI actions)
+  assuranceList: () => callApi("assuranceList"),
+  assuranceUpsert: (alert: any) => callApi("assuranceUpsert", { alert }),
+  assuranceDelete: (id: string) => callApi("assuranceDelete", { id }),
+  assuranceGenerateActions: (alert: any) =>
+    callApi("assuranceGenerateActions", { alert }, 120000),
+
   clientGetProgrammesByManager: (supervisorId: string) =>
     callApi("clientGetProgrammesByManager", { supervisorId }),
   clientGetMySupervisors: () => callApi("clientGetMySupervisors"),

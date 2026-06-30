@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { Plus, Pencil, Trash2, AlertOctagon } from "lucide-react";
+import { Plus, Pencil, Trash2, AlertOctagon, ShieldAlert } from "lucide-react";
 import PageHeader from "../../../components/PageHeader";
 import DynamicTable from "../../../components/table/DynamicTable";
 import { useStore } from "../../../store/useStore";
+import { useEscalateToAssurance } from "../../assurance/useEscalate";
 import IncidentModal from "../components/IncidentModal";
 import {
   INCIDENT_STATUSES,
@@ -28,6 +29,7 @@ export default function IncidentsRegisterPage() {
   const deleteIncident = useStore((s) => s.deleteIncident);
   const canLog = useStore((s) => s.canLogIncidents)();
   const canClose = useStore((s) => s.canCloseIncidents)();
+  const { canEscalate, escalate, isEscalated, escalatingId } = useEscalateToAssurance();
 
   const [editing, setEditing] = useState<Incident | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -149,29 +151,47 @@ export default function IncidentsRegisterPage() {
     },
   ];
 
-  const rowActions: RowAction<Incident>[] = canLog
-    ? [
-        { key: "edit", label: "Edit", icon: Pencil, onClick: openEdit },
-        ...(canClose
-          ? [
-              {
-                key: "delete",
-                label: "Delete",
-                icon: Trash2,
-                isDanger: true,
-                onClick: handleDelete,
-                requireConfirm: {
-                  title: "Delete incident",
-                  message: (r: Incident) =>
-                    `Permanently delete "${r.title}"? This cannot be undone.`,
-                  confirmLabel: "Delete",
-                  isDanger: true,
-                },
-              } as RowAction<Incident>,
-            ]
-          : []),
-      ]
-    : [];
+  const rowActions: RowAction<Incident>[] = [];
+  if (canLog) {
+    rowActions.push({ key: "edit", label: "Edit", icon: Pencil, onClick: openEdit });
+  }
+  if (canEscalate) {
+    rowActions.push({
+      key: "escalate",
+      label: (r) =>
+        isEscalated(`incident:${r.id}`) ? "Escalated to Assurance" : "Escalate to Assurance",
+      icon: ShieldAlert,
+      isDisabled: (r) =>
+        isEscalated(`incident:${r.id}`) || escalatingId === `incident:${r.id}`,
+      onClick: (r) =>
+        escalate(`incident:${r.id}`, {
+          title: r.title,
+          description: `Incident: ${r.type} (${r.severity}). ${r.immediateImpact || ""}${r.rootCause ? ` Root cause: ${r.rootCause}` : ""}`.trim(),
+          severity: r.severity,
+          source: "incident",
+          failureReason: "incident_occurred",
+          sourceRef: { kind: "incident", id: `incident:${r.id}`, label: r.type },
+          projectId: r.projectId || undefined,
+          programmeId: r.programmeId || undefined,
+        }),
+    });
+  }
+  if (canClose) {
+    rowActions.push({
+      key: "delete",
+      label: "Delete",
+      icon: Trash2,
+      isDanger: true,
+      onClick: handleDelete,
+      requireConfirm: {
+        title: "Delete incident",
+        message: (r: Incident) =>
+          `Permanently delete "${r.title}"? This cannot be undone.`,
+        confirmLabel: "Delete",
+        isDanger: true,
+      },
+    });
+  }
 
   return (
     <div className="space-y-6 sm:space-y-8">

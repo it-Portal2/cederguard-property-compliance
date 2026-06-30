@@ -240,6 +240,7 @@ export function Sidebar() {
     } else if (path.startsWith("/resource-planner")) {
       setOpenGroup("Resource Planner");
     } else if (
+      path.startsWith("/assurance") ||
       path.startsWith("/controls") ||
       path.startsWith("/incidents") ||
       path.startsWith("/learning/improvement")
@@ -569,6 +570,11 @@ export function Sidebar() {
                 isOpen={openGroup === "Assurance"}
                 onToggle={() => toggleGroup("Assurance")}
               >
+                <NavItem
+                  to="/assurance"
+                  icon={ShieldAlert}
+                  label="Escalations"
+                />
                 <NavItem
                   to="/controls/register"
                   icon={ShieldCheck}

@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { motion } from "motion/react";
+import toast from "react-hot-toast";
 import {
   FileText,
   FolderGit2,
   AlertTriangle,
   CalendarClock,
   ArrowRight,
+  ShieldAlert,
 } from "lucide-react";
 import { api } from "../../../lib/api";
 import { useStore } from "../../../store/useStore";
@@ -330,6 +332,11 @@ export default function DashboardGovernanceCard() {
   const activeProjectId = useStore((s) => s.activeProjectId);
   const activeProgrammeId = useStore((s) => s.activeProgrammeId);
   const projects = useStore((s) => s.projects);
+  const escalateToAssurance = useStore((s) => s.escalateToAssurance);
+  const assuranceAlerts = useStore((s) => s.assuranceAlerts);
+  const canEscalate = useStore((s) => s.canManageAssurance)();
+  const navigate = useNavigate();
+  const [escalating, setEscalating] = useState(false);
 
   const scope: "project" | "programme" | "portfolio" = activeProjectId
     ? "project"
@@ -434,6 +441,37 @@ export default function DashboardGovernanceCard() {
   // Hide entirely on failure (e.g. tenant without governance access).
   if (failed) return null;
 
+  const overdue = reportSummary?.overdue || 0;
+  const handleEscalateOverdue = async () => {
+    if (!overdue) return;
+    const ctxId = activeProjectId || activeProgrammeId || "portfolio";
+    const refId = `governance-overdue:${scope}:${ctxId}`;
+    const dup = assuranceAlerts.some(
+      (x) => x.sourceRef?.id === refId && x.status !== "Resolved" && x.status !== "Dismissed",
+    );
+    if (dup) {
+      toast.error("Overdue governance reports are already escalated to Assurance.");
+      return;
+    }
+    setEscalating(true);
+    try {
+      await escalateToAssurance({
+        title: `${overdue} governance report${overdue > 1 ? "s" : ""} overdue`,
+        description: `${overdue} governance report${overdue > 1 ? "s" : ""} past the target board / meeting date at ${scope} scope.`,
+        severity: overdue >= 3 ? "High" : "Medium",
+        source: "governance",
+        failureReason: "alert_not_acted",
+        sourceRef: { kind: "governanceOverdue", id: refId, label: "Overdue reports" },
+      });
+      toast.success("Escalated to Assurance — generating actions.");
+      navigate("/assurance");
+    } catch (e: any) {
+      toast.error(e?.message || "Could not escalate to Assurance.");
+    } finally {
+      setEscalating(false);
+    }
+  };
+
   const title =
     scope === "project"
       ? "Governance · project documents"
@@ -465,12 +503,26 @@ export default function DashboardGovernanceCard() {
             <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
           </div>
         </div>
-        <Link
-          to={link}
-          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[12px] font-medium text-indigo-600 hover:bg-indigo-50"
-        >
-          View <ArrowRight className="h-3.5 w-3.5" />
-        </Link>
+        <div className="inline-flex items-center gap-1">
+          {canEscalate && overdue > 0 && (
+            <button
+              onClick={handleEscalateOverdue}
+              disabled={escalating}
+              aria-label="Escalate overdue governance reports to Assurance"
+              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[12px] font-medium text-indigo-600 hover:bg-indigo-50 disabled:opacity-50"
+              title="Escalate overdue reports to Assurance"
+            >
+              <ShieldAlert className="h-3.5 w-3.5" />
+              {escalating ? "Escalating…" : "Escalate"}
+            </button>
+          )}
+          <Link
+            to={link}
+            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[12px] font-medium text-indigo-600 hover:bg-indigo-50"
+          >
+            View <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
       </div>
 
       {loading ? (

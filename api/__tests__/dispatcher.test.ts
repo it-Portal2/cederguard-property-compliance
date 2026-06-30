@@ -44,4 +44,11 @@ describe('API Dispatcher Configuration', () => {
         expect(allRoutes['registerDeviceToken']).toBeDefined();
         expect(allRoutes['sendPushNotification']).toBeDefined();
     });
+
+    it('should map assurance escalation-hub actions', () => {
+        expect(allRoutes['assuranceList']).toBeDefined();
+        expect(allRoutes['assuranceUpsert']).toBeDefined();
+        expect(allRoutes['assuranceDelete']).toBeDefined();
+        expect(allRoutes['assuranceGenerateActions']).toBeDefined();
+    });
 });

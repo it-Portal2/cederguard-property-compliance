@@ -531,7 +531,9 @@ export function MyTasks() {
                   ? "bg-rose-50 text-rose-700 border-rose-200"
                   : r.capaType === "Preventive"
                     ? "bg-blue-50 text-blue-700 border-blue-200"
-                    : "bg-emerald-50 text-emerald-700 border-emerald-200",
+                    : r.capaType === "Detective"
+                      ? "bg-violet-50 text-violet-700 border-violet-200"
+                      : "bg-emerald-50 text-emerald-700 border-emerald-200",
               )}
             >
               {r.capaType}
@@ -600,6 +602,7 @@ export function MyTasks() {
       placeholder: "All actions",
       options: [
         { value: "__any__", label: "Any CAPA action" },
+        { value: "Detective", label: "Detective" },
         { value: "Corrective", label: "Corrective" },
         { value: "Preventive", label: "Preventive" },
         { value: "Improvement", label: "Improvement" },
@@ -928,6 +931,7 @@ export function MyTasks() {
                     className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer"
                   >
                     <option value="">Not a CAPA action</option>
+                    <option value="Detective">Detective</option>
                     <option value="Corrective">Corrective</option>
                     <option value="Preventive">Preventive</option>
                     <option value="Improvement">Improvement</option>

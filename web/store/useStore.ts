@@ -64,6 +64,7 @@ import type {
 } from "../lib/resourcePlanner/types";
 import type { Control } from "../features/controls/types";
 import type { Incident } from "../features/incidents/types";
+import type { AssuranceAlert } from "../features/assurance/types";
 import {
   DEFAULT_RATE_CARD,
   DEFAULT_COMPLEXITY_MAP,
@@ -695,9 +696,10 @@ export interface TaskItem {
   programmeId?: string;
   riskId?: string;
   issueId?: string;
-  // CAPA (Corrective/Preventive/Improvement) flag — when set, the action is part
-  // of the assurance register and gains evidence-required + escalation + PM+ sign-off.
-  capaType?: "Corrective" | "Preventive" | "Improvement";
+  // CAPA flag — when set, the action is part of the assurance register and gains
+  // evidence-required + escalation + PM+ sign-off. "Detective" is used by actions
+  // adopted from an escalated Assurance alert (find/confirm-the-problem actions).
+  capaType?: "Detective" | "Corrective" | "Preventive" | "Improvement";
   capaEvidenceRequired?: boolean;
   capaEscalationRoute?: string;
   capaStatus?: "Pending" | "Approved" | "Rejected";
@@ -977,6 +979,21 @@ export interface AppState {
   deleteIncident: (id: string) => Promise<void>;
   canLogIncidents: () => boolean;
   canCloseIncidents: () => boolean;
+
+  // Assurance escalation hub (tenant-scoped escalated alerts + their AI actions)
+  assuranceAlerts: AssuranceAlert[];
+  assuranceLoading: boolean;
+  assuranceLoaded: boolean;
+  loadAssuranceAlerts: (force?: boolean) => Promise<void>;
+  saveAssuranceAlert: (alert: AssuranceAlert) => Promise<AssuranceAlert>;
+  deleteAssuranceAlert: (id: string) => Promise<void>;
+  /** Create an escalated alert and auto-generate its response actions. Returns the new id. */
+  escalateToAssurance: (input: Partial<AssuranceAlert>) => Promise<string>;
+  /** (Re)generate the AI response actions for an existing alert. */
+  generateAssuranceActions: (alertId: string) => Promise<void>;
+  /** Turn a generated action into a Pending CAPA task and mark it adopted. */
+  adoptAssuranceAction: (alertId: string, actionId: string) => Promise<void>;
+  canManageAssurance: () => boolean;
 }
 
 /**
@@ -3252,6 +3269,154 @@ export const useStore = create<AppState>((set, get) => {
     const { user } = get();
     if (!user) return false;
     return isAtLeastPM(user.role || user.profile?.role);
+  },
+
+  // ---- Assurance escalation hub (tenant-scoped) -----------------------------
+  assuranceAlerts: [],
+  assuranceLoading: false,
+  assuranceLoaded: false,
+
+  loadAssuranceAlerts: async (force = false) => {
+    if (get().assuranceLoading) return;
+    if (get().assuranceLoaded && !force) return;
+    set({ assuranceLoading: true });
+    try {
+      const res = await api.assuranceList();
+      const assuranceAlerts = ((res?.alerts as AssuranceAlert[]) || []);
+      set({ assuranceAlerts, assuranceLoaded: true });
+    } catch (e) {
+      console.error("loadAssuranceAlerts failed", e);
+    } finally {
+      set({ assuranceLoading: false });
+    }
+  },
+
+  saveAssuranceAlert: async (alert) => {
+    const res = await api.assuranceUpsert(alert);
+    const id = res?.id || alert.id;
+    const saved: AssuranceAlert = { ...alert, id };
+    set((s) => {
+      const exists = s.assuranceAlerts.some((x) => x.id === id);
+      const list = exists
+        ? s.assuranceAlerts.map((x) => (x.id === id ? saved : x))
+        : [saved, ...s.assuranceAlerts];
+      return { assuranceAlerts: list };
+    });
+    return saved;
+  },
+
+  deleteAssuranceAlert: async (id) => {
+    await api.assuranceDelete(id);
+    set((s) => ({ assuranceAlerts: s.assuranceAlerts.filter((x) => x.id !== id) }));
+  },
+
+  canManageAssurance: () => {
+    const { user } = get();
+    if (!user) return false;
+    return isAtLeastPM(user.role || user.profile?.role);
+  },
+
+  // Create an escalated alert, then auto-generate its detective/preventive/
+  // corrective/improvement actions (grounded in the tenant's existing controls).
+  escalateToAssurance: async (input) => {
+    const { user, activeProjectId, activeProgrammeId, projects, programmes } = get();
+    if (!isAtLeastPM(user?.role || user?.profile?.role)) {
+      throw new Error("Only a PM or above can escalate to Assurance.");
+    }
+    const projectId = input.projectId ?? activeProjectId ?? undefined;
+    const programmeId =
+      input.programmeId ?? (!projectId ? activeProgrammeId ?? undefined : undefined);
+    const projectName =
+      input.projectName ??
+      projects.find((p) => p.id === projectId)?.name ??
+      programmes.find((p) => p.id === programmeId)?.name ??
+      null;
+
+    const base: AssuranceAlert = {
+      id: generateId("ASR"),
+      title: input.title || "Escalated alert",
+      description: input.description || "",
+      source: input.source || "direct",
+      sourceRef: input.sourceRef ?? null,
+      severity: input.severity || "Medium",
+      status: "Open",
+      projectId: projectId ?? null,
+      programmeId: programmeId ?? null,
+      projectName,
+      owner: user?.id || user?.uid || user?.email || "",
+      generationStatus: "generating",
+      generatedActions: [],
+    };
+
+    // Persist immediately so the row shows with a "Generating…" state, then run
+    // the AI generation in the background (client-side — safe not to await) so the
+    // caller/modal returns at once and the actions fill in when ready.
+    const saved = await get().saveAssuranceAlert(base);
+    void get().generateAssuranceActions(saved.id);
+    return saved.id;
+  },
+
+  // (Re)generate the response actions for an existing alert, grounded in controls.
+  generateAssuranceActions: async (alertId) => {
+    const current = get().assuranceAlerts.find((a) => a.id === alertId);
+    if (!current) return;
+    await get().saveAssuranceAlert({ ...current, generationStatus: "generating" });
+
+    const base = get().assuranceAlerts.find((a) => a.id === alertId) || current;
+    try {
+      // The server reads the persisted alert + the tenant's controls itself.
+      const res = await api.assuranceGenerateActions(base);
+      const generatedActions = Array.isArray(res?.actions) ? res.actions : [];
+      // Preserve any already-adopted actions; replace the rest with the fresh set.
+      const adopted = (base.generatedActions || []).filter((a) => a.adopted);
+      await get().saveAssuranceAlert({
+        ...get().assuranceAlerts.find((a) => a.id === alertId)!,
+        generatedActions: [...adopted, ...generatedActions],
+        generationStatus: "done",
+      });
+    } catch (e) {
+      console.error("generateAssuranceActions failed", e);
+      const latest = get().assuranceAlerts.find((a) => a.id === alertId);
+      if (latest) await get().saveAssuranceAlert({ ...latest, generationStatus: "failed" });
+    }
+  },
+
+  // Adopt a generated action → create a Pending CAPA task (PM approves later).
+  adoptAssuranceAction: async (alertId, actionId) => {
+    const { user, assuranceAlerts } = get();
+    if (!isAtLeastPM(user?.role || user?.profile?.role)) {
+      throw new Error("Only a PM or above can adopt Assurance actions.");
+    }
+    const alert = assuranceAlerts.find((a) => a.id === alertId);
+    const action = alert?.generatedActions?.find((x) => x.id === actionId);
+    if (!alert || !action) throw new Error("Action not found.");
+    if (action.adopted) return;
+
+    const due = new Date();
+    due.setDate(due.getDate() + 14);
+    const taskId = generateId("CAPA");
+    const task: TaskItem = {
+      id: taskId,
+      title: action.title,
+      description: action.rationale,
+      status: "Pending",
+      priority: "High",
+      dueDate: due.toISOString().split("T")[0],
+      owner: user?.id || user?.uid || user?.email,
+      projectId: alert.projectId || undefined,
+      programmeId: alert.programmeId || undefined,
+      projectName: alert.projectName || "General",
+      isProgrammeLevel: !!alert.programmeId && !alert.projectId,
+      capaType: action.type,
+      capaStatus: "Pending",
+      capaEscalationRoute: `Assurance: ${alert.title}`,
+    };
+    await get().addTask(task);
+
+    const nextActions = (alert.generatedActions || []).map((x) =>
+      x.id === actionId ? { ...x, adopted: true, taskId } : x,
+    );
+    await get().saveAssuranceAlert({ ...alert, generatedActions: nextActions });
   },
 
   canManageContext: () => {

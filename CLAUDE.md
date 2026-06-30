@@ -1811,6 +1811,30 @@ surfaced under the **"Assurance" sidebar group** (`hasCoreAccess`-gated). Load-b
   `saveData("tasks"/"complianceItems")` array path, which is **trusted-client** (no per-field server role re-check); the
   approval is client-gated and read display-only (no server business logic reads it). Regulator-grade server-enforced sign-off
   would be a deliberate cross-cutting follow-up, not a per-field bolt-on.
+- **Escalation hub (the "Assurance" sidebar entry, route `/assurance`)** — Assurance is an ESCALATION HUB, not a 4th register.
+  Alerts from **Compliance / Risk / Governance** are escalated in (an "Escalate to Assurance" button on `RiskAlerts` /
+  `ComplianceAlerts` / `DashboardGovernanceCard`, snapshotting the derived alert) **or input directly** on the hub. On arrival
+  the system **auto-generates Detective / Preventive / Corrective / Improvement response actions** via
+  [`api/routes/assurance.ts`](api/routes/assurance.ts) `assuranceGenerateActions` (`runAIOperation`, NEVER `routes/ai.ts`),
+  **grounded in the tenant's EXISTING controls** (server-fetched; a hallucinated `linkedControlId` not in the real control set
+  is dropped; prompt fields are tag-stripped against injection). Records live in the tenant-scoped **`assuranceAlerts`**
+  collection (`clientId === primaryUid`, PM+ for everything — list/upsert/delete/generate; copy `controls.ts`). A manager
+  **Adopts** a generated action → it becomes a **Pending CAPA task** via the existing `addTask` (`capaType` now includes
+  **`Detective`**) → PM approves through the existing CAPA flow (don't fork a to-do system). **Risk is an alert SOURCE only** —
+  still *managed* in Risk Management with its own controls; Assurance never runs risk controls. The structured
+  regulation→article→control library is a deliberate later phase (AI grounds on existing controls for now). Store:
+  `escalateToAssurance` (persists, then backgrounds generation) / `generateAssuranceActions` / `adoptAssuranceAction` /
+  `canManageAssurance` (PM+). Assurance is the **final enforcement layer for FAILURE** — every escalation
+  carries a `failureReason` (`alert_not_acted` / `control_failed` / `incident_occurred` / `other`), shown on
+  the hub and fed into the AI prompt to steer the actions at the actual failure mode. **Escalation sources
+  are Compliance / Risk / Governance / Incident / Control / direct**: the Incidents register and a
+  Failed/Partially-Effective Control both have an "Escalate to Assurance" row action, and the Improvement
+  engine's recurring-incident / failed-control signals cross-link one-click into the hub. The hub also
+  **auto-surfaces a "Needs escalation" panel** (failed controls + open incidents + overdue-not-acted
+  compliance items not yet escalated) for a PM to confirm. All escalate sites go through the shared
+  [`web/features/assurance/useEscalate.ts`](web/features/assurance/useEscalate.ts) hook (PM+ gate +
+  dedupe-while-open). A re-escalation loop (if an adopted assurance action itself goes unactioned) is a
+  deliberate fast-follow, not yet built.
 
 ### Standing rules for sweeps / refactors
 - **Demo mode goes through [`web/lib/demoMode.ts`](web/lib/demoMode.ts) + [`web/lib/demoData/index.ts`](web/lib/demoData/index.ts); NEVER write to the DB on a demo path and never use the `demo-` prefix (use `cgdemo-`).** See the Demo mode convention above.
@@ -1821,7 +1845,7 @@ surfaced under the **"Assurance" sidebar group** (`hasCoreAccess`-gated). Load-b
 - **Fact-Check / Validation goes through [`web/lib/validation.ts`](web/lib/validation.ts) types + [`useValidationGate`](web/hooks/useValidationGate.ts) + [`<ValidateButton/>`](web/components/validation/ValidateButton.tsx).** One `validations` collection, keyed by a **content-versioned** target (`versionedTargetId`) so a new analysis forces a fresh check. The AI fact-check is the **chunked** two-call pattern in [`api/routes/validation.ts`](api/routes/validation.ts) via `aiOperationRouter` (`webSearch`), NEVER `api/routes/ai.ts`, with **1:1 numbered-item reconciliation** (one claim per item). PM+ validates; approval blocked until validated (gate BOTH the submit action and any step→step advance, e.g. `handleFinalise`); everything `logActivity`s. Don't fork the types, add a parallel collection, hardcode the confidence threshold, or send un-numbered/multi-line fact-check content.
 - **Chat input is guarded by [`api/lib/aiGuard.ts`](api/lib/aiGuard.ts) `screenChatInput` BEFORE the model** (Llama Guard safety + topical, hard-block, fail-open). Don't bypass it or route its classifier through `api/routes/ai.ts`. The chat Fact-check button is gated on `factCheckable` + citations, and chat fact-checks run a verifiability pre-check — don't fact-check pure data-summary / "no results" answers.
 - **Tooltips inside a scroll/overflow container (e.g. a `DynamicTable` cell) must portal out** — use [`TrendingTooltip`](web/components/TrendingTooltip.tsx)'s pattern (`createPortal` to `document.body`, `position:fixed`, `z-40` so it sits above the table but below `z-50` modals/dialogs/dropdowns). The plain `InfoTooltip` gets clipped there.
-- **Assurance suite goes through its dedicated modules (see "Assurance capability conventions").** Controls/Incidents are tenant-scoped routes (PM+ to edit/close); CAPA is a FLAG on Tasks (never fork a 3rd to-do list); recurrence/improvement maths is the pure lib `web/lib/learning/recurrence.ts` and `learningSuggestImprovements` routes AI through `aiOperationRouter` (AI suggests, officer approves); "Continuous Improvement" (the engine) is DISTINCT from the manual "Lessons Learned" repository — don't conflate them.
+- **Assurance suite goes through its dedicated modules (see "Assurance capability conventions").** Controls/Incidents are tenant-scoped routes (PM+ to edit/close); CAPA is a FLAG on Tasks (never fork a 3rd to-do list); recurrence/improvement maths is the pure lib `web/lib/learning/recurrence.ts` and `learningSuggestImprovements` routes AI through `aiOperationRouter` (AI suggests, officer approves); "Continuous Improvement" (the engine) is DISTINCT from the manual "Lessons Learned" repository — don't conflate them. The **`/assurance` escalation hub** (tenant-scoped `assuranceAlerts`, PM+) is where Compliance/Risk/Governance alerts are escalated and AI auto-generates Detective/Preventive/Corrective/Improvement actions grounded in existing controls; adopting an action creates a Pending CAPA task — see "Escalation hub" above. Risk is a SOURCE only (still managed in Risk Mgmt).
 - **Any hand-rolled scrollable list (i.e. NOT a `DynamicTable`) MUST cap its height** with `max-h-* overflow-y-auto` so it can't grow unbounded under data volume; pair it with `min-w-0 truncate` on the flexible text cell so long labels clip instead of squashing siblings. Prefer `DynamicTable` (which paginates) for anything that can plausibly exceed ~25 rows; the cap is for the small ad-hoc card lists where a full table is overkill (e.g. the assurance Continuous-Improvement signal cards).
 - **`PageActions` is the ONLY way to add a per-page context dropdown.** Pass `items: ActionItem[]` and `canManage: boolean`. Never roll a custom dropdown for page-level actions.
 - **`exportContextData` in [`web/lib/exportUtils.ts`](web/lib/exportUtils.ts) is the ONLY Excel export helper.** Never write inline XLSX logic in a page. Add new sheet types to `exportUtils.ts`.
