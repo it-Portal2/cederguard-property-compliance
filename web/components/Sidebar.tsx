@@ -46,6 +46,7 @@ import {
   Lightbulb,
   Search,
   SlidersHorizontal,
+  Blocks,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { useStore } from "../store/useStore";
@@ -786,6 +787,13 @@ export function Sidebar() {
                     to="/setup/workspace"
                     icon={Settings2}
                     label="Workspace Management"
+                  />
+                )}
+                {isClientAdmin && (
+                  <NavItem
+                    to="/integrations"
+                    icon={Blocks}
+                    label="Integrations"
                   />
                 )}
                 {isAdmin && (

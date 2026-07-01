@@ -327,6 +327,15 @@ export async function createContext(
         res.status(401).json({ error: "Unauthorized: Invalid API Key" });
         return null;
       }
+      // Scoped keys (e.g. the Power BI feed key, scope 'powerbi_feed') are
+      // read-only single-purpose credentials consumed by their own dedicated
+      // endpoint — they must NEVER authenticate a general API action, or a
+      // leaked feed key would inherit the issuer's full role.
+      const keyScope = apiKeyDoc.data()?.scope;
+      if (keyScope && keyScope !== "full") {
+        res.status(401).json({ error: "Unauthorized: this API key cannot be used for this endpoint" });
+        return null;
+      }
       uid = apiKeyDoc.data()?.uid;
       if (!uid) {
         res.status(401).json({ error: "Unauthorized: Malformed API key" });

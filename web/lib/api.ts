@@ -768,4 +768,19 @@ export const api = {
   }) => callApi("tacUpsertCostRate", { rate }),
   tacDeleteCostRate: (rateId: string) =>
     callApi("tacDeleteCostRate", { rateId }),
+
+  // --- Integrations (per-tenant external connections) ---
+  integrationsGetStatus: () => callApi("integrationsGetStatus", {}),
+  integrationSaveProvider: (
+    provider: string,
+    config: Record<string, any>,
+    secrets?: Record<string, any>,
+  ) => callApi("integrationSaveProvider", { provider, config, secrets }),
+  integrationDisconnect: (provider: string) =>
+    callApi("integrationDisconnect", { provider }),
+  integrationTest: (provider: string) =>
+    callApi("integrationTest", { provider }),
+  integrationGenerateFeedKey: () =>
+    callApi("integrationGenerateFeedKey", {}),
+  integrationRevokeFeedKey: () => callApi("integrationRevokeFeedKey", {}),
 };

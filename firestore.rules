@@ -366,6 +366,18 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // --- Integrations (per-tenant external connections) ---
+    // Holds encrypted credentials (webhook URLs, service-account keys, client
+    // secrets). Server-only via Admin SDK — clients go through the role-gated
+    // integration API actions, which return a masked view that never includes
+    // a secret. Direct client reads/writes are blocked entirely.
+    match /integrations/{clientId} {
+      allow read, write: if false;
+      match /{document=**} {
+        allow read, write: if false;
+      }
+    }
+
     // --- Admin platform configuration ---
     // Single doc `adminConfig/aiModelConfig` holds the admin-curated lists
     // of chat + operation models. Server-only via Admin SDK — clients go

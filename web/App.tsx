@@ -53,6 +53,7 @@ import { ClientProgrammeReport } from './features/programmes/pages/ClientProgram
 import { ProgrammeReport } from './features/programmes/pages/ProgrammeReport';
 import { EvidenceDocuments } from './features/compliance/pages/EvidenceDocuments';
 import { DeveloperSettings } from './features/admin/pages/DeveloperSettings';
+import IntegrationsPage from './features/integrations/pages/IntegrationsPage';
 import { APIDocs } from './features/admin/pages/APIDocs';
 import { HelpCenter } from './features/learning/pages/HelpCenter';
 import { ClientTeamPanel } from './features/admin/pages/ClientTeamPanel';
@@ -282,6 +283,7 @@ function AppContent() {
 
               {/* Setup (Client Admin)*/}
               <Route path="/setup/workspace" element={<RoleGuard requireClientAdmin><WorkspaceSettings /></RoleGuard>} />
+              <Route path="/integrations" element={<RoleGuard requireClientAdmin><IntegrationsPage /></RoleGuard>} />
               <Route path="/setup/programme" element={<RoleGuard requireClientAdmin><ProgrammeInitiation /></RoleGuard>} />
               <Route path="/setup/project" element={<ComplianceSetup />} />
               

@@ -33,6 +33,8 @@ const SKIP_PATHS = new Set<string>([
   '/reporting/programme-report',
   // Workspace management — admin settings, not a query surface.
   '/setup/workspace',
+  // Integrations — configuration page, not a query surface.
+  '/integrations',
   // Full-page AI Chat — has its own chat surface; floating button would be redundant.
   '/chat',
   // Assurance pages — the floating assistant is not wanted on these surfaces.
