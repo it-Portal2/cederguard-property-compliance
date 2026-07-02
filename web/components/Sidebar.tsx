@@ -58,6 +58,7 @@ import {
   isSuperAdmin,
   isAtLeastClientAdmin,
   isAtLeastPM,
+  isAtLeastProgrammeManager,
   canCreateProject,
   canCreateProgramme,
   isComplianceLead,
@@ -264,6 +265,9 @@ export function Sidebar() {
   const isAdmin = isSuperAdmin(user?.email, userRole);
   const isClientAdmin = isAtLeastClientAdmin(userRole) || isAdmin;
   const isProjectManager = isAtLeastPM(userRole);
+  // Programme Manager tier = admin / client_admin / programme_manager
+  // (excludes plain project managers). Gates the Resource Planner group.
+  const isProgrammeManager = isAtLeastProgrammeManager(userRole) || isAdmin;
   // PMs + Client Admins both get access to core project functionality
   const hasCoreAccess = isClientAdmin || isProjectManager;
   const canNewProject = canCreateProject(userRole);
@@ -523,11 +527,12 @@ export function Sidebar() {
               </NavGroup>
             )}
 
-            {/* RESOURCE PLANNER — tenant-wide FTE demand & capacity */}
-            {hasCoreAccess && (
+            {/* RESOURCE PLANNER — tenant-wide FTE demand & capacity.
+                Programme Manager tier only (project managers excluded). */}
+            {isProgrammeManager && (
               <NavGroup
                 label="Resource Planner"
-                isAdmin={hasCoreAccess}
+                isAdmin={isProgrammeManager}
                 isOpen={openGroup === "Resource Planner"}
                 onToggle={() => toggleGroup("Resource Planner")}
               >

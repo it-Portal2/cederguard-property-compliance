@@ -329,14 +329,15 @@ function AppContent() {
               <Route path="/reporting/programme" element={<ClientProgrammeReport />} />
               <Route path="/reporting/programme-report" element={<ProgrammeReport />} />
 
-              {/* Resource Planner — view = any signed-in user; edits gated in-page */}
+              {/* Resource Planner — Programme Manager tier only (admin /
+                  client_admin / programme_manager); project managers excluded. */}
               <Route path="/resource-planner" element={<Navigate to="/resource-planner/dashboard" replace />} />
-              <Route path="/resource-planner/dashboard" element={<ResourcePlannerDashboardPage />} />
-              <Route path="/resource-planner/schemes" element={<SchemeRegisterPage />} />
-              <Route path="/resource-planner/forecast" element={<DemandForecastPage />} />
-              <Route path="/resource-planner/capacity" element={<ResourceCapacityPage />} />
-              <Route path="/resource-planner/timeline" element={<ResourceTimelinePage />} />
-              <Route path="/resource-planner/assumptions" element={<ResourceAssumptionsPage />} />
+              <Route path="/resource-planner/dashboard" element={<RoleGuard requireProgrammeManager><ResourcePlannerDashboardPage /></RoleGuard>} />
+              <Route path="/resource-planner/schemes" element={<RoleGuard requireProgrammeManager><SchemeRegisterPage /></RoleGuard>} />
+              <Route path="/resource-planner/forecast" element={<RoleGuard requireProgrammeManager><DemandForecastPage /></RoleGuard>} />
+              <Route path="/resource-planner/capacity" element={<RoleGuard requireProgrammeManager><ResourceCapacityPage /></RoleGuard>} />
+              <Route path="/resource-planner/timeline" element={<RoleGuard requireProgrammeManager><ResourceTimelinePage /></RoleGuard>} />
+              <Route path="/resource-planner/assumptions" element={<RoleGuard requireProgrammeManager><ResourceAssumptionsPage /></RoleGuard>} />
 
               {/* Assurance escalation hub — view + manage gated in-page (PM+) */}
               <Route path="/assurance" element={<AssuranceHubPage />} />
