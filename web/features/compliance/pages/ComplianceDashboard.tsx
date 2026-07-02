@@ -135,19 +135,27 @@ export function ComplianceDashboard() {
     // we just render whatever was frozen at month-end.
     if (!isHistorical && (!activeDetails || !activeDetails.complianceSetupDone || !complianceAnalysis)) {
         return (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 shadow-sm border-l-4 border-l-amber-500 text-center max-w-2xl mx-auto mt-12">
-                <FileWarning className="w-12 h-12 text-amber-500 mx-auto mb-3" />
-                <h3 className="text-xl font-bold text-amber-900 mb-2">Compliance Setup Required</h3>
-                <p className="text-amber-800 mb-6 leading-relaxed">
-                    This dashboard summarizes your tailored compliance framework. To get started, you must complete the multi-phase setup to identify regulatory requirements, map accountabilities, and establish your assurance plan.
-                </p>
-                <div className="flex justify-center gap-4">
-                  <Link 
-                    to="/compliance/setup" 
-                    className="inline-flex items-center px-6 py-3 bg-amber-600 text-white font-bold rounded-lg hover:bg-amber-700 hover:shadow-md transition-all transform hover:-translate-y-0.5 active:translate-y-0"
-                  >
-                    Start Compliance Setup
-                  </Link>
+            <div className="bg-white rounded-lg border border-slate-200 px-6 py-16">
+                <div className="flex flex-col items-center justify-center text-center max-w-md mx-auto">
+                    <div className="relative w-16 h-16 mb-4">
+                        <span className="absolute inset-0 rounded-full bg-indigo-100/60" />
+                        <span className="absolute inset-2 rounded-full bg-indigo-50" />
+                        <span className="absolute inset-0 flex items-center justify-center">
+                            <FileWarning className="w-7 h-7 text-indigo-600" />
+                        </span>
+                    </div>
+                    <h2 className="text-lg font-semibold text-slate-900">
+                        Compliance Setup Required
+                    </h2>
+                    <p className="mt-1.5 text-sm text-slate-500 max-w-sm">
+                        This dashboard summarizes your tailored compliance framework. To get started, you must complete the multi-phase setup to identify regulatory requirements, map accountabilities, and establish your assurance plan.
+                    </p>
+                    <Link
+                        to="/compliance/setup"
+                        className="mt-5 inline-flex items-center gap-1.5 px-4 h-10 bg-indigo-600 text-white text-sm font-semibold rounded-md hover:bg-indigo-700 transition-colors"
+                    >
+                        Start Compliance Setup
+                    </Link>
                 </div>
             </div>
         );

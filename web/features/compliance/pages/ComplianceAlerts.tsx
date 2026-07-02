@@ -51,27 +51,50 @@ export function ComplianceAlerts() {
 
     if (!activeProjectId && !activeProgrammeId) {
         return (
-            <div className="flex flex-col items-center justify-center py-24 text-center">
-                <ShieldAlert className="w-16 h-16 text-indigo-200 mb-4" />
-                <h2 className="text-xl font-bold text-slate-800 mb-2">No Programme or Project Selected</h2>
-                <p className="text-sm text-slate-500 max-w-sm mb-6">
-                    Please select a programme or project to view its compliance alerts.
-                </p>
+            <div className="bg-white rounded-lg border border-slate-200 px-6 py-16">
+                <div className="flex flex-col items-center justify-center text-center max-w-md mx-auto">
+                    <div className="relative w-16 h-16 mb-4">
+                        <span className="absolute inset-0 rounded-full bg-indigo-100/60" />
+                        <span className="absolute inset-2 rounded-full bg-indigo-50" />
+                        <span className="absolute inset-0 flex items-center justify-center">
+                            <ShieldAlert className="w-7 h-7 text-indigo-600" />
+                        </span>
+                    </div>
+                    <h2 className="text-lg font-semibold text-slate-900">
+                        No Programme or Project Selected
+                    </h2>
+                    <p className="mt-1.5 text-sm text-slate-500 max-w-sm">
+                        Please select a programme or project to view its compliance alerts.
+                    </p>
+                </div>
             </div>
         );
     }
 
     if (!complianceAnalysis) {
         return (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 text-center max-w-2xl mx-auto mt-12">
-                <AlertTriangle className="w-12 h-12 text-amber-400 mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-amber-800 mb-2">Setup Required</h3>
-                <p className="text-sm text-amber-700 mb-4">
-                    Run the AI compliance analysis in Setup to generate and filter compliance alerts for your specific context.
-                </p>
-                <Link to="/compliance/setup" className="inline-block px-5 py-2.5 bg-amber-600 text-white font-semibold rounded-lg hover:bg-amber-700 transition-colors">
-                    Go to Setup
-                </Link>
+            <div className="bg-white rounded-lg border border-slate-200 px-6 py-16">
+                <div className="flex flex-col items-center justify-center text-center max-w-md mx-auto">
+                    <div className="relative w-16 h-16 mb-4">
+                        <span className="absolute inset-0 rounded-full bg-indigo-100/60" />
+                        <span className="absolute inset-2 rounded-full bg-indigo-50" />
+                        <span className="absolute inset-0 flex items-center justify-center">
+                            <AlertTriangle className="w-7 h-7 text-indigo-600" />
+                        </span>
+                    </div>
+                    <h2 className="text-lg font-semibold text-slate-900">
+                        Setup Required
+                    </h2>
+                    <p className="mt-1.5 text-sm text-slate-500 max-w-sm">
+                        Run the AI compliance analysis in Setup to generate and filter compliance alerts for your specific context.
+                    </p>
+                    <Link
+                        to="/compliance/setup"
+                        className="mt-5 inline-flex items-center gap-1.5 px-4 h-10 bg-indigo-600 text-white text-sm font-semibold rounded-md hover:bg-indigo-700 transition-colors"
+                    >
+                        Go to Setup
+                    </Link>
+                </div>
             </div>
         );
     }
@@ -169,10 +192,22 @@ export function ComplianceAlerts() {
             />
 
             {groups.length === 0 ? (
-                <div className="flex flex-col items-center justify-center p-16 bg-white border border-slate-200 rounded-lg shadow-sm">
-                    <CheckCircle2 className="w-16 h-16 text-emerald-400 mb-4" />
-                    <h2 className="text-xl font-bold text-slate-800">All Clear!</h2>
-                    <p className="text-slate-500 mt-2">No active compliance alerts found.</p>
+                <div className="bg-white rounded-lg border border-slate-200 px-6 py-16">
+                    <div className="flex flex-col items-center justify-center text-center max-w-md mx-auto">
+                        <div className="relative w-16 h-16 mb-4">
+                            <span className="absolute inset-0 rounded-full bg-emerald-100/60" />
+                            <span className="absolute inset-2 rounded-full bg-emerald-50" />
+                            <span className="absolute inset-0 flex items-center justify-center">
+                                <CheckCircle2 className="w-7 h-7 text-emerald-600" />
+                            </span>
+                        </div>
+                        <h2 className="text-lg font-semibold text-slate-900">
+                            All Clear!
+                        </h2>
+                        <p className="mt-1.5 text-sm text-slate-500 max-w-sm">
+                            No active compliance alerts found.
+                        </p>
+                    </div>
                 </div>
             ) : (
                 <div className="space-y-8">

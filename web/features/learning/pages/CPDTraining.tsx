@@ -158,6 +158,27 @@ export function CPDTraining() {
       </div>
 
       {/* Modules Grid */}
+      {filteredModules.length === 0 ? (
+        <div className="bg-white rounded-lg border border-slate-200 px-6 py-16">
+          <div className="flex flex-col items-center justify-center text-center max-w-md mx-auto">
+            <div className="relative w-16 h-16 mb-4">
+              <span className="absolute inset-0 rounded-full bg-indigo-100/60" />
+              <span className="absolute inset-2 rounded-full bg-indigo-50" />
+              <span className="absolute inset-0 flex items-center justify-center">
+                <BookOpen className="w-7 h-7 text-indigo-600" />
+              </span>
+            </div>
+            <h2 className="text-lg font-semibold text-slate-900">
+              No modules found
+            </h2>
+            <p className="mt-1.5 text-sm text-slate-500 max-w-sm">
+              {searchQuery || activeCategory !== 'All'
+                ? 'Adjust your search or category filter to see more CPD modules.'
+                : 'No CPD training modules are available yet.'}
+            </p>
+          </div>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <AnimatePresence mode="popLayout">
           {filteredModules.map((module) => (
@@ -211,6 +232,7 @@ export function CPDTraining() {
           ))}
         </AnimatePresence>
       </div>
+      )}
 
       {/* Video Modal */}
       <AnimatePresence>
