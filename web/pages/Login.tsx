@@ -172,12 +172,13 @@ export const Login: React.FC = () => {
                 {/* Form pane */}
                 <section className="form-pane">
                     <header>
-                        <Link className="brand" to="/">
+                        <Link className="brand" to="/" aria-label="CedarGuard home">
                             <img
-                                src={`${import.meta.env.BASE_URL}logo.png`}
-                                alt="Cedar – Risk Intelligence & Compliance Platform"
+                                src={`${import.meta.env.BASE_URL}fabIcon.svg`}
+                                alt=""
                                 className="brand-logo"
                             />
+                            <span className="brand-name">CedarGuard</span>
                         </Link>
                     </header>
 
@@ -560,15 +561,20 @@ const CSS = `
 }
 .cg-login-root .brand {
   display: inline-flex; align-items: center;
+  gap: 10px;
   text-decoration: none;
   color: var(--fg);
 }
 .cg-login-root .brand-logo {
-  height: 44px;
-  width: auto;
-  max-width: 200px;
-  object-fit: contain;
+  height: 32px;
+  width: 32px;
   display: block;
+}
+.cg-login-root .brand-name {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--fg);
 }
 
 .cg-login-root .helpline {

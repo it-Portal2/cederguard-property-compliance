@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router';
-import { ClipboardList, BarChart, Activity, ShieldPlus, Bell, ClipboardCheck, ShieldCheck, Library, Database, UploadCloud, PieChart, FileText, Building2, Users, LayoutDashboard, ArrowRight, ScanSearch, Shield, CheckCircle2, LayoutGrid, Target, Globe, Lock, History, Scale, GraduationCap } from 'lucide-react';
+import { ClipboardList, BarChart, Activity, ShieldPlus, Bell, ClipboardCheck, ShieldCheck, Library, Database, UploadCloud, PieChart, FileText, Building2, Users, LayoutDashboard, ArrowRight, ScanSearch, Shield, CheckCircle2, LayoutGrid, Target, Globe, Lock, History, Scale } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import MarketingImage from '../../components/public/MarketingImage';
+import { WordPullUp } from '../../components/public/WordPullUp';
 
 /* ═══════════════════════════════════════════════════
    PRODUCT DATA
@@ -11,10 +12,6 @@ const productTabs = [
     {
         id: 'risk',
         label: 'Risk Management',
-        accent: 'cyan',
-        theme: 'from-cyan-500/10 to-transparent',
-        border: 'border-cyan-500/20',
-        iconColor: 'text-cyan-400',
         features: [
             {
                 icon: ClipboardList,
@@ -46,10 +43,6 @@ const productTabs = [
     {
         id: 'compliance',
         label: 'Compliance Tools',
-        accent: 'teal',
-        theme: 'from-teal-500/10 to-transparent',
-        border: 'border-teal-500/20',
-        iconColor: 'text-teal-400',
         features: [
             {
                 icon: ClipboardCheck,
@@ -81,10 +74,6 @@ const productTabs = [
     {
         id: 'reporting',
         label: 'Governance & Reporting',
-        accent: 'indigo',
-        theme: 'from-indigo-500/10 to-transparent',
-        border: 'border-indigo-500/20',
-        iconColor: 'text-indigo-400',
         features: [
             {
                 icon: PieChart,
@@ -116,10 +105,6 @@ const productTabs = [
     {
         id: 'technical',
         label: 'Technical Companion',
-        accent: 'violet',
-        theme: 'from-violet-500/10 to-transparent',
-        border: 'border-violet-500/20',
-        iconColor: 'text-violet-400',
         features: [
             {
                 icon: ScanSearch,
@@ -151,10 +136,6 @@ const productTabs = [
     {
         id: 'resource',
         label: 'Resource & Capacity Planner',
-        accent: 'emerald',
-        theme: 'from-emerald-500/10 to-transparent',
-        border: 'border-emerald-500/20',
-        iconColor: 'text-emerald-400',
         features: [
             {
                 icon: BarChart,
@@ -192,125 +173,179 @@ const aiFeatures = [
     { title: 'AI Risk Dashboard', icon: BarChart },
 ];
 
-const fadeInUp = {
-    initial: { opacity: 0, y: 20 },
-    animate: { opacity: 1, y: 0, transition: { duration: 0.5 } },
-    whileInView: { opacity: 1, y: 0 },
-    viewport: { once: true }
-};
+const stats = [
+    { label: 'Integrated Capabilities', value: '15+', icon: ScanSearch },
+    { label: 'Regulatory Modules', value: '3 Major', icon: Shield },
+    { label: 'Statutory Obligations', value: '240+', icon: Library },
+];
 
-const staggerContainer = {
-    animate: {
-        transition: {
-            staggerChildren: 0.1
-        }
-    }
-};
+const securityItems = [
+    { title: 'ISO Alignment', desc: 'Frameworks built for ISO 31000 & 27001.', icon: Lock },
+    { title: 'UK Hosted', desc: 'All data resides in secure UK-based datacenters.', icon: Globe },
+    { title: 'Full Audit Trail', desc: 'Immutable logs of every change and approval.', icon: History },
+    { title: 'Role Security', desc: 'Enterprise IAM with granular project permissions.', icon: Users },
+];
+
+const EASE: [number, number, number, number] = [0.22, 0.61, 0.36, 1];
+
+const HEADLINE_WORDS: Array<{ word: string; gradient?: boolean; breakAfter?: boolean }> = [
+    { word: 'One' },
+    { word: 'Intelligence' },
+    { word: 'Layer.', breakAfter: true },
+    { word: 'Total', gradient: true },
+    { word: 'Operational', gradient: true },
+    { word: 'Control.', gradient: true },
+];
+
+const DESCRIPTION_DELAY_S = 0.35 + HEADLINE_WORDS.length * 0.12 + 0.4;
+const CTA_DELAY_S = DESCRIPTION_DELAY_S + 0.25;
+
+const CARD_CLASS =
+    'group relative flex flex-col overflow-hidden rounded-xl border border-[oklch(0.91_0.006_270)] bg-white p-7 transition-[transform,border-color,box-shadow,background] duration-[320ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] hover:-translate-y-1 hover:scale-[1.01] hover:border-[oklch(0.62_0.24_278_/_0.45)] hover:shadow-[0_0_0_1px_oklch(0.62_0.24_278_/_0.20),0_20px_40px_-16px_oklch(0.62_0.24_278_/_0.30),0_0_60px_-10px_oklch(0.62_0.24_278_/_0.22)] before:pointer-events-none before:absolute before:inset-0 before:z-0 before:bg-[radial-gradient(60%_80%_at_50%_0%,oklch(0.62_0.24_278_/_0.14),transparent_70%)] before:opacity-0 before:transition-opacity before:duration-[320ms] before:content-[""] hover:before:opacity-100 dark:border-white/10 dark:bg-white/3';
+
+const ICON_CHIP_CLASS =
+    'relative z-[1] grid h-11 w-11 shrink-0 place-items-center rounded-[10px] border border-[oklch(0.62_0.24_278_/_0.22)] bg-[oklch(0.62_0.24_278_/_0.10)] text-[var(--accent)] transition-[transform,background] duration-[320ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] group-hover:scale-[1.06] group-hover:-rotate-3 group-hover:bg-[oklch(0.62_0.24_278_/_0.18)] dark:text-indigo-300';
+
+const SECTION_HEADING_CLASS =
+    'text-[clamp(26px,3.6vw,40px)] font-medium leading-[1.08] tracking-[-0.035em] text-[oklch(0.20_0.012_270)] dark:text-white';
+
+const GRADIENT_TEXT_CLASS =
+    'not-italic bg-[linear-gradient(135deg,oklch(0.62_0.24_278),oklch(0.50_0.28_254))] bg-clip-text text-transparent';
 
 export const Product: React.FC = () => {
     const [activeTab, setActiveTab] = useState('risk');
     const tab = productTabs.find(t => t.id === activeTab)!;
 
     return (
-        <div className="bg-slate-50 dark:bg-[#030303] text-slate-600 dark:text-slate-300 font-sans antialiased selection:bg-cyan-500/30 selection:text-white min-h-screen transition-colors duration-500">
-            {/* ── HERO SECTION ── */}
-            <section className="relative pt-12 md:pt-16 pb-32 px-6 overflow-hidden flex flex-col items-center justify-center text-center">
-                {/* Background decorative elements */}
-                <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-indigo-500/10 dark:bg-cyan-500/10 blur-[120px] rounded-full pointer-events-none opacity-50" />
-                <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-cyan-500/10 dark:bg-indigo-500/10 blur-[120px] rounded-full pointer-events-none opacity-50" />
+        <div
+            className="relative overflow-hidden bg-white font-sans dark:bg-[#030303]"
+            style={
+                {
+                    '--accent': 'oklch(0.62 0.24 278)',
+                    '--accent-hot': 'oklch(0.70 0.26 280)',
+                } as React.CSSProperties
+            }
+        >
+            {/* Hero backdrop — masked accent grid (exact tokens) + radial glow */}
+            <div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 top-0 h-130"
+                style={{
+                    backgroundImage:
+                        'linear-gradient(oklch(0.62 0.24 278 / 0.06) 1px, transparent 1px), linear-gradient(90deg, oklch(0.62 0.24 278 / 0.06) 1px, transparent 1px)',
+                    backgroundSize: '38px 38px',
+                    WebkitMaskImage:
+                        'radial-gradient(70% 60% at 50% 18%, #000 35%, transparent 85%)',
+                    maskImage:
+                        'radial-gradient(70% 60% at 50% 18%, #000 35%, transparent 85%)',
+                }}
+            />
+            <div
+                aria-hidden
+                className="pointer-events-none absolute left-1/2 top-[-80px] h-[540px] w-[1200px] max-w-none -translate-x-1/2"
+                style={{
+                    background:
+                        'radial-gradient(60% 60% at 50% 30%, oklch(0.62 0.24 278 / 0.18), transparent 65%), radial-gradient(45% 40% at 30% 25%, oklch(0.68 0.24 248 / 0.12), transparent 70%)',
+                    filter: 'blur(2px)',
+                }}
+            />
 
-                <div className="relative z-10 max-w-5xl mx-auto">
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="inline-flex items-center gap-3 px-4 py-2 rounded-lg border border-indigo-500/20 dark:border-cyan-500/20 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md text-indigo-600 dark:text-cyan-400 text-[10px] font-black uppercase tracking-[0.2em] mb-10 shadow-xl shadow-indigo-500/5"
-                    >
-                        <LayoutGrid className="w-4 h-4" />
-                        Platform Capabilities
-                    </motion.div>
-
-                    <motion.h1
-                        initial={{ opacity: 0, y: 30 }}
+            <div className="relative z-10 mx-auto max-w-7xl px-6 pt-20 pb-28 sm:pt-24">
+                {/* ── HERO SECTION ── */}
+                <div className="mx-auto max-w-4xl text-center">
+                    <motion.span
+                        initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-6xl md:text-8xl font-black text-slate-900 dark:text-white leading-[1.05] tracking-tight mb-10 font-display"
+                        transition={{ duration: 0.7, ease: EASE }}
+                        className="inline-flex items-center gap-2 rounded-full border border-[oklch(0.91_0.006_270)] bg-white px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.06em] text-[oklch(0.32_0.012_270)] shadow-[0_2px_8px_-4px_oklch(0_0_0_/_0.06)] dark:border-white/10 dark:bg-white/5 dark:text-slate-300"
                     >
-                        One Intelligence Layer. <br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-cyan-500 to-teal-400">Total Operational Control.</span>
-                    </motion.h1>
+                        <span className="relative flex h-1.5 w-1.5">
+                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--accent)] opacity-60" />
+                            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
+                        </span>
+                        Platform Capabilities
+                    </motion.span>
+
+                    <WordPullUp
+                        words={HEADLINE_WORDS}
+                        className="mt-[22px] text-[clamp(30px,5.4vw,60px)] font-medium leading-[1.02] tracking-[-0.035em] text-[oklch(0.20_0.012_270)] dark:text-white"
+                    />
 
                     <motion.p
-                        initial={{ opacity: 0, y: 30 }}
+                        initial={{ opacity: 0, y: 14 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 }}
-                        className="text-2xl text-slate-500 dark:text-slate-400 max-w-3xl mx-auto font-light leading-relaxed mb-16 italic"
+                        transition={{ duration: 0.6, delay: DESCRIPTION_DELAY_S, ease: EASE }}
+                        className="mx-auto mt-4 max-w-[640px] text-[16px] leading-[1.6] text-[oklch(0.50_0.010_270)] dark:text-slate-400"
                     >
                         "A definitive, enterprise-grade suite designed to eliminate fragmented spreadsheets and manual tracking in UK social housing."
                     </motion.p>
 
                     <motion.div
-                        initial={{ opacity: 0, y: 30 }}
+                        initial={{ opacity: 0, y: 14 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 }}
-                        className="flex flex-col sm:flex-row items-center justify-center gap-6"
+                        transition={{ duration: 0.6, delay: CTA_DELAY_S, ease: EASE }}
+                        className="mt-9 flex justify-center"
                     >
-                        <Link to="/login" className="group w-full sm:w-auto flex items-center justify-center gap-3 px-10 py-5 text-lg font-black bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-lg hover:bg-indigo-600 dark:hover:bg-cyan-400 transition-all duration-300 shadow-2xl shadow-indigo-500/20 dark:shadow-cyan-500/20">
-                            Enter Platform <ArrowRight className="w-6 h-6 transform group-hover:translate-x-2 transition-transform" />
+                        <Link
+                            to="/login"
+                            className="group inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-[oklch(0.54_0.24_278)] bg-[var(--accent)] px-7 text-[13.5px] font-semibold text-white shadow-[0_8px_22px_-8px_oklch(0.62_0.24_278_/_0.22)] transition-[background] duration-[140ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] hover:bg-[var(--accent-hot)]"
+                        >
+                            Enter Platform
+                            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                         </Link>
                     </motion.div>
                 </div>
-            </section>
 
-            {/* ── STATS BAR ── */}
-            <div className="max-w-6xl mx-auto px-6 mb-32 relative z-10">
-                <motion.div 
-                    initial={{ opacity: 0, y: 40 }}
+                {/* ── STATS BAR ── */}
+                <motion.div
+                    initial={{ opacity: 0, y: 24 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 p-10 rounded-lg bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-white/5 shadow-2xl dark:shadow-none backdrop-blur-xl transition-all duration-500 hover:border-indigo-500/20 dark:hover:border-cyan-500/20"
+                    transition={{ duration: 0.7, ease: EASE }}
+                    className="mx-auto mt-20 grid max-w-4xl grid-cols-1 gap-5 sm:grid-cols-3"
                 >
-                    {[
-                        { label: 'Integrated Capabilities', value: '15+', icon: ScanSearch, color: 'text-indigo-500' },
-                        { label: 'Regulatory Modules', value: '3 Major', icon: Shield, color: 'text-cyan-500' },
-                        { label: 'Statutory Obligations', value: '240+', icon: Library, color: 'text-teal-500' },
-                    ].map((stat, i) => (
-                        <div key={i} className="flex flex-col items-center justify-center text-center p-6 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 transition-all duration-500 group">
-                            <div className={`w-14 h-14 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 shadow-inner`}>
-                                <stat.icon className={`w-7 h-7 ${stat.color} opacity-80 group-hover:opacity-100 transition-opacity`} />
+                    {stats.map((stat) => (
+                        <div key={stat.label} className={CARD_CLASS + ' items-center text-center'}>
+                            <span className={ICON_CHIP_CLASS}>
+                                <stat.icon className="h-5 w-5" />
+                            </span>
+                            <div className="relative z-[1] mt-4 text-3xl font-semibold tracking-[-0.02em] text-[oklch(0.20_0.012_270)] tabular-nums dark:text-white">
+                                {stat.value}
                             </div>
-                            <div className="text-4xl font-black text-slate-900 dark:text-white mb-2 font-display">{stat.value}</div>
-                            <div className="text-[10px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-[0.2em]">{stat.label}</div>
+                            <div className="relative z-[1] mt-1.5 font-mono text-[10.5px] uppercase tracking-[0.08em] text-[oklch(0.50_0.010_270)] dark:text-slate-500">
+                                {stat.label}
+                            </div>
                         </div>
                     ))}
                 </motion.div>
-            </div>
 
-            {/* ── TABBED FEATURES GRID ── */}
-            <section className="py-32 px-6 bg-slate-50 dark:bg-slate-900/20 border-y border-slate-200 dark:border-white/5 relative transition-colors duration-500 overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-500/5 to-transparent opacity-30" />
-                
-                <div className="max-w-6xl mx-auto relative z-10">
-                    <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
+                {/* ── TABBED FEATURES GRID ── */}
+                <div className="mt-28">
+                    <motion.div
+                        initial={{ opacity: 0, y: 14 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="text-center mb-20"
+                        transition={{ duration: 0.6, ease: EASE }}
+                        className="mx-auto max-w-3xl text-center"
                     >
-                        <h2 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-white mb-8 font-display">Explore the Suite</h2>
-                        <p className="text-slate-500 dark:text-slate-400 text-xl max-w-3xl mx-auto font-light leading-relaxed">
+                        <h2 className={SECTION_HEADING_CLASS}>
+                            Explore the <em className={GRADIENT_TEXT_CLASS}>Suite</em>
+                        </h2>
+                        <p className="mx-auto mt-4 max-w-[640px] text-[16px] leading-[1.6] text-[oklch(0.50_0.010_270)] dark:text-slate-400">
                             Switch between modules to see how our unified architecture handles every dimension of your risk and compliance landscape.
                         </p>
                     </motion.div>
 
                     {/* Tab Navigation */}
-                    <div className="flex justify-center mb-20">
-                        <div className="inline-flex max-w-full gap-1.5 overflow-x-auto p-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-white/5 rounded-xl backdrop-blur-xl shadow-xl dark:shadow-none">
+                    <div className="mt-10 mb-12 flex justify-center">
+                        <div className="flex max-w-full flex-wrap justify-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                             {productTabs.map(t => (
                                 <button
                                     key={t.id}
                                     onClick={() => setActiveTab(t.id)}
-                                    className={`shrink-0 whitespace-nowrap rounded-lg px-5 py-2.5 text-xs font-bold uppercase tracking-wide transition-all duration-300 ${activeTab === t.id
-                                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-950 shadow-md shadow-indigo-500/10'
-                                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5'
+                                    className={`inline-flex h-8 shrink-0 items-center whitespace-nowrap rounded-full border px-3.5 font-mono text-[11.5px] uppercase tracking-[0.04em] transition-all duration-[140ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] ${activeTab === t.id
+                                        ? 'border-[oklch(0.20_0.012_270)] bg-[oklch(0.20_0.012_270)] text-white dark:border-white dark:bg-white dark:text-slate-900'
+                                        : 'border-[oklch(0.91_0.006_270)] bg-white text-[oklch(0.50_0.010_270)] hover:border-[oklch(0.85_0.008_270)] hover:text-[oklch(0.20_0.012_270)] dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:text-white'
                                         }`}
                                 >
                                     {t.label}
@@ -323,240 +358,247 @@ export const Product: React.FC = () => {
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={activeTab}
-                            initial="initial"
-                            animate="animate"
-                            variants={staggerContainer}
-                            exit={{ opacity: 0, x: -20 }}
-                            className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
+                            initial={{ opacity: 0, y: 12 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -12 }}
+                            transition={{ duration: 0.35, ease: EASE }}
+                            className="grid gap-5 md:grid-cols-2 lg:grid-cols-3"
                         >
-                            {tab.features.map((f, i) => (
-                                <motion.div
-                                    key={f.title}
-                                    variants={fadeInUp}
-                                    className={`group relative bg-white dark:bg-slate-900/40 border border-slate-200 dark:${tab.border} rounded-lg p-10 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-all duration-500 shadow-sm hover:shadow-2xl hover:shadow-indigo-500/10 dark:hover:shadow-cyan-500/10`}
-                                >
-                                    <div className={`absolute inset-0 rounded-lg bg-gradient-to-br ${tab.theme} opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none`} />
-
-                                    <div className="relative z-10">
-                                        <div className={`w-16 h-16 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/10 flex items-center justify-center mb-8 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-inner`}>
-                                            <f.icon className={`w-8 h-8 ${tab.iconColor}`} />
-                                        </div>
-                                        <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-4 font-display">{f.title}</h3>
-                                        <p className="text-slate-500 dark:text-slate-400 text-base leading-relaxed font-light">{f.desc}</p>
-                                    </div>
-                                </motion.div>
+                            {tab.features.map((f) => (
+                                <div key={f.title} className={CARD_CLASS + ' gap-3'}>
+                                    <span className={ICON_CHIP_CLASS}>
+                                        <f.icon className="h-5 w-5" />
+                                    </span>
+                                    <h3 className="relative z-[1] mt-1 text-[19px] font-semibold tracking-[-0.02em] text-[oklch(0.20_0.012_270)] dark:text-white">
+                                        {f.title}
+                                    </h3>
+                                    <p className="relative z-[1] text-[13.5px] leading-relaxed text-[oklch(0.50_0.010_270)] dark:text-slate-400">
+                                        {f.desc}
+                                    </p>
+                                </div>
                             ))}
                         </motion.div>
                     </AnimatePresence>
                 </div>
-            </section>
 
-            {/* ── DEEP DIVE MODULES ── */}
-            <section className="py-48 px-6">
-                <div className="max-w-6xl mx-auto">
-                    <div className="space-y-48">
-                        {/* Module 1: Risk */}
-                        <div className="grid lg:grid-cols-2 gap-24 items-center">
-                            <motion.div
-                                initial={{ opacity: 0, x: -50 }}
-                                whileInView={{ opacity: 1, x: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.8 }}
-                                className="space-y-10"
-                            >
-                                <div className="p-4 w-fit rounded-lg bg-indigo-500/10 dark:bg-cyan-500/10 border border-indigo-500/20 dark:border-cyan-500/20 shadow-xl shadow-indigo-500/5">
-                                    <Target className="w-10 h-10 text-indigo-600 dark:text-cyan-400" />
-                                </div>
-                                <h2 className="text-5xl md:text-7xl font-black text-slate-900 dark:text-white font-display tracking-tight leading-tight">Risk Intelligence.</h2>
-                                <p className="text-2xl text-slate-500 dark:text-slate-400 leading-relaxed font-light italic border-l-4 border-indigo-500/20 dark:border-cyan-500/20 pl-8">
-                                    "Move from passive tracking to proactive management with real-time exposure analytics and AI-driven discovery."
-                                </p>
-                                <ul className="space-y-6">
-                                    {[
-                                        'Enterprise RAID register with full ALE data',
-                                        'Automated KRI (Key Risk Indicator) alerts',
-                                        'Cross-programme risk aggregation',
-                                        'Contextual AI risk identification engine'
-                                    ].map((item, i) => (
-                                        <li key={i} className="flex items-center gap-4 text-slate-700 dark:text-slate-300 font-bold text-lg">
-                                            <div className="w-6 h-6 rounded-full bg-indigo-500/10 dark:bg-cyan-500/10 flex items-center justify-center shrink-0">
-                                                <CheckCircle2 className="w-4 h-4 text-indigo-600 dark:text-cyan-400" />
-                                            </div>
-                                            <span>{item}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </motion.div>
-                            <motion.div 
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                whileInView={{ opacity: 1, scale: 1 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.8 }}
-                                className="relative group"
-                            >
-                                <div className="absolute -inset-10 bg-indigo-500/20 dark:bg-cyan-500/20 blur-[100px] rounded-full opacity-20 group-hover:opacity-40 transition-opacity duration-1000" />
-                                <div className="relative rounded-lg bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 shadow-2xl aspect-square overflow-hidden transition-all duration-700 group-hover:scale-[1.02]">
-                                    <MarketingImage base="marketing/risk-register-tablets" alt="CedarGuard risk register and risk dashboard on two tablets" width={1600} height={1280} sizes="(min-width: 1024px) 560px, 90vw" className="absolute inset-0 h-full w-full object-cover object-center" />
-                                </div>
-                            </motion.div>
-                        </div>
+                {/* ── DEEP DIVE MODULES ── */}
+                <div className="mt-28 space-y-24">
+                    {/* Module 1: Risk */}
+                    <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
+                        <motion.div
+                            initial={{ opacity: 0, x: -32 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.7, ease: EASE }}
+                            className="space-y-7"
+                        >
+                            <span className={'group ' + ICON_CHIP_CLASS}>
+                                <Target className="h-5 w-5" />
+                            </span>
+                            <h2 className={SECTION_HEADING_CLASS}>
+                                Risk <em className={GRADIENT_TEXT_CLASS}>Intelligence.</em>
+                            </h2>
+                            <p className="border-l-2 border-[oklch(0.62_0.24_278_/_0.35)] pl-6 text-[16px] leading-[1.6] text-[oklch(0.50_0.010_270)] dark:text-slate-400">
+                                "Move from passive tracking to proactive management with real-time exposure analytics and AI-driven discovery."
+                            </p>
+                            <ul className="space-y-4">
+                                {[
+                                    'Enterprise RAID register with full ALE data',
+                                    'Automated KRI (Key Risk Indicator) alerts',
+                                    'Cross-programme risk aggregation',
+                                    'Contextual AI risk identification engine'
+                                ].map((item, i) => (
+                                    <li key={i} className="flex items-center gap-3 text-[15px] font-medium text-[oklch(0.32_0.012_270)] dark:text-slate-300">
+                                        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[oklch(0.62_0.24_278_/_0.10)]">
+                                            <CheckCircle2 className="h-4 w-4 text-[var(--accent)] dark:text-indigo-300" />
+                                        </span>
+                                        <span>{item}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </motion.div>
+                        <motion.div
+                            initial={{ opacity: 0, x: 32 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.7, ease: EASE }}
+                            className="relative aspect-square overflow-hidden rounded-xl border border-[oklch(0.91_0.006_270)] dark:border-white/10"
+                        >
+                            <MarketingImage base="marketing/risk-register-tablets" alt="CedarGuard risk register and risk dashboard on two tablets" width={1600} height={1280} sizes="(min-width: 1024px) 560px, 90vw" className="absolute inset-0 h-full w-full object-cover object-center" />
+                        </motion.div>
+                    </div>
 
-                        {/* Module 2: Compliance */}
-                        <div className="grid lg:grid-cols-2 gap-24 items-center">
-                            <motion.div 
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                whileInView={{ opacity: 1, scale: 1 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.8 }}
-                                className="relative group order-2 lg:order-1"
-                            >
-                                <div className="absolute -inset-10 bg-teal-500/20 blur-[100px] rounded-full opacity-20 group-hover:opacity-40 transition-opacity duration-1000" />
-                                <div className="relative rounded-lg bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 shadow-2xl aspect-square overflow-hidden transition-all duration-700 group-hover:scale-[1.02]">
-                                    <MarketingImage base="marketing/compliance-tablet-person" alt="Person holding a tablet showing the CedarGuard compliance tracker" width={1600} height={1600} sizes="(min-width: 1024px) 560px, 90vw" className="absolute inset-0 h-full w-full object-cover object-center" />
-                                </div>
-                            </motion.div>
-                            <motion.div
-                                initial={{ opacity: 0, x: 50 }}
-                                whileInView={{ opacity: 1, x: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.8 }}
-                                className="order-1 lg:order-2 space-y-10"
-                            >
-                                <div className="p-4 w-fit rounded-lg bg-teal-500/10 border border-teal-500/20 shadow-xl shadow-teal-500/5">
-                                    <ShieldCheck className="w-10 h-10 text-teal-500" />
-                                </div>
-                                <h2 className="text-5xl md:text-7xl font-black text-slate-900 dark:text-white font-display tracking-tight leading-tight">Statutory Confidence.</h2>
-                                <p className="text-2xl text-slate-500 dark:text-slate-400 leading-relaxed font-light italic border-l-4 border-teal-500/20 pl-8">
-                                    "Navigate the post-Grenfell regulatory landscape with absolute confidence and a definitive audit trail."
-                                </p>
-                                <ul className="space-y-6">
-                                    {[
-                                        'Fire & Building Safety Act compliance',
-                                        'Awaab\'s Law response tracking',
-                                        'Master regulation library (240+ acts)',
-                                        'AI-flagged compliance health summaries'
-                                    ].map((item, i) => (
-                                        <li key={i} className="flex items-center gap-4 text-slate-700 dark:text-slate-300 font-bold text-lg">
-                                            <div className="w-6 h-6 rounded-full bg-teal-500/10 flex items-center justify-center shrink-0">
-                                                <CheckCircle2 className="w-4 h-4 text-teal-500" />
-                                            </div>
-                                            <span>{item}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </motion.div>
-                        </div>
+                    {/* Module 2: Compliance */}
+                    <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
+                        <motion.div
+                            initial={{ opacity: 0, x: -32 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.7, ease: EASE }}
+                            className="relative order-2 aspect-square overflow-hidden rounded-xl border border-[oklch(0.91_0.006_270)] lg:order-1 dark:border-white/10"
+                        >
+                            <MarketingImage base="marketing/compliance-tablet-person" alt="Person holding a tablet showing the CedarGuard compliance tracker" width={1600} height={1600} sizes="(min-width: 1024px) 560px, 90vw" className="absolute inset-0 h-full w-full object-cover object-center" />
+                        </motion.div>
+                        <motion.div
+                            initial={{ opacity: 0, x: 32 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.7, ease: EASE }}
+                            className="order-1 space-y-7 lg:order-2"
+                        >
+                            <span className={'group ' + ICON_CHIP_CLASS}>
+                                <ShieldCheck className="h-5 w-5" />
+                            </span>
+                            <h2 className={SECTION_HEADING_CLASS}>
+                                Statutory <em className={GRADIENT_TEXT_CLASS}>Confidence.</em>
+                            </h2>
+                            <p className="border-l-2 border-[oklch(0.62_0.24_278_/_0.35)] pl-6 text-[16px] leading-[1.6] text-[oklch(0.50_0.010_270)] dark:text-slate-400">
+                                "Navigate the post-Grenfell regulatory landscape with absolute confidence and a definitive audit trail."
+                            </p>
+                            <ul className="space-y-4">
+                                {[
+                                    'Fire & Building Safety Act compliance',
+                                    'Awaab\'s Law response tracking',
+                                    'Master regulation library (240+ acts)',
+                                    'AI-flagged compliance health summaries'
+                                ].map((item, i) => (
+                                    <li key={i} className="flex items-center gap-3 text-[15px] font-medium text-[oklch(0.32_0.012_270)] dark:text-slate-300">
+                                        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[oklch(0.62_0.24_278_/_0.10)]">
+                                            <CheckCircle2 className="h-4 w-4 text-[var(--accent)] dark:text-indigo-300" />
+                                        </span>
+                                        <span>{item}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </motion.div>
                     </div>
                 </div>
-            </section>
 
-            {/* ── AI CAPABILITIES CALLOUT ── */}
-            <section className="py-48 px-6">
-                <div className="max-w-6xl mx-auto">
-                    <motion.div 
-                        initial={{ opacity: 0, y: 50 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        className="p-16 md:p-24 rounded-lg bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 border border-white/10 relative overflow-hidden shadow-2xl"
-                    >
-                        {/* Interactive Background */}
-                        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-cyan-500/10 blur-[120px] rounded-full pointer-events-none" />
-                        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-indigo-500/10 blur-[120px] rounded-full pointer-events-none" />
+                {/* ── AI CAPABILITIES CALLOUT ── */}
+                <motion.div
+                    initial={{ opacity: 0, y: 32 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.7, ease: EASE }}
+                    className="relative mt-28 overflow-hidden rounded-2xl px-8 py-14 text-center sm:px-14 sm:py-16"
+                    style={{
+                        background:
+                            'radial-gradient(70% 90% at 50% 100%, oklch(0.62 0.24 278 / 0.22), transparent 60%), linear-gradient(180deg, oklch(0.18 0.018 270), oklch(0.13 0.012 270))',
+                    }}
+                >
+                    <div
+                        aria-hidden
+                        className="pointer-events-none absolute inset-0"
+                        style={{
+                            backgroundImage:
+                                'linear-gradient(oklch(1 0 0 / 0.04) 1px, transparent 1px), linear-gradient(90deg, oklch(1 0 0 / 0.04) 1px, transparent 1px)',
+                            backgroundSize: '36px 36px',
+                            WebkitMaskImage: 'radial-gradient(60% 60% at 50% 50%, #000 30%, transparent 80%)',
+                            maskImage: 'radial-gradient(60% 60% at 50% 50%, #000 30%, transparent 80%)',
+                        }}
+                    />
 
-                        <div className="relative z-10 flex flex-col items-center text-center">
-                            <motion.div 
-                                animate={{ rotate: 360 }}
-                                transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-                                className="w-24 h-24 rounded-lg bg-cyan-500 border border-cyan-300 flex items-center justify-center mb-12 shadow-[0_0_50px_rgba(34,211,238,0.3)]"
-                            >
-                                <Database className="w-12 h-12 text-slate-950" />
-                            </motion.div>
-                            
-                            <h2 className="text-5xl md:text-7xl font-black text-white mb-10 font-display tracking-tight">AI-Native Framework</h2>
-                            <p className="text-xl md:text-2xl text-slate-400 max-w-3xl mb-16 leading-relaxed font-light">
-                                "We didn't just add AI; we built the platform around it. Our intelligence layer automates the high-value manual work that typically costs organisations thousands in consultant fees."
-                            </p>
+                    <div className="relative z-10 flex flex-col items-center">
+                        <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
+                            className="mb-8 grid h-16 w-16 place-items-center rounded-xl border border-[oklch(0.70_0.26_280)] bg-[var(--accent)] shadow-[0_0_50px_oklch(0.62_0.24_278_/_0.35)]"
+                        >
+                            <Database className="h-8 w-8 text-white" />
+                        </motion.div>
 
-                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 w-full">
-                                {aiFeatures.map((f, i) => (
-                                    <motion.div
-                                        key={i}
-                                        whileHover={{ y: -10 }}
-                                        className="bg-white/5 border border-white/10 rounded-lg p-5 sm:p-8 text-center backdrop-blur-md group hover:bg-white/10 hover:border-cyan-500/30 transition-all duration-500 shadow-xl"
-                                    >
-                                        <f.icon className="w-10 h-10 text-cyan-400 mb-6 mx-auto opacity-70 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500" />
-                                        <div className="text-[10px] font-black uppercase tracking-widest leading-relaxed wrap-break-word text-white/50 group-hover:text-cyan-400 transition-colors">{f.title}</div>
-                                    </motion.div>
-                                ))}
-                            </div>
+                        <h2 className="text-[clamp(26px,3.6vw,40px)] font-medium leading-[1.08] tracking-[-0.035em] text-white">
+                            AI-Native <em className={GRADIENT_TEXT_CLASS}>Framework</em>
+                        </h2>
+                        <p className="mx-auto mt-4 max-w-[640px] text-[15px] leading-[1.6] text-white/60">
+                            "We didn't just add AI; we built the platform around it. Our intelligence layer automates the high-value manual work that typically costs organisations thousands in consultant fees."
+                        </p>
+
+                        <div className="mt-10 grid w-full grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+                            {aiFeatures.map((f, i) => (
+                                <div
+                                    key={i}
+                                    className="group rounded-xl border border-white/10 bg-white/5 p-5 text-center backdrop-blur-md transition-[background,border-color,transform] duration-[320ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] hover:-translate-y-1 hover:border-[oklch(0.62_0.24_278_/_0.45)] hover:bg-white/10 sm:p-7"
+                                >
+                                    <f.icon className="mx-auto mb-4 h-7 w-7 text-indigo-300 opacity-80 transition-all duration-[320ms] group-hover:scale-110 group-hover:opacity-100" />
+                                    <div className="font-mono text-[10px] uppercase tracking-[0.08em] leading-relaxed text-white/50 transition-colors group-hover:text-indigo-300">
+                                        {f.title}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                    </motion.div>
-                </div>
-            </section>
+                    </div>
+                </motion.div>
 
-            {/* ── SECURITY & INFRA ── */}
-            <section className="py-32 px-6 bg-slate-950 border-t border-white/5">
-                <div className="max-w-6xl mx-auto grid md:grid-cols-2 lg:grid-cols-4 gap-12">
-                    {[
-                        { title: 'ISO Alignment', desc: 'Frameworks built for ISO 31000 & 27001.', icon: Lock },
-                        { title: 'UK Hosted', desc: 'All data resides in secure UK-based datacenters.', icon: Globe },
-                        { title: 'Full Audit Trail', desc: 'Immutable logs of every change and approval.', icon: History },
-                        { title: 'Role Security', desc: 'Enterprise IAM with granular project permissions.', icon: Users },
-                    ].map((item, i) => (
-                        <motion.div 
+                {/* ── SECURITY & INFRA ── */}
+                <div className="mt-24 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+                    {securityItems.map((item, i) => (
+                        <motion.div
                             key={i}
-                            initial={{ opacity: 0, y: 20 }}
+                            initial={{ opacity: 0, y: 16 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
-                            transition={{ delay: i * 0.1 }}
-                            className="flex gap-6 items-start group"
+                            transition={{ duration: 0.5, delay: i * 0.08, ease: EASE }}
+                            className={CARD_CLASS + ' gap-3'}
                         >
-                            <div className="p-4 rounded-lg bg-white/5 border border-white/10 shrink-0 group-hover:bg-cyan-500/10 group-hover:border-cyan-500/20 transition-all duration-500">
-                                <item.icon className="w-6 h-6 text-slate-400 group-hover:text-cyan-400 transition-colors" />
-                            </div>
-                            <div>
-                                <h4 className="text-white font-black mb-2 text-lg uppercase tracking-wider">{item.title}</h4>
-                                <p className="text-slate-500 text-sm leading-relaxed font-light">{item.desc}</p>
-                            </div>
+                            <span className={ICON_CHIP_CLASS}>
+                                <item.icon className="h-5 w-5" />
+                            </span>
+                            <h4 className="relative z-[1] mt-1 text-[17px] font-semibold tracking-[-0.015em] text-[oklch(0.20_0.012_270)] dark:text-white">
+                                {item.title}
+                            </h4>
+                            <p className="relative z-[1] text-[13.5px] leading-relaxed text-[oklch(0.50_0.010_270)] dark:text-slate-400">
+                                {item.desc}
+                            </p>
                         </motion.div>
                     ))}
                 </div>
-            </section>
 
-            {/* ── FINAL CTA ── */}
-            <section className="py-64 px-6 relative overflow-hidden bg-slate-950">
-                <div className="absolute inset-0 bg-indigo-500 pointer-events-none opacity-[0.05] blur-[150px]" />
-                <div className="max-w-5xl mx-auto text-center relative z-10">
-                    <motion.h2 
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        whileInView={{ opacity: 1, scale: 1 }}
-                        viewport={{ once: true }}
-                        className="text-5xl md:text-8xl font-black text-white mb-10 tracking-tight font-display leading-[1.05]"
-                    >
-                        Ready to Modernise <br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-teal-400">Your Programme?</span>
-                    </motion.h2>
-                    <motion.p 
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: 0.1 }}
-                        className="text-2xl text-slate-400 mb-16 max-w-3xl mx-auto leading-relaxed font-light italic"
-                    >
-                        Join the next generation of social housing managers using intelligence to protect residents and budgets.
-                    </motion.p>
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: 0.2 }}
-                    >
-                        <Link to="/login" className="group inline-flex items-center gap-4 px-12 py-6 text-xl font-black bg-cyan-500 text-slate-950 rounded-lg hover:bg-white hover:scale-105 transition-all duration-500 shadow-[0_0_60px_rgba(34,211,238,0.4)]">
-                            Launch Portal <ArrowRight className="w-7 h-7 transform group-hover:translate-x-2 transition-transform" />
-                        </Link>
-                    </motion.div>
-                </div>
-            </section>
+                {/* ── FINAL CTA ── */}
+                <motion.div
+                    initial={{ opacity: 0, y: 32 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.7, ease: EASE }}
+                    className="relative mt-28 overflow-hidden rounded-2xl px-8 py-16 text-center sm:px-14 sm:py-20"
+                    style={{
+                        background:
+                            'radial-gradient(70% 90% at 50% 100%, oklch(0.62 0.24 278 / 0.22), transparent 60%), linear-gradient(180deg, oklch(0.18 0.018 270), oklch(0.13 0.012 270))',
+                    }}
+                >
+                    <div
+                        aria-hidden
+                        className="pointer-events-none absolute inset-0"
+                        style={{
+                            backgroundImage:
+                                'linear-gradient(oklch(1 0 0 / 0.04) 1px, transparent 1px), linear-gradient(90deg, oklch(1 0 0 / 0.04) 1px, transparent 1px)',
+                            backgroundSize: '36px 36px',
+                            WebkitMaskImage: 'radial-gradient(60% 60% at 50% 50%, #000 30%, transparent 80%)',
+                            maskImage: 'radial-gradient(60% 60% at 50% 50%, #000 30%, transparent 80%)',
+                        }}
+                    />
+
+                    <div className="relative z-10">
+                        <h2 className="mx-auto max-w-2xl text-[clamp(28px,4.2vw,48px)] font-medium leading-[1.08] tracking-[-0.035em] text-white">
+                            Ready to Modernise
+                            <br />
+                            <em className={GRADIENT_TEXT_CLASS}>Your Programme?</em>
+                        </h2>
+                        <p className="mx-auto mt-5 max-w-[560px] text-[15px] leading-[1.6] text-white/60">
+                            Join the next generation of social housing managers using intelligence to protect residents and budgets.
+                        </p>
+                        <div className="mt-9 flex justify-center">
+                            <Link
+                                to="/login"
+                                className="group inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-[oklch(0.54_0.24_278)] bg-[var(--accent)] px-7 text-[13.5px] font-semibold text-white shadow-[0_8px_22px_-8px_oklch(0.62_0.24_278_/_0.40)] transition-[background] duration-[140ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] hover:bg-[var(--accent-hot)]"
+                            >
+                                Launch Portal
+                                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                            </Link>
+                        </div>
+                    </div>
+                </motion.div>
+            </div>
         </div>
     );
 };

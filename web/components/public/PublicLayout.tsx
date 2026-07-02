@@ -43,6 +43,14 @@ export const PublicLayout: React.FC = () => {
         setMobileMenuOpen(false);
     }, [location.pathname]);
 
+    // Scroll to top on route change — client-side navigation keeps the
+    // window's scroll position by default, so following a link while
+    // scrolled down a long page (e.g. Documentation/API Reference) would
+    // otherwise land on the new page already scrolled to the same offset.
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [location.pathname]);
+
     // Body scroll-lock + ESC dismiss while the mobile overlay is open.
     useEffect(() => {
         if (!mobileMenuOpen) return;
@@ -97,12 +105,15 @@ export const PublicLayout: React.FC = () => {
             >
                 <div className="max-w-7xl mx-auto px-6 h-18 flex items-center justify-between">
                     {/* Logo */}
-                    <Link to="/" aria-label="CedarGuard home" className="flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 rounded-md">
+                    <Link to="/" aria-label="CedarGuard home" className="flex items-center gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 rounded-md">
                         <img
-                            src={`${import.meta.env.BASE_URL}logo.png`}
-                            alt="CedarGuard"
-                            className="h-10 w-auto object-contain dark:invert-0"
+                            src={`${import.meta.env.BASE_URL}fabIcon.svg`}
+                            alt=""
+                            className="h-8 w-8"
                         />
+                        <span className="text-[17px] font-semibold tracking-tight text-slate-900 dark:text-white">
+                            CedarGuard
+                        </span>
                     </Link>
 
                     {/* Desktop nav */}
@@ -180,12 +191,15 @@ export const PublicLayout: React.FC = () => {
                         >
                             {/* Same-height header strip inside the overlay */}
                             <div className="max-w-7xl mx-auto w-full px-6 h-16 flex items-center justify-between shrink-0 border-b border-slate-200 dark:border-white/10">
-                                <Link to="/" aria-label="CedarGuard home" className="flex items-center">
+                                <Link to="/" aria-label="CedarGuard home" className="flex items-center gap-2.5">
                                     <img
-                                        src={`${import.meta.env.BASE_URL}logo.png`}
-                                        alt="CedarGuard"
-                                        className="h-10 w-auto object-contain dark:invert-0"
+                                        src={`${import.meta.env.BASE_URL}fabIcon.svg`}
+                                        alt=""
+                                        className="h-8 w-8"
                                     />
+                                    <span className="text-[17px] font-semibold tracking-tight text-slate-900 dark:text-white">
+                                        CedarGuard
+                                    </span>
                                 </Link>
                                 <button
                                     type="button"
@@ -309,85 +323,116 @@ export const PublicLayout: React.FC = () => {
             </main>
 
             {/* ── FOOTER ── */}
-            <footer className="bg-slate-50 dark:bg-[#050505] px-6 py-24 text-slate-500 dark:text-slate-500 text-sm border-t border-slate-200 dark:border-white/5 mt-auto relative overflow-hidden transition-colors duration-500">
-                <div className="absolute top-0 left-1/4 w-1/2 h-[2px] bg-gradient-to-r from-transparent via-indigo-500/20 dark:via-cyan-400/30 to-transparent" />
-
+            <footer
+                className="mt-auto border-t border-[oklch(0.91_0.006_270)] bg-white px-6 pt-14 pb-8 text-sm transition-colors duration-500 dark:border-white/10 dark:bg-[#050505]"
+                style={{ "--accent": "oklch(0.62 0.24 278)" } as React.CSSProperties}
+            >
                 {/* Install-app band — preserves the install entry-point that
                     used to live as a header APP button. Quiet, single line,
                     only shows when the app isn't already installed. */}
                 {!isInstalled && (
-                    <div className="max-w-7xl mx-auto mb-16 flex items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-500 relative z-10">
+                    <div className="mx-auto mb-12 flex max-w-7xl flex-wrap items-center justify-center gap-2 font-mono text-[11px] uppercase tracking-[0.06em] text-[oklch(0.50_0.010_270)] dark:text-slate-500">
                         <span>Use CedarGuard on the go —</span>
                         <button
                             type="button"
                             onClick={deferredPrompt ? installPWA : () => setShowInstallModal(true)}
-                            className="inline-flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 rounded-sm"
+                            className="inline-flex items-center gap-1.5 rounded-md border border-[oklch(0.91_0.006_270)] bg-[oklch(0.98_0.004_270)] px-2.5 py-1 font-medium text-[oklch(0.32_0.012_270)] transition-colors hover:border-[oklch(0.62_0.24_278_/_0.40)] hover:text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:text-indigo-300"
                         >
-                            <Download className="w-3.5 h-3.5" /> Install the app
+                            <Download className="h-3 w-3" /> Install the app
                         </button>
                     </div>
                 )}
 
-                <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-16 mb-24 relative z-10">
-                    <div className="col-span-1 md:col-span-1">
-                        <Link to="/" className="inline-block mb-10 transition-transform hover:scale-105 duration-500">
-                            <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Cedar Logo" className="h-12 w-auto object-contain dark:invert-0" />
+                <div className="mx-auto mb-10 grid max-w-7xl grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-[1.6fr_repeat(3,1fr)] md:gap-10">
+                    {/* Brand */}
+                    <div className="col-span-2 md:col-span-1">
+                        <Link to="/" aria-label="CedarGuard home" className="inline-flex items-center gap-2.5">
+                            <img src={`${import.meta.env.BASE_URL}fabIcon.svg`} alt="" className="h-8 w-8" />
+                            <span className="text-[17px] font-semibold tracking-tight text-slate-900 dark:text-white">
+                                CedarGuard
+                            </span>
                         </Link>
-                        <p className="text-lg text-slate-500 dark:text-slate-400 font-light leading-relaxed italic">
+                        <p className="mt-5 max-w-[30ch] text-[13.5px] leading-[1.6] text-[oklch(0.50_0.010_270)] dark:text-slate-400">
                             "AI-Powered Risk and Compliance Platform for UK Social Housing Managers."
                         </p>
+                        <div className="mt-6 flex gap-3">
+                            <div className="group rounded-lg border border-[oklch(0.91_0.006_270)] bg-white p-3 transition-colors duration-300 hover:border-[oklch(0.62_0.24_278_/_0.30)] dark:border-white/10 dark:bg-white/5">
+                                <img src="https://www.cedarproacademy.com/wp-content/uploads/2021/04/gfg-1.png" alt="Accreditation 1" className="h-8 w-auto object-contain opacity-70 mix-blend-multiply transition-opacity group-hover:opacity-100 dark:mix-blend-normal" />
+                            </div>
+                            <div className="group rounded-lg border border-[oklch(0.91_0.006_270)] bg-white p-3 transition-colors duration-300 hover:border-[oklch(0.62_0.24_278_/_0.30)] dark:border-white/10 dark:bg-white/5">
+                                <img src="https://www.cedarproacademy.com/wp-content/uploads/2021/04/Accreditations-affiliations-partnership2-1.jpg" alt="Accreditation 2" className="h-8 w-auto rounded object-contain opacity-70 mix-blend-multiply transition-opacity group-hover:opacity-100 dark:mix-blend-normal" />
+                            </div>
+                        </div>
                     </div>
-                    
+
+                    {/* Platform */}
                     <div>
-                        <h4 className="text-slate-900 dark:text-white font-black tracking-[0.2em] uppercase mb-8 text-xs">Platform</h4>
-                        <ul className="space-y-4">
+                        <h4 className="mb-4 font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-[oklch(0.50_0.010_270)] dark:text-slate-500">
+                            Platform
+                        </h4>
+                        <ul className="space-y-2.5">
                             {navLinks.map(l => (
                                 <li key={l.href}>
-                                    <Link to={l.href} className="text-base font-medium hover:text-indigo-600 dark:hover:text-cyan-400 transition-all hover:pl-2">
+                                    <Link
+                                        to={l.href}
+                                        className="text-[13.5px] text-[oklch(0.32_0.012_270)] transition-colors duration-150 hover:text-[var(--accent)] dark:text-slate-300 dark:hover:text-indigo-300"
+                                    >
                                         {l.label}
                                     </Link>
                                 </li>
                             ))}
                         </ul>
                     </div>
-                    
+
+                    {/* Headquarters */}
                     <div>
-                        <h4 className="text-slate-900 dark:text-white font-black tracking-[0.2em] uppercase mb-8 text-xs">Headquarters</h4>
-                        <ul className="space-y-4 text-slate-500 dark:text-slate-400 font-light text-base leading-relaxed">
+                        <h4 className="mb-4 font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-[oklch(0.50_0.010_270)] dark:text-slate-500">
+                            Headquarters
+                        </h4>
+                        <ul className="space-y-2.5 text-[13.5px] leading-[1.6] text-[oklch(0.50_0.010_270)] dark:text-slate-400">
                             <li>Cedar Property Compliance & Risk Suite</li>
                             <li>10 The New Inn Court</li>
                             <li>54 Matham Road</li>
                             <li>East Molesey, KT8 0BE</li>
                         </ul>
                     </div>
-                    
+
+                    {/* Connect */}
                     <div>
-                        <h4 className="text-slate-900 dark:text-white font-black tracking-[0.2em] uppercase mb-8 text-xs">Connect</h4>
-                        <div className="space-y-6">
-                            <a href="mailto:info@cedarguard.co.uk" className="block text-lg font-bold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-cyan-400 transition-colors">
+                        <h4 className="mb-4 font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-[oklch(0.50_0.010_270)] dark:text-slate-500">
+                            Connect
+                        </h4>
+                        <div className="space-y-2.5">
+                            <a
+                                href="mailto:info@cedarguard.co.uk"
+                                className="block break-all text-[13.5px] font-medium text-[oklch(0.20_0.012_270)] transition-colors duration-150 hover:text-[var(--accent)] dark:text-white dark:hover:text-indigo-300"
+                            >
                                 info@cedarguard.co.uk
                             </a>
-                            <a href="tel:+442031433504" className="block text-lg font-bold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-cyan-400 transition-colors">
+                            <a
+                                href="tel:+442031433504"
+                                className="block text-[13.5px] font-medium text-[oklch(0.20_0.012_270)] tabular-nums transition-colors duration-150 hover:text-[var(--accent)] dark:text-white dark:hover:text-indigo-300"
+                            >
                                 +44 (0) 2031433504
                             </a>
-                            <div className="pt-8 flex gap-6">
-                                <div className="group bg-white dark:bg-white/5 p-4 rounded-lg border border-slate-200 dark:border-white/10 hover:border-indigo-500/20 dark:hover:border-cyan-500/20 transition-all duration-500">
-                                    <img src="https://www.cedarproacademy.com/wp-content/uploads/2021/04/gfg-1.png" alt="Accreditation 1" className="h-10 w-auto object-contain opacity-70 group-hover:opacity-100 transition-opacity mix-blend-multiply dark:mix-blend-normal" />
-                                </div>
-                                <div className="group bg-white dark:bg-white/5 p-4 rounded-lg border border-slate-200 dark:border-white/10 hover:border-indigo-500/20 dark:hover:border-cyan-500/20 transition-all duration-500">
-                                    <img src="https://www.cedarproacademy.com/wp-content/uploads/2021/04/Accreditations-affiliations-partnership2-1.jpg" alt="Accreditation 2" className="h-10 w-auto object-contain opacity-70 group-hover:opacity-100 transition-opacity rounded mix-blend-multiply dark:mix-blend-normal" />
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
-                
-                <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8 pt-12 border-t border-slate-200 dark:border-white/5 relative z-10 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 dark:text-slate-600">
-                    <p>&copy; 2026 Cedar Property Compliance & Risk Suite.</p>
-                    <div className="flex gap-12">
-                        <span className="hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">Privacy Policy</span>
-                        <span className="hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">Terms of Service</span>
-                        <span className="text-indigo-600 dark:text-cyan-500">Pre-market Edition</span>
+
+                <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-4 border-t border-[oklch(0.91_0.006_270)] pt-6 sm:flex-row sm:items-center dark:border-white/10">
+                    <p className="text-xs text-[oklch(0.50_0.010_270)] dark:text-slate-500">
+                        &copy; 2026 Cedar Property Compliance & Risk Suite.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                        <span className="cursor-pointer rounded-md border border-[oklch(0.91_0.006_270)] bg-[oklch(0.98_0.004_270)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.06em] text-[oklch(0.50_0.010_270)] transition-colors hover:text-[oklch(0.20_0.012_270)] dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:text-white">
+                            Privacy Policy
+                        </span>
+                        <span className="cursor-pointer rounded-md border border-[oklch(0.91_0.006_270)] bg-[oklch(0.98_0.004_270)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.06em] text-[oklch(0.50_0.010_270)] transition-colors hover:text-[oklch(0.20_0.012_270)] dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:text-white">
+                            Terms of Service
+                        </span>
+                        <span className="rounded-md border border-[oklch(0.62_0.24_278_/_0.25)] bg-[oklch(0.62_0.24_278_/_0.06)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.06em] text-[var(--accent)] dark:text-indigo-300">
+                            Pre-market Edition
+                        </span>
                     </div>
                 </div>
             </footer>

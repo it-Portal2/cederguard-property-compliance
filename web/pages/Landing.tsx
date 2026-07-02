@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowRight, ChevronDown, ChevronRight, Check } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronRight, Check, ShieldCheck, Landmark, Building2, Scale, Leaf, HardHat } from 'lucide-react';
 import MarketingImage from '../components/public/MarketingImage';
+import { WordPullUp } from '../components/public/WordPullUp';
 
 /** Alternating "feature spotlight" tile — a contained bento-style card with a
  *  balanced text side (eyebrow + heading + supporting line) and the product shot
@@ -52,6 +53,18 @@ function ShowcaseBand({
         </div>
     );
 }
+
+/** Real UK social-housing / regulatory bodies referenced throughout the app's
+ *  compliance content — shown as plain wordmarks (not copied logo artwork,
+ *  since we don't hold rights to any third-party logo files). */
+const trustedBodies: Array<{ icon: React.ComponentType<{ className?: string }>; label: string }> = [
+    { icon: ShieldCheck, label: 'Building Safety Regulator' },
+    { icon: Scale, label: 'Regulator of Social Housing' },
+    { icon: Building2, label: 'Homes England' },
+    { icon: Landmark, label: 'MHCLG' },
+    { icon: Leaf, label: 'DESNZ' },
+    { icon: HardHat, label: 'HSE' },
+];
 
 /* ═══════════════════════════════════════════════════
    UX MASTERPIECE: ANIMATION & STYLING CONSTANTS
@@ -393,132 +406,131 @@ export const Landing: React.FC = () => {
     return (
         <div className="bg-slate-50 dark:bg-[#030303] text-slate-800 dark:text-white/80 font-sans antialiased selection:bg-indigo-500/30 selection:text-indigo-900 dark:selection:text-white min-h-screen transition-colors duration-500">
             
-            {/* ── HERO SECTION (2-col split) ── */}
-            {/* min-h-[calc(100dvh-4.5rem)] subtracts the 72px sticky-nav height
-                so the hero fills the visible viewport below the bar without
-                forcing the user to scroll. pt-8/12 replaces the old pt-32/36
-                — the bar is already sitting at the top so the hero needs only
-                breathing room from the nav, not "push content down past a
-                floating pill" spacing. */}
-            <section className="relative min-h-[calc(100dvh-4.5rem)] flex items-center px-6 lg:px-12 overflow-hidden pt-8 md:pt-12 pb-16 md:pb-24">
+            {/* ── HERO SECTION (light panel, headline + CTAs, then a white
+                approach/trust card beside the dashboard shot) ── */}
+            {/* Fits entirely in the viewport below the 72px nav at lg+
+                (h = 100dvh − 4.5rem); the min-h floor lets very short windows
+                scroll instead of crushing/clipping the card row. */}
+            <section className="relative overflow-hidden px-6 pt-12 pb-14 lg:flex lg:h-[calc(100dvh-4.5rem)] lg:min-h-180 lg:px-12 lg:py-10">
                 {/* Background ambient lighting */}
-                <div className="absolute top-0 right-0 w-200 h-150 bg-indigo-100/40 dark:bg-indigo-500/10 blur-[120px] rounded-[100%] pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-150 h-100 bg-purple-100/30 dark:bg-purple-500/10 blur-[120px] rounded-[100%] pointer-events-none" />
+                <div className="pointer-events-none absolute -top-40 right-0 h-130 w-130 rounded-full bg-indigo-100/40 dark:bg-indigo-500/10 blur-[140px]" />
+                <div className="pointer-events-none absolute bottom-0 left-0 h-100 w-100 rounded-full bg-purple-100/30 dark:bg-purple-500/10 blur-[140px]" />
 
-                <div className="relative z-10 mx-auto w-full max-w-7xl grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] gap-12 lg:gap-20 items-center">
-
-                    {/* LEFT — copy column */}
-                    <div className="flex flex-col">
-                        <motion.div
-                            initial={{ opacity: 0, y: 12 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                            className="inline-flex items-center gap-2 self-start rounded-full bg-indigo-50 dark:bg-indigo-500/10 px-3 py-1.5 mb-8"
-                        >
-                            <span className="h-1.5 w-1.5 rounded-full bg-indigo-600 dark:bg-indigo-400" />
-                            <span className="text-[11px] font-semibold uppercase tracking-widest text-indigo-700 dark:text-indigo-300">
-                                Built for UK Social Housing Governance
-                            </span>
-                        </motion.div>
-
-                        <motion.h1
-                            initial={{ opacity: 0, y: 24 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 1, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-                            className="text-4xl sm:text-5xl md:text-6xl font-bold text-slate-900 dark:text-white leading-[1.05] tracking-[-0.03em] mb-6"
-                        >
-                            The operating system for{' '}
-                            <span className="text-indigo-600 dark:text-indigo-400">
-                                social housing governance
-                            </span>
-                        </motion.h1>
-
-                        <motion.p
-                            initial={{ opacity: 0, y: 16 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 1, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                            className="text-base md:text-lg text-slate-600 dark:text-white/60 leading-relaxed max-w-xl mb-10"
-                        >
-                            Manage governance, control risk and prove compliance across
-                            your housing programmes — in one intelligent system.
-                        </motion.p>
+                <div className="relative z-10 mx-auto w-full max-w-7xl lg:flex lg:flex-col">
+                    {/* Headline + CTAs */}
+                    <div className="max-w-5xl">
+                        <WordPullUp
+                            words={[
+                                { word: 'The' },
+                                { word: 'operating' },
+                                { word: 'system' },
+                                { word: 'for', breakAfter: true },
+                                { word: 'social', gradient: true },
+                                { word: 'housing', gradient: true },
+                                { word: 'governance', gradient: true },
+                            ]}
+                            delayChildren={0.15}
+                            className="text-4xl sm:text-6xl md:text-7xl lg:text-[clamp(40px,7vh,72px)] font-medium text-[oklch(0.20_0.012_270)] dark:text-white leading-[1.08] tracking-[-0.035em] mb-8"
+                        />
 
                         <motion.div
                             initial={{ opacity: 0, y: 12 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 1, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                            className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 mb-12"
+                            transition={{ duration: 1, delay: 1.1, ease: [0.16, 1, 0.3, 1] }}
+                            className="flex flex-col sm:flex-row items-start sm:items-center gap-4"
                         >
                             <Link
                                 to="/contact"
-                                className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-200 dark:shadow-indigo-900/40 transition-all duration-300 hover:bg-indigo-700 hover:scale-[1.02]"
+                                className="inline-flex items-center justify-center bg-indigo-600 px-7 py-4 text-[15px] font-medium text-white transition-colors duration-300 hover:bg-indigo-700"
                             >
                                 Book a demo
                             </Link>
                             <a
                                 href="#solution"
-                                className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors group"
+                                className="inline-flex items-center justify-center border border-slate-300 px-7 py-4 text-[15px] font-medium text-slate-900 transition-colors duration-300 hover:border-slate-400 hover:bg-slate-100 dark:border-white/40 dark:text-white dark:hover:border-white/70 dark:hover:bg-white/5"
                             >
                                 See how it works
-                                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
                             </a>
-                        </motion.div>
-
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ duration: 1, delay: 0.7 }}
-                            className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-6 text-[11px] text-slate-500 dark:text-white/40"
-                        >
-                            <p>Trusted by UK social housing delivery teams</p>
-                            <span className="hidden sm:inline-block h-1 w-1 rounded-full bg-slate-300 dark:bg-white/20" />
-                            <p>Built for real council governance workflows</p>
                         </motion.div>
                     </div>
 
-                    {/* RIGHT — laptop showcase */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 32 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 1.2, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                        className="relative w-full hidden lg:block"
-                        style={{ perspective: "2000px" }}
-                    >
-                        <div className="absolute -inset-1.5 bg-gradient-to-tr from-indigo-500 via-cyan-400 to-purple-500 rounded-lg blur-xl opacity-15 dark:opacity-25" />
-                        <motion.img
-                            whileHover={{ rotateX: 1, rotateY: -1, scale: 1.01 }}
-                            transition={{ duration: 0.5 }}
-                            src={`${import.meta.env.BASE_URL}dashboard.jpg`}
-                            alt="CedarGuard Risk Management dashboard preview"
-                            title="CedarGuard — Risk Management dashboard"
-                            className="relative w-full h-auto rounded-xl shadow-[0_40px_100px_rgba(0,0,0,0.18)] dark:shadow-[0_40px_100px_rgba(0,0,0,0.6)] border border-slate-200/70 dark:border-white/10 ring-1 ring-black/5"
-                        />
-                    </motion.div>
+                    {/* Approach / trust card + real photo — fills the remaining
+                        viewport height at lg (flex-1 on a fixed-height section) */}
+                    <div className="mt-12 grid grid-cols-1 gap-7 lg:mt-9 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
+                        {/* LEFT — white card: Our Approach + Trusted By marquee */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 24 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 1, delay: 1.3, ease: [0.16, 1, 0.3, 1] }}
+                            className='group relative flex min-w-0 flex-col overflow-hidden border border-[oklch(0.91_0.006_270)] bg-white p-9 transition-[transform,border-color,box-shadow,background] duration-[320ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] hover:-translate-y-1 hover:scale-[1.01] hover:border-[oklch(0.62_0.24_278_/_0.45)] hover:shadow-[0_0_0_1px_oklch(0.62_0.24_278_/_0.20),0_20px_40px_-16px_oklch(0.62_0.24_278_/_0.30),0_0_60px_-10px_oklch(0.62_0.24_278_/_0.22)] before:pointer-events-none before:absolute before:inset-0 before:z-0 before:bg-[radial-gradient(60%_80%_at_50%_0%,oklch(0.62_0.24_278_/_0.14),transparent_70%)] before:opacity-0 before:transition-opacity before:duration-[320ms] before:content-[""] hover:before:opacity-100 lg:p-10'
+                        >
+                            <div className="relative z-[1] mb-6 flex items-center gap-2.5">
+                                <span className="h-2.5 w-2.5 bg-indigo-600" />
+                                <span className="text-[15px] text-slate-500">
+                                    Our Approach
+                                </span>
+                            </div>
+                            <p className="relative z-[1] max-w-lg text-[22px] leading-[1.45] text-slate-900 sm:text-2xl">
+                                We help housing leaders define clear governance direction, and
+                                build compliant risk-management systems that scale with delivery.
+                            </p>
 
-                    {/* Mobile / tablet: showcase below the copy */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 24 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 1, delay: 0.6 }}
-                        className="lg:hidden w-full max-w-lg mx-auto"
-                    >
-                        <img
-                            src={`${import.meta.env.BASE_URL}dashboard.jpg`}
-                            alt="CedarGuard dashboard preview"
-                            className="w-full h-auto rounded-lg shadow-xl border border-slate-200 dark:border-white/10"
-                        />
-                    </motion.div>
+                            <div className="relative z-[1] mt-auto pt-10">
+                                <div className="mb-2 flex items-center gap-2.5">
+                                    <span className="h-2.5 w-2.5 bg-indigo-600" />
+                                    <span className="text-[15px] text-slate-500">
+                                        Trusted By
+                                    </span>
+                                </div>
+                                <p className="mb-6 text-sm text-slate-400">
+                                    Trusted across UK social housing &amp; PMOs
+                                </p>
+
+                                {/* Marquee bleeds edge-to-edge across the card (past its padding),
+                                    logos slide under both edges — infinite loop */}
+                                <div
+                                    className="relative -mx-9 overflow-hidden lg:-mx-10"
+                                    style={{
+                                        maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)',
+                                        WebkitMaskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)',
+                                    }}
+                                >
+                                    <motion.div
+                                        className="flex w-max items-center gap-14 py-1"
+                                        animate={{ x: ['0%', '-50%'] }}
+                                        transition={{ duration: 24, repeat: Infinity, ease: 'linear' }}
+                                    >
+                                        {[...trustedBodies, ...trustedBodies].map(({ icon: Icon, label }, i) => (
+                                            <span
+                                                key={i}
+                                                className="flex shrink-0 items-center gap-2.5 whitespace-nowrap text-slate-500"
+                                            >
+                                                <Icon className="h-5 w-5" />
+                                                <span className="text-[15px] font-semibold">{label}</span>
+                                            </span>
+                                        ))}
+                                    </motion.div>
+                                </div>
+                            </div>
+                        </motion.div>
+
+                        {/* RIGHT — real photo */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 32 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 1.2, delay: 1.3, ease: [0.16, 1, 0.3, 1] }}
+                            className="relative min-h-70 overflow-hidden border border-[oklch(0.91_0.006_270)] lg:min-h-0 dark:border-white/10"
+                        >
+                            <img
+                                src={`${import.meta.env.BASE_URL}dashboard.jpg`}
+                                alt="CedarGuard Risk Management dashboard preview"
+                                title="CedarGuard — Risk Management dashboard"
+                                fetchPriority="high"
+                                className="absolute inset-0 h-full w-full object-cover object-top"
+                            />
+                        </motion.div>
+                    </div>
                 </div>
-
-                {/* Scroll Indicator */}
-                <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 2, duration: 1 }}
-                    className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3"
-                >
-                    <div className="w-[1px] h-12 bg-gradient-to-b from-white/20 to-transparent" />
-                </motion.div>
             </section>
 
             {/* ── RISK MANAGEMENT FAILURE ── */}
