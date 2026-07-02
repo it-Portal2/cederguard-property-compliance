@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { AlertCircle, CheckCircle2, XCircle, Loader2, RefreshCw, Inbox } from 'lucide-react';
 import { api } from '../../lib/api';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 const STATUS_BADGES: Record<string, { label: string; color: string }> = {
     pending: { label: 'Pending', color: 'text-amber-700 bg-amber-50' },
@@ -8,11 +9,17 @@ const STATUS_BADGES: Record<string, { label: string; color: string }> = {
     rejected: { label: 'Rejected', color: 'text-red-700 bg-red-50' },
 };
 
+type ConfirmState = { type: 'approve' | 'reject'; request: any } | null;
+
 export function AccessRequestsTab({ isAdmin }: { isAdmin: boolean }) {
     const [requests, setRequests] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [acting, setActing] = useState<string | null>(null);
+    const [confirm, setConfirm] = useState<ConfirmState>(null);
+    const [rejectReason, setRejectReason] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+    const trapRef = useFocusTrap<HTMLDivElement>(!!confirm);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -30,28 +37,39 @@ export function AccessRequestsTab({ isAdmin }: { isAdmin: boolean }) {
 
     useEffect(() => { if (isAdmin) load(); }, [isAdmin, load]);
 
-    const handleApprove = async (id: string) => {
-        setActing(id);
-        setError(null);
-        try {
-            await api.adminApproveAccessRequest(id);
-            await load();
-        } catch (e: any) {
-            setError('Approve failed: ' + e.message);
-        } finally {
-            setActing(null);
-        }
+    const closeConfirm = () => {
+        setConfirm(null);
+        setRejectReason('');
     };
 
-    const handleReject = async (id: string) => {
-        setActing(id);
+    useEffect(() => {
+        if (!confirm) return;
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && !submitting) closeConfirm();
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [confirm, submitting]);
+
+    const runConfirmedAction = async () => {
+        if (!confirm) return;
+        const { type, request } = confirm;
+        setSubmitting(true);
+        setActing(request.id);
         setError(null);
         try {
-            await api.adminRejectAccessRequest(id);
+            if (type === 'approve') {
+                await api.adminApproveAccessRequest(request.id);
+            } else {
+                await api.adminRejectAccessRequest(request.id, rejectReason.trim() || undefined);
+            }
+            closeConfirm();
             await load();
         } catch (e: any) {
-            setError('Reject failed: ' + e.message);
+            setError(`${type === 'approve' ? 'Approve' : 'Reject'} failed: ${e.message}`);
         } finally {
+            setSubmitting(false);
             setActing(null);
         }
     };
@@ -59,6 +77,8 @@ export function AccessRequestsTab({ isAdmin }: { isAdmin: boolean }) {
     const pending = requests.filter(r => r.status === 'pending');
 
     if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-indigo-500" /></div>;
+
+    const confirmName = confirm?.request?.displayName || confirm?.request?.email || 'this user';
 
     return (
         <div className="space-y-4">
@@ -78,8 +98,8 @@ export function AccessRequestsTab({ isAdmin }: { isAdmin: boolean }) {
             )}
 
             {!error && (
-            <div className="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm">
-                <table className="w-full text-sm">
+            <div className="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm overflow-x-auto">
+                <table className="w-full text-sm min-w-[720px]">
                     <thead className="bg-slate-50 border-b border-slate-200">
                         <tr>
                             <th className="text-left px-4 py-3 font-mono uppercase tracking-wide text-[11px] font-medium text-slate-500">Requester</th>
@@ -116,25 +136,23 @@ export function AccessRequestsTab({ isAdmin }: { isAdmin: boolean }) {
                                             {badge.label}
                                         </span>
                                     </td>
-                                    <td className="px-4 py-3 text-right">
+                                    <td className="px-4 py-3">
                                         {r.status === 'pending' && (
                                             acting === r.id ? (
-                                                <Loader2 className="w-4 h-4 animate-spin text-indigo-400 ml-auto" />
+                                                <div className="flex justify-end"><Loader2 className="w-4 h-4 animate-spin text-indigo-400" /></div>
                                             ) : (
                                                 <div className="flex items-center justify-end gap-2">
                                                     <button
-                                                        onClick={() => handleApprove(r.id)}
-                                                        title="Approve — promotes to Project Manager"
-                                                        className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-600 transition-colors"
+                                                        onClick={() => setConfirm({ type: 'approve', request: r })}
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
                                                     >
-                                                        <CheckCircle2 className="w-4 h-4" />
+                                                        <CheckCircle2 className="w-4 h-4" /> Approve
                                                     </button>
                                                     <button
-                                                        onClick={() => handleReject(r.id)}
-                                                        title="Reject"
-                                                        className="p-1.5 rounded-lg hover:bg-red-50 text-red-600 transition-colors"
+                                                        onClick={() => setConfirm({ type: 'reject', request: r })}
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
                                                     >
-                                                        <XCircle className="w-4 h-4" />
+                                                        <XCircle className="w-4 h-4" /> Reject
                                                     </button>
                                                 </div>
                                             )
@@ -146,6 +164,65 @@ export function AccessRequestsTab({ isAdmin }: { isAdmin: boolean }) {
                     </tbody>
                 </table>
             </div>
+            )}
+
+            {confirm && (
+                <div className="fixed inset-0 z-[100] bg-black/40 flex items-center justify-center p-4" onClick={(e) => e.target === e.currentTarget && !submitting && closeConfirm()}>
+                    <div
+                        ref={trapRef}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="access-confirm-title"
+                        tabIndex={-1}
+                        className="bg-white rounded-xl shadow-xl max-w-md w-full p-6"
+                    >
+                        <div className="flex items-center gap-2">
+                            {confirm.type === 'approve'
+                                ? <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                                : <XCircle className="w-5 h-5 text-red-600" />}
+                            <h3 id="access-confirm-title" className="text-lg font-semibold text-slate-800">
+                                {confirm.type === 'approve' ? 'Approve access request' : 'Reject access request'}
+                            </h3>
+                        </div>
+
+                        {confirm.type === 'approve' ? (
+                            <p className="text-sm text-slate-600 mt-3">
+                                This will grant <strong>{confirmName}</strong> Project Manager access. They'll be notified by email.
+                            </p>
+                        ) : (
+                            <>
+                                <p className="text-sm text-slate-600 mt-3">
+                                    Reject the access request from <strong>{confirmName}</strong>? They'll be notified by email, including the reason below if you provide one.
+                                </p>
+                                <textarea
+                                    className="w-full mt-3 border border-slate-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    rows={3}
+                                    placeholder="Reason for rejection (optional)"
+                                    value={rejectReason}
+                                    onChange={e => setRejectReason(e.target.value)}
+                                />
+                            </>
+                        )}
+
+                        <div className="flex justify-end gap-2 mt-5">
+                            <button
+                                onClick={closeConfirm}
+                                disabled={submitting}
+                                className="px-4 py-2 text-sm text-slate-600 hover:text-slate-800 disabled:opacity-60"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={runConfirmedAction}
+                                disabled={submitting}
+                                className={`px-4 py-2 text-sm font-semibold text-white rounded-lg transition-colors disabled:opacity-60 flex items-center gap-2 ${confirm.type === 'approve' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700'}`}
+                            >
+                                {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                                {confirm.type === 'approve' ? 'Approve' : 'Reject'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

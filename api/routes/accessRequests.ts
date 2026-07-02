@@ -1,6 +1,8 @@
 import { ApiContext } from '../lib/context.js';
 import { logActivity } from '../lib/activityLog.js';
-import { sendEmail, escapeHtml } from '../lib/email.js';
+import { sendEmail, escapeHtml, renderEmail } from '../lib/email.js';
+
+const APP_URL = (process.env.APP_URL || 'https://cedarguard.co.uk').replace(/\/+$/, '');
 import { adminRoutes } from './admin.js';
 
 const ACCESS_REQUESTS = 'accessRequests';
@@ -88,11 +90,20 @@ export const accessRequestsRoutes: Record<string, (req: any, res: any, ctx: ApiC
 
     try {
       const admins = await resolveTenantAdmins(db, primaryUid);
+      const reasonBlock = cappedReason
+        ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0 4px;"><tr><td style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:12px 16px;font-size:13px;line-height:1.6;color:#475569;"><span style="display:block;font-weight:600;color:#334155;margin-bottom:4px;">Reason provided</span>${escapeHtml(cappedReason)}</td></tr></table>`
+        : `<p style="margin:16px 0 4px;font-size:13px;color:#94a3b8;">No reason was provided.</p>`;
+      const adminHtml = renderEmail({
+        previewText: `${displayLabel} has requested Project Manager access.`,
+        heading: 'New access request',
+        bodyHtml: `<p style="margin:0 0 4px;"><strong>${escapeHtml(displayLabel)}</strong> has requested <strong>Project Manager</strong> access to your CedarGuard workspace.</p>${reasonBlock}`,
+        cta: { label: 'Review in Admin Panel', url: `${APP_URL}/admin` },
+      });
       for (const admin of admins) {
         await sendEmail({
           to: admin.email,
           subject: `Access request from ${displayLabel}`,
-          html: `<p><strong>${escapeHtml(displayLabel)}</strong> has requested Project Manager access to your CedarGuard workspace.</p><p>Reason: ${cappedReason ? escapeHtml(cappedReason) : '(none given)'}</p><p>Review it in Admin Panel &rarr; Access Requests.</p>`,
+          html: adminHtml,
         });
       }
     } catch (e: any) {
@@ -167,7 +178,12 @@ export const accessRequestsRoutes: Record<string, (req: any, res: any, ctx: ApiC
       await sendEmail({
         to: reqData.email,
         subject: 'Your CedarGuard access request was approved',
-        html: `<p>Hi ${escapeHtml(reqData.displayName || '')},</p><p>Your request for Project Manager access has been approved. Please refresh CedarGuard to see your new permissions.</p>`,
+        html: renderEmail({
+          previewText: 'Your Project Manager access has been approved.',
+          heading: 'Access approved',
+          bodyHtml: `<p style="margin:0 0 12px;">Hi ${escapeHtml(reqData.displayName || 'there')},</p><p style="margin:0 0 12px;">Your request for <strong>Project Manager</strong> access to CedarGuard has been approved.</p><p style="margin:0;">Please refresh CedarGuard — or sign out and back in — to see your new permissions.</p>`,
+          cta: { label: 'Open CedarGuard', url: APP_URL },
+        }),
       });
     } catch (e: any) {
       console.error('[adminApproveAccessRequest] email failed (non-fatal):', e?.message || e);
@@ -192,13 +208,14 @@ export const accessRequestsRoutes: Record<string, (req: any, res: any, ctx: ApiC
       return res.status(200).json({ success: true, status: reqData.status, unchanged: true });
     }
 
+    const cappedReason = reason ? String(reason).slice(0, 500) : null;
     const now = new Date().toISOString();
     await reqRef.set({
       status: 'rejected',
       reviewedAt: now,
       reviewedBy: uid,
       reviewerEmail: email,
-      ...(reason ? { rejectionReason: String(reason).slice(0, 500) } : {}),
+      ...(cappedReason ? { rejectionReason: cappedReason } : {}),
     }, { merge: true });
 
     await logActivity(ctx, 'access_request_rejected', {
@@ -206,8 +223,25 @@ export const accessRequestsRoutes: Record<string, (req: any, res: any, ctx: ApiC
       entityType: 'accessRequest',
       entityId: requestId,
       entityName: reqData.displayName || reqData.email,
-      details: { reason: reason || null },
+      details: { reason: cappedReason },
     });
+
+    try {
+      const reasonBlock = cappedReason
+        ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0 4px;"><tr><td style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:12px 16px;font-size:13px;line-height:1.6;color:#475569;"><span style="display:block;font-weight:600;color:#334155;margin-bottom:4px;">Reason</span>${escapeHtml(cappedReason)}</td></tr></table>`
+        : '';
+      await sendEmail({
+        to: reqData.email,
+        subject: 'Update on your CedarGuard access request',
+        html: renderEmail({
+          previewText: 'An update on your CedarGuard access request.',
+          heading: 'Access request declined',
+          bodyHtml: `<p style="margin:0 0 12px;">Hi ${escapeHtml(reqData.displayName || 'there')},</p><p style="margin:0 0 4px;">After review, your request for <strong>Project Manager</strong> access to CedarGuard was not approved at this time.</p>${reasonBlock}<p style="margin:16px 0 0;">If you believe this was in error, please contact your workspace admin.</p>`,
+        }),
+      });
+    } catch (e: any) {
+      console.error('[adminRejectAccessRequest] email failed (non-fatal):', e?.message || e);
+    }
 
     return res.status(200).json({ success: true, status: 'rejected' });
   },
