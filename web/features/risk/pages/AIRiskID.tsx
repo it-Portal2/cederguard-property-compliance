@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useStore } from "../../../store/useStore";
+import { useAccessRequestStore } from "../../../store/accessRequestStore";
 import { analyzeRisks, analyzeStrategicRisks } from "../../../services/aiService";
 import { Link, useSearchParams, useNavigate } from "react-router";
 import {
@@ -53,6 +54,7 @@ export function AIRiskID() {
     updateProgramme,
     strategicRiskAnalysis,
     setStrategicRiskAnalysis,
+    user,
   } = useStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | ApiError | null>(null);
@@ -136,6 +138,10 @@ export function AIRiskID() {
   }, [activeProjectId, activeProgrammeId, projects, programmes, searchParams]);
 
   const runAnalysis = async () => {
+    if ((user?.role || user?.profile?.role) === "viewer") {
+      useAccessRequestStore.getState().open("analyzeRisks");
+      return;
+    }
     const activeDetails =
       (activeProjectId
         ? projects.find((p) => p.id === activeProjectId)

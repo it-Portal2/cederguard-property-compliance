@@ -338,34 +338,35 @@ export function Sidebar() {
 
         <SidebarFilterContext.Provider value={{ query: navQuery }}>
           <div className="flex-1 overflow-y-auto pb-3 px-2 space-y-1">
-            {/* OVERVIEW */}
-            {hasCoreAccess && (
-              <NavGroup
-                label="Overview"
-                isAdmin={hasCoreAccess}
-                isOpen={openGroup === "Overview"}
-                onToggle={() => toggleGroup("Overview")}
-              >
-                <NavItem
-                  to="/dashboard"
-                  icon={LayoutDashboard}
-                  label="Dashboard"
-                />
-                <NavItem
-                  to="/chat"
-                  icon={MessageSquare}
-                  label="AI Chat"
-                  iconClass="text-indigo-500"
-                />
-                <NavItem to="/calendar" icon={CalendarIcon} label="Calendar" />
-                <NavItem to="/my-tasks" icon={CheckSquare} label="My Tasks" />
-                <NavItem
-                  to="/projects"
-                  icon={FolderKanban}
-                  label="All Projects"
-                />
-              </NavGroup>
-            )}
+            {/* OVERVIEW — always visible to any signed-in user (viewer
+                included), matching how Compliance/Risk Management already
+                behave. AI Chat still redirects non-PM+ users via its own
+                RoleGuard on the /chat route, so it's safe to list here. */}
+            <NavGroup
+              label="Overview"
+              isAdmin={hasCoreAccess}
+              isOpen={openGroup === "Overview"}
+              onToggle={() => toggleGroup("Overview")}
+            >
+              <NavItem
+                to="/dashboard"
+                icon={LayoutDashboard}
+                label="Dashboard"
+              />
+              <NavItem
+                to="/chat"
+                icon={MessageSquare}
+                label="AI Chat"
+                iconClass="text-indigo-500"
+              />
+              <NavItem to="/calendar" icon={CalendarIcon} label="Calendar" />
+              <NavItem to="/my-tasks" icon={CheckSquare} label="My Tasks" />
+              <NavItem
+                to="/projects"
+                icon={FolderKanban}
+                label="All Projects"
+              />
+            </NavGroup>
 
             {/* PROGRAMME INITIATION */}
             {canNewProgramme && (

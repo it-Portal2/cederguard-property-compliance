@@ -2,12 +2,16 @@ import { useEffect, useState } from 'react';
 import { PenTool, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '../../../../lib/api';
+import { useStore } from '../../../../store/useStore';
+import { useAccessRequestStore } from '../../../../store/accessRequestStore';
 import { AssetDropZone } from './AssetDropZone';
 import { fileToDataUri, validateImageFile } from './fileToBase64';
 
 const ALLOWED_TYPES = ['image/png', 'image/jpeg'];
 
 export function SignatureUpload() {
+  const user = useStore((s) => s.user);
+  const isViewer = (user?.role || user?.profile?.role) === 'viewer';
   const [currentUrl, setCurrentUrl] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -34,6 +38,10 @@ export function SignatureUpload() {
   }, []);
 
   const handleUpload = async (file: File) => {
+    if (isViewer) {
+      useAccessRequestStore.getState().open('governanceUploadUserSignature');
+      return;
+    }
     const issue = validateImageFile(file, ALLOWED_TYPES);
     if (issue) {
       toast.error(issue);
@@ -55,6 +63,10 @@ export function SignatureUpload() {
   };
 
   const handleDelete = async () => {
+    if (isViewer) {
+      useAccessRequestStore.getState().open('governanceDeleteUserSignature');
+      return;
+    }
     if (busy) return;
     setBusy(true);
     try {

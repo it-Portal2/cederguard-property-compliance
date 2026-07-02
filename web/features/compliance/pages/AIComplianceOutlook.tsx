@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { analyzeContextSentence } from "../../../services/aiService";
 import { useStore } from "../../../store/useStore";
+import { useAccessRequestStore } from "../../../store/accessRequestStore";
 import ValidateButton from "../../../components/validation/ValidateButton";
 import { versionedTargetId } from "../../../lib/validation";
 import PageHeader from "../../../components/PageHeader";
@@ -62,6 +63,7 @@ export function AIComplianceOutlook() {
     activeProgrammeId,
     activeProject,
     activeProgramme,
+    user,
   } = useStore();
 
   const [loading,      setLoading]      = useState(false);
@@ -93,6 +95,10 @@ export function AIComplianceOutlook() {
     (outlookValidation?.status ?? "unchecked") !== "validated";
 
   const runAnalysis = async () => {
+    if ((user?.role || user?.profile?.role) === "viewer") {
+      useAccessRequestStore.getState().open("analyzeCompliance");
+      return;
+    }
     if (!sentence.trim()) return;
     setError("");
     setLoading(true);

@@ -11,6 +11,7 @@ import {
     FileText,
 } from 'lucide-react';
 import { useStore } from '../../../store/useStore';
+import { useAccessRequestStore } from '../../../store/accessRequestStore';
 import ValidateButton from '../../../components/validation/ValidateButton';
 import { versionedTargetId } from '../../../lib/validation';
 import PageHeader from '../../../components/PageHeader';
@@ -43,7 +44,7 @@ const itemVariants: Variants = {
 };
 
 export function AIControlSuggestions() {
-    const { risks, updateRisk, activeProject, activeProgramme, activeProjectId, activeProgrammeId, projectInfo, pendingMutations } = useStore();
+    const { risks, updateRisk, activeProject, activeProgramme, activeProjectId, activeProgrammeId, projectInfo, pendingMutations, user } = useStore();
     const isRiskPending = (id: string) => pendingMutations.has(`risk:${id}`);
     const [isAutoLoading,     setIsAutoLoading]     = useState(false);
     const [isManualLoading,   setIsManualLoading]   = useState(false);
@@ -69,6 +70,10 @@ export function AIControlSuggestions() {
         (mitigationValidation?.status ?? 'unchecked') !== 'validated';
 
     const runAutomatedAnalysis = async () => {
+        if ((user?.role || user?.profile?.role) === 'viewer') {
+            useAccessRequestStore.getState().open('analyzeControls');
+            return;
+        }
         if (highRisks.length === 0) {
             setError('No high-rated open risks to analyze.');
             return;
@@ -87,6 +92,10 @@ export function AIControlSuggestions() {
     };
 
     const runManualAnalysis = async () => {
+        if ((user?.role || user?.profile?.role) === 'viewer') {
+            useAccessRequestStore.getState().open('analyzeRisks');
+            return;
+        }
         if (!manualSentence.trim()) return;
         setError('');
         setIsManualLoading(true);

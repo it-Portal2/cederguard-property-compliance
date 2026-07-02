@@ -1,5 +1,6 @@
 import { authBridge } from "./auth/authBridge";
 import { isDesktop } from "./desktop/isDesktop";
+import { useAccessRequestStore } from "../store/accessRequestStore";
 
 const getAuthHeaders = async () => {
   const token = await authBridge.getIdToken();
@@ -81,6 +82,12 @@ async function callApi(
         if (typeof parsed.code === "string") code = parsed.code;
       } catch (e) {
         msg = textResponse || `${res.status} ${res.statusText}`;
+      }
+      if (code === "ACCESS_RESTRICTED") {
+        // Global safety net: surface the shared Request Access modal even for
+        // calls that weren't pre-gated client-side. Callers still receive the
+        // thrown ApiError for their own try/catch/loading-state handling.
+        useAccessRequestStore.getState().open(action);
       }
       throw new ApiError(msg, res.status, retryAfter, { code });
     }
@@ -304,6 +311,15 @@ export const api = {
     callApi("adminGetActivity", limit ? { limit } : {}),
   adminGetProjects: () => callApi("adminGetProjects"),
   adminGetProgrammes: () => callApi("adminGetProgrammes"),
+
+  getMyAccessRequest: () => callApi("getMyAccessRequest"),
+  createAccessRequest: (reason?: string, attemptedAction?: string) =>
+    callApi("createAccessRequest", { reason, attemptedAction }),
+  adminGetAccessRequests: () => callApi("adminGetAccessRequests"),
+  adminApproveAccessRequest: (requestId: string) =>
+    callApi("adminApproveAccessRequest", { requestId }),
+  adminRejectAccessRequest: (requestId: string, reason?: string) =>
+    callApi("adminRejectAccessRequest", { requestId, reason }),
   getAssignablePMs: () => callApi("getAssignablePMs"),
   clientGetProgrammeManagers: () => callApi("clientGetProgrammeManagers"),
 

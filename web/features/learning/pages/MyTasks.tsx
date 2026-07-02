@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router";
 import { useStore, TaskItem } from "../../../store/useStore";
+import { useAccessRequestStore } from "../../../store/accessRequestStore";
 import { clsx } from "clsx";
 import toast from "react-hot-toast";
 import { StatsCard } from "../../../components/common/StatsCard";
@@ -319,6 +320,10 @@ export function MyTasks() {
   }, [allItems]);
 
   const openAddModal = () => {
+    if ((user?.role || user?.profile?.role) === "viewer") {
+      useAccessRequestStore.getState().open("saveData");
+      return;
+    }
     setModalMode("add");
     setCurrentTask({
       title: "",

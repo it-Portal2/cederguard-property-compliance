@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams, Link } from "react-router";
 import { ClipboardList, ScanSearch, ShieldCheck, AlertCircle, AlertTriangle, Loader2, Check, ArrowRight, ArrowLeft, CheckCircle2, Info, Trash2, Lock, ChevronDown, ChevronUp, Layers, FolderKanban, Target } from 'lucide-react';
 import { clsx } from "clsx";
 import { useStore } from "../../../store/useStore";
+import { useAccessRequestStore } from "../../../store/accessRequestStore";
 import { analyzeCompliance } from "../../../services/aiService";
 import { COMPLIANCE_ITEMS } from "../../../data/complianceData";
 import {
@@ -809,6 +810,10 @@ export function ComplianceSetup() {
   // Analysis variables consolidated at component top
 
   const runAnalysis = async () => {
+    if ((user?.role || user?.profile?.role) === "viewer") {
+      useAccessRequestStore.getState().open("analyzeCompliance");
+      return;
+    }
     const finalName =
       projectInfo.name ||
       (activeDetails as any)?.name ||

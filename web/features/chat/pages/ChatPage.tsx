@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { clsx } from "clsx";
 import { useStore } from "../../../store/useStore";
+import { useAccessRequestStore } from "../../../store/accessRequestStore";
 import { useChatStream } from "../../../hooks/useChatStream";
 import { ChatMessage } from "../../../components/chat/ChatMessage";
 import { ChatComposer } from "../../../components/chat/ChatComposer";
@@ -123,7 +124,7 @@ function storedModelId(): string {
 }
 
 export function ChatPage() {
-  const { activeProject, activeProgramme } = useStore();
+  const { activeProject, activeProgramme, user } = useStore();
   const [inputValue, setInputValue] = useState("");
   const [showScrollBtn, setShowScrollBtn] = useState(false);
 
@@ -200,9 +201,15 @@ export function ChatPage() {
   const send = useCallback(
     (text: string) => {
       if (!text.trim()) return;
+      // Viewers can open and read the chat page, but sending is blocked —
+      // surface the Request Access modal instead of firing the AI call.
+      if ((user?.role || user?.profile?.role) === "viewer") {
+        useAccessRequestStore.getState().open("chatStream");
+        return;
+      }
       sendMessage(text, { model: selectedModel });
     },
-    [sendMessage, selectedModel],
+    [sendMessage, selectedModel, user],
   );
 
   // Track scroll position to show/hide "scroll to bottom" button

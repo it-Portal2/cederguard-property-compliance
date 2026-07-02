@@ -4,6 +4,7 @@ import { X, Save, Loader2, Key, Trash2, AlertTriangle, BellRing } from 'lucide-r
 import { useNavigate } from 'react-router';
 import { authBridge } from '../lib/auth/authBridge';
 import { useStore } from '../store/useStore';
+import { useAccessRequestStore } from '../store/accessRequestStore';
 import { SignatureUpload } from '../features/governance/components/branding/SignatureUpload';
 
 interface ProfileSettingsModalProps {
@@ -29,6 +30,7 @@ export function ProfileSettingsModal({ isOpen, onClose }: ProfileSettingsModalPr
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
     const navigate = useNavigate();
     const setUser = useStore(state => state.setUser);
+    const user = useStore(state => state.user);
 
     useEffect(() => {
         if (isOpen) {
@@ -60,6 +62,10 @@ export function ProfileSettingsModal({ isOpen, onClose }: ProfileSettingsModalPr
     };
 
     const handleSave = async () => {
+        if ((user?.role || user?.profile?.role) === 'viewer') {
+            useAccessRequestStore.getState().open('saveProfile');
+            return;
+        }
         setIsSaving(true);
         setMessage(null);
         try {

@@ -1,5 +1,6 @@
 import { allRoutes } from './routes/index.js';
 import { createContext } from './lib/context.js';
+import { blockIfViewerRestricted } from './lib/viewerGate.js';
 
 export const maxDuration = 120;
 
@@ -45,6 +46,7 @@ export default async function handler(req: any, res: any) {
 
   if (req.method === 'POST') {
     if (allRoutes[action]) {
+      if (blockIfViewerRestricted(req, res, ctx, action)) return;
       try {
         return await allRoutes[action](req, res, ctx);
       } catch (e: any) {

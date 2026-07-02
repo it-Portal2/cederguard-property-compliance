@@ -712,6 +712,11 @@ export interface AppState {
   user: any;
   isInitialized: boolean;
   setUser: (user: any) => void;
+  // Cached "does this viewer already have a pending access request?" flag.
+  // Primed once at login (viewers only) and kept correct by the Request
+  // Access modal, so it renders instantly instead of fetching on every open.
+  hasPendingAccessRequest: boolean;
+  setHasPendingAccessRequest: (v: boolean) => void;
   isDarkMode: boolean;
   toggleDarkMode: () => void;
   isMarketingDarkMode: boolean;
@@ -1138,6 +1143,8 @@ export const useStore = create<AppState>((set, get) => {
   // previous session), leaving the store user as the bare Firebase auth object
   // (no .role), which makes all role-gated sidebar items invisible.
   setUser: (user) => set({ user, isInitialized: false }),
+  hasPendingAccessRequest: false,
+  setHasPendingAccessRequest: (v) => set({ hasPendingAccessRequest: v }),
   isDarkMode: false,
   toggleDarkMode: () => {
     const next = !get().isDarkMode;
@@ -2528,9 +2535,22 @@ export const useStore = create<AppState>((set, get) => {
             email: firestoreProfile.email ?? authUser?.email,
             photoURL,
             displayName,
+            // Firebase Auth-only field (Firestore's profile doc has no
+            // equivalent — it stores `createdAt` under a different key).
+            // Dashboard's first-login onboarding modal gates on this.
+            creationTime: authUser?.creationTime ?? null,
           },
           clientId: firestoreProfile.clientId || null,
         });
+
+        // Prime the viewer's access-request status once at login (fire-and-forget,
+        // viewers only) so the Request Access modal renders from cache instantly
+        // instead of fetching on every open. Never blocks init.
+        if (firestoreProfile.role === 'viewer') {
+          api.getMyAccessRequest()
+            .then((r: any) => set({ hasPendingAccessRequest: !!r?.pending }))
+            .catch(() => {});
+        }
 
         // Persist missing fields to Firestore non-blocking so future loads
         // also carry them (fixes "image gone after refresh" for new users).

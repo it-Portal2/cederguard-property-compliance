@@ -3,6 +3,7 @@ import { useLocation } from 'react-router';
 import { X, ScanSearch, Send, MessageSquare, ShieldCheck, Loader2, ServerCog, HelpCircle, ArrowRight, AlertTriangle, Copy, Check } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useStore } from '../store/useStore';
+import { useAccessRequestStore } from '../store/accessRequestStore';
 import { stripMarkdown } from '../lib/utils';
 import { chatWithAI } from '../services/aiService';
 import { calculateMatrixScore } from '../data/riskScoringMatrix';
@@ -213,6 +214,10 @@ export function AIInquiryPopup({ isOpen: controlledIsOpen, onClose: controlledOn
 
   const handleSend = async (text: string = input) => {
     if (!text.trim() || isTyping) return;
+    if ((user?.role || user?.profile?.role) === 'viewer') {
+      useAccessRequestStore.getState().open('chatWithAI');
+      return;
+    }
 
     const userMsg: Message = {
       id: Date.now().toString(),

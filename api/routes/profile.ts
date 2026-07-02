@@ -98,12 +98,13 @@ export const profileRoutes: Record<string, (req: any, res: any, ctx: ApiContext)
               await db.collection('invitations').doc(invSnap.docs[0].id).delete();
             }
           } else {
-            // No invitation and no role: assign default Project Manager role
+            // No invitation and no role: assign default read-only Viewer role.
+            // Invitation-based signups above are unaffected — an admin explicitly
+            // invited that person, so they still land as project_manager immediately.
             const now = new Date().toISOString();
             await db.collection('users').doc(uid).set({
               email,
-              role: 'project_manager',
-              pmLevel: 'standard',
+              role: 'viewer',
               supervisorUid: null,
               updatedAt: now,
               ...(!profileData.createdAt ? { createdAt: now } : {}),
@@ -112,8 +113,7 @@ export const profileRoutes: Record<string, (req: any, res: any, ctx: ApiContext)
             profileData = {
               ...profileData,
               email,
-              role: 'project_manager',
-              pmLevel: 'standard',
+              role: 'viewer',
               supervisorUid: null
             };
           }

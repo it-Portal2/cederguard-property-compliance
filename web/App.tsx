@@ -72,6 +72,8 @@ import { ProfileSettingsModal } from './components/ProfileSettingsModal';
 import { GlobalAIAssistant } from './components/GlobalAIAssistant';
 import DemoModeBanner from './components/DemoModeBanner';
 import { CommandPalette } from './components/CommandPalette';
+import { RequestAccessModal } from './components/RequestAccessModal';
+import { useAccessRequestStore } from './store/accessRequestStore';
 
 // Programme Governance (placeholder pages)
 import { GovernanceDashboardPage } from './features/governance/pages/DashboardPage';
@@ -143,6 +145,9 @@ function AppContent() {
   const user = useStore(state => state.user);
   const isProfileSettingsOpen = useStore(state => state.isProfileSettingsOpen);
   const setProfileSettingsOpen = useStore(state => state.setProfileSettingsOpen);
+  const isAccessRequestOpen = useAccessRequestStore(state => state.isOpen);
+  const accessRequestAttemptedAction = useAccessRequestStore(state => state.attemptedAction);
+  const closeAccessRequestModal = useAccessRequestStore(state => state.close);
   const routerLocation = useLocation();
   const mainRef = React.useRef<HTMLDivElement>(null);
 
@@ -406,10 +411,11 @@ function AppContent() {
               <Route path="/technical-assurance/rfis" element={<RoleGuard requirePM><TacRfiRegisterPage /></RoleGuard>} />
               <Route path="/technical-assurance/audit" element={<ComplianceLeadGuard><TacAuditDashboardPage /></ComplianceLeadGuard>} />
 
-              {/* AI Chat */}
-              {/* AI Chat is gated to PM+ — viewers shouldn't be able to query
-                  data their UI normally hides via the assistant. */}
-              <Route path="/chat" element={<RoleGuard requirePM><ChatPage /></RoleGuard>} />
+              {/* AI Chat — viewers can open the page (read-only preview), but
+                  sending a message is blocked client-side with the Request
+                  Access modal and, defence-in-depth, server-side (chatStream is
+                  not in the viewer allowlist). */}
+              <Route path="/chat" element={<ChatPage />} />
 
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
@@ -434,6 +440,11 @@ function AppContent() {
             onClose={() => setProfileSettingsOpen(false)}
           />
         )}
+        <RequestAccessModal
+          isOpen={isAccessRequestOpen}
+          onClose={closeAccessRequestModal}
+          attemptedAction={accessRequestAttemptedAction}
+        />
         {/* Full-page context-switching overlay — sits above everything*/}
         <ContextSwitchingOverlay />
       </div>
