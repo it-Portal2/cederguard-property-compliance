@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowRight, ChevronDown, ChevronRight, Check, ShieldCheck, Landmark, Building2, Scale, Leaf, HardHat } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronRight, Check, ShieldCheck, Droplets, Flame, Home, Gauge, Target, Lock, Fingerprint, Accessibility } from 'lucide-react';
 import MarketingImage from '../components/public/MarketingImage';
 import { WordPullUp } from '../components/public/WordPullUp';
 
@@ -54,16 +54,19 @@ function ShowcaseBand({
     );
 }
 
-/** Real UK social-housing / regulatory bodies referenced throughout the app's
- *  compliance content — shown as plain wordmarks (not copied logo artwork,
- *  since we don't hold rights to any third-party logo files). */
-const trustedBodies: Array<{ icon: React.ComponentType<{ className?: string }>; label: string }> = [
-    { icon: ShieldCheck, label: 'Building Safety Regulator' },
-    { icon: Scale, label: 'Regulator of Social Housing' },
-    { icon: Building2, label: 'Homes England' },
-    { icon: Landmark, label: 'MHCLG' },
-    { icon: Leaf, label: 'DESNZ' },
-    { icon: HardHat, label: 'HSE' },
+/** UK frameworks & laws the platform's compliance content is built around
+ *  (each is referenced in the product copy / FAQs / regulation library) —
+ *  shown as plain wordmarks, no third-party logo artwork. */
+const alignedStandards: Array<{ icon: React.ComponentType<{ className?: string }>; label: string }> = [
+    { icon: ShieldCheck, label: 'Building Safety Act 2022' },
+    { icon: Droplets, label: "Awaab's Law" },
+    { icon: Flame, label: 'Fire Safety Act 2021' },
+    { icon: Home, label: 'Decent Homes Standard' },
+    { icon: Gauge, label: 'HHSRS' },
+    { icon: Target, label: 'ISO 31000' },
+    { icon: Lock, label: 'ISO 27001' },
+    { icon: Fingerprint, label: 'UK GDPR' },
+    { icon: Accessibility, label: 'WCAG 2.0 AA' },
 ];
 
 /* ═══════════════════════════════════════════════════
@@ -404,17 +407,41 @@ function ComparisonSection() {
 
 export const Landing: React.FC = () => {
     return (
-        <div className="bg-slate-50 dark:bg-[#030303] text-slate-800 dark:text-white/80 font-sans antialiased selection:bg-indigo-500/30 selection:text-indigo-900 dark:selection:text-white min-h-screen transition-colors duration-500">
-            
+        <div
+            className="bg-slate-50 dark:bg-[#030303] text-slate-800 dark:text-white/80 font-sans antialiased selection:bg-indigo-500/30 selection:text-indigo-900 dark:selection:text-white min-h-screen transition-colors duration-500"
+            style={{ "--accent": "oklch(0.62 0.24 278)" } as React.CSSProperties}
+        >
+
             {/* ── HERO SECTION (light panel, headline + CTAs, then a white
                 approach/trust card beside the dashboard shot) ── */}
             {/* Fits entirely in the viewport below the 72px nav at lg+
                 (h = 100dvh − 4.5rem); the min-h floor lets very short windows
                 scroll instead of crushing/clipping the card row. */}
             <section className="relative overflow-hidden px-6 pt-12 pb-14 lg:flex lg:h-[calc(100dvh-4.5rem)] lg:min-h-180 lg:px-12 lg:py-10">
-                {/* Background ambient lighting */}
-                <div className="pointer-events-none absolute -top-40 right-0 h-130 w-130 rounded-full bg-indigo-100/40 dark:bg-indigo-500/10 blur-[140px]" />
-                <div className="pointer-events-none absolute bottom-0 left-0 h-100 w-100 rounded-full bg-purple-100/30 dark:bg-purple-500/10 blur-[140px]" />
+                {/* Hero backdrop — masked accent grid (exact tokens) + radial glow,
+                    matching Product / News / Support / Contact */}
+                <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-x-0 top-0 h-130"
+                    style={{
+                        backgroundImage:
+                            "linear-gradient(oklch(0.62 0.24 278 / 0.06) 1px, transparent 1px), linear-gradient(90deg, oklch(0.62 0.24 278 / 0.06) 1px, transparent 1px)",
+                        backgroundSize: "38px 38px",
+                        WebkitMaskImage:
+                            "radial-gradient(70% 60% at 50% 18%, #000 35%, transparent 85%)",
+                        maskImage:
+                            "radial-gradient(70% 60% at 50% 18%, #000 35%, transparent 85%)",
+                    }}
+                />
+                <div
+                    aria-hidden
+                    className="pointer-events-none absolute left-[62%] top-[-80px] h-[540px] w-[1200px] max-w-none -translate-x-1/2"
+                    style={{
+                        background:
+                            "radial-gradient(60% 60% at 50% 30%, oklch(0.62 0.24 278 / 0.18), transparent 65%), radial-gradient(45% 40% at 30% 25%, oklch(0.68 0.24 248 / 0.12), transparent 70%)",
+                        filter: "blur(2px)",
+                    }}
+                />
 
                 <div className="relative z-10 mx-auto w-full max-w-7xl lg:flex lg:flex-col">
                     {/* Headline + CTAs */}
@@ -441,7 +468,7 @@ export const Landing: React.FC = () => {
                         >
                             <Link
                                 to="/contact"
-                                className="inline-flex items-center justify-center bg-indigo-600 px-7 py-4 text-[15px] font-medium text-white transition-colors duration-300 hover:bg-indigo-700"
+                                className="inline-flex items-center justify-center border border-[oklch(0.54_0.24_278)] bg-[oklch(0.62_0.24_278)] px-7 py-4 text-[15px] font-semibold text-white transition-[background] duration-[140ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] hover:bg-[oklch(0.70_0.26_280)]"
                             >
                                 Book a demo
                             </Link>
@@ -476,15 +503,12 @@ export const Landing: React.FC = () => {
                             </p>
 
                             <div className="relative z-[1] mt-auto pt-10">
-                                <div className="mb-2 flex items-center gap-2.5">
+                                <div className="mb-6 flex items-center gap-2.5">
                                     <span className="h-2.5 w-2.5 bg-indigo-600" />
                                     <span className="text-[15px] text-slate-500">
-                                        Trusted By
+                                        Aligned with UK standards &amp; legislation
                                     </span>
                                 </div>
-                                <p className="mb-6 text-sm text-slate-400">
-                                    Trusted across UK social housing &amp; PMOs
-                                </p>
 
                                 {/* Marquee bleeds edge-to-edge across the card (past its padding),
                                     logos slide under both edges — infinite loop */}
@@ -500,7 +524,7 @@ export const Landing: React.FC = () => {
                                         animate={{ x: ['0%', '-50%'] }}
                                         transition={{ duration: 24, repeat: Infinity, ease: 'linear' }}
                                     >
-                                        {[...trustedBodies, ...trustedBodies].map(({ icon: Icon, label }, i) => (
+                                        {[...alignedStandards, ...alignedStandards].map(({ icon: Icon, label }, i) => (
                                             <span
                                                 key={i}
                                                 className="flex shrink-0 items-center gap-2.5 whitespace-nowrap text-slate-500"

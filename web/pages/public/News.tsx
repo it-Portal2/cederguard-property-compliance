@@ -3,8 +3,17 @@ import { Link } from 'react-router';
 import { Calendar, ArrowRight, Filter, Search } from 'lucide-react';
 import { newsArticles } from '../../data/newsData';
 import { motion, AnimatePresence } from 'motion/react';
+import { WordPullUp } from '../../components/public/WordPullUp';
 
 const EASE: [number, number, number, number] = [0.22, 0.61, 0.36, 1];
+
+const HEADLINE_WORDS: Array<{ word: string; gradient?: boolean }> = [
+  { word: 'Latest' },
+  { word: 'Insights', gradient: true },
+];
+
+const DESCRIPTION_DELAY_S = 0.35 + HEADLINE_WORDS.length * 0.12 + 0.4;
+const FILTERS_DELAY_S = DESCRIPTION_DELAY_S + 0.25;
 
 const CARD_CLASS =
   'group relative flex h-full flex-col overflow-hidden rounded-xl border border-[oklch(0.91_0.006_270)] bg-white p-7 transition-[transform,border-color,box-shadow,background] duration-[320ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] hover:-translate-y-1 hover:scale-[1.01] hover:border-[oklch(0.62_0.24_278_/_0.45)] hover:shadow-[0_0_0_1px_oklch(0.62_0.24_278_/_0.20),0_20px_40px_-16px_oklch(0.62_0.24_278_/_0.30),0_0_60px_-10px_oklch(0.62_0.24_278_/_0.22)] before:pointer-events-none before:absolute before:inset-0 before:z-0 before:bg-[radial-gradient(60%_80%_at_50%_0%,oklch(0.62_0.24_278_/_0.14),transparent_70%)] before:opacity-0 before:transition-opacity before:duration-[320ms] before:content-[""] hover:before:opacity-100 dark:border-white/10 dark:bg-white/3';
@@ -66,24 +75,15 @@ export function News() {
             News · Product · Regulation
           </motion.span>
 
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.15, ease: EASE }}
+          <WordPullUp
+            words={HEADLINE_WORDS}
             className="mt-[22px] text-[clamp(36px,5.4vw,60px)] font-medium leading-[1.02] tracking-[-0.035em] text-[oklch(0.20_0.012_270)] dark:text-white"
-          >
-            Latest{' '}
-            <em
-              className="not-italic bg-[linear-gradient(135deg,oklch(0.62_0.24_278),oklch(0.50_0.28_254))] bg-clip-text text-transparent"
-            >
-              Insights
-            </em>
-          </motion.h1>
+          />
 
           <motion.p
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3, ease: EASE }}
+            transition={{ duration: 0.6, delay: DESCRIPTION_DELAY_S, ease: EASE }}
             className="mx-auto mt-4 max-w-[560px] text-[16px] leading-[1.6] text-[oklch(0.50_0.010_270)] dark:text-slate-400"
           >
             Stay up to date with the latest from Cedar Risk: platform updates, regulatory changes, and AI innovation in property compliance.
@@ -94,7 +94,7 @@ export function News() {
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.5, ease: EASE }}
+          transition={{ duration: 0.6, delay: FILTERS_DELAY_S, ease: EASE }}
           className="mt-14 mb-14 border-b border-[oklch(0.91_0.006_270)] pb-8 dark:border-white/10"
         >
           <div className="flex flex-col items-center gap-6">

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
-import { Menu, X, Download } from 'lucide-react';
+import { Menu, X, Download, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx } from 'clsx';
 import { useStore } from '../../store/useStore';
@@ -16,7 +16,7 @@ export const PublicLayout: React.FC = () => {
     // (e.g. landing-page hero variants) may still read it. We just don't
     // render a toggle in the marketing chrome any more, since modern B2B
     // SaaS chrome (Linear / Vercel / Stripe) doesn't carry one.
-    const { deferredPrompt, installPWA } = useStore();
+    const { deferredPrompt, installPWA, user } = useStore();
     const [isInstalled, setIsInstalled] = useState(false);
     const [showInstallModal, setShowInstallModal] = useState(false);
 
@@ -91,19 +91,19 @@ export const PublicLayout: React.FC = () => {
                 Flat sticky bar, transparent over the hero, gains opacity +
                 subtle blur once the page scrolls past 10px. Mirrors the
                 Linear / Vercel / Stripe chrome pattern: minimal surfaces,
-                ONE primary CTA + one quiet sign-in link, no dark-mode
-                toggle, no APP install button (moved to the footer band).
+                ONE primary CTA, no dark-mode toggle, no APP install button
+                (moved to the footer band).
             */}
             <header
                 className={clsx(
                     'sticky top-0 z-50 transition-colors duration-200',
                     scrolled
                         ? 'bg-white/85 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200/60 dark:border-white/10'
-                        : 'bg-transparent border-b border-transparent',
+                        : 'bg-transparent border-b border-gray-200 dark:border-white/0',
                 )}
                 role="banner"
             >
-                <div className="max-w-7xl mx-auto px-6 h-18 flex items-center justify-between">
+                <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
                     {/* Logo */}
                     <Link to="/" aria-label="CedarGuard home" className="flex items-center gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 rounded-md">
                         <img
@@ -136,7 +136,7 @@ export const PublicLayout: React.FC = () => {
                                     {active && (
                                         <span
                                             aria-hidden
-                                            className="absolute left-0 right-0 -bottom-6.5 h-0.5 bg-indigo-600 dark:bg-indigo-400"
+                                            className="absolute left-0 right-0 -bottom-1.5 h-0.5 rounded-full bg-indigo-600 dark:bg-indigo-400"
                                         />
                                     )}
                                 </Link>
@@ -144,20 +144,22 @@ export const PublicLayout: React.FC = () => {
                         })}
                     </nav>
 
-                    {/* Right cluster — desktop */}
-                    <div className="hidden md:flex items-center gap-5">
+                    {/* Right cluster — desktop. Logged out → "Sign in";
+                        logged in → "Access portal" straight to the dashboard.
+                        Single button styled like the Landing "Book a demo" CTA
+                        (violet accent fill, square corners, 140ms accent hover). */}
+                    <div className="hidden md:flex items-center">
                         <Link
-                            to="/login"
-                            className="text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 rounded-sm"
+                            to={user ? '/dashboard' : '/login'}
+                            className="group relative inline-flex items-center justify-center gap-1.5 overflow-hidden rounded-lg border border-[oklch(0.54_0.24_278)] bg-[oklch(0.62_0.24_278)] px-5 py-2.5 text-sm font-semibold text-white transition-[background] duration-[140ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] hover:bg-[oklch(0.70_0.26_280)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
                         >
-                            Sign in
-                        </Link>
-                        <Link
-                            to="/login"
-                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-200 dark:text-slate-900 text-white text-sm font-semibold rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
-                        >
-                            Access portal
-                            <span aria-hidden>→</span>
+                            {/* Sweeping white beam on hover */}
+                            <span
+                                aria-hidden
+                                className="pointer-events-none absolute inset-0 -translate-x-full bg-[linear-gradient(110deg,transparent_25%,oklch(1_0_0/0.45)_50%,transparent_75%)] transition-transform duration-700 ease-[cubic-bezier(0.22,0.61,0.36,1)] group-hover:translate-x-full"
+                            />
+                            <span className="relative">{user ? 'Access portal' : 'Sign in'}</span>
+                            <ArrowRight className="relative h-4 w-4 transition-transform duration-300 ease-[cubic-bezier(0.22,0.61,0.36,1)] group-hover:translate-x-0.5" />
                         </Link>
                     </div>
 
@@ -238,20 +240,24 @@ export const PublicLayout: React.FC = () => {
                                     );
                                 })}
 
-                                <div className="my-4 border-t border-slate-200 dark:border-white/10" />
-
-                                <Link
-                                    to="/login"
-                                    className="px-4 py-3.5 rounded-lg text-lg font-medium text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/5 transition-colors"
-                                >
-                                    Sign in
-                                </Link>
+                                {!user && (
+                                    <>
+                                        <div className="my-4 border-t border-slate-200 dark:border-white/10" />
+                                        <Link
+                                            to="/login"
+                                            className="px-4 py-3.5 rounded-lg text-lg font-medium text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/5 transition-colors"
+                                        >
+                                            Sign in
+                                        </Link>
+                                    </>
+                                )}
                             </nav>
 
-                            {/* Sticky bottom primary CTA */}
+                            {/* Sticky bottom primary CTA. Logged in → straight to
+                                the dashboard; logged out → sign in first. */}
                             <div className="shrink-0 px-6 py-5 border-t border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950">
                                 <Link
-                                    to="/login"
+                                    to={user ? '/dashboard' : '/login'}
                                     className="w-full inline-flex items-center justify-center gap-1.5 py-4 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-200 dark:text-slate-900 text-white text-base font-semibold rounded-lg transition-colors"
                                 >
                                     Access portal
