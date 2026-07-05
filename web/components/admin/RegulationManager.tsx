@@ -57,7 +57,7 @@ export function RegulationManager() {
                 api.getComplianceDomains()
             ]);
 
-            if (itemsRes.success) setItems(itemsRes.items || []);
+            if (itemsRes.success) setItems(itemsRes.library || []);
             if (domainsRes.success) setRemoteDomains(domainsRes.domains || []);
         } catch (e: any) {
             setError(e.message);
