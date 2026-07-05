@@ -21,6 +21,7 @@ import {
 import toast from "react-hot-toast";
 import { motion } from "motion/react";
 
+import { clsx } from "clsx";
 import DynamicTable from "../../../components/table/DynamicTable";
 import { StatsCard } from "../../../components/common/StatsCard";
 import ConfirmDialog from "../../../components/table/ConfirmDialog";
@@ -143,13 +144,30 @@ export function TacEnquiriesListPage() {
     void refresh();
   }, [refresh]);
 
+  // Q5.3 — follow the active project context: default to this project's enquiries
+  // when a project is active (with an "All" toggle). Client-side over the already
+  // visibility-filtered tenant list — no server change, no composite index.
+  const [scope, setScope] = useState<"project" | "all">(
+    activeProjectId ? "project" : "all",
+  );
+  useEffect(() => {
+    setScope(activeProjectId ? "project" : "all");
+  }, [activeProjectId]);
+  const scopedItems = useMemo(
+    () =>
+      scope === "project" && activeProjectId
+        ? items.filter((e) => e.projectId === activeProjectId)
+        : items,
+    [items, scope, activeProjectId],
+  );
+
   // StatsCards counts -------------------------------------------------
   const counts = useMemo(() => {
     let drafting = 0;
     let generating = 0;
     let open = 0;
     let closed = 0;
-    for (const it of items) {
+    for (const it of scopedItems) {
       if (it.status === "Draft") drafting += 1;
       else if (it.status === "Generating") generating += 1;
       else if (
@@ -161,7 +179,7 @@ export function TacEnquiriesListPage() {
       else if (it.status === "Closed" || it.status === "Archived") closed += 1;
     }
     return { drafting, generating, open, closed };
-  }, [items]);
+  }, [scopedItems]);
 
   // Table config ------------------------------------------------------
   const columns: ColumnDef<Enquiry>[] = useMemo(
@@ -563,6 +581,35 @@ export function TacEnquiriesListPage() {
         breadcrumbs={[{ label: "Technical Assurance" }, { label: "Enquiries" }]}
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            {/* Q5.3 — project scope toggle (only when a project is active). */}
+            {activeProjectId && (
+              <div className="inline-flex rounded-lg border border-slate-300 bg-white p-0.5 text-xs font-semibold shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => setScope("project")}
+                  className={clsx(
+                    "rounded-md px-2.5 py-1.5",
+                    scope === "project"
+                      ? "bg-indigo-600 text-white"
+                      : "text-slate-600 hover:text-indigo-700",
+                  )}
+                >
+                  This project
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setScope("all")}
+                  className={clsx(
+                    "rounded-md px-2.5 py-1.5",
+                    scope === "all"
+                      ? "bg-indigo-600 text-white"
+                      : "text-slate-600 hover:text-indigo-700",
+                  )}
+                >
+                  All
+                </button>
+              </div>
+            )}
             {/* Decision log export. Project-scoped via active project.*/}
             <button
               type="button"
@@ -595,7 +642,7 @@ export function TacEnquiriesListPage() {
       />
 
       {/* Recent enquiries panel (HTML prototype "Recent prompts").*/}
-      <RecentEnquiriesPanel enquiries={items} />
+      <RecentEnquiriesPanel enquiries={scopedItems} />
 
       {/* StatsCards*/}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -644,7 +691,7 @@ export function TacEnquiriesListPage() {
  renders TableSkeleton in-place, matching every other governance /
  risk / compliance list. No separate wrapper spinner needed.*/}
       <DynamicTable<Enquiry>
-        data={items}
+        data={scopedItems}
         columns={columns}
         filters={filters}
         rowActions={rowActions}
