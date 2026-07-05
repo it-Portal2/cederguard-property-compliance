@@ -25,6 +25,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { clsx } from "clsx";
+import { CONTROL_STATUS_STYLES } from "../features/controls/types";
 import { AIWriter } from "./AIWriter";
 import { generateId } from "../lib/utils";
 import {
@@ -178,8 +179,21 @@ export function RiskModal({
     addTask,
     updateTask,
     deleteTask,
+    controls,
+    loadControls,
   } = useStore();
   const [formData, setFormData] = useState<Partial<RiskItem>>(emptyForm());
+
+  // Q3.1 — structured Controls from the register that link back to this risk
+  // (read-only; controls are authored in the Controls register, not here).
+  useEffect(() => {
+    if (isOpen) loadControls();
+  }, [isOpen, loadControls]);
+  const linkedControls = initialData?.id
+    ? (Array.isArray(controls) ? controls : []).filter((c) =>
+        (c.linkedRiskIds || []).includes(initialData.id as string),
+      )
+    : [];
   const [isSaving, setIsSaving] = useState(false);
   const [newActionTitle, setNewActionTitle] = useState("");
   const [isAddingAction, setIsAddingAction] = useState(false);
@@ -1015,6 +1029,38 @@ We removed the disabled <fieldset> wrapping (it killed scrolling while saving)
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 min-h-[80px] disabled:opacity-60 resize-y"
                     placeholder="List of controls currently in place..."
                   />
+                  {linkedControls.length > 0 && (
+                    <div className="mt-3">
+                      <div className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide mb-1.5">
+                        Linked controls · register ({linkedControls.length})
+                      </div>
+                      <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                        {linkedControls.map((c) => (
+                          <div
+                            key={c.id}
+                            className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5"
+                          >
+                            <span className="flex-1 min-w-0 truncate text-[13px] text-slate-700">
+                              {c.title}
+                            </span>
+                            {c.origin === "ai-suggestion" && (
+                              <span className="shrink-0 text-[9px] font-mono uppercase tracking-wide text-indigo-500">
+                                AI
+                              </span>
+                            )}
+                            <span
+                              className={clsx(
+                                "shrink-0 text-[10px] font-mono uppercase tracking-wide px-1.5 py-0.5 rounded",
+                                CONTROL_STATUS_STYLES[c.status],
+                              )}
+                            >
+                              {c.status}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="min-w-0">
