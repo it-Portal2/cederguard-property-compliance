@@ -1,9 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { Plus, Pencil, Trash2, AlertOctagon, ShieldAlert } from "lucide-react";
 import PageHeader from "../../../components/PageHeader";
 import DynamicTable from "../../../components/table/DynamicTable";
 import { useStore } from "../../../store/useStore";
+import {
+  ProjectScopeToggle,
+  scopeByProject,
+  type ProjectScope,
+} from "../../../components/common/ProjectScope";
 import { useEscalateToAssurance } from "../../assurance/useEscalate";
 import IncidentModal from "../components/IncidentModal";
 import {
@@ -30,9 +35,22 @@ export default function IncidentsRegisterPage() {
   const canLog = useStore((s) => s.canLogIncidents)();
   const canClose = useStore((s) => s.canCloseIncidents)();
   const { canEscalate, escalate, isEscalated, escalatingId } = useEscalateToAssurance();
+  const activeProjectId = useStore((s) => s.activeProjectId);
 
   const [editing, setEditing] = useState<Incident | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+
+  // Q5.1 — shared register + project scope that follows the active project.
+  const [scope, setScope] = useState<ProjectScope>(
+    activeProjectId ? "project" : "all",
+  );
+  useEffect(() => {
+    setScope(activeProjectId ? "project" : "all");
+  }, [activeProjectId]);
+  const scopedIncidents = useMemo(
+    () => scopeByProject(incidents, scope, activeProjectId),
+    [incidents, scope, activeProjectId],
+  );
 
   useEffect(() => {
     loadIncidents();
@@ -199,10 +217,15 @@ export default function IncidentsRegisterPage() {
         title="Incidents"
         subtitle="The formal, regulator-grade incident register — distinct from the routine Issues log."
         breadcrumbs={[{ label: "Escalations & Incidents" }, { label: "Incidents" }]}
+        actions={
+          activeProjectId ? (
+            <ProjectScopeToggle scope={scope} onChange={setScope} />
+          ) : undefined
+        }
       />
 
       <DynamicTable<Incident>
-        data={incidents}
+        data={scopedIncidents}
         columns={columns}
         rowActions={rowActions}
         filters={filterDefs}

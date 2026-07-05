@@ -5,6 +5,11 @@ import PageHeader from "../../../components/PageHeader";
 import DynamicTable from "../../../components/table/DynamicTable";
 import { useStore } from "../../../store/useStore";
 import { DOMAINS } from "../../../data/complianceData";
+import {
+  ProjectScopeToggle,
+  scopeByProject,
+  type ProjectScope,
+} from "../../../components/common/ProjectScope";
 import { useEscalateToAssurance } from "../../assurance/useEscalate";
 import ControlModal from "../components/ControlModal";
 import {
@@ -32,10 +37,23 @@ export default function ControlsRegisterPage() {
   const deleteControl = useStore((s) => s.deleteControl);
   const canManageControls = useStore((s) => s.canManageControls);
   const canManage = canManageControls();
+  const activeProjectId = useStore((s) => s.activeProjectId);
   const { escalate, isEscalated, escalatingId } = useEscalateToAssurance();
 
   const [editing, setEditing] = useState<Control | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+
+  // Q5.1 — shared register + project scope that follows the active project.
+  const [scope, setScope] = useState<ProjectScope>(
+    activeProjectId ? "project" : "all",
+  );
+  useEffect(() => {
+    setScope(activeProjectId ? "project" : "all");
+  }, [activeProjectId]);
+  const scopedControls = useMemo(
+    () => scopeByProject(controls, scope, activeProjectId),
+    [controls, scope, activeProjectId],
+  );
 
   useEffect(() => {
     loadControls();
@@ -220,10 +238,15 @@ export default function ControlsRegisterPage() {
         title="Controls"
         subtitle="The measures that mitigate risk and evidence compliance — owned, classified and reviewed."
         breadcrumbs={[{ label: "Escalations & Incidents" }, { label: "Controls" }]}
+        actions={
+          activeProjectId ? (
+            <ProjectScopeToggle scope={scope} onChange={setScope} />
+          ) : undefined
+        }
       />
 
       <DynamicTable<Control>
-        data={controls}
+        data={scopedControls}
         columns={columns}
         rowActions={rowActions}
         filters={filterDefs}

@@ -14,6 +14,11 @@ import {
 } from "lucide-react";
 import PageHeader from "../../../components/PageHeader";
 import DynamicTable from "../../../components/table/DynamicTable";
+import {
+  ProjectScopeToggle,
+  scopeByProject,
+  type ProjectScope,
+} from "../../../components/common/ProjectScope";
 import { useStore } from "../../../store/useStore";
 import { useEscalateToAssurance } from "../useEscalate";
 import EscalateModal from "../components/EscalateModal";
@@ -66,6 +71,7 @@ const fmtWhen = (v: any): string => {
 
 export default function AssuranceHubPage() {
   const alerts = useStore((s) => s.assuranceAlerts);
+  const activeProjectId = useStore((s) => s.activeProjectId);
   const loading = useStore((s) => s.assuranceLoading);
   const load = useStore((s) => s.loadAssuranceAlerts);
   const saveAlert = useStore((s) => s.saveAssuranceAlert);
@@ -89,6 +95,18 @@ export default function AssuranceHubPage() {
     loadControls();
     loadIncidents();
   }, [load, loadControls, loadIncidents]);
+
+  // Q5.1 — shared hub + project scope that follows the active project.
+  const [scope, setScope] = useState<ProjectScope>(
+    activeProjectId ? "project" : "all",
+  );
+  useEffect(() => {
+    setScope(activeProjectId ? "project" : "all");
+  }, [activeProjectId]);
+  const scopedAlerts = useMemo(
+    () => scopeByProject(alerts, scope, activeProjectId),
+    [alerts, scope, activeProjectId],
+  );
 
   // Ref ids of currently-open escalations — to hide candidates already in the hub.
   const openRefIds = useMemo(
@@ -448,6 +466,11 @@ export default function AssuranceHubPage() {
         title="Escalations & Incidents"
         subtitle="Alerts escalated from compliance, risk and governance — with the detective, preventive, corrective and improvement actions to take."
         breadcrumbs={[{ label: "Escalations & Incidents" }, { label: "Escalations" }]}
+        actions={
+          activeProjectId ? (
+            <ProjectScopeToggle scope={scope} onChange={setScope} />
+          ) : undefined
+        }
       />
 
       {canManage && candidates.length > 0 && (
@@ -488,7 +511,7 @@ export default function AssuranceHubPage() {
       )}
 
       <DynamicTable<AssuranceAlert>
-        data={alerts}
+        data={scopedAlerts}
         columns={columns}
         rowActions={rowActions}
         filters={filterDefs}
