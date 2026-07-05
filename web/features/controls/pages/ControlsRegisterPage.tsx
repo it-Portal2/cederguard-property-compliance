@@ -219,7 +219,7 @@ export default function ControlsRegisterPage() {
       <PageHeader
         title="Controls"
         subtitle="The measures that mitigate risk and evidence compliance — owned, classified and reviewed."
-        breadcrumbs={[{ label: "Assurance" }, { label: "Controls" }]}
+        breadcrumbs={[{ label: "Escalations & Incidents" }, { label: "Controls" }]}
       />
 
       <DynamicTable<Control>

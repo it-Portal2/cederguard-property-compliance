@@ -198,7 +198,7 @@ export default function IncidentsRegisterPage() {
       <PageHeader
         title="Incidents"
         subtitle="The formal, regulator-grade incident register — distinct from the routine Issues log."
-        breadcrumbs={[{ label: "Assurance" }, { label: "Incidents" }]}
+        breadcrumbs={[{ label: "Escalations & Incidents" }, { label: "Incidents" }]}
       />
 
       <DynamicTable<Incident>

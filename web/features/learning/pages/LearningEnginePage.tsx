@@ -133,7 +133,7 @@ export default function LearningEnginePage() {
       <PageHeader
         title="Continuous Improvement"
         subtitle="Recurring incidents and failed controls, with AI-suggested actions the officer approves."
-        breadcrumbs={[{ label: "Assurance" }, { label: "Improvement" }]}
+        breadcrumbs={[{ label: "Escalations & Incidents" }, { label: "Improvement" }]}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

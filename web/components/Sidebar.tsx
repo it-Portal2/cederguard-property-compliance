@@ -247,7 +247,7 @@ export function Sidebar() {
       path.startsWith("/incidents") ||
       path.startsWith("/learning/improvement")
     ) {
-      setOpenGroup("Assurance");
+      setOpenGroup("Escalations & Incidents");
     } else if (
       path.startsWith("/setup/workspace") ||
       path.startsWith("/team") ||
@@ -572,10 +572,10 @@ export function Sidebar() {
             {/* ASSURANCE — controls library, incidents (CAPA, checklists, learning to follow) */}
             {hasCoreAccess && (
               <NavGroup
-                label="Assurance"
+                label="Escalations & Incidents"
                 isAdmin={hasCoreAccess}
-                isOpen={openGroup === "Assurance"}
-                onToggle={() => toggleGroup("Assurance")}
+                isOpen={openGroup === "Escalations & Incidents"}
+                onToggle={() => toggleGroup("Escalations & Incidents")}
               >
                 <NavItem
                   to="/assurance"

@@ -445,9 +445,9 @@ export default function AssuranceHubPage() {
   return (
     <div className="space-y-6 sm:space-y-8">
       <PageHeader
-        title="Assurance"
+        title="Escalations & Incidents"
         subtitle="Alerts escalated from compliance, risk and governance — with the detective, preventive, corrective and improvement actions to take."
-        breadcrumbs={[{ label: "Assurance" }, { label: "Escalations" }]}
+        breadcrumbs={[{ label: "Escalations & Incidents" }, { label: "Escalations" }]}
       />
 
       {canManage && candidates.length > 0 && (
