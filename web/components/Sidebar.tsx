@@ -495,111 +495,6 @@ export function Sidebar() {
               />
             </NavGroup>
 
-            {/* TECHNICAL ASSURANCE — sibling of Compliance / Risk; PM-owned query surface */}
-            {hasCoreAccess && (
-              <NavGroup
-                label="Technical Assurance"
-                isAdmin={hasCoreAccess}
-                isOpen={openGroup === "Technical Assurance"}
-                onToggle={() => toggleGroup("Technical Assurance")}
-              >
-                <NavItem
-                  to="/technical-assurance/enquiries"
-                  icon={MessageSquare}
-                  label="Enquiries"
-                />
-                <NavItem
-                  to="/technical-assurance/rfis"
-                  icon={ClipboardList}
-                  label="RFI Register"
-                />
-                {/* Audit dashboard — Compliance Leads + Super Admins only.
-                Sidebar visibility mirrors the route guard so non-eligible
-                users don't see a link they can't open. */}
-                {(isAdmin || isComplianceLead(user)) && (
-                  <NavItem
-                    to="/technical-assurance/audit"
-                    icon={ShieldCheck}
-                    label="Audit"
-                    iconClass="text-indigo-600"
-                  />
-                )}
-              </NavGroup>
-            )}
-
-            {/* RESOURCE PLANNER — tenant-wide FTE demand & capacity.
-                Programme Manager tier only (project managers excluded). */}
-            {isProgrammeManager && (
-              <NavGroup
-                label="Resource Planner"
-                isAdmin={isProgrammeManager}
-                isOpen={openGroup === "Resource Planner"}
-                onToggle={() => toggleGroup("Resource Planner")}
-              >
-                <NavItem
-                  to="/resource-planner/dashboard"
-                  icon={LayoutDashboard}
-                  label="Dashboard"
-                />
-                <NavItem
-                  to="/resource-planner/schemes"
-                  icon={ClipboardList}
-                  label="Scheme Register"
-                />
-                <NavItem
-                  to="/resource-planner/forecast"
-                  icon={TrendingUp}
-                  label="Demand Forecast"
-                />
-                <NavItem
-                  to="/resource-planner/capacity"
-                  icon={Gauge}
-                  label="Capacity"
-                />
-                <NavItem
-                  to="/resource-planner/timeline"
-                  icon={CalendarIcon}
-                  label="Timeline"
-                />
-                <NavItem
-                  to="/resource-planner/assumptions"
-                  icon={SlidersHorizontal}
-                  label="Assumptions"
-                />
-              </NavGroup>
-            )}
-
-            {/* ASSURANCE — controls library, incidents (CAPA, checklists, learning to follow) */}
-            {hasCoreAccess && (
-              <NavGroup
-                label="Escalations & Incidents"
-                isAdmin={hasCoreAccess}
-                isOpen={openGroup === "Escalations & Incidents"}
-                onToggle={() => toggleGroup("Escalations & Incidents")}
-              >
-                <NavItem
-                  to="/assurance"
-                  icon={ShieldAlert}
-                  label="Escalations"
-                />
-                <NavItem
-                  to="/controls/register"
-                  icon={ShieldCheck}
-                  label="Controls"
-                />
-                <NavItem
-                  to="/incidents/register"
-                  icon={AlertTriangle}
-                  label="Incidents"
-                />
-                <NavItem
-                  to="/learning/improvement"
-                  icon={Lightbulb}
-                  label="Improvement"
-                />
-              </NavGroup>
-            )}
-
             {/* PROGRAMME GOVERNANCE */}
             {hasCoreAccess && (
               <NavGroup
@@ -670,6 +565,111 @@ export function Sidebar() {
                   to="/governance/archive"
                   icon={ScrollText}
                   label="Archive & Audit"
+                />
+              </NavGroup>
+            )}
+
+            {/* ESCALATIONS & INCIDENTS — escalation hub, controls, incidents, improvement */}
+            {hasCoreAccess && (
+              <NavGroup
+                label="Escalations & Incidents"
+                isAdmin={hasCoreAccess}
+                isOpen={openGroup === "Escalations & Incidents"}
+                onToggle={() => toggleGroup("Escalations & Incidents")}
+              >
+                <NavItem
+                  to="/assurance"
+                  icon={ShieldAlert}
+                  label="Escalations"
+                />
+                <NavItem
+                  to="/controls/register"
+                  icon={ShieldCheck}
+                  label="Controls"
+                />
+                <NavItem
+                  to="/incidents/register"
+                  icon={AlertTriangle}
+                  label="Incidents"
+                />
+                <NavItem
+                  to="/learning/improvement"
+                  icon={Lightbulb}
+                  label="Improvement"
+                />
+              </NavGroup>
+            )}
+
+            {/* TECHNICAL ASSURANCE — sibling of Compliance / Risk; PM-owned query surface */}
+            {hasCoreAccess && (
+              <NavGroup
+                label="Technical Assurance"
+                isAdmin={hasCoreAccess}
+                isOpen={openGroup === "Technical Assurance"}
+                onToggle={() => toggleGroup("Technical Assurance")}
+              >
+                <NavItem
+                  to="/technical-assurance/enquiries"
+                  icon={MessageSquare}
+                  label="Enquiries"
+                />
+                <NavItem
+                  to="/technical-assurance/rfis"
+                  icon={ClipboardList}
+                  label="RFI Register"
+                />
+                {/* Audit dashboard — Compliance Leads + Super Admins only.
+                Sidebar visibility mirrors the route guard so non-eligible
+                users don't see a link they can't open. */}
+                {(isAdmin || isComplianceLead(user)) && (
+                  <NavItem
+                    to="/technical-assurance/audit"
+                    icon={ShieldCheck}
+                    label="Audit"
+                    iconClass="text-indigo-600"
+                  />
+                )}
+              </NavGroup>
+            )}
+
+            {/* RESOURCE PLANNER — tenant-wide FTE demand & capacity.
+                Programme Manager tier only (project managers excluded). */}
+            {isProgrammeManager && (
+              <NavGroup
+                label="Resource Planner"
+                isAdmin={isProgrammeManager}
+                isOpen={openGroup === "Resource Planner"}
+                onToggle={() => toggleGroup("Resource Planner")}
+              >
+                <NavItem
+                  to="/resource-planner/dashboard"
+                  icon={LayoutDashboard}
+                  label="Dashboard"
+                />
+                <NavItem
+                  to="/resource-planner/schemes"
+                  icon={ClipboardList}
+                  label="Scheme Register"
+                />
+                <NavItem
+                  to="/resource-planner/forecast"
+                  icon={TrendingUp}
+                  label="Demand Forecast"
+                />
+                <NavItem
+                  to="/resource-planner/capacity"
+                  icon={Gauge}
+                  label="Capacity"
+                />
+                <NavItem
+                  to="/resource-planner/timeline"
+                  icon={CalendarIcon}
+                  label="Timeline"
+                />
+                <NavItem
+                  to="/resource-planner/assumptions"
+                  icon={SlidersHorizontal}
+                  label="Assumptions"
                 />
               </NavGroup>
             )}
