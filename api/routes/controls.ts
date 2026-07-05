@@ -41,6 +41,8 @@ function sanitizeControl(input: any) {
     linkedRegulationIds: arr(input.linkedRegulationIds),
     linkedRiskIds: arr(input.linkedRiskIds),
     evidenceIds: arr(input.evidenceIds),
+    origin: input.origin === 'ai-suggestion' ? 'ai-suggestion' : 'manual',
+    sourceRiskId: input.sourceRiskId ? String(input.sourceRiskId).slice(0, 100) : null,
     lastReviewDate: input.lastReviewDate ? String(input.lastReviewDate).slice(0, 30) : null,
   };
 }

@@ -39,6 +39,10 @@ export interface Control {
   linkedRiskIds?: string[];
   /** Evidence linkage — contract field; the picker UI lands in Phase 4. */
   evidenceIds?: string[];
+  /** How the control was created. "ai-suggestion" = promoted from an AI mitigation suggestion. */
+  origin?: "manual" | "ai-suggestion";
+  /** When promoted from an AI suggestion, the id of the risk it was suggested for. */
+  sourceRiskId?: string | null;
   lastReviewDate?: string | null;
   createdAt?: any;
   updatedAt?: any;
