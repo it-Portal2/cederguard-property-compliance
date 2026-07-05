@@ -15,6 +15,7 @@ import toast from "react-hot-toast";
 import { clsx } from "clsx";
 
 import { api } from "../../../../lib/api";
+import { AIWriter } from "../../../../components/AIWriter";
 import type {
   Enquiry,
   RfiTabContent,
@@ -236,13 +237,23 @@ export function RfiTab({ enquiry, rfi, onIssued }: RfiTabProps) {
 
           {/* Body*/}
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <label className="font-mono block text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Body
               </label>
-              <p className="text-[11px] text-slate-400">
-                {body.length} chars · min 60
-              </p>
+              <div className="flex items-center gap-2">
+                {!isIssued && (
+                  <AIWriter
+                    context={`Write a clear, professional Request for Information (RFI) body for a construction/property project. ONLY return the RFI body text, no preamble. Subject: "${subject || "Untitled"}". State the information required, why it is needed, and any relevant drawing or specification references.`}
+                    onSuggest={(val) => setBody(val)}
+                    placeholder="e.g. the information required and why"
+                    className="scale-90"
+                  />
+                )}
+                <p className="text-[11px] text-slate-400">
+                  {body.length} chars · min 60
+                </p>
+              </div>
             </div>
             <textarea
               value={body}

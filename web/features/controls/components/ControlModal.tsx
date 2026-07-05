@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { useStore } from "../../../store/useStore";
+import { AIWriter } from "../../../components/AIWriter";
 import { generateId } from "../../../lib/utils";
 import { DOMAINS } from "../../../data/complianceData";
 import {
@@ -257,9 +258,17 @@ export default function ControlModal({ control, onClose, onSave }: Props) {
           </div>
 
           <div>
-            <label className={labelCls} htmlFor="ctrl-desc">
-              Description
-            </label>
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <label className={labelCls} htmlFor="ctrl-desc">
+                Description
+              </label>
+              <AIWriter
+                context={`Write a clear, professional description of a compliance/risk control. ONLY return the description text, no preamble. Control: "${form.title || "Untitled"}" (status: ${form.status}). Describe what the control does and how it is operated.`}
+                onSuggest={(val) => set("description", val)}
+                placeholder="e.g. what the control does and how it is operated"
+                className="scale-90"
+              />
+            </div>
             <textarea
               id="ctrl-desc"
               disabled={isSaving}

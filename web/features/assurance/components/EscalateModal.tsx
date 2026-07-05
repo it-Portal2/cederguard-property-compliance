@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
+import { AIWriter } from "../../../components/AIWriter";
 import { useFocusTrap } from "../../../hooks/useFocusTrap";
 import {
   ASSURANCE_SEVERITIES,
@@ -144,9 +145,17 @@ export default function EscalateModal({ onClose, onSubmit }: Props) {
             </div>
           </div>
           <div>
-            <label className={labelCls} htmlFor="esc-desc">
-              What happened
-            </label>
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <label className={labelCls} htmlFor="esc-desc">
+                What happened
+              </label>
+              <AIWriter
+                context={`Write a clear, factual escalation narrative for an assurance/compliance failure. ONLY return the narrative text, no preamble. Escalation: "${title || "Untitled"}" (severity: ${severity}). Describe the action taken, what it delayed or caused, and any control involved.`}
+                onSuggest={(val) => setDescription(val)}
+                placeholder="e.g. what happened, the impact, and any control involved"
+                className="scale-90"
+              />
+            </div>
             <textarea
               id="esc-desc"
               disabled={isSaving}

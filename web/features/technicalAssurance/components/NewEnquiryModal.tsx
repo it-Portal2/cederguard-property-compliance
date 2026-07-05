@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { X, Loader2, FilePlus2 } from "lucide-react";
 import toast from "react-hot-toast";
 import ConfirmDialog from "../../../components/table/ConfirmDialog";
+import { AIWriter } from "../../../components/AIWriter";
 import { AttachmentDropzone } from "./AttachmentDropzone";
 import { api } from "../../../lib/api";
 import { useStore } from "../../../store/useStore";
@@ -413,9 +414,17 @@ export function NewEnquiryModal({
             </div>
 
             <div>
-              <label className="font-mono block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Query
-              </label>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <label className="font-mono block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Query
+                </label>
+                <AIWriter
+                  context={`Write a clear, well-structured technical assurance enquiry for a construction/property project. ONLY return the enquiry text, no preamble. Subject: "${form.title || "Untitled"}"${form.ribaStage ? ` (RIBA stage: ${form.ribaStage})` : ""}. Describe the technical question and the context needed to answer it.`}
+                  onSuggest={(val) => set("query", val)}
+                  placeholder="e.g. the technical question and the context to answer it"
+                  className="scale-90"
+                />
+              </div>
               <textarea
                 value={form.query}
                 onChange={(e) => set("query", e.target.value)}

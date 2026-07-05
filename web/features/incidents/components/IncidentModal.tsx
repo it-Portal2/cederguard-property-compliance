@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { useStore } from "../../../store/useStore";
+import { AIWriter } from "../../../components/AIWriter";
 import { generateId } from "../../../lib/utils";
 import { DOMAINS } from "../../../data/complianceData";
 import {
@@ -365,9 +366,17 @@ export default function IncidentModal({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className={labelCls} htmlFor="inc-rootcause">
-                Root cause
-              </label>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <label className={labelCls} htmlFor="inc-rootcause">
+                  Root cause
+                </label>
+                <AIWriter
+                  context={`Write a concise, professional root-cause analysis for this incident. ONLY return the root-cause text, no preamble. Incident: "${form.title || "Untitled"}" (type: ${form.type}, severity: ${form.severity}). Immediate impact: ${form.immediateImpact || "not specified"}. Actions taken: ${form.actionsTaken || "not specified"}.`}
+                  onSuggest={(val) => set("rootCause", val)}
+                  placeholder="e.g. the underlying cause, not just the symptom"
+                  className="scale-90"
+                />
+              </div>
               <textarea
                 id="inc-rootcause"
                 disabled={isSaving}
@@ -405,9 +414,17 @@ export default function IncidentModal({
               />
             </div>
             <div>
-              <label className={labelCls} htmlFor="inc-lessons">
-                Lessons learned
-              </label>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <label className={labelCls} htmlFor="inc-lessons">
+                  Lessons learned
+                </label>
+                <AIWriter
+                  context={`Write concise lessons learned from this incident to help prevent recurrence. ONLY return the lessons text, no preamble. Incident: "${form.title || "Untitled"}" (type: ${form.type}, severity: ${form.severity}). Root cause: ${form.rootCause || "not specified"}. Actions taken: ${form.actionsTaken || "not specified"}.`}
+                  onSuggest={(val) => set("lessonsLearned", val)}
+                  placeholder="e.g. what to change so this doesn't happen again"
+                  className="scale-90"
+                />
+              </div>
               <textarea
                 id="inc-lessons"
                 disabled={isSaving}
