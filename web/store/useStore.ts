@@ -318,6 +318,7 @@ export interface RegulationItem {
   status: string;
   tag: string;
   category: string;
+  sourceUrl?: string;
   lastUpdated?: string;
   updates?: { id: string; date: string; content: string; author?: string }[];
 }

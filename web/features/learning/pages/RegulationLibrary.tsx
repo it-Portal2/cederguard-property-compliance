@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, ChevronRight, AlertTriangle, FileText, List, Shield, Users, Clock, CheckCircle2, Info, AlertCircle, Filter, X, ScanSearch, ShieldCheck, MessageSquare, Plus, Loader2 } from 'lucide-react';
+import { Search, ChevronRight, AlertTriangle, FileText, List, Shield, Users, Clock, CheckCircle2, Info, AlertCircle, Filter, X, ScanSearch, ShieldCheck, MessageSquare, Plus, Loader2, ExternalLink } from 'lucide-react';
 import { clsx } from 'clsx';
 import { REGULATIONS } from '../../../data/regulationsLibraryData';
 import { motion, AnimatePresence } from 'motion/react';
@@ -142,19 +142,35 @@ function RegulationCard({ item, catIdx, regIdx }: { item: any; catIdx: number; r
 
             <div className="p-5">
               {activeTab === 'overview' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <div className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide mb-1.5">Requirement</div>
-                    <div className="text-[13px] text-slate-800 leading-relaxed">{item.req}</div>
-                  </div>
-                  <div>
-                    <div className="bg-red-50/50 border border-red-200 rounded-lg p-3">
-                      <div className="text-[10px] font-mono font-medium text-red-700 uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
-                        <AlertTriangle className="w-3.5 h-3.5" /> Penalty for Breach
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide mb-1.5">Requirement</div>
+                      <div className="text-[13px] text-slate-800 leading-relaxed">{item.req}</div>
+                    </div>
+                    <div>
+                      <div className="bg-red-50/50 border border-red-200 rounded-lg p-3">
+                        <div className="text-[10px] font-mono font-medium text-red-700 uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
+                          <AlertTriangle className="w-3.5 h-3.5" /> Penalty for Breach
+                        </div>
+                        <div className="text-[13px] text-red-900 leading-relaxed">{item.penalty}</div>
                       </div>
-                      <div className="text-[13px] text-red-900 leading-relaxed">{item.penalty}</div>
                     </div>
                   </div>
+                  {item.sourceUrl && (
+                    <div>
+                      <div className="text-[10px] font-mono font-medium text-slate-400 uppercase tracking-wide mb-1.5">Official Source</div>
+                      <a
+                        href={item.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-[13px] text-indigo-600 hover:text-indigo-800 hover:underline break-all"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                        {item.sourceUrl}
+                      </a>
+                    </div>
+                  )}
                 </div>
               )}
 
