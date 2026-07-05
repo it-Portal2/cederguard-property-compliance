@@ -9,16 +9,18 @@ import {
     ArrowRight,
     Radar,
     FileText,
+    ShieldCheck,
 } from 'lucide-react';
 import { useStore } from '../../../store/useStore';
 import { useAccessRequestStore } from '../../../store/accessRequestStore';
+import type { Control } from '../../controls/types';
 import ValidateButton from '../../../components/validation/ValidateButton';
 import { versionedTargetId } from '../../../lib/validation';
 import PageHeader from '../../../components/PageHeader';
 import toast from 'react-hot-toast';
 import { analyzeControls, analyzeContextSentence } from '../../../services/aiService';
 import { clsx } from 'clsx';
-import { stripMarkdown, parseAISuggestion } from '../../../lib/utils';
+import { stripMarkdown, parseAISuggestion, generateId } from '../../../lib/utils';
 
 // ── Animation variants ────────────────────────────────────────────
 const fadeVariants: Variants = {
@@ -44,8 +46,9 @@ const itemVariants: Variants = {
 };
 
 export function AIControlSuggestions() {
-    const { risks, updateRisk, activeProject, activeProgramme, activeProjectId, activeProgrammeId, projectInfo, pendingMutations, user } = useStore();
+    const { risks, updateRisk, saveControl, canManageControls, activeProject, activeProgramme, activeProjectId, activeProgrammeId, projectInfo, pendingMutations, user } = useStore();
     const isRiskPending = (id: string) => pendingMutations.has(`risk:${id}`);
+    const [promoted, setPromoted] = useState<Set<string>>(new Set());
     const [isAutoLoading,     setIsAutoLoading]     = useState(false);
     const [isManualLoading,   setIsManualLoading]   = useState(false);
     const [suggestedControls, setSuggestedControls] = useState<any[]>([]);
@@ -135,6 +138,49 @@ export function AIControlSuggestions() {
                 toast.error(err?.message || 'Failed to add control.');
             },
         );
+    };
+
+    // Derive a concise Control title from an AI suggestion (prefer the WHAT clause).
+    const deriveControlTitle = (suggestion: string): string => {
+        const what = parseAISuggestion(suggestion).find(p => p.label === 'WHAT:');
+        const base = stripMarkdown((what?.content || suggestion) || '').trim();
+        return base.length > 120 ? `${base.slice(0, 117)}…` : base;
+    };
+
+    // Q3.1 — promote an AI suggestion into a first-class Control record (linked back
+    // to the risk), keeping the "add to risk notes" action separate (Q3.2).
+    const promoteToRegister = async (riskId: string, suggestion: string) => {
+        if (isMitigationValidationBlocked) {
+            toast.error('Please fact-check & validate the mitigation strategy before promoting controls.');
+            return;
+        }
+        if (!canManageControls()) {
+            toast.error('You need Project Manager access or above to add to the Controls register.');
+            return;
+        }
+        const risk = risks.find(r => r.id === riskId);
+        if (!risk) return;
+        const key = `${riskId}::${suggestion}`;
+        const control: Control = {
+            id: generateId('ctrl'),
+            title: deriveControlTitle(suggestion),
+            description: stripMarkdown(suggestion),
+            status: 'Not Tested',
+            origin: 'ai-suggestion',
+            sourceRiskId: riskId,
+            linkedRiskIds: [riskId],
+            projectId: (risk as any).projectId ?? activeProjectId ?? null,
+            programmeId: (risk as any).programmeId ?? activeProgrammeId ?? null,
+            projectName: (activeProject as any)?.name ?? null,
+        };
+        setPromoted(prev => new Set(prev).add(key));
+        try {
+            await saveControl(control);
+            toast.success('Promoted to the Controls register.');
+        } catch (err: any) {
+            setPromoted(prev => { const next = new Set(prev); next.delete(key); return next; });
+            toast.error(err?.message || 'Failed to promote to the Controls register.');
+        }
     };
 
     return (
@@ -588,18 +634,30 @@ export function AIControlSuggestions() {
                                                                 ))}
                                                             </div>
 
-                                                            <motion.button
-                                                                onClick={() => addControl(item.riskId, s)}
-                                                                disabled={isRiskPending(item.riskId) || isMitigationValidationBlocked}
-                                                                title="Add to risk"
-                                                                initial={{ opacity: 0 }}
-                                                                whileHover={{ scale: 1.1, backgroundColor: '#4f46e5', borderColor: '#4f46e5', color: '#ffffff' }}
-                                                                whileTap={{ scale: 0.9 }}
-                                                                transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-                                                                className="absolute top-3.5 right-3.5 p-1.5 rounded-lg bg-white border border-slate-200 text-slate-400 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                            >
-                                                                <Plus className="w-3.5 h-3.5" />
-                                                            </motion.button>
+                                                            <div className="absolute top-3.5 right-3.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                                                <motion.button
+                                                                    onClick={() => promoteToRegister(item.riskId, s)}
+                                                                    disabled={isMitigationValidationBlocked || promoted.has(`${item.riskId}::${s}`)}
+                                                                    title="Promote to Controls register"
+                                                                    whileHover={{ scale: 1.1 }}
+                                                                    whileTap={{ scale: 0.9 }}
+                                                                    transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+                                                                    className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-400 shadow-sm hover:border-indigo-500 hover:text-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                >
+                                                                    <ShieldCheck className="w-3.5 h-3.5" />
+                                                                </motion.button>
+                                                                <motion.button
+                                                                    onClick={() => addControl(item.riskId, s)}
+                                                                    disabled={isRiskPending(item.riskId) || isMitigationValidationBlocked}
+                                                                    title="Add to risk notes"
+                                                                    whileHover={{ scale: 1.1 }}
+                                                                    whileTap={{ scale: 0.9 }}
+                                                                    transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+                                                                    className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-400 shadow-sm hover:border-indigo-500 hover:text-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                >
+                                                                    <Plus className="w-3.5 h-3.5" />
+                                                                </motion.button>
+                                                            </div>
                                                         </motion.div>
                                                     ))}
                                                 </motion.div>
