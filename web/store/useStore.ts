@@ -3239,7 +3239,9 @@ export const useStore = create<AppState>((set, get) => {
   canManageControls: () => {
     const { user } = get();
     if (!user) return false;
-    return isAtLeastPM(user.role || user.profile?.role);
+    const role = user.role || user.profile?.role;
+    // Mirror the server gate in api/routes/controls.ts (PM family + Programme Manager).
+    return isAtLeastPM(role) || isAtLeastProgrammeManager(role);
   },
 
   // ---- Incident management (tenant-scoped) ----------------------------------

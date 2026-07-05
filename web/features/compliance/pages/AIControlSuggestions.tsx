@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import {
     AlertTriangle,
@@ -20,7 +20,7 @@ import PageHeader from '../../../components/PageHeader';
 import toast from 'react-hot-toast';
 import { analyzeControls, analyzeContextSentence } from '../../../services/aiService';
 import { clsx } from 'clsx';
-import { stripMarkdown, parseAISuggestion, generateId } from '../../../lib/utils';
+import { stripMarkdown, parseAISuggestion } from '../../../lib/utils';
 
 // ── Animation variants ────────────────────────────────────────────
 const fadeVariants: Variants = {
@@ -46,9 +46,12 @@ const itemVariants: Variants = {
 };
 
 export function AIControlSuggestions() {
-    const { risks, updateRisk, saveControl, canManageControls, activeProject, activeProgramme, activeProjectId, activeProgrammeId, projectInfo, pendingMutations, user } = useStore();
+    const { risks, updateRisk, saveControl, canManageControls, controls, loadControls, activeProject, activeProgramme, activeProjectId, activeProgrammeId, projectInfo, pendingMutations, user } = useStore();
     const isRiskPending = (id: string) => pendingMutations.has(`risk:${id}`);
     const [promoted, setPromoted] = useState<Set<string>>(new Set());
+
+    // Load the register so we can dedupe promotions across remounts (store is load-once guarded).
+    useEffect(() => { loadControls(); }, [loadControls]);
     const [isAutoLoading,     setIsAutoLoading]     = useState(false);
     const [isManualLoading,   setIsManualLoading]   = useState(false);
     const [suggestedControls, setSuggestedControls] = useState<any[]>([]);
@@ -147,6 +150,15 @@ export function AIControlSuggestions() {
         return base.length > 120 ? `${base.slice(0, 117)}…` : base;
     };
 
+    // A suggestion already lives in the register if a control with the same source
+    // risk + derived title exists — survives remounts where the local `promoted` set resets.
+    const isAlreadyInRegister = (riskId: string, suggestion: string) => {
+        const title = deriveControlTitle(suggestion);
+        return (Array.isArray(controls) ? controls : []).some(
+            c => c.sourceRiskId === riskId && c.title === title,
+        );
+    };
+
     // Q3.1 — promote an AI suggestion into a first-class Control record (linked back
     // to the risk), keeping the "add to risk notes" action separate (Q3.2).
     const promoteToRegister = async (riskId: string, suggestion: string) => {
@@ -155,14 +167,20 @@ export function AIControlSuggestions() {
             return;
         }
         if (!canManageControls()) {
-            toast.error('You need Project Manager access or above to add to the Controls register.');
+            toast.error('You need Project or Programme Manager access to add to the Controls register.');
             return;
         }
         const risk = risks.find(r => r.id === riskId);
         if (!risk) return;
         const key = `${riskId}::${suggestion}`;
+        if (isAlreadyInRegister(riskId, suggestion)) {
+            setPromoted(prev => new Set(prev).add(key));
+            toast('This control is already in the register.', { icon: 'ℹ️' });
+            return;
+        }
         const control: Control = {
-            id: generateId('ctrl'),
+            // Empty id ⇒ the server assigns a collision-safe document id.
+            id: '',
             title: deriveControlTitle(suggestion),
             description: stripMarkdown(suggestion),
             status: 'Not Tested',
@@ -171,7 +189,7 @@ export function AIControlSuggestions() {
             linkedRiskIds: [riskId],
             projectId: (risk as any).projectId ?? activeProjectId ?? null,
             programmeId: (risk as any).programmeId ?? activeProgrammeId ?? null,
-            projectName: (activeProject as any)?.name ?? null,
+            projectName: (risk as any).projectName ?? (activeProject as any)?.name ?? null,
         };
         setPromoted(prev => new Set(prev).add(key));
         try {
@@ -637,8 +655,8 @@ export function AIControlSuggestions() {
                                                             <div className="absolute top-3.5 right-3.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                                                 <motion.button
                                                                     onClick={() => promoteToRegister(item.riskId, s)}
-                                                                    disabled={isMitigationValidationBlocked || promoted.has(`${item.riskId}::${s}`)}
-                                                                    title="Promote to Controls register"
+                                                                    disabled={isMitigationValidationBlocked || promoted.has(`${item.riskId}::${s}`) || isAlreadyInRegister(item.riskId, s)}
+                                                                    title={isAlreadyInRegister(item.riskId, s) ? "Already in Controls register" : "Promote to Controls register"}
                                                                     whileHover={{ scale: 1.1 }}
                                                                     whileTap={{ scale: 0.9 }}
                                                                     transition={{ type: 'spring', stiffness: 500, damping: 25 }}
