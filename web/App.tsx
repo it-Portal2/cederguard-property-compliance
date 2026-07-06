@@ -322,12 +322,12 @@ function AppContent() {
               <Route path="/risk/report" element={<Navigate to="/reporting/project" replace />} />
 
               {/* Monitoring & Reporting*/}
-              <Route path="/monitoring/overview" element={<MonitoringOverviewPage />} />
+              <Route path="/monitoring/overview" element={<RoleGuard requirePM><MonitoringOverviewPage /></RoleGuard>} />
               <Route path="/monitoring/kri" element={<KRITracker />} />
               <Route path="/monitoring/alerts" element={<RiskAlerts />} />
               <Route path="/monitoring/aggregation" element={<RiskAggregation />} />
               <Route path="/monitoring/heatmaps" element={<TrendsHeatmaps />} />
-              <Route path="/monitoring/detected-alerts" element={<AlertsPage />} />
+              <Route path="/monitoring/detected-alerts" element={<RoleGuard requirePM><AlertsPage /></RoleGuard>} />
               <Route path="/reporting/executive" element={<ExecutiveReport />} />
               <Route path="/reporting/project" element={<ProjectReport />} />
               <Route path="/reporting/programme" element={<ClientProgrammeReport />} />

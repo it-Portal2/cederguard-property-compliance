@@ -3335,17 +3335,25 @@ export const useStore = create<AppState>((set, get) => {
   },
   markDetectedAlertRead: async (id) => {
     const uid = get().user?.uid;
+    if (!uid) return;
     set((s) => ({
       detectedAlerts: s.detectedAlerts.map((a) =>
-        a._id === id
-          ? { ...a, readBy: [...(a.readBy || []), ...(uid ? [uid] : [])] }
-          : a,
+        a._id === id ? { ...a, readBy: [...(a.readBy || []), uid] } : a,
       ),
     }));
     try {
       await api.markDetectedAlertRead(id);
     } catch (e) {
       console.error("markDetectedAlertRead failed", e);
+      // Roll back the optimistic read receipt so the UI stays honest.
+      set((s) => ({
+        detectedAlerts: s.detectedAlerts.map((a) =>
+          a._id === id
+            ? { ...a, readBy: (a.readBy || []).filter((u) => u !== uid) }
+            : a,
+        ),
+      }));
+      toast.error("Couldn't mark the alert read.");
     }
   },
 

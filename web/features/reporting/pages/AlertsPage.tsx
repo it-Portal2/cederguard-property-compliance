@@ -148,7 +148,7 @@ export default function AlertsPage() {
         breadcrumbs={[{ label: "Monitoring & Reporting" }, { label: "Detected Alerts" }]}
       />
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <StatsCard
           title="Unread"
           value={counts.unread}
