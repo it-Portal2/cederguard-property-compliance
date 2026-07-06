@@ -299,7 +299,7 @@ export const Login: React.FC = () => {
                                             ) : (
                                                 <form className="form-card" style={{ gap: '14px', margin: 0 }} onSubmit={handleSendMagicLink}>
                                                     <div className="field rise d2">
-                                                        <label className="label" htmlFor="email">Work email</label>
+                                                        <label className="label" htmlFor="email">Email</label>
                                                         <div className="input-wrap">
                                                             <span className="icon-l">
                                                                 <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="3.5" width="12" height="9" rx="1.5" /><path d="M2.5 4.5L8 8.5l5.5-4" /></svg>
@@ -308,7 +308,7 @@ export const Login: React.FC = () => {
                                                                 id="email"
                                                                 className="input"
                                                                 type="email"
-                                                                placeholder="you@company.com"
+                                                                placeholder="you@example.com"
                                                                 autoComplete="email"
                                                                 value={email}
                                                                 onChange={(e) => setEmail(e.target.value)}
@@ -326,7 +326,7 @@ export const Login: React.FC = () => {
                                                     )}
 
                                                     <button type="submit" className="btn-primary rise d3" disabled={!emailValid || loading}>
-                                                        <span>{loading ? 'Sending…' : 'Continue with email'}</span>
+                                                        <span>{loading ? 'Sending…' : 'Email me a sign-in link'}</span>
                                                         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3.5 8h9M8.5 4l4 4-4 4" /></svg>
                                                     </button>
 
