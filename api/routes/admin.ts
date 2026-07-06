@@ -653,4 +653,55 @@ export const adminRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =
       });
     }
   },
+
+  // One-time, idempotent migration of legacy plaintext-doc-id API keys to the
+  // hashed-at-rest scheme (B1/B2). A legacy doc stored the plaintext key AS its
+  // id with no keyHash; here we derive keyHash = sha256(id), rewrite it under a
+  // random doc id (no plaintext at rest), and delete the old doc. Existing keys
+  // keep authenticating because context.ts finds them by the same hash.
+  //
+  // Skipped: docs that already carry `keyHash` (already migrated / new), and
+  // SCOPED keys (Power BI feed) — those are referenced by `feedKeyId` in the
+  // integration config, so moving their doc id would strand that link; they
+  // don't authenticate the general /api endpoint anyway.
+  adminMigrateApiKeyHashes: async (req, res, ctx) => {
+    const { db, isAdmin } = ctx;
+    if (!isAdmin) return res.status(403).json({ error: 'Forbidden' });
+
+    const snap = await db.collection('apiKeys').get();
+    let migrated = 0;
+    let skipped = 0;
+    for (const doc of snap.docs) {
+      const d = doc.data() || {};
+      if (d.keyHash || d.scope) { skipped++; continue; }
+
+      const plaintext = doc.id;
+      const keyHash = crypto.createHash('sha256').update(plaintext).digest('hex');
+      const id = crypto.randomUUID();
+      const prefix = plaintext.length > 12
+        ? `${plaintext.slice(0, 8)}...${plaintext.slice(-4)}`
+        : plaintext;
+
+      await db.collection('apiKeys').doc(id).set({
+        id,
+        uid: d.uid,
+        name: d.name || 'API Key',
+        keyHash,
+        prefix,
+        createdAt: d.createdAt || new Date().toISOString(),
+        lastUsed: d.lastUsed ?? null,
+      });
+      await db.collection('apiKeys').doc(doc.id).delete();
+      migrated++;
+    }
+
+    await logActivity(ctx, 'api_keys_migrated', {
+      category: 'system',
+      entityType: 'apiKey',
+      entityId: 'apiKeys',
+      entityName: `API key hash migration (${migrated} migrated, ${skipped} skipped)`,
+    });
+
+    return res.status(200).json({ success: true, migrated, skipped });
+  },
 };

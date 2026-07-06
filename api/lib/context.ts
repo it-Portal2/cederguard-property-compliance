@@ -334,7 +334,9 @@ export async function createContext(
       if (!hashSnap.empty) {
         apiKeyDoc = hashSnap.docs[0];
       } else {
-        // TEMPORARY legacy fallback — removed in B3 after the hash migration.
+        // TEMPORARY legacy fallback — safe to delete once the admin action
+        // `adminMigrateApiKeyHashes` has been run in this environment (after
+        // that, no plaintext-id keys remain and this branch is dead code).
         // Pre-hash keys were stored with the plaintext key AS the doc id and no
         // keyHash field, so they can't be found by the hash query above.
         const legacy = await db.collection("apiKeys").doc(token).get();
