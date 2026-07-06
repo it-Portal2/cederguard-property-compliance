@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, isSignInWithEmailLink, signInWithEmailLink } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getMessaging } from "firebase/messaging";
 
@@ -41,21 +41,17 @@ export const logout = async () => {
 };
 
 export const sendMagicLink = async (email: string) => {
-    // Force the redirect URL to the authorized production domain to avoid whitelist errors
-    // While allowing localhost for development
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const continueUrl = isLocal 
-        ? window.location.origin + '/login'
-        : 'https://cedarguard.co.uk/login';
-
-    const actionCodeSettings = {
-        url: continueUrl,
-        handleCodeInApp: true,
-    };
+    // Link generation + branded delivery happen server-side (api/routes/auth.ts →
+    // Admin generateSignInWithEmailLink → Resend template), so the email matches the
+    // rest of the app's mail. The continue URL is server-controlled. Dynamic import
+    // avoids a static cycle (api.ts → authBridge → firebaseWebBridge → firebase.ts).
     try {
-        await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-        // Note: localStorage is readable by any JS on the page (XSS risk). Acceptable here
-        // because the value is only a non-secret email address used to pre-fill the sign-in form.
+        const { api } = await import("./api");
+        await api.sendMagicLink(email);
+        // Store the address for the return-side signInWithEmailLink confirm step.
+        // Note: localStorage is readable by any JS on the page (XSS risk). Acceptable
+        // here because the value is only a non-secret email address used to pre-fill
+        // the sign-in form.
         window.localStorage.setItem('emailForSignIn', email);
     } catch (error) {
         console.error("Error sending magic link", error);

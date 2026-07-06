@@ -119,6 +119,34 @@ async function callApi(
 }
 
 export const api = {
+  // Unauthenticated: the user has no session yet when requesting a sign-in link.
+  // Does NOT go through callApi (which requires a Bearer token). The server always
+  // answers 200 { success: true } regardless of whether the address exists.
+  sendMagicLink: async (email: string): Promise<{ success: boolean }> => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    try {
+      const res = await fetch(`${API_URL}?action=sendMagicLink`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!res.ok) throw new ApiError("Could not send the sign-in link", res.status);
+      return { success: true };
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+      if (err.name === "AbortError") {
+        throw new ApiError("Request timed out. Please try again.", 408);
+      }
+      if (err instanceof TypeError) {
+        throw new ApiError("Network error. Please check your connection and try again.", 0);
+      }
+      throw err;
+    }
+  },
+
   createProject: (data: any) => callApi("createProject", { data }),
   getProjects: () => callApi("getProjects"),
   updateProject: (id: string, data: any) =>
