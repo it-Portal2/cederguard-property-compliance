@@ -360,7 +360,6 @@ export const Login: React.FC = () => {
                 <aside className="marketing">
                     <div className="mk-top">
                         <span>cedarguard.co.uk</span>
-                        <span className="mk-stats">● 99.99% uptime · last 90d</span>
                     </div>
 
                     <div className="mk-hero">
@@ -428,14 +427,6 @@ export const Login: React.FC = () => {
                                     <circle cx="360" cy="72" r="2.5" fill="oklch(0.62 0.24 278)" />
                                 </svg>
                             </div>
-                        </div>
-                    </div>
-
-                    <div className="mk-quote rise d4">
-                        <div className="avatar"></div>
-                        <div>
-                            <p>“CedarGuard collapsed three spreadsheets and a fortnightly compliance call into a dashboard our board actually opens.”</p>
-                            <div className="cite">Sarah Henley · Director of Programme Assurance · Greater London Housing</div>
                         </div>
                     </div>
 
