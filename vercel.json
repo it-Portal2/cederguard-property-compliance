@@ -52,6 +52,10 @@
             "schedule": "0 * * * *"
         },
         {
+            "path": "/api?action=runAlertEngine",
+            "schedule": "30 * * * *"
+        },
+        {
             "path": "/api?action=hrcRunMonthlySnapshot",
             "schedule": "5 0 1 * *"
         },

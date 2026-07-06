@@ -18,6 +18,7 @@ import { governanceProjectDocsRoutes } from './governanceProjectDocs.js';
 import { governanceArchiveRoutes } from './governanceArchive.js';
 import { governanceDashboardRoutes } from './governanceDashboard.js';
 import { governanceCronRoutes } from './governanceCron.js';
+import { alertEngineRoutes } from './alertEngine.js';
 import { historicalReportingRoutes } from './historicalReporting.js';
 import { technicalAssuranceRoutes } from './technicalAssurance.js';
 import { chatStreamRoutes } from './chatStream.js';
@@ -62,4 +63,5 @@ export const allRoutes: Record<string, any> = {
   ...assuranceRoutes,
   ...integrationsRoutes,
   ...accessRequestsRoutes,
+  ...alertEngineRoutes,
 };
