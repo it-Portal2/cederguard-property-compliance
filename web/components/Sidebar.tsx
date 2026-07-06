@@ -701,8 +701,8 @@ export function Sidebar() {
               />
             </NavGroup>
 
-            {/* MONITORING & REPORTING — Client Admin only */}
-            {isClientAdmin && (
+            {/* MONITORING & REPORTING — PM+ (managers can monitor their areas) */}
+            {hasCoreAccess && (
               <NavGroup
                 label="Monitoring & Reporting"
                 isAdmin={true}
@@ -718,6 +718,11 @@ export function Sidebar() {
                   to="/monitoring/alerts"
                   icon={BellRing}
                   label="Alerts & Thresholds"
+                />
+                <NavItem
+                  to="/monitoring/detected-alerts"
+                  icon={ShieldAlert}
+                  label="Detected Alerts"
                 />
                 <NavItem
                   to="/monitoring/aggregation"

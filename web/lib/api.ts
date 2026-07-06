@@ -648,6 +648,12 @@ export const api = {
     callApi("governanceNudgeItem", { itemId }),
   governanceListChaseEvents: () => callApi("governanceListChaseEvents"),
 
+  // Automatic detection & alert engine — in-app reads (the cron write path is
+  // not exposed to the client).
+  listDetectedAlerts: () => callApi("listDetectedAlerts"),
+  markDetectedAlertRead: (id: string) =>
+    callApi("markDetectedAlertRead", { id }),
+
   // Historical Reporting Capability — month-end snapshot reads.
   // Cron-driven write paths are not exposed to the client. Super-admin
   // correction endpoint lands in.

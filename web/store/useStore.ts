@@ -592,6 +592,21 @@ export interface AppNotification {
   link?: string;
 }
 
+// A row from the automatic detection engine's `detectedAlerts` collection.
+export interface DetectedAlertRow {
+  _id: string;
+  signalKind: string;
+  severity: "info" | "warning" | "urgent";
+  entityKind: string;
+  entityId: string;
+  entityTitle: string;
+  projectId?: string | null;
+  message: string;
+  thresholdUsed?: string;
+  createdAt: string;
+  readBy?: string[];
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -993,6 +1008,11 @@ export interface AppState {
   loadAssuranceAlerts: (force?: boolean) => Promise<void>;
   saveAssuranceAlert: (alert: AssuranceAlert) => Promise<AssuranceAlert>;
   deleteAssuranceAlert: (id: string) => Promise<void>;
+  // Automatic detection & alert engine — in-app read surface.
+  detectedAlerts: DetectedAlertRow[];
+  detectedAlertsLoaded: boolean;
+  loadDetectedAlerts: (force?: boolean) => Promise<void>;
+  markDetectedAlertRead: (id: string) => Promise<void>;
   /** Create an escalated alert and auto-generate its response actions. Returns the new id. */
   escalateToAssurance: (input: Partial<AssuranceAlert>) => Promise<string>;
   /** (Re)generate the AI response actions for an existing alert. */
@@ -3298,6 +3318,36 @@ export const useStore = create<AppState>((set, get) => {
   assuranceAlerts: [],
   assuranceLoading: false,
   assuranceLoaded: false,
+
+  detectedAlerts: [],
+  detectedAlertsLoaded: false,
+  loadDetectedAlerts: async (force = false) => {
+    if (get().detectedAlertsLoaded && !force) return;
+    try {
+      const res = await api.listDetectedAlerts();
+      set({
+        detectedAlerts: (res?.items as DetectedAlertRow[]) || [],
+        detectedAlertsLoaded: true,
+      });
+    } catch (e) {
+      console.error("loadDetectedAlerts failed", e);
+    }
+  },
+  markDetectedAlertRead: async (id) => {
+    const uid = get().user?.uid;
+    set((s) => ({
+      detectedAlerts: s.detectedAlerts.map((a) =>
+        a._id === id
+          ? { ...a, readBy: [...(a.readBy || []), ...(uid ? [uid] : [])] }
+          : a,
+      ),
+    }));
+    try {
+      await api.markDetectedAlertRead(id);
+    } catch (e) {
+      console.error("markDetectedAlertRead failed", e);
+    }
+  },
 
   loadAssuranceAlerts: async (force = false) => {
     if (get().assuranceLoading) return;
