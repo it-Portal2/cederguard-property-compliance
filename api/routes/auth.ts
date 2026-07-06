@@ -1,6 +1,58 @@
-import { ApiContext } from '../lib/context.js';
+import { ApiContext, getAuthService } from '../lib/context.js';
 import crypto from 'crypto';
 import { logActivity } from '../lib/activityLog.js';
+import { checkMagicLinkRateLimit } from '../lib/magicLinkRateLimit.js';
+import { renderEmail, sendEmail, escapeHtml } from '../lib/email.js';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const APP_URL = (process.env.APP_URL || 'https://cedarguard.co.uk').replace(/\/+$/, '');
+
+// Pre-auth magic-link send. Reachable WITHOUT a token (dispatched from the
+// index.ts pre-auth block, before createContext). Generates a single-use
+// Firebase sign-in link server-side and delivers it through the branded Resend
+// template (the same mechanism as the access-request approval email). It ALWAYS
+// responds { success: true } — it never reveals whether the address has an
+// account, nor whether the rate limit tripped (no account enumeration).
+export async function handleSendMagicLink(req: any, res: any): Promise<any> {
+  try {
+    const rawEmail = typeof req.body?.email === 'string' ? req.body.email.trim() : '';
+    const email = rawEmail.toLowerCase();
+    if (!email || email.length > 254 || !EMAIL_RE.test(email)) {
+      return res.status(200).json({ success: true });
+    }
+
+    const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+    const allowed = await checkMagicLinkRateLimit(email, ip);
+    if (!allowed) {
+      return res.status(200).json({ success: true });
+    }
+
+    // Server-controlled continue URL only (never taken from the request) so the
+    // emailed link can't be turned into an open redirect.
+    const link = await getAuthService().generateSignInWithEmailLink(email, {
+      url: `${APP_URL}/login`,
+      handleCodeInApp: true,
+    });
+
+    await sendEmail({
+      to: email,
+      subject: 'Your CedarGuard sign-in link',
+      html: renderEmail({
+        previewText: 'Your secure sign-in link for CedarGuard.',
+        heading: 'Sign in to CedarGuard',
+        bodyHtml: `<p style="margin:0 0 12px;">Click the button below to sign in to CedarGuard. This link is single-use and expires shortly.</p>
+<p style="margin:0 0 12px;">If you didn't request this, you can safely ignore this email — no changes will be made to your account.</p>`,
+        cta: { label: 'Sign in to CedarGuard', url: link },
+      }),
+    });
+
+    return res.status(200).json({ success: true });
+  } catch (e: any) {
+    // Never leak the failure reason to an unauthenticated caller.
+    console.error('magicLink.send.error', e?.message ?? String(e));
+    return res.status(200).json({ success: true });
+  }
+}
 
 export const authRoutes: Record<string, (req: any, res: any, ctx: ApiContext) => Promise<any>> = {
   generateApiKey: async (req, res, ctx) => {

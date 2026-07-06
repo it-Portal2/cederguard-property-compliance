@@ -1,6 +1,7 @@
 import { allRoutes } from './routes/index.js';
 import { createContext } from './lib/context.js';
 import { blockIfViewerRestricted } from './lib/viewerGate.js';
+import { handleSendMagicLink } from './routes/auth.js';
 
 export const maxDuration = 120;
 
@@ -35,6 +36,14 @@ export default async function handler(req: any, res: any) {
       version: process.env.VERCEL_GIT_COMMIT_SHA || 'unknown',
       timestamp: new Date().toISOString(),
     });
+  }
+
+  // --- Pre-auth magic-link send ---
+  // The user has no session yet when requesting a sign-in link, so this action
+  // runs before createContext (which would 401). The handler is self-guarding:
+  // input validation + per-email/per-IP rate limit, and always answers success.
+  if (req.method === 'POST' && earlyAction === 'sendMagicLink') {
+    return await handleSendMagicLink(req, res);
   }
 
   // --- Context Creation ---
