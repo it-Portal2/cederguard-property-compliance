@@ -7,6 +7,11 @@ import { renderEmail, sendEmail, escapeHtml } from '../lib/email.js';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const APP_URL = (process.env.APP_URL || 'https://cedarguard.co.uk').replace(/\/+$/, '');
 
+// Non-secret display preview of an API key: first 8 + last 4 chars.
+export function maskKey(key: string): string {
+  return key.length > 12 ? `${key.slice(0, 8)}...${key.slice(-4)}` : key;
+}
+
 // Pre-auth magic-link send. Reachable WITHOUT a token (dispatched from the
 // index.ts pre-auth block, before createContext). Generates a single-use
 // Firebase sign-in link server-side and delivers it through the branded Resend
@@ -63,21 +68,31 @@ export const authRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
       return res.status(403).json({ error: 'Forbidden: Viewers cannot generate API keys' });
     }
     
-    // Generate a random 32 character hex string
-    const cryptoContent = crypto.randomBytes(32).toString('hex');
-    const token = `cdR_${cryptoContent}`;
+    // Industry-standard: store only a SHA-256 hash, never the plaintext key.
+    // The key is shown to the user exactly once (below) and can't be recovered.
+    // Doc id is a random uuid (safe to expose for revoke); the request-time
+    // lookup in context.ts finds the key by its hash.
+    const token = `cdR_${crypto.randomBytes(32).toString('hex')}`;
+    const keyHash = crypto.createHash('sha256').update(token).digest('hex');
+    const id = crypto.randomUUID();
+    const cleanName = (typeof name === 'string' ? name.trim().slice(0, 100) : '') || 'API Key';
+    const prefix = maskKey(token);
 
-    await db.collection('apiKeys').doc(token).set({
+    await db.collection('apiKeys').doc(id).set({
+      id,
       uid,
-      name: (typeof name === 'string' ? name.trim().slice(0, 100) : '') || 'API Key',
-      createdAt: new Date().toISOString()
+      name: cleanName,
+      keyHash,
+      prefix,
+      createdAt: new Date().toISOString(),
+      lastUsed: null,
     });
 
     await logActivity(ctx, 'api_key_created', {
       category: 'auth',
       entityType: 'apiKey',
-      entityId: token.slice(0, 12) + '…',
-      entityName: (typeof name === 'string' ? name.trim().slice(0, 100) : '') || 'API Key',
+      entityId: prefix,
+      entityName: cleanName,
     });
 
     return res.status(200).json({ success: true, key: token });
@@ -86,15 +101,19 @@ export const authRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
   getApiKeys: async (req, res, ctx) => {
     const { db, uid } = ctx;
     const snap = await db.collection('apiKeys').where('uid', '==', uid).get();
-    
-    // Do not return the full key to the frontend for security, only a preview
+
+    // Never return the full key. New (hashed) docs carry a random `id` + stored
+    // `prefix`. Legacy docs stored the plaintext key AS the doc id and have no
+    // prefix — mask the id so they still display; the migration (B3) rewrites
+    // them to random ids with no plaintext.
     const keys = snap.docs.map(doc => {
-      const fullKey = doc.id;
+      const d = doc.data();
       return {
-        id: fullKey,
-        name: doc.data().name || 'API Key',
-        createdAt: doc.data().createdAt,
-        prefix: fullKey.substring(0, 8) + '...' + fullKey.substring(fullKey.length - 4)
+        id: doc.id,
+        name: d.name || 'API Key',
+        createdAt: d.createdAt,
+        lastUsed: d.lastUsed ?? null,
+        prefix: d.prefix || maskKey(doc.id),
       };
     });
     return res.status(200).json({ success: true, keys });

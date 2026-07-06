@@ -267,15 +267,25 @@ export const integrationsRoutes: Record<string, (req: any, res: any, ctx: ApiCon
     // Revoke any existing feed key first (rotation).
     if (raw?.feedKeyId) await ctx.db.collection('apiKeys').doc(raw.feedKeyId).delete().catch(() => {});
 
+    // Hashed at rest (same scheme as the general API keys): store only the
+    // SHA-256 hash under a random doc id. The plaintext token still travels in
+    // the feed URL below; the future feed consumer must hash-lookup by keyHash.
     const token = `cdR_${crypto.randomBytes(32).toString('hex')}`;
-    await ctx.db.collection('apiKeys').doc(token).set({
+    const keyHash = crypto.createHash('sha256').update(token).digest('hex');
+    const id = crypto.randomUUID();
+    await ctx.db.collection('apiKeys').doc(id).set({
+      id,
       uid: ctx.uid,
       name: 'Power BI Feed',
       scope: 'powerbi_feed',
       clientId: ctx.primaryUid,
+      keyHash,
+      prefix: `${token.slice(0, 8)}...${token.slice(-4)}`,
       createdAt: new Date().toISOString(),
+      lastUsed: null,
     });
-    await patchProvider(ctx, 'powerbi', { feedKeyId: token, enabled: true, updatedAt: FieldValue.serverTimestamp() });
+    // feedKeyId is the doc id (uuid) so rotation/disconnect can delete by id.
+    await patchProvider(ctx, 'powerbi', { feedKeyId: id, enabled: true, updatedAt: FieldValue.serverTimestamp() });
 
     await logActivity(ctx, 'integration_feed_key_generated', {
       category: 'auth',
