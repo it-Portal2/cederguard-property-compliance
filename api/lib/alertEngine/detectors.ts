@@ -19,7 +19,10 @@ export type AlertSignalKind =
   | 'capa-overdue'
   | 'incident-stale'
   | 'incident-recurring'
-  | 'risk-overdue';
+  | 'risk-overdue'
+  // Emitted by the event-driven severe-risk path (riskSevereEscalation.ts),
+  // not the cron detectors — kept in the union so the in-app surface renders it.
+  | 'risk-severe';
 
 export type AlertSeverity = 'info' | 'warning' | 'urgent';
 

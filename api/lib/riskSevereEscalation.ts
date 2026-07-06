@@ -26,6 +26,10 @@ export interface SevereEscalationRecipient {
   name?: string;
   role?: string;
   routedAs: SevereEscalationRouteKind;
+  /** Device token for FCM push (null when the user has none registered). */
+  fcmToken?: string | null;
+  /** false when the user has opted out of alert notifications. */
+  notifyEnabled?: boolean;
 }
 
 interface RiskLike {
@@ -89,12 +93,22 @@ export async function findStrategicDirectorRecipients(
     const isSd = role === "strategic_director" || extras.includes("strategic_director");
     const isClientAdmin = role === "client_admin" || role === "admin" || role === "super_admin";
 
+    const np = u.notificationPreferences as Record<string, unknown> | undefined;
+    const notifyEnabled = !(
+      np &&
+      typeof np === "object" &&
+      (np.alerts === false ||
+        (np.alertSignals &&
+          (np.alertSignals as Record<string, unknown>)["risk-severe"] === false))
+    );
     const base: SevereEscalationRecipient = {
       uid,
       email: typeof u.email === "string" ? u.email : undefined,
       name: typeof u.name === "string" ? u.name : undefined,
       role,
       routedAs: routeKind,
+      fcmToken: typeof u.fcmToken === "string" ? u.fcmToken : null,
+      notifyEnabled,
     };
 
     if (isSd) sds.push(base);
@@ -216,6 +230,48 @@ export async function writeSevereEscalations(
     console.error("[rsc-d] severeRiskAlerts batch write failed:", err);
     // Reset summary so the response doesn't claim we wrote rows we didn't.
     return { alertCount: 0, recipientCount: 0, riskIds: [] };
+  }
+
+  // Dispatch — the actual notification (FCM push) + a unified `detectedAlerts`
+  // row so the escalation shows in-app alongside the cron-detected signals.
+  // Best-effort: a dispatch failure never affects the recorded audit rows.
+  const nowIso = new Date().toISOString();
+  for (const risk of transitions) {
+    const riskId = String(risk.id ?? "");
+    const title = String((risk as any).title ?? (risk as any).name ?? "Risk");
+    const message = `Risk "${title}" has escalated to Severe and needs Strategic Director attention.`;
+    try {
+      await ctx.db.collection("detectedAlerts").add({
+        clientId: ctx.primaryUid,
+        signalKind: "risk-severe",
+        dedupeKey: `risk-severe:${riskId}`,
+        severity: "urgent",
+        entityKind: "risk",
+        entityId: riskId,
+        entityTitle: title,
+        projectId: (risk as any).projectId ?? null,
+        message,
+        thresholdUsed: "gross or residual impact = 5",
+        createdAt: nowIso,
+        recipientUids: recipients.map((r) => r.uid),
+        deliveryAttempts: [],
+        readBy: [],
+      });
+    } catch (err) {
+      console.error("[rsc-d] detectedAlerts write failed:", err);
+    }
+    for (const r of recipients) {
+      if (r.notifyEnabled === false || !r.fcmToken) continue;
+      try {
+        await ctx.getMessagingService().send({
+          token: r.fcmToken,
+          notification: { title: `Urgent: ${title}`, body: message },
+          data: { signalKind: "risk-severe", entityKind: "risk", entityId: riskId, severity: "urgent" },
+        });
+      } catch (err) {
+        console.error("[rsc-d] FCM send failed:", err);
+      }
+    }
   }
 
   // System activity entry — automatic escalation triggered by a risk save.
