@@ -15,30 +15,39 @@ KEY="${API_KEY:-}"
 PASS=0
 FAIL=0
 
-c() { printf '%s' "$1"; } # no-op helper for readability
-
-# call <action> <json-body> [--noauth]  -> echoes body, sets HTTP_STATUS
-HTTP_STATUS=0
-call() {
-  local action="$1" body="${2:-{\}}" noauth="${3:-}"
+# req <action> <body> [--noauth]  -> echoes "<body>\n<http_code>"
+req() {
+  local action="$1" body="${2:-{}}" noauth="${3:-}"
   local hdr=(-H "Content-Type: application/json")
-  if [ "$noauth" != "--noauth" ]; then hdr+=(-H "Authorization: Bearer ${KEY}"); fi
-  local out
-  out=$(curl -sS -w '\n%{http_code}' -X POST "${BASE_URL}?action=${action}" "${hdr[@]}" -d "${body}" 2>/dev/null)
-  HTTP_STATUS="${out##*$'\n'}"
-  printf '%s' "${out%$'\n'*}"
+  [ "$noauth" != "--noauth" ] && hdr+=(-H "Authorization: Bearer ${KEY}")
+  curl -sS -m 30 -w $'\n%{http_code}' -X POST "${BASE_URL}?action=${action}" "${hdr[@]}" -d "${body}" 2>/dev/null
 }
 
-# check <label> <action> <json> [--noauth]  -> 2xx + not an {error:...} body
+# check <label> <action> [body] [--noauth]  -> 2xx + no {"error"...} in body
 check() {
-  local label="$1" action="$2" body="${3:-{\}}" noauth="${4:-}"
-  local resp; resp=$(call "$action" "$body" "$noauth")
-  if [ "${HTTP_STATUS}" -ge 200 ] && [ "${HTTP_STATUS}" -lt 300 ] && ! printf '%s' "$resp" | grep -q '"error"'; then
-    printf '  \033[32mPASS\033[0m  %-34s (%s)\n' "$label" "$HTTP_STATUS"
-    PASS=$((PASS+1)); return 0
+  local label="$1" action="$2" body="${3:-{}}" noauth="${4:-}"
+  local raw code resp
+  raw=$(req "$action" "$body" "$noauth")
+  code="${raw##*$'\n'}"
+  resp="${raw%$'\n'*}"
+  # Retry twice on any non-2xx — absorbs `vercel dev` cold-start / HMR races
+  # (transient 000 connection drops and 5xx during recompiles).
+  local tries=0
+  while [[ ! "$code" =~ ^2[0-9][0-9]$ && $tries -lt 2 ]]; do
+    sleep 1
+    raw=$(req "$action" "$body" "$noauth")
+    code="${raw##*$'\n'}"
+    resp="${raw%$'\n'*}"
+    tries=$((tries + 1))
+  done
+  if [[ "$code" =~ ^2[0-9][0-9]$ ]] && ! printf '%s' "$resp" | grep -q '"error"'; then
+    printf '  \033[32mPASS\033[0m  %-32s (%s)\n' "$label" "$code"
+    PASS=$((PASS + 1))
+    return 0
   fi
-  printf '  \033[31mFAIL\033[0m  %-34s (%s) %s\n' "$label" "$HTTP_STATUS" "$(printf '%s' "$resp" | head -c 160)"
-  FAIL=$((FAIL+1)); return 1
+  printf '  \033[31mFAIL\033[0m  %-32s (%s) %s\n' "$label" "${code:-?}" "$(printf '%s' "$resp" | head -c 140)"
+  FAIL=$((FAIL + 1))
+  return 1
 }
 
 echo "Base URL: ${BASE_URL}"
@@ -76,7 +85,7 @@ check "resourceListSchemes"       "resourceListSchemes"
 check "resourceGetAssumptions"    "resourceGetAssumptions"
 check "listDetectedAlerts"        "listDetectedAlerts"
 check "integrationsGetStatus"     "integrationsGetStatus"
-check "validationGetForContext"   "validationGetForContext"
+check "validationGetForContext"   "validationGetForContext" '{"contextId":"portfolio"}'
 check "governanceGetFramework"    "governanceGetFramework"
 check "governanceListReports"     "governanceListReports"
 check "governanceListMeetings"    "governanceListMeetings"
@@ -89,17 +98,27 @@ check "hrcListAvailableMonths"    "hrcListAvailableMonths"
 # 3) Write round-trip on a throwaway project -------------------------------
 echo
 echo "Write round-trip:"
-PROJECT_ID="verify-$(date +%s)"
-check "createProject" "createProject" "{\"project\":{\"id\":\"${PROJECT_ID}\",\"name\":\"API verify (delete me)\"}}"
-check "getData(risks)" "getData" "{\"collection\":\"risks\",\"projectId\":\"${PROJECT_ID}\"}"
-check "saveData(risks)" "saveData" "{\"collection\":\"risks\",\"projectId\":\"${PROJECT_ID}\",\"data\":[{\"id\":\"r-verify\",\"title\":\"verify risk\"}]}"
-RISKS=$(call "getData" "{\"collection\":\"risks\",\"projectId\":\"${PROJECT_ID}\"}")
-if printf '%s' "$RISKS" | grep -q 'r-verify'; then
-  printf '  \033[32mPASS\033[0m  %-34s\n' "getData reflects saved risk"; PASS=$((PASS+1))
+CREATE=$(req "createProject" '{"data":{"name":"API verify (delete me)","type":"Verification"}}')
+CBODY="${CREATE%$'\n'*}"
+CCODE="${CREATE##*$'\n'}"
+PID=$(printf '%s' "$CBODY" | grep -oE '"id":"[^"]+"' | head -1 | sed 's/"id":"//; s/"//')
+if [[ "$CCODE" =~ ^2[0-9][0-9]$ ]] && [ -n "$PID" ]; then
+  printf '  \033[32mPASS\033[0m  %-32s (%s) id=%s\n' "createProject" "$CCODE" "$PID"; PASS=$((PASS + 1))
 else
-  printf '  \033[31mFAIL\033[0m  %-34s %s\n' "getData reflects saved risk" "$(printf '%s' "$RISKS" | head -c 160)"; FAIL=$((FAIL+1))
+  printf '  \033[31mFAIL\033[0m  %-32s (%s) %s\n' "createProject" "${CCODE:-?}" "$(printf '%s' "$CBODY" | head -c 140)"; FAIL=$((FAIL + 1)); PID=""
 fi
-check "deleteProject (cleanup)" "deleteProject" "{\"id\":\"${PROJECT_ID}\"}"
+
+if [ -n "$PID" ]; then
+  check "getData(risks)"  "getData"  "{\"collection\":\"risks\",\"projectId\":\"${PID}\"}"
+  check "saveData(risks)" "saveData" "{\"collection\":\"risks\",\"projectId\":\"${PID}\",\"data\":[{\"id\":\"r-verify\",\"title\":\"verify risk\"}]}"
+  RB=$(req "getData" "{\"collection\":\"risks\",\"projectId\":\"${PID}\"}"); RB="${RB%$'\n'*}"
+  if printf '%s' "$RB" | grep -q 'r-verify'; then
+    printf '  \033[32mPASS\033[0m  %-32s\n' "getData reflects saved risk"; PASS=$((PASS + 1))
+  else
+    printf '  \033[31mFAIL\033[0m  %-32s %s\n' "getData reflects saved risk" "$(printf '%s' "$RB" | head -c 140)"; FAIL=$((FAIL + 1))
+  fi
+  check "deleteProject (cleanup)" "deleteProject" "{\"id\":\"${PID}\"}"
+fi
 
 echo
 echo "Result: ${PASS} passed, ${FAIL} failed."
