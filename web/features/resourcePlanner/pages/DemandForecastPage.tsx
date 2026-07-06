@@ -5,6 +5,11 @@ import { useStore } from "../../../store/useStore";
 import DemandGrid, { type GridRow, type GridUnit } from "../components/DemandGrid";
 import FteExplainer from "../components/FteExplainer";
 import RpEmptyState from "../components/RpEmptyState";
+import {
+  ProjectScopeToggle,
+  scopeByProject,
+  type ProjectScope,
+} from "../../../components/common/ProjectScope";
 import SchemeFilters, {
   applySchemeFilters,
   emptySchemeFilters,
@@ -36,8 +41,12 @@ export default function DemandForecastPage() {
   const resourceSchemes = useStore((s) => s.resourceSchemes);
   const resourceAssumptions = useStore((s) => s.resourceAssumptions);
   const loadResourcePlanner = useStore((s) => s.loadResourcePlanner);
+  const activeProjectId = useStore((s) => s.activeProjectId);
 
   const [filters, setFilters] = useState<SchemeFilterState>(emptySchemeFilters);
+  const [scope, setScope] = useState<ProjectScope>(
+    activeProjectId ? "project" : "all",
+  );
   const [view, setView] = useState<View>("role");
   const [unit, setUnit] = useState<GridUnit>("fte");
 
@@ -49,9 +58,19 @@ export default function DemandForecastPage() {
     loadResourcePlanner();
   }, [loadResourcePlanner]);
 
+  useEffect(() => {
+    setScope(activeProjectId ? "project" : "all");
+  }, [activeProjectId]);
+
   const filtered = useMemo(
-    () => applySchemeFilters(resourceSchemes, filters),
-    [resourceSchemes, filters],
+    () =>
+      applySchemeFilters(
+        scopeByProject(resourceSchemes, scope, activeProjectId, {
+          includeUntagged: false,
+        }),
+        filters,
+      ),
+    [resourceSchemes, scope, activeProjectId, filters],
   );
 
   const plan = useMemo(
@@ -162,6 +181,11 @@ export default function DemandForecastPage() {
         title="Demand Forecast"
         subtitle="FTE required per quarter (incl. overhead & leave uplift), by role and complexity."
         breadcrumbs={[{ label: "Resource Planner" }, { label: "Demand Forecast" }]}
+        actions={
+          activeProjectId ? (
+            <ProjectScopeToggle scope={scope} onChange={setScope} />
+          ) : undefined
+        }
       />
 
       {resourceAssumptions && (

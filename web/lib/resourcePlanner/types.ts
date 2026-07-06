@@ -64,6 +64,9 @@ export interface ResourceScheme {
   defectsPM?: string;
 
   // Linkage + metadata
+  /** FK to a real project (the `projects` collection). Drives project-scoped
+   *  views; unassigned schemes are portfolio-only. */
+  projectId?: string | null;
   linkedProjectId?: string | null;
   projectCode?: string;
   notes?: string;

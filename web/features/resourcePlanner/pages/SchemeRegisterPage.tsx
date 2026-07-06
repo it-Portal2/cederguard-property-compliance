@@ -1,9 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { Plus, Pencil, Trash2, ClipboardList, Upload } from "lucide-react";
 import PageHeader from "../../../components/PageHeader";
 import DynamicTable from "../../../components/table/DynamicTable";
 import { useStore } from "../../../store/useStore";
+import {
+  ProjectScopeToggle,
+  scopeByProject,
+  type ProjectScope,
+} from "../../../components/common/ProjectScope";
 import SchemeModal from "../components/SchemeModal";
 import ImportModal from "../components/ImportModal";
 import type { ColumnDef, RowAction } from "../../../components/table/types";
@@ -18,6 +23,22 @@ export default function SchemeRegisterPage() {
   const saveResourceScheme = useStore((s) => s.saveResourceScheme);
   const deleteResourceScheme = useStore((s) => s.deleteResourceScheme);
   const canManageResourcePlanner = useStore((s) => s.canManageResourcePlanner);
+  const activeProjectId = useStore((s) => s.activeProjectId);
+
+  // Q5.4 — schemes are project-scoped; unassigned = portfolio-only (includeUntagged:false).
+  const [scope, setScope] = useState<ProjectScope>(
+    activeProjectId ? "project" : "all",
+  );
+  useEffect(() => {
+    setScope(activeProjectId ? "project" : "all");
+  }, [activeProjectId]);
+  const scopedSchemes = useMemo(
+    () =>
+      scopeByProject(resourceSchemes, scope, activeProjectId, {
+        includeUntagged: false,
+      }),
+    [resourceSchemes, scope, activeProjectId],
+  );
   const canManage = canManageResourcePlanner();
 
   const [editing, setEditing] = useState<ResourceScheme | null>(null);
@@ -121,10 +142,15 @@ export default function SchemeRegisterPage() {
         title="Scheme Register"
         subtitle="The schemes that drive resource demand — dates, complexity and homes."
         breadcrumbs={[{ label: "Resource Planner" }, { label: "Scheme Register" }]}
+        actions={
+          activeProjectId ? (
+            <ProjectScopeToggle scope={scope} onChange={setScope} />
+          ) : undefined
+        }
       />
 
       <DynamicTable<ResourceScheme>
-        data={resourceSchemes}
+        data={scopedSchemes}
         columns={columns}
         rowActions={rowActions}
         getRowId={(r) => r.id}

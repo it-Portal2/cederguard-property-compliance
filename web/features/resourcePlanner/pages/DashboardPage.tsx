@@ -24,6 +24,11 @@ import {
 import PageHeader from "../../../components/PageHeader";
 import { StatsCard } from "../../../components/common/StatsCard";
 import { useStore } from "../../../store/useStore";
+import {
+  ProjectScopeToggle,
+  scopeByProject,
+  type ProjectScope,
+} from "../../../components/common/ProjectScope";
 import SchemeFilters, {
   applySchemeFilters,
   emptySchemeFilters,
@@ -95,16 +100,29 @@ export default function ResourcePlannerDashboardPage() {
   const resourcePlannerLoading = useStore((s) => s.resourcePlannerLoading);
   const resourcePlannerLoaded = useStore((s) => s.resourcePlannerLoaded);
   const loadResourcePlanner = useStore((s) => s.loadResourcePlanner);
+  const activeProjectId = useStore((s) => s.activeProjectId);
 
   const [filters, setFilters] = useState<SchemeFilterState>(emptySchemeFilters);
+  const [scope, setScope] = useState<ProjectScope>(
+    activeProjectId ? "project" : "all",
+  );
 
   useEffect(() => {
     loadResourcePlanner();
   }, [loadResourcePlanner]);
+  useEffect(() => {
+    setScope(activeProjectId ? "project" : "all");
+  }, [activeProjectId]);
 
   const filtered = useMemo(
-    () => applySchemeFilters(resourceSchemes, filters),
-    [resourceSchemes, filters],
+    () =>
+      applySchemeFilters(
+        scopeByProject(resourceSchemes, scope, activeProjectId, {
+          includeUntagged: false,
+        }),
+        filters,
+      ),
+    [resourceSchemes, scope, activeProjectId, filters],
   );
   const plan = useMemo(
     () => (resourceAssumptions ? buildResourcePlan(filtered, resourceAssumptions) : null),
@@ -167,7 +185,12 @@ export default function ResourcePlannerDashboardPage() {
         breadcrumbs={[{ label: "Resource Planner" }, { label: "Dashboard" }]}
         actions={
           !loading && resourceSchemes.length > 0 ? (
-            <SchemeFilters schemes={resourceSchemes} value={filters} onChange={setFilters} />
+            <div className="flex flex-wrap items-center gap-2">
+              {activeProjectId && (
+                <ProjectScopeToggle scope={scope} onChange={setScope} />
+              )}
+              <SchemeFilters schemes={resourceSchemes} value={filters} onChange={setFilters} />
+            </div>
           ) : undefined
         }
       />

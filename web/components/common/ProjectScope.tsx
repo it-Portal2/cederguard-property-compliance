@@ -4,17 +4,24 @@ export type ProjectScope = "project" | "all";
 
 /**
  * Filter a tenant-wide register to the active project. In "project" mode this
- * keeps records tagged to the active project AND org-wide (untagged) records,
- * since a shared register's org-wide entries apply to every project. "all"
+ * keeps records tagged to the active project. By default it also keeps org-wide
+ * (untagged) records, since a shared register's org-wide entries apply to every
+ * project — pass `includeUntagged: false` for registers where an untagged record
+ * belongs to no project (e.g. Resource Planner schemes → portfolio-only). "all"
  * returns everything. No server round-trip — the register is already loaded.
  */
 export function scopeByProject<T extends { projectId?: string | null }>(
   items: T[],
   scope: ProjectScope,
   activeProjectId: string | null,
+  opts?: { includeUntagged?: boolean },
 ): T[] {
   if (scope !== "project" || !activeProjectId) return items;
-  return items.filter((i) => !i.projectId || i.projectId === activeProjectId);
+  const includeUntagged = opts?.includeUntagged ?? true;
+  return items.filter(
+    (i) =>
+      i.projectId === activeProjectId || (includeUntagged && !i.projectId),
+  );
 }
 
 export function ProjectScopeToggle({

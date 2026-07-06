@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { X } from "lucide-react";
+import { useStore } from "../../../store/useStore";
 import { generateId } from "../../../lib/utils";
 import { COMPLEXITY_BANDS } from "../../../lib/resourcePlanner/constants";
 import type { ComplexityBand, ResourceScheme } from "../../../lib/resourcePlanner/types";
@@ -37,9 +38,12 @@ function Field({
 }
 
 export default function SchemeModal({ scheme, onClose, onSave }: Props) {
+  const projects = useStore((s) => s.projects);
+  const projectList = Array.isArray(projects) ? projects : [];
   const [form, setForm] = useState<ResourceScheme>(() => ({
     id: scheme?.id || generateId("rp"),
     name: scheme?.name || "",
+    projectId: scheme?.projectId ?? null,
     status: scheme?.status || "",
     programme: scheme?.programme || "",
     batch: scheme?.batch || "",
@@ -176,6 +180,20 @@ export default function SchemeModal({ scheme, onClose, onSave }: Props) {
                 value={form.projectCode}
                 onChange={(e) => set("projectCode", e.target.value)}
               />
+            </Field>
+            <Field label="Project" full>
+              <select
+                className={inputCls}
+                value={form.projectId || ""}
+                onChange={(e) => set("projectId", e.target.value || null)}
+              >
+                <option value="">— Unassigned (portfolio only)</option>
+                {projectList.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
             </Field>
 
             <Field label="Council homes">

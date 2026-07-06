@@ -4,6 +4,11 @@ import PageHeader from "../../../components/PageHeader";
 import { useStore } from "../../../store/useStore";
 import GanttTimeline from "../components/GanttTimeline";
 import RpEmptyState from "../components/RpEmptyState";
+import {
+  ProjectScopeToggle,
+  scopeByProject,
+  type ProjectScope,
+} from "../../../components/common/ProjectScope";
 import SchemeFilters, {
   applySchemeFilters,
   emptySchemeFilters,
@@ -23,16 +28,28 @@ export default function TimelinePage() {
   const resourceAssumptions = useStore((s) => s.resourceAssumptions);
   const resourcePlannerLoading = useStore((s) => s.resourcePlannerLoading);
   const loadResourcePlanner = useStore((s) => s.loadResourcePlanner);
+  const activeProjectId = useStore((s) => s.activeProjectId);
 
   const [filters, setFilters] = useState<SchemeFilterState>(emptySchemeFilters);
+  const [scope, setScope] = useState<ProjectScope>(
+    activeProjectId ? "project" : "all",
+  );
 
   useEffect(() => {
     loadResourcePlanner();
   }, [loadResourcePlanner]);
+  useEffect(() => {
+    setScope(activeProjectId ? "project" : "all");
+  }, [activeProjectId]);
 
   const { axis, schemes } = useMemo(() => {
     if (!resourceAssumptions) return { axis: [], schemes: [] };
-    const filtered = applySchemeFilters(resourceSchemes, filters).map((s) =>
+    const filtered = applySchemeFilters(
+      scopeByProject(resourceSchemes, scope, activeProjectId, {
+        includeUntagged: false,
+      }),
+      filters,
+    ).map((s) =>
       normalizeScheme(s, resourceAssumptions.complexityMap),
     );
     const horizon =
@@ -50,7 +67,7 @@ export default function TimelinePage() {
       axis: buildQuarterAxis(horizon.startFy, horizon.endFy),
       schemes: sorted,
     };
-  }, [resourceSchemes, resourceAssumptions, filters]);
+  }, [resourceSchemes, resourceAssumptions, filters, scope, activeProjectId]);
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -59,9 +76,14 @@ export default function TimelinePage() {
         subtitle="Stage timeline per scheme — planning, design, construction and defects."
         breadcrumbs={[{ label: "Resource Planner" }, { label: "Timeline" }]}
         actions={
-          resourceSchemes.length > 0 ? (
-            <SchemeFilters schemes={resourceSchemes} value={filters} onChange={setFilters} />
-          ) : undefined
+          <div className="flex flex-wrap items-center gap-2">
+            {activeProjectId && (
+              <ProjectScopeToggle scope={scope} onChange={setScope} />
+            )}
+            {resourceSchemes.length > 0 && (
+              <SchemeFilters schemes={resourceSchemes} value={filters} onChange={setFilters} />
+            )}
+          </div>
         }
       />
 

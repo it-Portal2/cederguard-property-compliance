@@ -7,6 +7,11 @@ import { useStore } from "../../../store/useStore";
 import RpEmptyState from "../components/RpEmptyState";
 import ResourcesInPostGrid from "../components/ResourcesInPostGrid";
 import PeopleCapacityGrid from "../components/PeopleCapacityGrid";
+import {
+  ProjectScopeToggle,
+  scopeByProject,
+  type ProjectScope,
+} from "../../../components/common/ProjectScope";
 import SchemeFilters, {
   applySchemeFilters,
   emptySchemeFilters,
@@ -34,8 +39,12 @@ export default function CapacityPage() {
   const saveResourceAssumptions = useStore((s) => s.saveResourceAssumptions);
   const canManageResourcePlanner = useStore((s) => s.canManageResourcePlanner);
   const editable = canManageResourcePlanner();
+  const activeProjectId = useStore((s) => s.activeProjectId);
 
   const [filters, setFilters] = useState<SchemeFilterState>(emptySchemeFilters);
+  const [scope, setScope] = useState<ProjectScope>(
+    activeProjectId ? "project" : "all",
+  );
   const [inPost, setInPost] = useState<InPostMap | null>(null);
   const [availability, setAvailability] = useState<Record<string, number> | null>(null);
   const [view, setView] = useState<"role" | "person">("role");
@@ -44,6 +53,9 @@ export default function CapacityPage() {
   useEffect(() => {
     loadResourcePlanner();
   }, [loadResourcePlanner]);
+  useEffect(() => {
+    setScope(activeProjectId ? "project" : "all");
+  }, [activeProjectId]);
 
   // Seed the editable drafts from saved assumptions once they land.
   useEffect(() => {
@@ -60,8 +72,14 @@ export default function CapacityPage() {
   }, [resourceAssumptions, inPost, availability]);
 
   const filtered = useMemo(
-    () => applySchemeFilters(resourceSchemes, filters),
-    [resourceSchemes, filters],
+    () =>
+      applySchemeFilters(
+        scopeByProject(resourceSchemes, scope, activeProjectId, {
+          includeUntagged: false,
+        }),
+        filters,
+      ),
+    [resourceSchemes, scope, activeProjectId, filters],
   );
 
   // Plan computed against the live draft so edits reflect immediately.
@@ -156,6 +174,9 @@ export default function CapacityPage() {
         breadcrumbs={[{ label: "Resource Planner" }, { label: "Capacity" }]}
         actions={
           <div className="flex items-center gap-2">
+            {activeProjectId && (
+              <ProjectScopeToggle scope={scope} onChange={setScope} />
+            )}
             {!editable && (
               <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-mono uppercase tracking-wide text-slate-500">
                 <Lock className="h-3 w-3" /> Read-only
