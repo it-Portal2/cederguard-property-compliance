@@ -43,14 +43,21 @@ async function recentDuplicate(
   const cutoff = new Date(
     Date.now() - DEDUPE_WINDOW_HOURS * 60 * 60 * 1000,
   ).toISOString();
-  const snap = await ctx.db
-    .collection(COLLECTION)
-    .where('clientId', '==', clientId)
-    .where('dedupeKey', '==', dedupeKey)
-    .where('createdAt', '>=', cutoff)
-    .limit(1)
-    .get();
-  return !snap.empty;
+  try {
+    const snap = await ctx.db
+      .collection(COLLECTION)
+      .where('clientId', '==', clientId)
+      .where('dedupeKey', '==', dedupeKey)
+      .where('createdAt', '>=', cutoff)
+      .limit(1)
+      .get();
+    return !snap.empty;
+  } catch (err) {
+    // Missing composite index or a transient read error — fail open (emit the
+    // alert) rather than aborting the whole run. Logged for visibility.
+    console.error('[alerts] dedupe query failed', err);
+    return false;
+  }
 }
 
 interface AlertTarget {
@@ -69,7 +76,7 @@ async function resolveWorkspaceTargets(
     const snap = await ctx.db
       .collection('users')
       .where('clientId', '==', clientId)
-      .limit(50)
+      .limit(500)
       .get();
     for (const d of snap.docs) {
       if ((d.data() ?? {}).role === 'client_admin') uids.add(d.id);
@@ -184,15 +191,23 @@ async function processWorkspace(
     ...progSnap.docs.map((d) => d.id),
   ];
 
+  // Read every context's three arrays in parallel (bounded by the workspace's
+  // project+programme count) to keep the per-workspace tick well under the
+  // function timeout on larger tenants.
+  const perContext = await Promise.all(
+    contextIds.map(async (cid) => {
+      const [c, r, t] = await Promise.all([
+        readContextArray(ctx, cid, 'complianceItems'),
+        readContextArray(ctx, cid, 'risks'),
+        readContextArray(ctx, cid, 'tasks'),
+      ]);
+      return { c, r, t };
+    }),
+  );
   const complianceItems: any[] = [];
   const risks: any[] = [];
   const tasks: any[] = [];
-  for (const cid of contextIds) {
-    const [c, r, t] = await Promise.all([
-      readContextArray(ctx, cid, 'complianceItems'),
-      readContextArray(ctx, cid, 'risks'),
-      readContextArray(ctx, cid, 'tasks'),
-    ]);
+  for (const { c, r, t } of perContext) {
     complianceItems.push(...c);
     risks.push(...r);
     tasks.push(...t);

@@ -236,43 +236,45 @@ export async function writeSevereEscalations(
   // row so the escalation shows in-app alongside the cron-detected signals.
   // Best-effort: a dispatch failure never affects the recorded audit rows.
   const nowIso = new Date().toISOString();
-  for (const risk of transitions) {
-    const riskId = String(risk.id ?? "");
-    const title = String((risk as any).title ?? (risk as any).name ?? "Risk");
-    const message = `Risk "${title}" has escalated to Severe and needs Strategic Director attention.`;
-    try {
-      await ctx.db.collection("detectedAlerts").add({
-        clientId: ctx.primaryUid,
-        signalKind: "risk-severe",
-        dedupeKey: `risk-severe:${riskId}`,
-        severity: "urgent",
-        entityKind: "risk",
-        entityId: riskId,
-        entityTitle: title,
-        projectId: (risk as any).projectId ?? null,
-        message,
-        thresholdUsed: "gross or residual impact = 5",
-        createdAt: nowIso,
-        recipientUids: recipients.map((r) => r.uid),
-        deliveryAttempts: [],
-        readBy: [],
-      });
-    } catch (err) {
-      console.error("[rsc-d] detectedAlerts write failed:", err);
-    }
-    for (const r of recipients) {
-      if (r.notifyEnabled === false || !r.fcmToken) continue;
-      try {
-        await ctx.getMessagingService().send({
-          token: r.fcmToken,
-          notification: { title: `Urgent: ${title}`, body: message },
-          data: { signalKind: "risk-severe", entityKind: "risk", entityId: riskId, severity: "urgent" },
-        });
-      } catch (err) {
-        console.error("[rsc-d] FCM send failed:", err);
-      }
-    }
-  }
+  await Promise.all(
+    transitions.map(async (risk) => {
+      const riskId = String(risk.id ?? "");
+      const title = String((risk as any).title ?? (risk as any).name ?? "Risk");
+      const message = `Risk "${title}" has escalated to Severe and needs Strategic Director attention.`;
+      const writeAlert = ctx.db
+        .collection("detectedAlerts")
+        .add({
+          clientId: ctx.primaryUid,
+          signalKind: "risk-severe",
+          dedupeKey: `risk-severe:${riskId}`,
+          severity: "urgent",
+          entityKind: "risk",
+          entityId: riskId,
+          entityTitle: title,
+          projectId: (risk as any).projectId ?? null,
+          message,
+          thresholdUsed: "gross or residual impact = 5",
+          createdAt: nowIso,
+          recipientUids: recipients.map((r) => r.uid),
+          deliveryAttempts: [],
+          readBy: [],
+        })
+        .catch((err) => console.error("[rsc-d] detectedAlerts write failed:", err));
+      const pushes = recipients
+        .filter((r) => r.notifyEnabled !== false && r.fcmToken)
+        .map((r) =>
+          ctx
+            .getMessagingService()
+            .send({
+              token: r.fcmToken as string,
+              notification: { title: `Urgent: ${title}`, body: message },
+              data: { signalKind: "risk-severe", entityKind: "risk", entityId: riskId, severity: "urgent" },
+            })
+            .catch((err: any) => console.error("[rsc-d] FCM send failed:", err)),
+        );
+      await Promise.all([writeAlert, ...pushes]);
+    }),
+  );
 
   // System activity entry — automatic escalation triggered by a risk save.
   await logSystemActivity(ctx, "risks_severe_escalation", {

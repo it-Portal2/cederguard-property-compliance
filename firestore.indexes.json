@@ -114,6 +114,15 @@
       ]
     },
     {
+      "collectionGroup": "detectedAlerts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "clientId", "order": "ASCENDING" },
+        { "fieldPath": "dedupeKey", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "monthlySnapshots",
       "queryScope": "COLLECTION",
       "fields": [
