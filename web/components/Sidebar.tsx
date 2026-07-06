@@ -710,6 +710,11 @@ export function Sidebar() {
                 onToggle={() => toggleGroup("Monitoring & Reporting")}
               >
                 <NavItem
+                  to="/monitoring/overview"
+                  icon={Layers}
+                  label="Monitoring Overview"
+                />
+                <NavItem
                   to="/monitoring/kri"
                   icon={BarChart}
                   label="KRI Tracker"

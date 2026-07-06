@@ -46,6 +46,7 @@ import { AIComplianceOutlook } from './features/compliance/pages/AIComplianceOut
 import { KRITracker } from './features/risk/pages/KRITracker';
 import { TrendsHeatmaps } from './features/reporting/pages/TrendsHeatmaps';
 import AlertsPage from './features/reporting/pages/AlertsPage';
+import MonitoringOverviewPage from './features/reporting/pages/MonitoringOverviewPage';
 import { ProgrammeRiskRegister } from './features/programmes/pages/ProgrammeRiskRegister';
 import { ProgrammeIssues } from './features/programmes/pages/ProgrammeIssues';
 import { ExecutiveReport } from './features/reporting/pages/ExecutiveReport';
@@ -321,6 +322,7 @@ function AppContent() {
               <Route path="/risk/report" element={<Navigate to="/reporting/project" replace />} />
 
               {/* Monitoring & Reporting*/}
+              <Route path="/monitoring/overview" element={<MonitoringOverviewPage />} />
               <Route path="/monitoring/kri" element={<KRITracker />} />
               <Route path="/monitoring/alerts" element={<RiskAlerts />} />
               <Route path="/monitoring/aggregation" element={<RiskAggregation />} />
