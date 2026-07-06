@@ -1,3 +1,4 @@
+import { createHash } from "crypto";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
@@ -322,8 +323,27 @@ export async function createContext(
     let email = "";
 
     if (token.startsWith("cdR_")) {
-      const apiKeyDoc = await db.collection("apiKeys").doc(token).get();
-      if (!apiKeyDoc.exists) {
+      // Keys are stored hashed (SHA-256) under a random doc id — look up by hash.
+      const keyHash = createHash("sha256").update(token).digest("hex");
+      let apiKeyDoc: any = null;
+      const hashSnap = await db
+        .collection("apiKeys")
+        .where("keyHash", "==", keyHash)
+        .limit(1)
+        .get();
+      if (!hashSnap.empty) {
+        apiKeyDoc = hashSnap.docs[0];
+      } else {
+        // TEMPORARY legacy fallback — removed in B3 after the hash migration.
+        // Pre-hash keys were stored with the plaintext key AS the doc id and no
+        // keyHash field, so they can't be found by the hash query above.
+        const legacy = await db.collection("apiKeys").doc(token).get();
+        if (legacy.exists) {
+          apiKeyDoc = legacy;
+          console.warn("apiKey.legacy.hit", { id: token.slice(0, 12) + "…" });
+        }
+      }
+      if (!apiKeyDoc) {
         res.status(401).json({ error: "Unauthorized: Invalid API Key" });
         return null;
       }
@@ -341,6 +361,8 @@ export async function createContext(
         res.status(401).json({ error: "Unauthorized: Malformed API key" });
         return null;
       }
+      // Best-effort last-used stamp; non-blocking so it never delays or fails auth.
+      apiKeyDoc.ref.update({ lastUsed: new Date().toISOString() }).catch(() => {});
       const userDoc = await db.collection("users").doc(uid).get();
       if (!userDoc.exists) {
         res.status(401).json({ error: "Unauthorized: API key owner no longer exists" });
