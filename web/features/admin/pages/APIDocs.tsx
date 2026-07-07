@@ -1,79 +1,126 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { clsx } from 'clsx';
+import { Search, Copy, Check, ArrowLeft, Menu, X, MessageSquare } from 'lucide-react';
 import {
-  Search,
-  Copy,
-  Check,
-  ArrowLeft,
-  Menu,
-  X,
-  MessageSquare,
-  AlertTriangle,
-  Info,
-} from 'lucide-react';
-import {
-  API_SECTIONS,
-  API_PAGE_TITLE,
-  API_PAGE_LEDE,
-  type ApiSection,
-  type ApiCodeVariant,
-} from '../../../data/apiDocsContent';
+  API_PRIMERS,
+  API_ACTIONS,
+  GROUP_ORDER,
+  type ApiParam,
+} from '../../../../shared/lib/apiCatalog';
 
 const ACCENT_VARS = {
   '--accent': 'oklch(0.62 0.24 278)',
   '--accent-hot': 'oklch(0.70 0.26 280)',
 } as React.CSSProperties;
 
-const CALLOUT_STYLES: Record<'warn' | 'info' | 'danger', { icon: typeof AlertTriangle; className: string; iconClass: string }> = {
-  warn: {
-    icon: AlertTriangle,
-    className: 'border-[oklch(0.78_0.15_78_/_0.25)] bg-[oklch(0.78_0.15_78_/_0.07)] text-[oklch(0.42_0.10_78)]',
-    iconClass: 'text-[oklch(0.78_0.15_78)]',
-  },
-  info: {
-    icon: Info,
-    className: 'border-[oklch(0.70_0.14_230_/_0.25)] bg-[oklch(0.70_0.14_230_/_0.06)] text-[oklch(0.36_0.09_230)]',
-    iconClass: 'text-[oklch(0.70_0.14_230)]',
-  },
-  danger: {
-    icon: AlertTriangle,
-    className: 'border-[oklch(0.66_0.21_25_/_0.25)] bg-[oklch(0.66_0.21_25_/_0.06)] text-[oklch(0.42_0.14_25)]',
-    iconClass: 'text-[oklch(0.66_0.21_25)]',
-  },
-};
+const BASE_URL = 'https://cedarguard.co.uk/api';
+const PAGE_LEDE =
+  'A single POST endpoint with an action selector, authenticated by an API key. Generate a key in Developer Settings, then call any action below. Every action ships a copy-paste cURL you can run from your terminal.';
+
+interface CodeVariant {
+  id: string;
+  label: string;
+  code: string;
+}
+
+type Section =
+  | {
+      kind: 'primer';
+      id: string;
+      group: string;
+      navLabel: string;
+      paragraphs: string[];
+      code: CodeVariant[];
+    }
+  | {
+      kind: 'action';
+      id: string;
+      group: string;
+      navLabel: string;
+      action: string;
+      description: string;
+      requiredRole: string;
+      params?: ApiParam[];
+      code: CodeVariant[];
+      responseExample?: string;
+    };
+
+// A runnable cURL for any action: required params become typed placeholders.
+function synthCurl(action: string, params?: ApiParam[]): string {
+  const required = (params ?? []).filter((p) => p.required);
+  const body = required.length
+    ? `{ ${required.map((p) => `"${p.name}": <${p.type}>`).join(', ')} }`
+    : '{}';
+  return `curl -X POST "${BASE_URL}?action=${action}" \\\n  -H "Authorization: Bearer cdR_your_key_here" \\\n  -H "Content-Type: application/json" \\\n  -d '${body}'`;
+}
+
+const SECTIONS: Section[] = (() => {
+  const out: Section[] = [];
+  for (const group of GROUP_ORDER) {
+    for (const primer of API_PRIMERS.filter((p) => p.group === group)) {
+      const code: CodeVariant[] = [];
+      if (primer.example?.curl) code.push({ id: 'curl', label: 'cURL', code: primer.example.curl });
+      if (primer.example?.node) code.push({ id: 'node', label: 'Node.js', code: primer.example.node });
+      if (primer.example?.python) code.push({ id: 'python', label: 'Python', code: primer.example.python });
+      out.push({
+        kind: 'primer',
+        id: primer.id,
+        group,
+        navLabel: primer.title,
+        paragraphs: primer.body.split('\n').filter(Boolean),
+        code,
+      });
+    }
+    for (const a of API_ACTIONS.filter((x) => x.group === group)) {
+      const code: CodeVariant[] = [];
+      if (a.example?.curl) code.push({ id: 'curl', label: 'cURL', code: a.example.curl });
+      if (a.example?.node) code.push({ id: 'node', label: 'Node.js', code: a.example.node });
+      if (a.example?.python) code.push({ id: 'python', label: 'Python', code: a.example.python });
+      if (!code.length) code.push({ id: 'curl', label: 'cURL', code: synthCurl(a.action, a.params) });
+      out.push({
+        kind: 'action',
+        id: a.action,
+        group,
+        navLabel: a.title,
+        action: a.action,
+        description: a.description,
+        requiredRole: a.requiredRole,
+        params: a.params,
+        code,
+        responseExample: a.responseExample,
+      });
+    }
+  }
+  return out;
+})();
 
 interface NavGroup {
   group: string;
-  items: ApiSection[];
+  items: Section[];
 }
 
-const NAV_GROUPS: NavGroup[] = API_SECTIONS.reduce<NavGroup[]>((acc, section) => {
+const NAV_GROUPS: NavGroup[] = SECTIONS.reduce<NavGroup[]>((acc, section) => {
   const last = acc[acc.length - 1];
-  if (last && last.group === section.navGroup) {
-    last.items.push(section);
-  } else {
-    acc.push({ group: section.navGroup, items: [section] });
-  }
+  if (last && last.group === section.group) last.items.push(section);
+  else acc.push({ group: section.group, items: [section] });
   return acc;
 }, []);
 
 const CodePanel: React.FC<{
   sectionId: string;
-  label: string;
-  variants: ApiCodeVariant[];
+  variants: CodeVariant[];
   activeVariantId: string;
   onSelectTab: (id: string) => void;
   copiedKey: string | null;
   onCopy: (key: string, code: string) => void;
-}> = ({ sectionId, label, variants, activeVariantId, onSelectTab, copiedKey, onCopy }) => {
+}> = ({ sectionId, variants, activeVariantId, onSelectTab, copiedKey, onCopy }) => {
   const active = variants.find((v) => v.id === activeVariantId) ?? variants[0];
   const copyKey = `${sectionId}:${active.id}`;
   const isCopied = copiedKey === copyKey;
 
   return (
     <div>
-      {label && <div className="mb-2.5 font-mono text-[10.5px] uppercase tracking-[0.06em] text-[oklch(0.50_0.010_270)] dark:text-slate-500">{label}</div>}
       <div className="overflow-hidden rounded-xl border border-[oklch(0.30_0.014_270_/_0.6)] bg-[oklch(0.155_0.012_270)] shadow-[0_0_0_1px_rgba(255,255,255,0.04)_inset,0_20px_40px_-20px_rgba(0,0,0,0.30)]">
         <div className="flex items-center justify-between border-b border-[oklch(0.30_0.014_270_/_0.6)] bg-[oklch(0.20_0.014_270)] px-3 py-2.5">
           {variants.length > 1 ? (
@@ -123,10 +170,7 @@ const CodePanel: React.FC<{
   );
 };
 
-const ParamTable: React.FC<{ title: string; params: NonNullable<ApiSection['requestParams']> }> = ({
-  title,
-  params,
-}) => (
+const ParamTable: React.FC<{ title: string; params: ApiParam[] }> = ({ title, params }) => (
   <div className="mb-6">
     <h3 className="mb-2.5 mt-6 text-[16px] font-semibold tracking-[-0.015em] text-[oklch(0.20_0.012_270)] dark:text-white">
       {title}
@@ -136,7 +180,7 @@ const ParamTable: React.FC<{ title: string; params: NonNullable<ApiSection['requ
         <div
           key={p.name}
           className={clsx(
-            'grid grid-cols-1 gap-1 px-4 py-3 text-[13px] sm:grid-cols-[160px_90px_1fr] sm:gap-4',
+            'grid grid-cols-1 gap-1 px-4 py-3 text-[13px] sm:grid-cols-[180px_90px_1fr] sm:gap-4',
             i !== params.length - 1 && 'border-b border-[oklch(0.91_0.006_270)] dark:border-white/10',
           )}
         >
@@ -159,7 +203,7 @@ export function APIDocs() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [activeVariantBySection, setActiveVariantBySection] = useState<Record<string, string>>({});
-  const [activeSectionId, setActiveSectionId] = useState(API_SECTIONS[0].id);
+  const [activeSectionId, setActiveSectionId] = useState(SECTIONS[0].id);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
   useEffect(() => {
@@ -184,10 +228,19 @@ export function APIDocs() {
   const filteredGroups = useMemo(() => {
     if (!search.trim()) return NAV_GROUPS;
     const q = search.toLowerCase();
-    return NAV_GROUPS.map((g) => ({ ...g, items: g.items.filter((s) => s.navLabel.toLowerCase().includes(q)) })).filter(
-      (g) => g.items.length > 0,
-    );
+    return NAV_GROUPS.map((g) => ({
+      ...g,
+      items: g.items.filter(
+        (s) => s.navLabel.toLowerCase().includes(q) || s.id.toLowerCase().includes(q),
+      ),
+    })).filter((g) => g.items.length > 0);
   }, [search]);
+
+  const visibleIds = useMemo(() => {
+    const set = new Set<string>();
+    filteredGroups.forEach((g) => g.items.forEach((s) => set.add(s.id)));
+    return set;
+  }, [filteredGroups]);
 
   return (
     <div className="relative" style={ACCENT_VARS}>
@@ -251,9 +304,9 @@ export function APIDocs() {
                   {activeSectionId === section.id && (
                     <span className="absolute -left-px top-1.5 bottom-1.5 w-0.5 rounded-full bg-[var(--accent)]" />
                   )}
-                  {section.method && (
+                  {section.kind === 'action' && (
                     <span className="shrink-0 rounded-[3px] border border-[oklch(0.72_0.16_155_/_0.25)] bg-[oklch(0.72_0.16_155_/_0.10)] px-1 py-px font-mono text-[9px] font-semibold tracking-[0.04em] text-[oklch(0.72_0.16_155)]">
-                      {section.method}
+                      POST
                     </span>
                   )}
                   {section.navLabel}
@@ -291,19 +344,15 @@ export function APIDocs() {
             <span className="text-[oklch(0.32_0.012_270)] dark:text-slate-300">API Reference</span>
           </div>
           <h1 className="mb-3 text-[32px] font-semibold leading-[1.1] tracking-[-0.025em] text-[oklch(0.20_0.012_270)] dark:text-white">
-            {API_PAGE_TITLE}
+            CedarGuard API Reference
           </h1>
           <p className="mb-10 max-w-[60ch] text-[16px] leading-relaxed text-[oklch(0.50_0.010_270)] dark:text-slate-400">
-            {API_PAGE_LEDE}
+            {PAGE_LEDE}
           </p>
 
           <div className="flex flex-col gap-14">
-            {API_SECTIONS.map((section) => {
-              const activeVariantId =
-                activeVariantBySection[section.id] ?? section.codeVariants?.[0]?.id ?? '';
-              const calloutStyle = section.calloutType ? CALLOUT_STYLES[section.calloutType] : null;
-              const CalloutIcon = calloutStyle?.icon;
-
+            {SECTIONS.filter((s) => visibleIds.has(s.id)).map((section) => {
+              const activeVariantId = activeVariantBySection[section.id] ?? section.code[0]?.id ?? '';
               return (
                 <section
                   key={section.id}
@@ -314,46 +363,32 @@ export function APIDocs() {
                   className="scroll-mt-24 border-b border-[oklch(0.91_0.006_270)] pb-14 last:border-b-0 last:pb-0 dark:border-white/10 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:gap-10"
                 >
                   <div className="min-w-0 max-w-[640px]">
-                    <h2 className="mb-3 flex items-center gap-3 text-[24px] font-semibold leading-tight tracking-[-0.02em] text-[oklch(0.20_0.012_270)] dark:text-white">
-                      {section.icon && (
-                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[9px] border border-[oklch(0.62_0.24_278_/_0.22)] bg-[oklch(0.62_0.24_278_/_0.10)] text-[var(--accent)]">
-                          <section.icon className="h-[18px] w-[18px]" />
-                        </span>
-                      )}
-                      {section.title}
+                    <h2 className="mb-3 text-[24px] font-semibold leading-tight tracking-[-0.02em] text-[oklch(0.20_0.012_270)] dark:text-white">
+                      {section.navLabel}
                     </h2>
 
-                    {section.paragraphs.map((p, i) => (
-                      <p key={i} className="mb-4 text-[15px] leading-relaxed text-[oklch(0.32_0.012_270)] dark:text-slate-300">
-                        {p}
-                      </p>
-                    ))}
+                    {section.kind === 'primer' &&
+                      section.paragraphs.map((p, i) => (
+                        <p key={i} className="mb-4 text-[15px] leading-relaxed text-[oklch(0.32_0.012_270)] dark:text-slate-300">
+                          {p}
+                        </p>
+                      ))}
 
-                    {section.endpoint && (
-                      <div className="mb-4 flex flex-wrap items-center gap-2.5 overflow-x-auto rounded-lg border border-[oklch(0.91_0.006_270)] bg-[oklch(0.98_0.004_270)] px-3.5 py-2.5 font-mono text-[13px] dark:border-white/10 dark:bg-white/5">
-                        <span className="shrink-0 rounded-[5px] border border-[oklch(0.72_0.16_155_/_0.30)] bg-[oklch(0.72_0.16_155_/_0.10)] px-2 py-1 text-[11px] font-bold tracking-[0.04em] text-[oklch(0.72_0.16_155)]">
-                          POST
-                        </span>
-                        <span className="font-medium text-[oklch(0.20_0.012_270)] dark:text-white">
-                          {section.endpoint.path}
-                        </span>
-                        {section.endpoint.action && (
-                          <span className="text-[oklch(0.50_0.010_270)]">
-                            · action <b className="font-semibold text-[var(--accent)]">"{section.endpoint.action}"</b>
-                          </span>
-                        )}
-                      </div>
-                    )}
-
-                    {calloutStyle && CalloutIcon && (
-                      <div className={clsx('mb-4 grid grid-cols-[20px_1fr] gap-3 rounded-lg border px-4 py-3 text-[13.5px] leading-relaxed', calloutStyle.className)}>
-                        <CalloutIcon className={clsx('mt-0.5 h-5 w-5 shrink-0', calloutStyle.iconClass)} />
-                        <p>{section.callout}</p>
-                      </div>
-                    )}
-
-                    {section.requiredRole && (
+                    {section.kind === 'action' && (
                       <>
+                        <p className="mb-4 text-[15px] leading-relaxed text-[oklch(0.32_0.012_270)] dark:text-slate-300">
+                          {section.description}
+                        </p>
+                        <div className="mb-4 flex flex-wrap items-center gap-2.5 overflow-x-auto rounded-lg border border-[oklch(0.91_0.006_270)] bg-[oklch(0.98_0.004_270)] px-3.5 py-2.5 font-mono text-[13px] dark:border-white/10 dark:bg-white/5">
+                          <span className="shrink-0 rounded-[5px] border border-[oklch(0.72_0.16_155_/_0.30)] bg-[oklch(0.72_0.16_155_/_0.10)] px-2 py-1 text-[11px] font-bold tracking-[0.04em] text-[oklch(0.72_0.16_155)]">
+                            POST
+                          </span>
+                          <span className="font-medium text-[oklch(0.20_0.012_270)] dark:text-white">/api</span>
+                          <span className="text-[oklch(0.50_0.010_270)]">
+                            · action <b className="font-semibold text-[var(--accent)]">"{section.action}"</b>
+                          </span>
+                        </div>
+
                         <h3 className="mb-2 mt-6 text-[16px] font-semibold tracking-[-0.015em] text-[oklch(0.20_0.012_270)] dark:text-white">
                           Required role
                         </h3>
@@ -362,75 +397,31 @@ export function APIDocs() {
                             {section.requiredRole}
                           </code>
                         </p>
+
+                        {section.params && section.params.length > 0 && (
+                          <ParamTable title="Request body" params={section.params} />
+                        )}
                       </>
-                    )}
-
-                    {section.requestParams && <ParamTable title="Request body" params={section.requestParams} />}
-                    {section.responseParams && <ParamTable title="Response" params={section.responseParams} />}
-
-                    {section.rbacRoles && (
-                      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                        {section.rbacRoles.map((role) => (
-                          <div
-                            key={role.title}
-                            className="flex flex-col gap-2.5 rounded-[11px] border border-[oklch(0.91_0.006_270)] bg-white p-4.5 transition-colors hover:border-[oklch(0.85_0.008_270)] dark:border-white/10 dark:bg-white/3"
-                          >
-                            <span
-                              className={clsx(
-                                'grid h-8 w-8 place-items-center rounded-lg border',
-                                role.variant === 'client' &&
-                                  'border-[oklch(0.70_0.14_230_/_0.25)] bg-[oklch(0.70_0.14_230_/_0.10)] text-[oklch(0.70_0.14_230)]',
-                                role.variant === 'pm' &&
-                                  'border-[oklch(0.72_0.16_155_/_0.25)] bg-[oklch(0.72_0.16_155_/_0.10)] text-[oklch(0.72_0.16_155)]',
-                                role.variant === 'admin' &&
-                                  'border-[oklch(0.66_0.21_25_/_0.25)] bg-[oklch(0.66_0.21_25_/_0.10)] text-[oklch(0.66_0.21_25)]',
-                              )}
-                            >
-                              <role.icon className="h-4 w-4" />
-                            </span>
-                            <h4 className="text-[14px] font-semibold text-[oklch(0.20_0.012_270)] dark:text-white">
-                              {role.title}
-                            </h4>
-                            <p className="text-[12.5px] leading-relaxed text-[oklch(0.50_0.010_270)] dark:text-slate-400">
-                              {role.description}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {section.steps && (
-                      <ol className="mb-4 ml-[22px] list-decimal space-y-2.5 text-[14.5px] leading-relaxed text-[oklch(0.32_0.012_270)] dark:text-slate-300">
-                        {section.steps.map((step, i) => (
-                          <li key={i} className="pl-1">
-                            {step}
-                          </li>
-                        ))}
-                      </ol>
                     )}
                   </div>
 
-                  {(section.codeVariants || section.responseExample) && (
+                  {(section.code.length > 0 || (section.kind === 'action' && section.responseExample)) && (
                     <div className="mt-6 flex flex-col gap-3.5 lg:sticky lg:top-6 lg:mt-0 lg:self-start">
-                      {section.codeVariants && (
+                      {section.code.length > 0 && (
                         <CodePanel
                           sectionId={section.id}
-                          label=""
-                          variants={section.codeVariants}
+                          variants={section.code}
                           activeVariantId={activeVariantId}
-                          onSelectTab={(id) =>
-                            setActiveVariantBySection((prev) => ({ ...prev, [section.id]: id }))
-                          }
+                          onSelectTab={(id) => setActiveVariantBySection((prev) => ({ ...prev, [section.id]: id }))}
                           copiedKey={copiedKey}
                           onCopy={handleCopy}
                         />
                       )}
-                      {section.responseExample && (
+                      {section.kind === 'action' && section.responseExample && (
                         <CodePanel
                           sectionId={`${section.id}-response`}
-                          label=""
-                          variants={[section.responseExample]}
-                          activeVariantId={section.responseExample.id}
+                          variants={[{ id: 'response', label: 'Response', code: section.responseExample }]}
+                          activeVariantId="response"
                           onSelectTab={() => {}}
                           copiedKey={copiedKey}
                           onCopy={handleCopy}
