@@ -180,7 +180,7 @@ const ParamTable: React.FC<{ title: string; params: ApiParam[] }> = ({ title, pa
         <div
           key={p.name}
           className={clsx(
-            'grid grid-cols-1 gap-1 px-4 py-3 text-[13px] sm:grid-cols-[180px_90px_1fr] sm:gap-4',
+            'grid grid-cols-1 gap-1 px-4 py-3 text-[13px] sm:grid-cols-[minmax(0,150px)_minmax(0,84px)_minmax(0,1fr)] sm:gap-4',
             i !== params.length - 1 && 'border-b border-[oklch(0.91_0.006_270)] dark:border-white/10',
           )}
         >
@@ -191,7 +191,7 @@ const ParamTable: React.FC<{ title: string; params: ApiParam[] }> = ({ title, pa
             {p.type}
             {p.required && <span className="ml-1 font-semibold text-[oklch(0.66_0.21_25)]">*</span>}
           </span>
-          <span className="leading-relaxed text-[oklch(0.32_0.012_270)] dark:text-slate-300">{p.description}</span>
+          <span className="min-w-0 break-words leading-relaxed text-[oklch(0.32_0.012_270)] dark:text-slate-300">{p.description}</span>
         </div>
       ))}
     </div>
@@ -360,7 +360,7 @@ export function APIDocs() {
                   ref={(el) => {
                     sectionRefs.current[section.id] = el;
                   }}
-                  className="scroll-mt-24 border-b border-[oklch(0.91_0.006_270)] pb-14 last:border-b-0 last:pb-0 dark:border-white/10 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:gap-10"
+                  className="scroll-mt-24 border-b border-[oklch(0.91_0.006_270)] pb-14 last:border-b-0 last:pb-0 dark:border-white/10 xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(0,420px)] xl:gap-10"
                 >
                   <div className="min-w-0 max-w-[640px]">
                     <h2 className="mb-3 text-[24px] font-semibold leading-tight tracking-[-0.02em] text-[oklch(0.20_0.012_270)] dark:text-white">
@@ -406,7 +406,7 @@ export function APIDocs() {
                   </div>
 
                   {(section.code.length > 0 || (section.kind === 'action' && section.responseExample)) && (
-                    <div className="mt-6 flex flex-col gap-3.5 lg:sticky lg:top-6 lg:mt-0 lg:self-start">
+                    <div className="mt-6 flex flex-col gap-3.5 xl:sticky xl:top-6 xl:mt-0 xl:self-start">
                       {section.code.length > 0 && (
                         <CodePanel
                           sectionId={section.id}
