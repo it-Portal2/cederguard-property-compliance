@@ -180,18 +180,22 @@ const ParamTable: React.FC<{ title: string; params: ApiParam[] }> = ({ title, pa
         <div
           key={p.name}
           className={clsx(
-            'grid grid-cols-1 gap-1 px-4 py-3 text-[13px] sm:grid-cols-[minmax(0,150px)_minmax(0,84px)_minmax(0,1fr)] sm:gap-4',
+            'px-4 py-3',
             i !== params.length - 1 && 'border-b border-[oklch(0.91_0.006_270)] dark:border-white/10',
           )}
         >
-          <span className="font-mono text-[12.5px] font-medium text-[oklch(0.20_0.012_270)] dark:text-white">
-            {p.name}
-          </span>
-          <span className="font-mono text-[11px] text-[oklch(0.50_0.010_270)]">
-            {p.type}
-            {p.required && <span className="ml-1 font-semibold text-[oklch(0.66_0.21_25)]">*</span>}
-          </span>
-          <span className="min-w-0 break-words leading-relaxed text-[oklch(0.32_0.012_270)] dark:text-slate-300">{p.description}</span>
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <code className="font-mono text-[12.5px] font-medium text-[oklch(0.20_0.012_270)] dark:text-white">
+              {p.name}
+            </code>
+            <span className="font-mono text-[11px] text-[oklch(0.50_0.010_270)]">
+              {p.type}
+              {p.required && <span className="ml-1 font-semibold text-[oklch(0.66_0.21_25)]">*</span>}
+            </span>
+          </div>
+          <p className="mt-1 break-words text-[13px] leading-relaxed text-[oklch(0.32_0.012_270)] dark:text-slate-300">
+            {p.description}
+          </p>
         </div>
       ))}
     </div>
