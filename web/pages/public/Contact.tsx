@@ -29,12 +29,8 @@ const contactChannels: Array<{
     icon: MapPin,
     eyebrow: "Office",
     title: "Visit us",
-    value: "10 The New Inn Court\n54 Matham Road\nEast Molesey, KT8 0BE",
-    directions:
-      "https://www.google.com/maps/search/?api=1&query=" +
-      encodeURIComponent(
-        "10 The New Inn Court, 54 Matham Road, East Molesey, KT8 0BE",
-      ),
+    value: "Cedar Guard Ltd\n10 The New Inn Court\n54 Matham Road\nEast Molesey, KT8 0BE",
+    directions: "https://maps.app.goo.gl/R64bu5P5Srdh66we9",
   },
 ];
 

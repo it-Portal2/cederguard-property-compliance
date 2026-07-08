@@ -395,12 +395,20 @@ export const PublicLayout: React.FC = () => {
                         <h4 className="mb-4 font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-[oklch(0.50_0.010_270)] dark:text-slate-500">
                             Headquarters
                         </h4>
-                        <ul className="space-y-2.5 text-[13.5px] leading-[1.6] text-[oklch(0.50_0.010_270)] dark:text-slate-400">
-                            <li>Cedar Property Compliance & Risk Suite</li>
-                            <li>10 The New Inn Court</li>
-                            <li>54 Matham Road</li>
-                            <li>East Molesey, KT8 0BE</li>
-                        </ul>
+                        <address className="not-italic">
+                            <a
+                                href="https://maps.app.goo.gl/R64bu5P5Srdh66we9"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block space-y-2.5 text-[13.5px] leading-[1.6] text-[oklch(0.50_0.010_270)] transition-colors duration-150 hover:text-[var(--accent)] dark:text-slate-400 dark:hover:text-indigo-300"
+                            >
+                                <span className="block">Cedar Guard Ltd</span>
+                                <span className="block">10 The New Inn Court</span>
+                                <span className="block">54 Matham Road</span>
+                                <span className="block">East Molesey,</span>
+                                <span className="block">KT8 0BE</span>
+                            </a>
+                        </address>
                     </div>
 
                     {/* Connect */}
