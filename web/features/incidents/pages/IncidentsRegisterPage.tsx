@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { Plus, Pencil, Trash2, AlertOctagon, ShieldAlert } from "lucide-react";
 import PageHeader from "../../../components/PageHeader";
+import RunAgentButton from "../../agents/components/RunAgentButton";
 import DynamicTable from "../../../components/table/DynamicTable";
 import { useStore } from "../../../store/useStore";
 import {
@@ -218,9 +219,10 @@ export default function IncidentsRegisterPage() {
         subtitle="The formal, regulator-grade incident register — distinct from the routine Issues log."
         breadcrumbs={[{ label: "Escalations & Incidents" }, { label: "Incidents" }]}
         actions={
-          activeProjectId ? (
-            <ProjectScopeToggle scope={scope} onChange={setScope} />
-          ) : undefined
+          <div className="flex flex-wrap items-center gap-2">
+            <RunAgentButton agentKey="riskIncident" label="Run Incident agent" />
+            {activeProjectId ? <ProjectScopeToggle scope={scope} onChange={setScope} /> : null}
+          </div>
         }
       />
 

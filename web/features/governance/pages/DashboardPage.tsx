@@ -27,6 +27,7 @@ import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
 import { api } from '../../../lib/api';
 import PageHeader from '../../../components/PageHeader';
+import RunAgentButton from '../../agents/components/RunAgentButton';
 import { StatsCard } from '../../../components/common/StatsCard';
 import type {
   DashboardPayload,
@@ -129,6 +130,7 @@ export function GovernanceDashboardPage() {
         breadcrumbs={[{ label: 'Programme Governance' }, { label: 'Dashboard' }]}
         actions={
           <div className="inline-flex items-center gap-2">
+            <RunAgentButton agentKey="governance" label="Run Governance agent" />
             {/* month picker drives `asOfMonth` on the dashboard aggregator.*/}
             <MonthPicker
               monthEnd={historicalView.monthEnd}

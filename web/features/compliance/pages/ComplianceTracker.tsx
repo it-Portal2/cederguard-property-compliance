@@ -22,6 +22,7 @@ import { HistoricalBanner } from '../../../components/historicalReporting/Histor
 import { HistoricalContentSkeleton } from '../../../components/historicalReporting/HistoricalContentSkeleton';
 import type { LegacyArraySnapshot } from '../../../../shared/types/historicalReporting';
 import PageHeader from '../../../components/PageHeader';
+import RunAgentButton from '../../agents/components/RunAgentButton';
 
 /* ═══════════════════════════════════════════════════
  CONSTANTS
@@ -522,6 +523,7 @@ export function ComplianceTracker() {
         breadcrumbs={[{label:"Compliance"},{label:"Tracker"}]}
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            <RunAgentButton agentKey="compliance" label="Run Compliance agent" />
             <MonthPicker
               monthEnd={historicalView.monthEnd}
               availableMonths={historicalView.availableMonths}

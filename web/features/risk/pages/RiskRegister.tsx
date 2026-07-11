@@ -59,6 +59,7 @@ import {
   SEVERE_SCORE_THRESHOLD,
 } from "../../../data/riskScoringMatrix";
 import PageHeader from "../../../components/PageHeader";
+import RunAgentButton from "../../agents/components/RunAgentButton";
 
 // Score-to-pill helpers using the 5-band scheme:
 // Insignificant 1-3 · Minor 4-6 · Moderate 7-11 · Major 12-18 · Severe 19-25.
@@ -1010,6 +1011,7 @@ export function RiskRegister() {
           breadcrumbs={[{label:"Risk Management"},{label:"Risk Register"}]}
           actions={
             <div className="flex flex-wrap items-center gap-2">
+              <RunAgentButton agentKey="riskIncident" label="Run Risk agent" />
               <MonthPicker
                 monthEnd={historicalView.monthEnd}
                 availableMonths={historicalView.availableMonths}

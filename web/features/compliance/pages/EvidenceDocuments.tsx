@@ -8,6 +8,7 @@ import {
 import { api } from '../../../lib/api';
 import { toast } from "react-hot-toast";
 import PageHeader from '../../../components/PageHeader';
+import RunAgentButton from '../../agents/components/RunAgentButton';
 import DynamicTable from '../../../components/table/DynamicTable';
 import type { ColumnDef, RowAction, FilterDef } from '../../../components/table/types';
 
@@ -509,6 +510,7 @@ export function EvidenceDocuments() {
         breadcrumbs={[{label:"Compliance"},{label:"Evidence"}]}
         actions={
           <div className="flex gap-2 flex-wrap">
+            <RunAgentButton agentKey="evidence" label="Run Evidence agent" />
             <button onClick={() => setIsLinkModalOpen(true)} disabled={uploading || isPortfolioView}
               className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               <LinkIcon className="h-4 w-4" /> Add URL
