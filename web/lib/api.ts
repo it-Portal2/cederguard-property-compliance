@@ -289,6 +289,24 @@ export const api = {
   assuranceGenerateActions: (alert: any) =>
     callApi("assuranceGenerateActions", { alert }, 120000),
 
+  // AI agents — a run is a model call, so it gets the long AI timeout.
+  agentRun: (params: {
+    agentKey: string;
+    contextKind: "project" | "programme" | "portfolio";
+    contextId?: string | null;
+    question?: string;
+  }) => callApi("agentRun", params, 120000),
+  agentListSuggestions: () => callApi("agentListSuggestions"),
+  agentListRuns: () => callApi("agentListRuns"),
+  agentReviewSuggestion: (params: {
+    suggestionId: string;
+    decision: "accepted" | "edited" | "rejected";
+    editedPayload?: Record<string, unknown>;
+    reason?: string;
+  }) => callApi("agentReviewSuggestion", params),
+  agentApplySuggestion: (suggestionId: string) =>
+    callApi("agentApplySuggestion", { suggestionId }),
+
   clientGetProgrammesByManager: (supervisorId: string) =>
     callApi("clientGetProgrammesByManager", { supervisorId }),
   clientGetMySupervisors: () => callApi("clientGetMySupervisors"),

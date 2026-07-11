@@ -66,6 +66,10 @@ import type { Control } from "../features/controls/types";
 import type { Incident } from "../features/incidents/types";
 import type { AssuranceAlert } from "../features/assurance/types";
 import {
+  canReviewAgentSuggestions,
+  type AgentSuggestionDoc,
+} from "../../shared/types/agents";
+import {
   DEFAULT_RATE_CARD,
   DEFAULT_COMPLEXITY_MAP,
   DEFAULT_OVERHEAD_PCT,
@@ -990,6 +994,26 @@ export interface AppState {
   saveControl: (control: Control) => Promise<Control>;
   deleteControl: (id: string) => Promise<void>;
   canManageControls: () => boolean;
+
+  // AI agent suggestions (the human review queue)
+  agentSuggestions: AgentSuggestionDoc[];
+  agentSuggestionsLoading: boolean;
+  agentSuggestionsLoaded: boolean;
+  loadAgentSuggestions: (force?: boolean) => Promise<void>;
+  runAgent: (params: {
+    agentKey: string;
+    contextKind: "project" | "programme" | "portfolio";
+    contextId?: string | null;
+    question?: string;
+  }) => Promise<AgentSuggestionDoc[]>;
+  reviewAgentSuggestion: (params: {
+    suggestionId: string;
+    decision: "accepted" | "edited" | "rejected";
+    editedPayload?: Record<string, unknown>;
+    reason?: string;
+  }) => Promise<void>;
+  applyAgentSuggestion: (suggestionId: string) => Promise<void>;
+  canReviewAgentSuggestions: () => boolean;
 
   // Incident management (tenant-scoped formal incident register)
   incidents: Incident[];
@@ -3262,6 +3286,62 @@ export const useStore = create<AppState>((set, get) => {
     const role = user.role || user.profile?.role;
     // Mirror the server gate in api/routes/controls.ts (PM family + Programme Manager).
     return isAtLeastPM(role) || isAtLeastProgrammeManager(role);
+  },
+
+  // ---- AI agent suggestions (review queue) ----------------------------------
+  agentSuggestions: [],
+  agentSuggestionsLoading: false,
+  agentSuggestionsLoaded: false,
+
+  loadAgentSuggestions: async (force = false) => {
+    if (get().agentSuggestionsLoading) return;
+    if (get().agentSuggestionsLoaded && !force) return;
+    set({ agentSuggestionsLoading: true });
+    try {
+      const res = await api.agentListSuggestions();
+      set({ agentSuggestions: (res?.items as AgentSuggestionDoc[]) || [], agentSuggestionsLoaded: true });
+    } catch (e) {
+      console.error("loadAgentSuggestions failed", e);
+    } finally {
+      set({ agentSuggestionsLoading: false });
+    }
+  },
+
+  runAgent: async (params) => {
+    const res = await api.agentRun(params);
+    const created = (res?.suggestions as AgentSuggestionDoc[]) || [];
+    // Merge the run's drafts into the queue (dedupe by id) so the review page reflects
+    // them without a full reload.
+    set((s) => {
+      const byId = new Map(s.agentSuggestions.map((x) => [x.id, x]));
+      for (const c of created) byId.set(c.id, c);
+      return { agentSuggestions: Array.from(byId.values()) };
+    });
+    return created;
+  },
+
+  reviewAgentSuggestion: async (params) => {
+    const res = await api.agentReviewSuggestion(params);
+    const updated = res?.suggestion as AgentSuggestionDoc | undefined;
+    if (updated) {
+      set((s) => ({
+        agentSuggestions: s.agentSuggestions.map((x) => (x.id === updated.id ? updated : x)),
+      }));
+    }
+  },
+
+  applyAgentSuggestion: async (suggestionId) => {
+    await api.agentApplySuggestion(suggestionId);
+    set((s) => ({
+      agentSuggestions: s.agentSuggestions.map((x) =>
+        x.id === suggestionId ? { ...x, reviewStatus: "applied" as const } : x,
+      ),
+    }));
+  },
+
+  canReviewAgentSuggestions: () => {
+    const { user } = get();
+    return canReviewAgentSuggestions(user?.role || user?.profile?.role);
   },
 
   // ---- Incident management (tenant-scoped) ----------------------------------
