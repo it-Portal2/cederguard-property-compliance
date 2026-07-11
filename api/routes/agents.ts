@@ -7,7 +7,17 @@ import {
   AGENT_SUGGESTIONS,
   runAgentPipeline,
 } from '../lib/agents/pipeline.js';
-import type { AgentRunDoc, AgentSuggestionDoc, ContextKind } from '../../shared/types/agents.js';
+import { getAdapter } from '../lib/agents/adapters/index.js';
+import {
+  canReviewAgentSuggestions,
+  canTransition,
+  isApprovable,
+  type AgentRunDoc,
+  type AgentSuggestionDoc,
+  type ContextKind,
+  type ReviewStatus,
+} from '../../shared/types/agents.js';
+import { logActivity } from '../lib/activityLog.js';
 import { isTacElevated } from './technicalAssurance.js';
 
 /** Bounds an unindexed tenant read. Far above any realistic review-queue depth. */
@@ -139,4 +149,151 @@ export const agentRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =
 
     return res.status(200).json({ success: true, items });
   },
+
+  /**
+   * Accept / edit / reject a suggestion. PM+ only. Never writes to a live record — it
+   * only moves the suggestion through its review lifecycle and records the reviewer.
+   * Editing keeps the original payload untouched and stores the reviewer's version
+   * plus a field-level diff, so the audit trail shows both.
+   */
+  agentReviewSuggestion: async (req, res, ctx) => {
+    if (!canReviewAgentSuggestions(ctx.userData?.role)) {
+      return res.status(403).json({ error: 'Forbidden: only a Project Manager or above can review AI suggestions.' });
+    }
+    const { suggestionId, decision, editedPayload, reason } = req.body || {};
+    const target = String(decision || '') as ReviewStatus;
+    if (!['accepted', 'edited', 'rejected'].includes(target)) {
+      return res.status(400).json({ error: 'decision must be accepted, edited or rejected.' });
+    }
+    if (target === 'rejected' && !String(reason || '').trim()) {
+      return res.status(400).json({ error: 'A rejection reason is required.' });
+    }
+
+    const ref = ctx.db.collection(AGENT_SUGGESTIONS).doc(String(suggestionId || ''));
+    const snap = await ref.get();
+    if (!snap.exists || (snap.data() as AgentSuggestionDoc).clientId !== ctx.primaryUid) {
+      return res.status(404).json({ error: 'Suggestion not found for this tenant.' });
+    }
+    const s = snap.data() as AgentSuggestionDoc;
+    if (!canViewSuggestion(ctx, s)) {
+      return res.status(403).json({ error: 'Forbidden: you cannot review this suggestion.' });
+    }
+    if (!canTransition(s.reviewStatus, target)) {
+      return res.status(409).json({ error: `Cannot move a ${s.reviewStatus} suggestion to ${target}.` });
+    }
+
+    const now = new Date().toISOString();
+    const reviewer: AgentSuggestionDoc['reviewer'] = {
+      uid: ctx.uid,
+      name: String(ctx.userData?.displayName || ctx.userData?.name || ctx.email || '').slice(0, 120),
+      decidedAt: now,
+    };
+    const update: Record<string, unknown> = { reviewStatus: target, reviewer, updatedAt: now };
+
+    if (target === 'rejected') {
+      reviewer.reason = String(reason).slice(0, 2000);
+    }
+    if (target === 'edited') {
+      const edited = editedPayload && typeof editedPayload === 'object' && !Array.isArray(editedPayload)
+        ? (editedPayload as Record<string, unknown>)
+        : {};
+      reviewer.editDiff = diffPayload(s.payload, edited);
+      update.editedPayload = edited;
+    }
+    update.reviewer = reviewer;
+
+    await ref.update(update);
+    await logActivity(ctx, `agent_suggestion_${target}`, {
+      category: target === 'rejected' ? 'update' : 'approve',
+      entityType: 'agentSuggestion',
+      entityId: s.id,
+      entityName: s.title,
+      details: { agentKey: s.agentKey, outputType: s.outputType, ...(reviewer.reason ? { reason: reviewer.reason } : {}) },
+    });
+    return res.status(200).json({ success: true, suggestion: { ...s, ...update } });
+  },
+
+  /**
+   * Apply an approved suggestion to a live record. PM+ only. This is the ONLY action
+   * in the whole layer that writes to a module record, and it re-verifies everything
+   * at apply time: tenant, review status, context authorization, output-type adapter,
+   * field sanitize and the prohibited-action veto. The suggestion is flipped to
+   * `applied` inside a transaction that re-reads its status, so a double-submit or a
+   * retry can never apply twice.
+   */
+  agentApplySuggestion: async (req, res, ctx) => {
+    if (!canReviewAgentSuggestions(ctx.userData?.role)) {
+      return res.status(403).json({ error: 'Forbidden: only a Project Manager or above can apply AI suggestions.' });
+    }
+    const ref = ctx.db.collection(AGENT_SUGGESTIONS).doc(String(req.body?.suggestionId || ''));
+    const snap = await ref.get();
+    if (!snap.exists || (snap.data() as AgentSuggestionDoc).clientId !== ctx.primaryUid) {
+      return res.status(404).json({ error: 'Suggestion not found for this tenant.' });
+    }
+    const s = snap.data() as AgentSuggestionDoc;
+    if (!canViewSuggestion(ctx, s)) {
+      return res.status(403).json({ error: 'Forbidden: you cannot apply this suggestion.' });
+    }
+    if (!isApprovable(s.reviewStatus)) {
+      return res.status(409).json({ error: `Only an accepted or edited suggestion can be applied (this one is ${s.reviewStatus}).` });
+    }
+    if (s.contextId && !(await ctx.isAuthorizedForContext(s.contextId))) {
+      return res.status(403).json({ error: 'Forbidden: you no longer have access to this suggestion\'s context.' });
+    }
+
+    const adapter = getAdapter(s.outputType);
+    if (!adapter) {
+      return res.status(400).json({ error: `Suggestions of type ${s.outputType} cannot be applied to a record.` });
+    }
+
+    // Effective payload = the reviewer's edit if they made one, else the model's draft.
+    const effective = s.editedPayload && Object.keys(s.editedPayload).length ? s.editedPayload : s.payload;
+    const sanitized = adapter.sanitize(effective, s);
+    const veto = adapter.prohibited(sanitized, s);
+    if (veto) {
+      return res.status(422).json({ error: veto });
+    }
+
+    let applied: { collection: string; recordId: string };
+    try {
+      applied = await adapter.apply(ctx, s, sanitized);
+    } catch (e: any) {
+      console.error(`agentApplySuggestion(${s.outputType}) failed`, e?.message || e);
+      return res.status(500).json({ error: 'The record could not be created. Please try again.' });
+    }
+
+    // Flip to applied only if still approvable — guards against a concurrent second apply.
+    const flipped = await ctx.db.runTransaction(async (tx) => {
+      const fresh = await tx.get(ref);
+      const cur = fresh.data() as AgentSuggestionDoc | undefined;
+      if (!cur || !isApprovable(cur.reviewStatus)) return false;
+      tx.update(ref, {
+        reviewStatus: 'applied',
+        applied: { collection: applied.collection, recordId: applied.recordId, at: new Date().toISOString(), byUid: ctx.uid },
+        updatedAt: new Date().toISOString(),
+      });
+      return true;
+    });
+
+    await logActivity(ctx, 'agent_suggestion_applied', {
+      category: 'create',
+      entityType: 'agentSuggestion',
+      entityId: s.id,
+      entityName: s.title,
+      details: { agentKey: s.agentKey, outputType: s.outputType, target: applied.collection, recordId: applied.recordId },
+    });
+    return res.status(200).json({ success: true, applied, alreadyApplied: !flipped });
+  },
 };
+
+/** Shallow field-level diff between the model's payload and the reviewer's edit (for audit). */
+function diffPayload(original: Record<string, unknown>, edited: Record<string, unknown>) {
+  const keys = new Set([...Object.keys(original || {}), ...Object.keys(edited || {})]);
+  const diff: { field: string; from: unknown; to: unknown }[] = [];
+  for (const k of keys) {
+    const from = (original as any)?.[k];
+    const to = (edited as any)?.[k];
+    if (JSON.stringify(from) !== JSON.stringify(to)) diff.push({ field: k, from, to });
+  }
+  return diff.slice(0, 100);
+}

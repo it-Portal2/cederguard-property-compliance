@@ -3,7 +3,7 @@ import { ApiContext } from '../lib/context.js';
 import { logActivity } from '../lib/activityLog.js';
 import { ROLE_STRINGS } from '../../shared/constants/roleConstants.js';
 
-const CONTROLS = 'controls';
+export const CONTROLS = 'controls';
 
 /** Edit gate: Client Admin / Super Admin (via isClientAdmin) + any PM-level role (PM+). */
 function canManageControls(ctx: ApiContext): boolean {
@@ -20,7 +20,7 @@ function canManageControls(ctx: ApiContext): boolean {
 }
 
 /** Whitelist + coerce the persisted shape so a client can't write clientId/createdAt or junk. */
-function sanitizeControl(input: any) {
+export function sanitizeControl(input: any) {
   const str = (v: any, max: number) => (v ? String(v).slice(0, max) : '');
   // Cap array length + element length so a write can't bloat the document.
   const arr = (v: any) =>
