@@ -1,9 +1,10 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ListChecks } from "lucide-react";
 import { clsx } from "clsx";
 import PageHeader from "../../../components/PageHeader";
 import DynamicTable from "../../../components/table/DynamicTable";
 import type { ColumnDef, FilterDef } from "../../../components/table/types";
+import { ProjectScopeToggle, type ProjectScope } from "../../../components/common/ProjectScope";
 import { useStore } from "../../../store/useStore";
 import type { AgentSuggestionDoc } from "../../../../shared/types/agents";
 import { AGENT_META, OUTPUT_TYPE_LABELS, REVIEW_STATUS_STYLE } from "../agentMeta";
@@ -14,16 +15,33 @@ export default function AgentSuggestionsPage() {
   const loading = useStore((s) => s.agentSuggestionsLoading);
   const loaded = useStore((s) => s.agentSuggestionsLoaded);
   const loadAgentSuggestions = useStore((s) => s.loadAgentSuggestions);
+  const activeProjectId = useStore((s) => s.activeProjectId);
+  const activeProgrammeId = useStore((s) => s.activeProgrammeId);
+
+  // The queue follows the active context (project or programme), matching the rest of the
+  // app; "All" opens the full cross-context review inbox.
+  const activeContextId = activeProjectId || activeProgrammeId;
+  const [scope, setScope] = useState<ProjectScope>(activeContextId ? "project" : "all");
 
   useEffect(() => {
     loadAgentSuggestions();
   }, [loadAgentSuggestions]);
 
-  // Superseded drafts are hidden by default — they are kept for audit, not review.
-  const visible = useMemo(
-    () => suggestions.filter((s) => s.reviewStatus !== "superseded"),
-    [suggestions],
-  );
+  // Re-sync the toggle when the active context changes, so switching project/programme
+  // shows that context's suggestions rather than the previous one's.
+  useEffect(() => {
+    setScope(activeContextId ? "project" : "all");
+  }, [activeContextId]);
+
+  const visible = useMemo(() => {
+    // Superseded drafts are hidden by default — they are kept for audit, not review.
+    let list = suggestions.filter((s) => s.reviewStatus !== "superseded");
+    if (scope === "project" && activeContextId) {
+      // This context's suggestions, plus portfolio-wide ones (org-wide, apply everywhere).
+      list = list.filter((s) => s.contextId === activeContextId || s.contextId === null);
+    }
+    return list;
+  }, [suggestions, scope, activeContextId]);
 
   const columns: ColumnDef<AgentSuggestionDoc>[] = useMemo(
     () => [
@@ -111,6 +129,11 @@ export default function AgentSuggestionsPage() {
         title="AI Suggestions"
         subtitle="Drafts produced by the AI agents. Review the sources, then accept, edit, reject or apply — nothing reaches a live record until you approve it."
         breadcrumbs={[{ label: "AI Agents" }, { label: "AI Suggestions" }]}
+        actions={
+          activeContextId ? (
+            <ProjectScopeToggle scope={scope} onChange={setScope} />
+          ) : undefined
+        }
       />
 
       <DynamicTable<AgentSuggestionDoc>
@@ -128,9 +151,11 @@ export default function AgentSuggestionsPage() {
         stickyHeader
         headerVariant="light"
         emptyState={{
-          title: "No AI suggestions yet",
+          title: "No AI suggestions here",
           description:
-            "Run an agent from a module page — Risk, Compliance, Incidents, Technical Assurance and more — and its drafts land here for review.",
+            scope === "project" && activeContextId
+              ? "Nothing for the active context yet. Switch to “All” to see suggestions from other projects, or run an agent from a module page."
+              : "Run an agent from a module page — Risk, Compliance, Incidents, Technical Assurance and more — and its drafts land here for review.",
           icon: ListChecks,
         }}
       />

@@ -83,7 +83,7 @@ export default function SuggestionReviewPanel({ suggestion }: { suggestion: Agen
   };
 
   return (
-    <div className="space-y-4 p-1">
+    <div className="space-y-4 p-4 sm:p-6 bg-slate-50/40 rounded-lg">
       {/* Header: status + AI provenance */}
       <div className="flex flex-wrap items-center gap-2">
         <span

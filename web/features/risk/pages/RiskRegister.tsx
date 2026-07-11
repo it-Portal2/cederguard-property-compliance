@@ -1018,18 +1018,6 @@ export function RiskRegister() {
                 onChange={historicalView.setMonthEnd}
                 loading={historicalView.loading}
               />
-              {canModify && (
-                <button
-                  onClick={() => {
-                    setEditingRisk(null);
-                    setIsModalOpen(true);
-                  }}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Risk
-                </button>
-              )}
               <PageActions items={pageActions} canManage={canManage} />
             </div>
           }
@@ -1151,6 +1139,20 @@ export function RiskRegister() {
           searchPlaceholder="Search risks..."
           searchFields={["title", "id", "workstream", "desc"]}
           selectable
+          toolbarActions={
+            canModify ? (
+              <button
+                onClick={() => {
+                  setEditingRisk(null);
+                  setIsModalOpen(true);
+                }}
+                className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
+              >
+                <Plus className="w-4 h-4" />
+                Add Risk
+              </button>
+            ) : undefined
+          }
           getRowId={(r) => r.id}
           rowClassName={(r) => {
             const base = r.escalated
