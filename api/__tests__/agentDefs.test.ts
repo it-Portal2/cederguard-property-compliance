@@ -58,15 +58,22 @@ function makeCtx(tenantDocs: Record<string, any[]> = {}, contextArrays: Record<s
 const scope = { kind: 'project' as const, contextId: 'proj1' };
 
 describe('agent registry', () => {
-  it('registers all four built agents', () => {
-    for (const key of ['riskIncident', 'compliance', 'governance', 'evidence']) {
+  it('registers all seven agents', () => {
+    for (const key of ['riskIncident', 'compliance', 'governance', 'evidence', 'technical', 'monitoring', 'delivery']) {
       expect(getAgent(key), key).toBeTruthy();
     }
   });
 
-  it('leaves unbuilt agents unregistered', () => {
-    expect(getAgent('monitoring')).toBeUndefined();
+  it('leaves unknown agents unregistered', () => {
     expect(getAgent('nonsense')).toBeUndefined();
+  });
+
+  it('every agent only emits output types it has words for, and the Technical Companion needs a question', () => {
+    expect(getAgent('technical')!.needsInput).toBe(true);
+    expect(getAgent('technical')!.allowedOutputTypes).toEqual(['technicalAnswer']);
+    // Monitoring can run portfolio-wide; risk/incident cannot.
+    expect(getAgent('monitoring')!.scopeKinds).toContain('portfolio');
+    expect(getAgent('riskIncident')!.scopeKinds).not.toContain('portfolio');
   });
 });
 

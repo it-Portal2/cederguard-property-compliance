@@ -106,6 +106,13 @@ export default function SuggestionReviewPanel({ suggestion }: { suggestion: Agen
 
       <p className="text-sm text-slate-700 whitespace-pre-wrap">{s.rationale}</p>
 
+      {/* Long-form body for narrative / technical-answer suggestions. */}
+      {typeof (effective.answer ?? effective.text) === "string" && (effective.answer ?? effective.text) ? (
+        <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-700 whitespace-pre-wrap">
+          {String(effective.answer ?? effective.text)}
+        </div>
+      ) : null}
+
       {/* Confidence */}
       <div className="flex items-center gap-2">
         <span

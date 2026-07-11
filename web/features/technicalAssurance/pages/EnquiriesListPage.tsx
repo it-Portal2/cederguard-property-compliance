@@ -30,6 +30,7 @@ import { NewEnquiryModal } from "../components/NewEnquiryModal";
 import { RecentEnquiriesPanel } from "../components/RecentEnquiriesPanel";
 import { api } from "../../../lib/api";
 import PageHeader from "../../../components/PageHeader";
+import RunAgentButton from "../../agents/components/RunAgentButton";
 import { useTechnicalAssuranceStore } from "../../../store/technicalAssuranceStore";
 import type { ColumnDef, FilterDef, RowAction } from "../../../components/table/types";
 import type {
@@ -581,6 +582,7 @@ export function TacEnquiriesListPage() {
         breadcrumbs={[{ label: "Technical Assurance" }, { label: "Enquiries" }]}
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            <RunAgentButton agentKey="technical" needsQuestion label="Ask the Companion" />
             {/* Q5.3 — project scope toggle (only when a project is active). */}
             {activeProjectId && (
               <div className="inline-flex rounded-lg border border-slate-300 bg-white p-0.5 text-xs font-semibold shadow-sm">

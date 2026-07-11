@@ -22,6 +22,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import PageHeader from "../../../components/PageHeader";
+import RunAgentButton from "../../agents/components/RunAgentButton";
 import { StatsCard } from "../../../components/common/StatsCard";
 import { useStore } from "../../../store/useStore";
 import {
@@ -184,14 +185,17 @@ export default function ResourcePlannerDashboardPage() {
         subtitle="FTE demand and capacity across the development programme."
         breadcrumbs={[{ label: "Resource Planner" }, { label: "Dashboard" }]}
         actions={
-          !loading && resourceSchemes.length > 0 ? (
-            <div className="flex flex-wrap items-center gap-2">
-              {activeProjectId && (
-                <ProjectScopeToggle scope={scope} onChange={setScope} />
-              )}
-              <SchemeFilters schemes={resourceSchemes} value={filters} onChange={setFilters} />
-            </div>
-          ) : undefined
+          <div className="flex flex-wrap items-center gap-2">
+            <RunAgentButton agentKey="delivery" label="Run Delivery agent" />
+            {!loading && resourceSchemes.length > 0 && (
+              <>
+                {activeProjectId && (
+                  <ProjectScopeToggle scope={scope} onChange={setScope} />
+                )}
+                <SchemeFilters schemes={resourceSchemes} value={filters} onChange={setFilters} />
+              </>
+            )}
+          </div>
         }
       />
 

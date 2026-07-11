@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { ClipboardList, TrendingUp, PoundSterling } from "lucide-react";
 import PageHeader from "../../../components/PageHeader";
+import RunAgentButton from "../../agents/components/RunAgentButton";
 import { StatsCard } from "../../../components/common/StatsCard";
 import { ComplianceVelocityChart } from "../../../components/dashboard/ComplianceVelocityChart";
 import AssuranceSignalsCard from "../components/AssuranceSignalsCard";
@@ -31,6 +32,7 @@ export default function MonitoringOverviewPage() {
         title="Monitoring Overview"
         subtitle="Live status across compliance, governance, escalations & incidents and resources — in one place."
         breadcrumbs={[{ label: "Monitoring & Reporting" }, { label: "Overview" }]}
+        actions={<RunAgentButton agentKey="monitoring" label="Run Monitoring agent" />}
       />
 
       {/* Escalations & Incidents */}
