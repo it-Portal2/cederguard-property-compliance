@@ -46,6 +46,11 @@ export function stripForbiddenFields(payload: Record<string, unknown>): Record<s
   return out;
 }
 
+/** A user-facing apply error — the route surfaces its message as a 422 rather than a generic 500. */
+export function userError(message: string): Error {
+  return Object.assign(new Error(message), { userFacing: true });
+}
+
 /** An array-backed record needs a project/programme to live in; portfolio scope has none. */
 export function requireContext(s: AgentSuggestionDoc): string | null {
   if (!s.contextId) {

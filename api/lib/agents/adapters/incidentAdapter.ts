@@ -1,7 +1,7 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import type { AgentSuggestionDoc } from '../../../../shared/types/agents.js';
 import type { ApplyResult, OutputAdapter } from './base.js';
-import { str, stripForbiddenFields } from './base.js';
+import { str, stripForbiddenFields, userError } from './base.js';
 
 const INCIDENTS = 'incidents';
 
@@ -41,8 +41,16 @@ export const incidentAdapter: OutputAdapter = {
     const incidentId = String((payload as any).incidentId);
     const ref = db.collection(INCIDENTS).doc(incidentId);
     const snap = await ref.get();
-    if (!snap.exists || snap.data()?.clientId !== primaryUid) {
-      throw new Error('Target incident not found for this tenant.');
+    const incident = snap.data() as any;
+    if (!snap.exists || incident?.clientId !== primaryUid) {
+      throw userError('Target incident not found for this tenant.');
+    }
+    // Authorize the TARGET incident's own project/programme — not just the run's scope —
+    // so an edited incidentId can't merge into a context the user can't access (matches
+    // the human incidentsUpsert route).
+    const incidentContext = incident.projectId || incident.programmeId;
+    if (incidentContext && !(await ctx.isAuthorizedForContext(incidentContext))) {
+      throw userError('You do not have access to the project this incident belongs to.');
     }
 
     const merge: Record<string, unknown> = {};

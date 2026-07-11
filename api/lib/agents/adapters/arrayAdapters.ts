@@ -3,7 +3,7 @@ import type { ApiContext } from '../../context.js';
 import type { AgentSuggestionDoc } from '../../../../shared/types/agents.js';
 import { writeLegacyArray } from '../../legacyArrayWrite.js';
 import type { ApplyResult, OutputAdapter } from './base.js';
-import { clampInt, requireContext, str, stripForbiddenFields } from './base.js';
+import { clampInt, requireContext, str, stripForbiddenFields, userError } from './base.js';
 
 const newId = (prefix: string) => `${prefix}-${crypto.randomBytes(6).toString('hex').toUpperCase()}`;
 const today = () => new Date().toISOString().slice(0, 10);
@@ -74,7 +74,7 @@ export const riskAdapter: OutputAdapter = {
     return null;
   },
   async apply(ctx, s, payload) {
-    if (requireContext(s)) throw new Error(requireContext(s)!);
+    if (requireContext(s)) throw userError(requireContext(s)!);
     const item = {
       id: newId('R'),
       ...payload,
@@ -112,7 +112,7 @@ export const complianceItemAdapter: OutputAdapter = {
     return null;
   },
   async apply(ctx, s, payload) {
-    if (requireContext(s)) throw new Error(requireContext(s)!);
+    if (requireContext(s)) throw userError(requireContext(s)!);
     const item = {
       id: newId('C'),
       ...payload,
@@ -163,7 +163,7 @@ export const capaTaskAdapter: OutputAdapter = {
     return null;
   },
   async apply(ctx, s, payload) {
-    if (requireContext(s)) throw new Error(requireContext(s)!);
+    if (requireContext(s)) throw userError(requireContext(s)!);
     const proposed = String((payload as any).capaType || '');
     const capaType = (['Corrective', 'Preventive', 'Improvement', 'Detective'].includes(proposed)
       ? proposed
@@ -182,7 +182,7 @@ export const evidenceGapAdapter: OutputAdapter = {
     return null;
   },
   async apply(ctx, s, payload) {
-    if (requireContext(s)) throw new Error(requireContext(s)!);
+    if (requireContext(s)) throw userError(requireContext(s)!);
     // An evidence gap is actioned as a corrective, evidence-required CAPA task —
     // "go and obtain the missing evidence" — rather than a new record type.
     const item = taskItem(s, payload, 'Corrective', { capaEvidenceRequired: true });
@@ -206,7 +206,7 @@ export const lessonLearnedAdapter: OutputAdapter = {
     return null;
   },
   async apply(ctx, s, payload) {
-    if (requireContext(s)) throw new Error(requireContext(s)!);
+    if (requireContext(s)) throw userError(requireContext(s)!);
     const item = {
       id: newId('L'),
       ...payload,

@@ -70,7 +70,7 @@ export function buildSuggestionsSchema(
 /** Model confidence arrives as 0–1 or 0–100 depending on the model; normalise to 0–1. */
 function normaliseConfidence(v: unknown): number {
   const n = Number(v);
-  if (!Number.isFinite(n) || n <= 0) return 0.5;
+  if (!Number.isFinite(n)) return 0.5; // absent/garbage → neutral; a genuine 0 is kept
   const scaled = n > 1 ? n / 100 : n;
   return Math.min(1, Math.max(0, scaled));
 }

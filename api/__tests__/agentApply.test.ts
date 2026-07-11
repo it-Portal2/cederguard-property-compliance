@@ -228,6 +228,40 @@ describe('agentApplySuggestion', () => {
   });
 });
 
+describe('agentListSuggestions — cross-project isolation', () => {
+  it('hides suggestions whose context the caller is not authorized for', async () => {
+    const store: any = {};
+    store.agentSuggestions = {
+      a: { id: 'a', clientId: 'tenant1', contextId: 'projA', outputType: 'risk', createdAt: '2026-07-02' },
+      b: { id: 'b', clientId: 'tenant1', contextId: 'projB', outputType: 'risk', createdAt: '2026-07-01' },
+      port: { id: 'port', clientId: 'tenant1', contextId: null, outputType: 'narrative', createdAt: '2026-07-03' },
+    };
+    const ctx = makeCtx('project_manager', store);
+    // Authorized for projA and portfolio, NOT projB.
+    ctx.isAuthorizedForContext = async (cid: string) => cid === 'projA';
+
+    const res = makeRes();
+    await agentRoutes.agentListSuggestions({ body: {} }, res, ctx);
+
+    const ids = res.body.items.map((s: any) => s.id);
+    expect(ids).toContain('a');       // authorized project
+    expect(ids).toContain('port');    // portfolio (tenant-wide)
+    expect(ids).not.toContain('b');   // other project — filtered out
+  });
+});
+
+describe('agentApplySuggestion — apply cannot race a reject', () => {
+  it('does not write a record if the suggestion was rejected before the claim', async () => {
+    const store: any = {}; seedSuggestion(store, { reviewStatus: 'rejected' });
+    const res = makeRes();
+    await agentRoutes.agentApplySuggestion(
+      { body: { suggestionId: 'sug-1' } }, res, makeCtx('project_manager', store));
+    // Pre-check already refuses a rejected suggestion.
+    expect(res.statusCode).toBe(409);
+    expect(store['projects/proj1/data']?.tasks).toBeUndefined();
+  });
+});
+
 describe('agentRegenerate supersede', () => {
   // A regenerate should supersede only THIS agent+context's leftover DRAFTS, never an
   // accepted/applied/rejected one, and never another agent's or another context's drafts.

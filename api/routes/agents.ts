@@ -25,6 +25,25 @@ import { isTacElevated } from './technicalAssurance.js';
 const LIST_LIMIT = 500;
 
 /**
+ * Keep only the items whose context the caller is authorized for, so the queue and the
+ * run audit never leak another project's records within the same tenant (the run itself
+ * inherits the user's permissions; the READ of its results must too). Distinct contexts
+ * are checked once each. A portfolio-scoped item (contextId null) is tenant-wide and
+ * shown to any non-viewer who reached this far.
+ */
+async function filterAuthorizedContexts<T extends { contextId: string | null }>(
+  ctx: ApiContext,
+  items: T[],
+): Promise<T[]> {
+  const distinct = [...new Set(items.map((i) => i.contextId).filter((c): c is string => !!c))];
+  const allowed = new Map<string, boolean>();
+  await Promise.all(
+    distinct.map(async (cid) => allowed.set(cid, await ctx.isAuthorizedForContext(cid))),
+  );
+  return items.filter((i) => i.contextId === null || allowed.get(i.contextId) === true);
+}
+
+/**
  * Mirrors the chat path's user-side injection screen. The agent question is the only
  * user-authored free text an agent ever sees; fencing is the second layer, this is
  * the first.
@@ -41,6 +60,15 @@ const INJECTION_RE =
 function canViewSuggestion(ctx: ApiContext, s: AgentSuggestionDoc): boolean {
   if (s.outputType !== 'technicalAnswer') return true;
   return s.requestedByUid === ctx.uid || isTacElevated(ctx);
+}
+
+/**
+ * PM+ review/apply gate. Mirrors the shared predicate but also honours ctx.isClientAdmin,
+ * which covers admin/enterprise AND the SYSTEM_ADMIN_EMAILS path (an admin-by-email has no
+ * role string of their own, so the string-only predicate would wrongly deny them).
+ */
+function canReview(ctx: ApiContext): boolean {
+  return ctx.isClientAdmin || canReviewAgentSuggestions(ctx.userData?.role);
 }
 
 async function resolveScope(
@@ -184,24 +212,31 @@ export const agentRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =
       .limit(LIST_LIMIT)
       .get();
 
-    const items = snap.docs
+    const tenant = snap.docs
       .map((d) => d.data() as AgentSuggestionDoc)
-      .filter((s) => canViewSuggestion(ctx, s))
+      .filter((s) => canViewSuggestion(ctx, s));
+    const items = (await filterAuthorizedContexts(ctx, tenant))
       .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
 
     return res.status(200).json({ success: true, items });
   },
 
-  /** Run history — the prompt-context audit trail (who ran what, over which records). */
+  /**
+   * Run history — the prompt-context audit trail (who ran what, over which records). The
+   * run doc holds the full fenced prompt, so it is both context-authorized AND PM+ gated.
+   */
   agentListRuns: async (req, res, ctx) => {
+    if (!canReview(ctx)) {
+      return res.status(403).json({ error: 'Forbidden: only a Project Manager or above can view the agent audit trail.' });
+    }
     const snap = await ctx.db
       .collection(AGENT_RUNS)
       .where('clientId', '==', ctx.primaryUid)
       .limit(LIST_LIMIT)
       .get();
 
-    const items = snap.docs
-      .map((d) => d.data() as AgentRunDoc)
+    const tenant = snap.docs.map((d) => d.data() as AgentRunDoc);
+    const items = (await filterAuthorizedContexts(ctx, tenant))
       .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
 
     return res.status(200).json({ success: true, items });
@@ -214,7 +249,7 @@ export const agentRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =
    * plus a field-level diff, so the audit trail shows both.
    */
   agentReviewSuggestion: async (req, res, ctx) => {
-    if (!canReviewAgentSuggestions(ctx.userData?.role)) {
+    if (!canReview(ctx)) {
       return res.status(403).json({ error: 'Forbidden: only a Project Manager or above can review AI suggestions.' });
     }
     const { suggestionId, decision, editedPayload, reason } = req.body || {};
@@ -279,7 +314,7 @@ export const agentRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =
    * retry can never apply twice.
    */
   agentApplySuggestion: async (req, res, ctx) => {
-    if (!canReviewAgentSuggestions(ctx.userData?.role)) {
+    if (!canReview(ctx)) {
       return res.status(403).json({ error: 'Forbidden: only a Project Manager or above can apply AI suggestions.' });
     }
     const ref = ctx.db.collection(AGENT_SUGGESTIONS).doc(String(req.body?.suggestionId || ''));
@@ -311,25 +346,36 @@ export const agentRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =
       return res.status(422).json({ error: veto });
     }
 
+    // CLAIM FIRST: transactionally flip approved → applied so exactly ONE caller wins.
+    // Only the winner writes the live record, which closes the concurrent double-apply
+    // hole and the apply-racing-a-reject hole (a rejected suggestion is no longer
+    // approvable, so the claim fails and no record is written).
+    const claim = await ctx.db.runTransaction(async (tx) => {
+      const fresh = await tx.get(ref);
+      const cur = fresh.data() as AgentSuggestionDoc | undefined;
+      if (!cur || !isApprovable(cur.reviewStatus)) return { won: false, status: cur?.reviewStatus };
+      tx.update(ref, { reviewStatus: 'applied', updatedAt: new Date().toISOString() });
+      return { won: true, prior: cur.reviewStatus };
+    });
+    if (!claim.won) {
+      return res.status(200).json({ success: true, alreadyApplied: true, status: claim.status });
+    }
+
     let applied: { collection: string; recordId: string };
     try {
       applied = await adapter.apply(ctx, s, sanitized);
     } catch (e: any) {
+      // The write failed after we claimed the slot — release the claim so it can be
+      // retried, and surface an adapter user-error (e.g. "select a project") as 422.
+      await ref.update({ reviewStatus: claim.prior, updatedAt: new Date().toISOString() }).catch(() => undefined);
+      if (e?.userFacing) return res.status(422).json({ error: String(e.message) });
       console.error(`agentApplySuggestion(${s.outputType}) failed`, e?.message || e);
       return res.status(500).json({ error: 'The record could not be created. Please try again.' });
     }
 
-    // Flip to applied only if still approvable — guards against a concurrent second apply.
-    const flipped = await ctx.db.runTransaction(async (tx) => {
-      const fresh = await tx.get(ref);
-      const cur = fresh.data() as AgentSuggestionDoc | undefined;
-      if (!cur || !isApprovable(cur.reviewStatus)) return false;
-      tx.update(ref, {
-        reviewStatus: 'applied',
-        applied: { collection: applied.collection, recordId: applied.recordId, at: new Date().toISOString(), byUid: ctx.uid },
-        updatedAt: new Date().toISOString(),
-      });
-      return true;
+    await ref.update({
+      applied: { collection: applied.collection, recordId: applied.recordId, at: new Date().toISOString(), byUid: ctx.uid },
+      updatedAt: new Date().toISOString(),
     });
 
     await logActivity(ctx, 'agent_suggestion_applied', {
@@ -339,7 +385,7 @@ export const agentRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =
       entityName: s.title,
       details: { agentKey: s.agentKey, outputType: s.outputType, target: applied.collection, recordId: applied.recordId },
     });
-    return res.status(200).json({ success: true, applied, alreadyApplied: !flipped });
+    return res.status(200).json({ success: true, applied });
   },
 };
 
