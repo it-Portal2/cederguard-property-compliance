@@ -2,6 +2,7 @@ import type { ApiContext } from '../../context.js';
 import type { AgentSuggestionDoc, OutputType } from '../../../../shared/types/agents.js';
 import { riskAdapter, complianceItemAdapter, capaTaskAdapter, evidenceGapAdapter, lessonLearnedAdapter } from './arrayAdapters.js';
 import { controlAdapter } from './controlAdapter.js';
+import { incidentAdapter } from './incidentAdapter.js';
 
 export interface ApplyResult {
   collection: string;
@@ -38,6 +39,7 @@ export const ADAPTERS: Partial<Record<OutputType, OutputAdapter>> = {
   capaTask: capaTaskAdapter,
   evidenceGap: evidenceGapAdapter,
   lessonLearned: lessonLearnedAdapter,
+  incidentUpdate: incidentAdapter,
 };
 
 export function getAdapter(outputType: OutputType): OutputAdapter | undefined {

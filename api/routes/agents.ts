@@ -8,6 +8,7 @@ import {
   runAgentPipeline,
 } from '../lib/agents/pipeline.js';
 import { getAdapter } from '../lib/agents/adapters/index.js';
+import '../lib/agents/defs/index.js'; // side-effect: populate the AGENTS registry
 import {
   canReviewAgentSuggestions,
   canTransition,
