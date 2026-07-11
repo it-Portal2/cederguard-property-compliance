@@ -306,6 +306,12 @@ export const api = {
   }) => callApi("agentReviewSuggestion", params),
   agentApplySuggestion: (suggestionId: string) =>
     callApi("agentApplySuggestion", { suggestionId }),
+  agentRegenerate: (params: {
+    agentKey: string;
+    contextKind: "project" | "programme" | "portfolio";
+    contextId?: string | null;
+    question?: string;
+  }) => callApi("agentRegenerate", params, 120000),
 
   clientGetProgrammesByManager: (supervisorId: string) =>
     callApi("clientGetProgrammesByManager", { supervisorId }),

@@ -3308,12 +3308,25 @@ export const useStore = create<AppState>((set, get) => {
   },
 
   runAgent: async (params) => {
-    const res = await api.agentRun(params);
+    // Regenerate = run + supersede this agent+context's previous drafts, so re-running a
+    // page's agent replaces stale drafts rather than piling up duplicates.
+    const res = await api.agentRegenerate(params);
     const created = (res?.suggestions as AgentSuggestionDoc[]) || [];
-    // Merge the run's drafts into the queue (dedupe by id) so the review page reflects
-    // them without a full reload.
+    const freshIds = new Set(created.map((c) => c.id));
     set((s) => {
       const byId = new Map(s.agentSuggestions.map((x) => [x.id, x]));
+      // Mirror the server's supersede: this agent+context's old drafts (not in the fresh
+      // set) become superseded locally too.
+      for (const [id, x] of byId) {
+        if (
+          x.agentKey === params.agentKey &&
+          (x.contextId ?? null) === (params.contextId ?? null) &&
+          x.reviewStatus === "draft" &&
+          !freshIds.has(id)
+        ) {
+          byId.set(id, { ...x, reviewStatus: "superseded" });
+        }
+      }
       for (const c of created) byId.set(c.id, c);
       return { agentSuggestions: Array.from(byId.values()) };
     });

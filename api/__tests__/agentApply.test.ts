@@ -41,7 +41,7 @@ function makeDb(store: Record<string, Record<string, any>>) {
             get empty() { return this.docs.length === 0; },
             docs: Object.entries(store[name])
               .filter(([, d]: any) => self._filters.every((f: any) => d[f.field] === f.val))
-              .map(([id, d]: any) => ({ id, data: () => d })),
+              .map(([id, d]: any) => ({ id, data: () => d, ref: docApi(id) })),
           }),
         };
         return self;
@@ -50,7 +50,11 @@ function makeDb(store: Record<string, Record<string, any>>) {
   };
   return {
     collection: col,
-    batch: () => ({ set() {}, update() {}, commit: async () => {} }),
+    batch: () => ({
+      set() {},
+      update(ref: any, payload: any) { ref.update(payload); },
+      commit: async () => {},
+    }),
     runTransaction: async (fn: any) => fn({
       get: async (ref: any) => ref.get(),
       update: (ref: any, payload: any) => ref.update(payload),
@@ -221,5 +225,38 @@ describe('agentApplySuggestion', () => {
     await agentRoutes.agentApplySuggestion(
       { body: { suggestionId: 'sug-1' } }, res, makeCtx('project_manager', store));
     expect(res.statusCode).toBe(400);
+  });
+});
+
+describe('agentRegenerate supersede', () => {
+  // A regenerate should supersede only THIS agent+context's leftover DRAFTS, never an
+  // accepted/applied/rejected one, and never another agent's or another context's drafts.
+  it('supersedes the right prior drafts and nothing else', async () => {
+    const store: any = {};
+    store.agentSuggestions = {
+      'old-draft': { id: 'old-draft', clientId: 'tenant1', agentKey: 'riskIncident', contextId: 'proj1', reviewStatus: 'draft' },
+      'old-accepted': { id: 'old-accepted', clientId: 'tenant1', agentKey: 'riskIncident', contextId: 'proj1', reviewStatus: 'accepted' },
+      'other-agent': { id: 'other-agent', clientId: 'tenant1', agentKey: 'compliance', contextId: 'proj1', reviewStatus: 'draft' },
+      'other-context': { id: 'other-context', clientId: 'tenant1', agentKey: 'riskIncident', contextId: 'proj2', reviewStatus: 'draft' },
+    };
+    const ctx = makeCtx('project_manager', store);
+    // Stub the pipeline: pretend the run produced one fresh suggestion.
+    const fresh = { id: 'fresh-1', clientId: 'tenant1', agentKey: 'riskIncident', contextId: 'proj1', reviewStatus: 'draft' };
+    const pipeline = await import('../lib/agents/pipeline.js');
+    const spy = vi.spyOn(pipeline, 'runAgentPipeline').mockResolvedValue({ runId: 'run-x', suggestions: [fresh as any] });
+    // Register a fake agent so getAgent('riskIncident') resolves with project scope.
+    const registry = await import('../lib/agents/registry.js');
+    (registry.AGENTS as any).riskIncident = { key: 'riskIncident', label: 'R&I', scopeKinds: ['project'], needsInput: false };
+
+    const res = makeRes();
+    await agentRoutes.agentRegenerate(
+      { body: { agentKey: 'riskIncident', contextKind: 'project', contextId: 'proj1' } }, res, ctx);
+
+    expect(res.statusCode).toBe(200);
+    expect(store.agentSuggestions['old-draft'].reviewStatus).toBe('superseded');   // same agent+context draft
+    expect(store.agentSuggestions['old-accepted'].reviewStatus).toBe('accepted');  // preserved
+    expect(store.agentSuggestions['other-agent'].reviewStatus).toBe('draft');      // different agent
+    expect(store.agentSuggestions['other-context'].reviewStatus).toBe('draft');    // different context
+    spy.mockRestore();
   });
 });

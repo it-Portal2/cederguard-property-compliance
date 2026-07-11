@@ -120,6 +120,62 @@ export const agentRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =
     }
   },
 
+  /**
+   * Re-run an agent over the same scope and supersede the PREVIOUS drafts for that agent
+   * and context, so re-running replaces stale drafts instead of piling up duplicates.
+   * Only `draft` suggestions are superseded — anything a human already accepted, edited,
+   * rejected or applied is untouched. Supersede happens AFTER a successful run, so a
+   * failed run leaves the old drafts in place.
+   */
+  agentRegenerate: async (req, res, ctx) => {
+    const { agentKey } = req.body || {};
+    const def = getAgent(String(agentKey || ''));
+    if (!def) return res.status(400).json({ error: 'Unknown agent.' });
+
+    const resolved = await resolveScope(ctx, req.body);
+    if ('error' in resolved) return res.status(resolved.status).json({ error: resolved.error });
+    const { scope } = resolved;
+    if (!def.scopeKinds.includes(scope.kind)) {
+      return res.status(400).json({ error: `${def.label} cannot run at ${scope.kind} scope.` });
+    }
+    const q = req.body?.question ? String(req.body.question).trim() : '';
+    if (def.needsInput && !q) return res.status(400).json({ error: `${def.label} needs a question.` });
+    if (q && INJECTION_RE.test(q)) {
+      return res.status(400).json({ error: 'Your question contains unusual formatting. Please rephrase.' });
+    }
+
+    let runId: string;
+    let suggestions: AgentSuggestionDoc[];
+    try {
+      ({ runId, suggestions } = await runAgentPipeline(ctx, def, scope, { question: q || undefined }));
+    } catch (e: any) {
+      console.error(`agentRegenerate(${def.key}) failed`, e?.message || e);
+      return res.status(502).json({ error: 'The agent could not complete this run. Please try again.' });
+    }
+
+    const freshIds = new Set(suggestions.map((s) => s.id));
+    const snap = await ctx.db
+      .collection(AGENT_SUGGESTIONS)
+      .where('clientId', '==', ctx.primaryUid)
+      .limit(LIST_LIMIT)
+      .get();
+    const stale = snap.docs.filter((d) => {
+      const s = d.data() as AgentSuggestionDoc;
+      return (
+        s.agentKey === def.key &&
+        s.contextId === scope.contextId &&
+        s.reviewStatus === 'draft' &&
+        !freshIds.has(s.id)
+      );
+    });
+    // Batches cap at 500 writes; stale is bounded by LIST_LIMIT and in practice tiny.
+    const batch = ctx.db.batch();
+    for (const d of stale) batch.update(d.ref, { reviewStatus: 'superseded', updatedAt: new Date().toISOString() });
+    if (stale.length) await batch.commit();
+
+    return res.status(200).json({ success: true, runId, suggestions, supersededCount: stale.length });
+  },
+
   /** The review queue. Equality-only tenant read + in-memory filter/sort — no composite index. */
   agentListSuggestions: async (req, res, ctx) => {
     const snap = await ctx.db
