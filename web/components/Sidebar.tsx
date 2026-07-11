@@ -235,6 +235,8 @@ export function Sidebar() {
       setOpenGroup("Automated Intelligence");
     } else if (path.startsWith("/monitoring")) {
       setOpenGroup("Monitoring & Reporting");
+    } else if (path.startsWith("/agents")) {
+      setOpenGroup("AI Agents");
     } else if (path.startsWith("/reporting")) {
       setOpenGroup("Reports");
     } else if (path.startsWith("/governance")) {
@@ -738,6 +740,22 @@ export function Sidebar() {
                   to="/monitoring/heatmaps"
                   icon={TrendingUp}
                   label="Trends & Heatmaps"
+                />
+              </NavGroup>
+            )}
+
+            {/* AI AGENTS — PM+ review queue for agent-drafted suggestions */}
+            {hasCoreAccess && (
+              <NavGroup
+                label="AI Agents"
+                isAdmin={hasCoreAccess}
+                isOpen={openGroup === "AI Agents"}
+                onToggle={() => toggleGroup("AI Agents")}
+              >
+                <NavItem
+                  to="/agents/suggestions"
+                  icon={ClipboardList}
+                  label="AI Suggestions"
                 />
               </NavGroup>
             )}

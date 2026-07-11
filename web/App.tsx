@@ -110,6 +110,7 @@ import ControlsRegisterPage from './features/controls/pages/ControlsRegisterPage
 import IncidentsRegisterPage from './features/incidents/pages/IncidentsRegisterPage';
 import LearningEnginePage from './features/learning/pages/LearningEnginePage';
 import AssuranceHubPage from './features/assurance/pages/AssuranceHubPage';
+import AgentSuggestionsPage from './features/agents/pages/AgentSuggestionsPage';
 import { ChatPage } from './features/chat/pages/ChatPage';
 
 // Desktop-shell support
@@ -345,6 +346,7 @@ function AppContent() {
 
               {/* Assurance escalation hub — view + manage gated in-page (PM+) */}
               <Route path="/assurance" element={<AssuranceHubPage />} />
+              <Route path="/agents/suggestions" element={<RoleGuard requirePM><AgentSuggestionsPage /></RoleGuard>} />
 
               {/* Controls library — view = any signed-in user; edits gated in-page (PM+) */}
               <Route path="/controls" element={<Navigate to="/controls/register" replace />} />
