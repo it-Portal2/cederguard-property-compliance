@@ -1,8 +1,6 @@
 import type { AgentDef, RetrievalBundle } from '../registry.js';
-import type { RecordCitation } from '../../../../shared/types/agents.js';
 import { buildSuggestionsSchema } from '../pipeline.js';
-import { fenceRecords, FENCE_PREAMBLE, clean } from '../fencing.js';
-import { readContextArray, readTenantCollection } from '../retrieval.js';
+import { BundleBuilder, readContextArray, readTenantCollection } from '../retrieval.js';
 
 async function retrieve(ctx: any, scope: any): Promise<RetrievalBundle> {
   const [risks, issues, kris, incidents, controls] = await Promise.all([
@@ -13,59 +11,29 @@ async function retrieve(ctx: any, scope: any): Promise<RetrievalBundle> {
     readTenantCollection(ctx, 'controls', scope),
   ]);
 
-  const validIds = new Set<string>();
-  const citations = new Map<string, RecordCitation>();
-  const retrieved: { collection: string; ids: string[] }[] = [];
-  const recordCounts: Record<string, number> = {};
-  let truncated = false;
-  const blocks: string[] = [];
-
-  const add = (
-    collection: string,
-    tag: string,
-    records: any[],
-    id: (r: any) => string,
-    label: (r: any) => string,
-    fields: (r: any) => { label: string; value: unknown }[],
-  ) => {
-    const f = fenceRecords({ collection, tag, records, id, label, fields });
-    for (const [k, v] of f.citations) { validIds.add(k); citations.set(k, v); }
-    retrieved.push({ collection, ids: f.ids });
-    recordCounts[collection] = f.count;
-    truncated = truncated || f.truncated;
-    blocks.push(f.text);
-  };
-
-  add('risks', 'RISKS', risks, (r) => r.id, (r) => r.title, (r) => [
-    { label: 'category', value: r.category },
-    { label: 'grossL', value: r.grossL }, { label: 'grossI', value: r.grossI },
-    { label: 'residualL', value: r.residualL }, { label: 'residualI', value: r.residualI },
-    { label: 'status', value: r.status }, { label: 'owner', value: r.owner },
-  ]);
-  add('issues', 'ISSUES', issues, (r) => r.id, (r) => r.title, (r) => [
-    { label: 'priority', value: r.priority }, { label: 'status', value: r.status },
-  ]);
-  add('kris', 'KRIS', kris, (r) => r.id, (r) => r.name || r.title, (r) => [
-    { label: 'status', value: r.status }, { label: 'threshold', value: r.threshold },
-  ]);
-  add('incidents', 'INCIDENTS', incidents, (r) => r.id, (r) => r.title, (r) => [
-    { label: 'type', value: r.type }, { label: 'severity', value: r.severity },
-    { label: 'occurredAt', value: r.occurredAt }, { label: 'rootCause', value: r.rootCause },
-    { label: 'evidence', value: (r.evidenceIds?.length ? 'present' : 'none') },
-    { label: 'status', value: r.status },
-  ]);
-  add('controls', 'CONTROLS', controls, (r) => r.id, (r) => r.title, (r) => [
-    { label: 'status', value: r.status }, { label: 'group', value: r.complianceGroup },
-  ]);
-
-  return {
-    fenced: [FENCE_PREAMBLE, '', ...blocks].join('\n'),
-    validIds,
-    citations,
-    retrieved,
-    recordCounts,
-    truncated,
-  };
+  return new BundleBuilder()
+    .add('risks', 'RISKS', risks, (r) => r.id, (r) => r.title, (r) => [
+      { label: 'category', value: r.category },
+      { label: 'grossL', value: r.grossL }, { label: 'grossI', value: r.grossI },
+      { label: 'residualL', value: r.residualL }, { label: 'residualI', value: r.residualI },
+      { label: 'status', value: r.status }, { label: 'owner', value: r.owner },
+    ])
+    .add('issues', 'ISSUES', issues, (r) => r.id, (r) => r.title, (r) => [
+      { label: 'priority', value: r.priority }, { label: 'status', value: r.status },
+    ])
+    .add('kris', 'KRIS', kris, (r) => r.id, (r) => r.name || r.title, (r) => [
+      { label: 'status', value: r.status }, { label: 'threshold', value: r.threshold },
+    ])
+    .add('incidents', 'INCIDENTS', incidents, (r) => r.id, (r) => r.title, (r) => [
+      { label: 'type', value: r.type }, { label: 'severity', value: r.severity },
+      { label: 'occurredAt', value: r.occurredAt }, { label: 'rootCause', value: r.rootCause },
+      { label: 'evidence', value: (r.evidenceIds?.length ? 'present' : 'none') },
+      { label: 'status', value: r.status },
+    ])
+    .add('controls', 'CONTROLS', controls, (r) => r.id, (r) => r.title, (r) => [
+      { label: 'status', value: r.status }, { label: 'group', value: r.complianceGroup },
+    ])
+    .build();
 }
 
 const PAYLOAD_PROPS = {

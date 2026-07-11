@@ -1,7 +1,7 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import type { AgentSuggestionDoc } from '../../../../shared/types/agents.js';
-import type { ApplyResult, OutputAdapter } from './index.js';
-import { str, stripForbiddenFields } from './index.js';
+import type { ApplyResult, OutputAdapter } from './base.js';
+import { str, stripForbiddenFields } from './base.js';
 
 const INCIDENTS = 'incidents';
 

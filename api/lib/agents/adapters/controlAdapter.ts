@@ -1,8 +1,8 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import type { AgentSuggestionDoc } from '../../../../shared/types/agents.js';
 import { CONTROLS, sanitizeControl } from '../../../routes/controls.js';
-import type { ApplyResult, OutputAdapter } from './index.js';
-import { str, stripForbiddenFields } from './index.js';
+import type { ApplyResult, OutputAdapter } from './base.js';
+import { str, stripForbiddenFields } from './base.js';
 
 /**
  * Applies an approved control suggestion as a first-class Control, reusing the route's

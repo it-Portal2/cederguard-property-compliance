@@ -2,8 +2,8 @@ import crypto from 'crypto';
 import type { ApiContext } from '../../context.js';
 import type { AgentSuggestionDoc } from '../../../../shared/types/agents.js';
 import { writeLegacyArray } from '../../legacyArrayWrite.js';
-import type { ApplyResult, OutputAdapter } from './index.js';
-import { clampInt, requireContext, str, stripForbiddenFields } from './index.js';
+import type { ApplyResult, OutputAdapter } from './base.js';
+import { clampInt, requireContext, str, stripForbiddenFields } from './base.js';
 
 const newId = (prefix: string) => `${prefix}-${crypto.randomBytes(6).toString('hex').toUpperCase()}`;
 const today = () => new Date().toISOString().slice(0, 10);
