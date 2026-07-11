@@ -1,21 +1,9 @@
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { FieldValue } from 'firebase-admin/firestore';
 import { ApiContext } from '../lib/context.js';
 import crypto from 'crypto';
-import { appendHistoryRow } from '../lib/historyRows.js';
 import { uploadAsset } from '../lib/storage.js';
-import {
-  HRC_LEGACY_COLLECTIONS,
-  type LegacyCollection,
-} from '../../shared/types/historicalReporting.js';
-import {
-  detectSevereTransitions,
-  writeSevereEscalations,
-} from '../lib/riskSevereEscalation.js';
-import { logActivity, logArrayChanges } from '../lib/activityLog.js';
-
-// Legacy single-array collections persisted via the generic saveData
-// chokepoint that need field-level history captured pre-mutation.
-const HRC_TRACKED_LEGACY_COLLECTIONS: ReadonlyArray<string> = HRC_LEGACY_COLLECTIONS;
+import { writeLegacyArray } from '../lib/legacyArrayWrite.js';
+import { logActivity } from '../lib/activityLog.js';
 
 export const dataRoutes: Record<string, (req: any, res: any, ctx: ApiContext) => Promise<any>> = {
   saveData: async (req, res, ctx) => {
@@ -28,109 +16,8 @@ export const dataRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =>
       if (!(await isAuthorizedForContext(projectId))) {
         return res.status(403).json({ error: 'Forbidden: You do not have access to this project.' });
       }
-      pathRef = db.collection('projects').doc(projectId).collection('data').doc(collection);
 
-      // Capture pre-mutation array state for tracked legacy collections
-      // (risks, complianceItems, issues, kris) so a future point-in-time
-      // query can replay state at any timestamp. Reads BEFORE writing so
-      // prevState reflects the actual pre-mutation doc. Best-effort:
-      // appendHistoryRow swallows errors so a history failure never
-      // blocks the user's save.
-      const isHrcTracked =
-        HRC_TRACKED_LEGACY_COLLECTIONS.includes(collection) && data !== undefined;
-      let hrcPrevArray: unknown[] | null = null;
-      if (isHrcTracked) {
-        try {
-          const existing = await pathRef.get();
-          const existingArr = existing.exists ? (existing.data() as any)?.data : null;
-          hrcPrevArray = Array.isArray(existingArr) ? existingArr : null;
-        } catch (err) {
-          console.error('[hrc] saveData prev-state read failed:', err);
-        }
-      }
-
-      if (data === null) {
-        await pathRef.delete();
-      } else {
-        await pathRef.set({ data, updatedAt: Timestamp.fromMillis(Date.now()) });
-      }
-
-      if (isHrcTracked) {
-        const newArr = data === null ? null : (Array.isArray(data) ? data : []);
-        const changeKind =
-          data === null
-            ? 'softDelete'
-            : hrcPrevArray === null
-              ? 'create'
-              : 'update';
-        // Fire-and-forget — caller doesn't await and we don't await
-        // either, since errors are swallowed inside appendHistoryRow.
-        void appendHistoryRow(ctx, {
-          kind: 'legacyArray',
-          collection: collection as LegacyCollection,
-          ownerScope: projectId,
-          prevState: hrcPrevArray,
-          newState: newArr,
-          changeKind,
-        });
-      }
-
-      // Activity log: for the item-array collections, diff old vs new to record
-      // WHICH item (by name) was created/updated/deleted + by whom. For the
-      // non-array complianceAnalysis, log a single update event.
-      if (['risks', 'issues', 'complianceItems', 'kris'].includes(collection) && data !== null) {
-        await logArrayChanges(ctx, collection, projectId, hrcPrevArray, data);
-      } else if (collection === 'complianceAnalysis') {
-        await logActivity(ctx, 'compliance_analysis_saved', {
-          category: 'update',
-          entityType: 'compliance',
-          entityId: projectId,
-          details: { project: projectId },
-        });
-      }
-
-      // Severe-risk escalation: when a saved risks array contains a risk
-      // that transitioned INTO Severe state (Impact = 5 on gross or residual),
-      // write a severeRiskAlerts row plus an activity log entry and resolve
-      // Strategic Director recipients. Idempotent — re-saves of an
-      // already-Severe risk do not re-trigger.
-      let severeNotified: { count: number; recipientCount: number } | undefined;
-      if (
-        collection === 'risks' &&
-        Array.isArray(data) &&
-        data.length > 0
-      ) {
-        try {
-          const transitions = detectSevereTransitions(hrcPrevArray, data);
-          if (transitions.length > 0) {
-            // Programme vs project context: detect by reading the project doc.
-            // If the contextId resolves to a project, it's project-kind; if it
-            // resolves to a programme, it's programme-kind. Fall back to
-            // project-kind when unclear (most common case).
-            let contextKind: 'project' | 'programme' = 'project';
-            try {
-              const progDoc = await db.collection('programmes').doc(projectId).get();
-              if (progDoc.exists) contextKind = 'programme';
-            } catch (err) {
-              console.error('[rsc-d] context-kind probe failed:', err);
-            }
-            const summary = await writeSevereEscalations(ctx, {
-              transitions,
-              contextId: projectId,
-              contextKind,
-            });
-            if (summary.alertCount > 0) {
-              severeNotified = {
-                count: summary.alertCount,
-                recipientCount: summary.recipientCount,
-              };
-            }
-          }
-        } catch (err) {
-          // Never block save on Severe-detection failure.
-          console.error('[rsc-d] severe-escalation pipeline failed:', err);
-        }
-      }
+      const { severeNotified } = await writeLegacyArray(ctx, { collection, data, projectId });
 
       return res.status(200).json({ success: true, ...(severeNotified ? { severeNotified } : {}) });
     } else if (collection === 'programmes') {
