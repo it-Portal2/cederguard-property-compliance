@@ -73,6 +73,7 @@ export const GROUP_ORDER: readonly string[] = [
   "Controls",
   "Incidents",
   "Assurance",
+  "AI Agents",
   "Learning & Improvement",
   "Resource Planner",
   "Fact-Check / Validation",
@@ -352,6 +353,11 @@ export const API_ACTIONS: ApiActionDoc[] = [
   { action: "assuranceUpsert", group: "Assurance", title: "Create or update an assurance alert", description: "Creates or updates a tenant-scoped assurance alert after sanitizing fields and checking access for any tagged project/programme.", requiredRole: "PM+", params: [ { name: "alert", type: "object", required: true, description: "Alert payload; must include a non-empty title, may carry an id to update." } ] },
   { action: "assuranceDelete", group: "Assurance", title: "Delete an assurance alert", description: "Deletes an assurance alert owned by the caller's tenant after verifying existence and ownership.", requiredRole: "PM+", params: [ { name: "id", type: "string", required: true, description: "Id of the alert to delete." } ] },
   { action: "assuranceGenerateActions", group: "Assurance", title: "Generate assurance actions (AI)", description: "Uses AI to generate detective/preventive/corrective/improvement response actions for an escalated alert, grounded in the tenant's real controls.", requiredRole: "PM+", params: [ { name: "alert", type: "object", required: true, description: "Object carrying the alert id; the alert is re-read server-side." } ] },
+
+  // ── AI Agents ────────────────────────────────────────────────────────────
+  { action: "agentRun", group: "AI Agents", title: "Run an agent", description: "Runs one domain agent over the caller's authorised records and persists its output as DRAFT suggestions for human review. Never writes to a live record.", requiredRole: "Any signed-in user (workspace-scoped; viewers are denied)", params: [ { name: "agentKey", type: "string", required: true, description: "Which agent to run, e.g. riskIncident, compliance, technical." }, { name: "contextKind", type: "string", required: true, description: "project | programme | portfolio." }, { name: "contextId", type: "string", description: "Project or programme id; required unless contextKind is portfolio." }, { name: "question", type: "string", description: "Free-text question — required by the Technical Companion agent only." } ] },
+  { action: "agentListSuggestions", group: "AI Agents", title: "List agent suggestions", description: "Returns the tenant's agent suggestions (the review queue), newest first. Technical-answer suggestions are owner-scoped to their requester and elevated TAC roles.", requiredRole: "Any signed-in user (workspace-scoped)" },
+  { action: "agentListRuns", group: "AI Agents", title: "List agent runs", description: "Returns the tenant's agent run history — who ran which agent, over which records, with which model. The prompt-context audit trail.", requiredRole: "Any signed-in user (workspace-scoped)" },
 
   // ── Learning & Improvement ───────────────────────────────────────────────
   { action: "learningSuggestImprovements", group: "Learning & Improvement", title: "Suggest improvements (AI)", description: "Uses AI to suggest up to six corrective/preventive/improvement actions from a summary of recurring assurance signals.", requiredRole: "Any signed-in user (workspace-scoped)", params: [ { name: "signals", type: "string", required: true, description: "Non-empty summary of recurring signals to base suggestions on." } ] },

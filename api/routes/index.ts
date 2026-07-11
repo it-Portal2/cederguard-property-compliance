@@ -30,6 +30,7 @@ import { learningRoutes } from './learning.js';
 import { assuranceRoutes } from './assurance.js';
 import { integrationsRoutes } from './integrations.js';
 import { accessRequestsRoutes } from './accessRequests.js';
+import { agentRoutes } from './agents.js';
 
 export const allRoutes: Record<string, any> = {
   ...projectRoutes,
@@ -64,4 +65,5 @@ export const allRoutes: Record<string, any> = {
   ...integrationsRoutes,
   ...accessRequestsRoutes,
   ...alertEngineRoutes,
+  ...agentRoutes,
 };

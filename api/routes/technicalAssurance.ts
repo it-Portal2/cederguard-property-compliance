@@ -187,8 +187,10 @@ async function loadEnquiryForMutation(
 
 /** Elevated TAC roles see EVERY enquiry in the tenant (oversight). Exactly the
  *  agreed override set: Super Admin + Client Admin + Compliance Lead —
- *  `isComplianceLeadCtx` already folds in admin + client-admin. */
-function isTacElevated(ctx: ApiContext): boolean {
+ *  `isComplianceLeadCtx` already folds in admin + client-admin.
+ *  Exported so the agent layer's technicalAnswer visibility rule reuses this
+ *  predicate rather than re-deriving it. */
+export function isTacElevated(ctx: ApiContext): boolean {
   return isComplianceLeadCtx(ctx);
 }
 

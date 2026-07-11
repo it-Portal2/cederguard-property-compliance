@@ -108,6 +108,8 @@ export interface AgentSuggestionDoc {
   contextId: string | null;
   agentKey: AgentKey;
   runId: string;
+  /** Who ran the agent. Drives the owner-scoped visibility rule for `technicalAnswer`. */
+  requestedByUid: string;
   requestType: RequestType;
   outputType: OutputType;
   title: string;
