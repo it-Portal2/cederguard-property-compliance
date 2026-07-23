@@ -359,7 +359,7 @@ export const PublicLayout: React.FC = () => {
                             </span>
                         </Link>
                         <p className="mt-5 max-w-[30ch] text-[13.5px] leading-[1.6] text-[oklch(0.50_0.010_270)] dark:text-slate-400">
-                            "AI-Powered Risk and Compliance Platform for UK Social Housing Managers."
+                            The agentic operating system for UK social housing governance.
                         </p>
                         <div className="mt-6 flex gap-3">
                             <div className="group rounded-lg border border-[oklch(0.91_0.006_270)] bg-white p-3 transition-colors duration-300 hover:border-[oklch(0.62_0.24_278_/_0.30)] dark:border-white/10 dark:bg-white/5">

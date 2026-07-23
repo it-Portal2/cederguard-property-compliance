@@ -7,22 +7,22 @@ const SITE = 'https://cedarguard.co.uk';
 type Meta = { title: string; description: string };
 
 const DEFAULT_DESCRIPTION =
-    'The premier AI-powered risk and compliance suite for UK social housing. Real-time tracking of safety, regulatory obligations, and property compliance.';
+    'The agentic operating system for UK social housing governance—coordinating risk, compliance, assurance and evidence across housing delivery.';
 
 const ROUTE_META: Record<string, Meta> = {
     '/': {
-        title: 'CedarGuard | AI-Powered Property Compliance & Risk Manager',
+        title: 'CedarGuard | Agentic Governance, Risk & Compliance',
         description: DEFAULT_DESCRIPTION,
     },
     '/product': {
-        title: 'Product | CedarGuard Compliance & Risk Suite',
+        title: 'Product | CedarGuard Governance, Risk & Compliance',
         description:
-            'Explore CedarGuard: AI risk discovery, real-time compliance tracking, building safety and golden-thread oversight, governance reporting and resource planning for UK social housing.',
+            'Explore CedarGuard: agentic governance and programme assurance, continuous risk intelligence, compliance orchestration, technical assurance, evidence capture and audit-ready reporting for UK social housing delivery.',
     },
     '/about': {
         title: 'About | CedarGuard',
         description:
-            'CedarGuard bridges cutting-edge AI and the stringent compliance requirements of UK social housing, helping providers keep residents safe through proactive risk discovery.',
+            'CedarGuard is the agentic governance, risk and compliance operating system for UK social housing delivery — built from practical governance and risk frameworks created within local government.',
     },
     '/news': {
         title: 'Insights & News | CedarGuard',
@@ -32,12 +32,12 @@ const ROUTE_META: Record<string, Meta> = {
     '/support': {
         title: 'Support | CedarGuard',
         description:
-            'Help, FAQs and support for CedarGuard — the AI-powered compliance and risk platform for UK social housing providers.',
+            'Help, FAQs and support for CedarGuard — the agentic governance, risk and compliance platform for UK social housing delivery.',
     },
     '/contact': {
         title: 'Contact | CedarGuard',
         description:
-            'Get in touch with CedarGuard to see how AI-powered compliance and risk management can support your social housing organisation.',
+            'Get in touch with CedarGuard to see how agentic governance, risk and compliance can support your council, housing association or ALMO.',
     },
     '/api-docs': {
         title: 'API Documentation | CedarGuard',

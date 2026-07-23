@@ -17,7 +17,7 @@ export default defineConfig(({mode}) => {
         manifest: {
           name: 'CedarGuard',
           short_name: 'CedarGuard',
-          description: 'AI-Powered Property Compliance & Risk Manager suite for UK social housing.',
+          description: 'Agentic governance, risk and compliance operating system for UK social housing delivery.',
           theme_color: '#4F46E5',
           background_color: '#ffffff',
           display: 'standalone',
