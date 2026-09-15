@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { clsx } from 'clsx';
 import {
   LifeBuoy,
@@ -31,10 +31,17 @@ import {
   CheckCircle,
   PlusCircle,
   SlidersHorizontal,
+  Paperclip,
+  Image as ImageIcon,
+  FileText,
+  Video,
+  BookOpen,
+  Maximize2,
 } from 'lucide-react';
 import { useStore } from '../../../store/useStore';
 import { api } from '../../../lib/api';
 import PageHeader from '../../../components/PageHeader';
+import { Link } from 'react-router';
 
 /* ── Category options matching UK Social Housing & Compliance ────── */
 const CATEGORIES = [
@@ -61,7 +68,7 @@ const PRIORITIES = [
   {
     id: 'medium',
     label: 'Medium (Operational)',
-    sla: '24-48 hrs',
+    sla: '24 hrs',
     desc: 'Daily task impairment with available manual workaround.',
     badgeClass: 'text-blue-700 bg-blue-50 border-blue-200',
     dotClass: 'bg-blue-500',
@@ -121,16 +128,25 @@ export function SupportTicket() {
   const [impact, setImpact] = useState('');
   const [contactPhone, setContactPhone] = useState('');
 
+  // Attachment states (Form)
+  const [attachedFile, setAttachedFile] = useState<{ name: string; type: string; base64: string; previewUrl?: string } | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Submission / interaction states
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [submittedTicket, setSubmittedTicket] = useState<any | null>(null);
   const [copiedId, setCopiedId] = useState(false);
 
   // Messaging thread reply
   const [replyText, setReplyText] = useState('');
+  const [replyAttachment, setReplyAttachment] = useState<{ name: string; type: string; base64: string; previewUrl?: string } | null>(null);
   const [isSendingReply, setIsSendingReply] = useState(false);
   const [replyError, setReplyError] = useState<string | null>(null);
+  const replyFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Lightbox for image preview
+  const [previewImageModal, setPreviewImageModal] = useState<string | null>(null);
 
   // Search in ticket history
   const [searchQuery, setSearchQuery] = useState('');
@@ -158,9 +174,44 @@ export function SupportTicket() {
     loadMyTickets();
   }, [loadMyTickets]);
 
+  // Handle file selection (max 3.5MB)
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, target: 'form' | 'reply' = 'form') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 3.5 * 1024 * 1024) {
+      const msg = 'File size exceeds 3.5MB limit. Please upload a smaller image or document.';
+      if (target === 'form') setFileError(msg);
+      else setReplyError(msg);
+      return;
+    }
+
+    if (target === 'form') setFileError(null);
+    else setReplyError(null);
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      const isImg = file.type.startsWith('image/');
+      const fileObj = {
+        name: file.name,
+        type: file.type || 'application/octet-stream',
+        base64,
+        previewUrl: isImg ? base64 : undefined,
+      };
+
+      if (target === 'form') {
+        setAttachedFile(fileObj);
+      } else {
+        setReplyAttachment(fileObj);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Construct structured mailto link for direct escalation to CTO
   const buildMailtoUrl = (ticketCode?: string) => {
-    const code = ticketCode || submittedTicket?.ticketCode || generateClientTicketId();
+    const code = ticketCode || selectedTicket?.ticketCode || generateClientTicketId();
     const catLabel = CATEGORIES.find(c => c.id === category)?.label || category;
     const prioLabel = PRIORITIES.find(p => p.id === priority)?.label || priority;
     const now = new Date().toLocaleString('en-GB', {
@@ -172,7 +223,7 @@ export function SupportTicket() {
       hour12: false,
     });
 
-    const emailSubject = `[ESCALATED TICKET #${code}] ${subject || 'Urgent Platform Assistance'}`;
+    const emailSubject = `[ESCALATED TICKET #${code}] ${subject || selectedTicket?.subject || 'Urgent Platform Assistance'}`;
     const emailBody = [
       '======================================================',
       'CEDARGUARD STATUTORY & TECHNICAL ESCALATION',
@@ -191,7 +242,7 @@ export function SupportTicket() {
       '',
       'ISSUE DETAILS:',
       '------------------------------------------------------',
-      description || '(No additional description entered)',
+      description || selectedTicket?.description || '(No additional description entered)',
       '',
       stepsToReproduce ? 'STEPS TO REPRODUCE / ERROR LOGS:' : '',
       stepsToReproduce ? '------------------------------------------------------' : '',
@@ -201,6 +252,7 @@ export function SupportTicket() {
       impact ? '------------------------------------------------------' : '',
       impact ? impact : '',
       '',
+      attachedFile ? `ATTACHMENT INCLUDED: ${attachedFile.name}` : '',
       '======================================================',
       'Pre-formatted escalation dispatched via CedarGuard Compliance Suite.',
     ]
@@ -214,6 +266,7 @@ export function SupportTicket() {
     window.location.href = buildMailtoUrl();
   };
 
+  // Submitting the ticket -> Immediately opens the chat system per client requirement!
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!subject.trim() || !description.trim()) {
@@ -234,10 +287,53 @@ export function SupportTicket() {
         stepsToReproduce: stepsToReproduce.trim() || undefined,
         impact: impact.trim() || undefined,
         contactPhone: contactPhone.trim() || undefined,
+        attachment: attachedFile
+          ? {
+              name: attachedFile.name,
+              type: attachedFile.type,
+              base64: attachedFile.base64,
+            }
+          : undefined,
       });
 
       if (res.success && res.ticket) {
-        setSubmittedTicket(res.ticket);
+        // Reset form fields
+        setSubject('');
+        setPropertyRef('');
+        setDescription('');
+        setStepsToReproduce('');
+        setImpact('');
+        setContactPhone('');
+        setAttachedFile(null);
+
+        // Fetch full ticket details and immediately open the chat system!
+        const detailRes = await api.getSupportTicketDetails({ id: res.ticket.id });
+        if (detailRes.success && detailRes.ticket) {
+          setSelectedTicket(detailRes.ticket);
+        } else {
+          setSelectedTicket({
+            ...res.ticket,
+            description: description.trim(),
+            messages: [
+              {
+                id: '1',
+                senderName: userName,
+                text: description.trim(),
+                createdAt: new Date().toISOString(),
+              },
+              {
+                id: '2',
+                senderName: 'CedarGuard Support Desk',
+                isAdmin: true,
+                text: `Ticket registered. We are working on it and you should receive an update within 24 hours.`,
+                createdAt: new Date().toISOString(),
+              },
+            ],
+          });
+        }
+
+        // Switch to history tab and refresh list
+        setActiveTab('history');
         loadMyTickets();
       } else {
         setSubmitError(res.error || 'Failed to submit ticket. Please try again or use direct email.');
@@ -251,7 +347,7 @@ export function SupportTicket() {
 
   const handleSendReply = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedTicket || !replyText.trim()) return;
+    if (!selectedTicket || (!replyText.trim() && !replyAttachment)) return;
 
     setIsSendingReply(true);
     setReplyError(null);
@@ -259,7 +355,14 @@ export function SupportTicket() {
     try {
       const res = await api.addSupportTicketMessage({
         id: selectedTicket.id,
-        message: replyText.trim(),
+        message: replyText.trim() || undefined,
+        attachment: replyAttachment
+          ? {
+              name: replyAttachment.name,
+              type: replyAttachment.type,
+              base64: replyAttachment.base64,
+            }
+          : undefined,
       });
 
       if (res.success && res.message) {
@@ -268,6 +371,7 @@ export function SupportTicket() {
           messages: [...(prev.messages || []), res.message],
         }));
         setReplyText('');
+        setReplyAttachment(null);
         loadMyTickets();
       } else {
         setReplyError(res.error || 'Failed to send message');
@@ -285,19 +389,6 @@ export function SupportTicket() {
     setTimeout(() => setCopiedId(false), 2000);
   };
 
-  const resetForm = () => {
-    setSubmittedTicket(null);
-    setSubject('');
-    setPropertyRef('');
-    setDescription('');
-    setStepsToReproduce('');
-    setImpact('');
-    setContactPhone('');
-    setCategory('technical_issue');
-    setPriority('medium');
-    setSubmitError(null);
-  };
-
   const filteredTickets = useMemo(() => {
     return tickets.filter(t => {
       const matchesStatus = statusFilter === 'all' || t.status === statusFilter;
@@ -305,7 +396,8 @@ export function SupportTicket() {
         !searchQuery ||
         t.ticketCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         t.subject?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.category?.toLowerCase().includes(searchQuery.toLowerCase());
+        t.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.propertyRef?.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesStatus && matchesSearch;
     });
   }, [tickets, statusFilter, searchQuery]);
@@ -315,7 +407,7 @@ export function SupportTicket() {
       {/* ── Page Header ── */}
       <PageHeader
         title="Technical Support & Governance Tickets"
-        subtitle="Direct technical escalation, statutory query resolution, and system support for UK local authorities and housing associations."
+        subtitle="Direct technical escalation, issue reporting with screenshots, and back-and-forth ticket chat with CedarGuard technical leads."
         breadcrumbs={[{ label: 'Help Centre', href: '/help' }, { label: 'Support Tickets' }]}
       />
 
@@ -337,9 +429,9 @@ export function SupportTicket() {
             <Clock className="w-5 h-5 text-emerald-600" />
           </div>
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Priority SLA Framework</h4>
-            <p className="text-sm font-semibold text-slate-800 mt-0.5">&lt; 2hr Critical / 24hr Standard</p>
-            <p className="text-xs text-slate-400 mt-1">Automatic triage and direct alert dispatch to technical leads.</p>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Fast Resolution Guarantee</h4>
+            <p className="text-sm font-semibold text-slate-800 mt-0.5">Active Updates in 24 Hours</p>
+            <p className="text-xs text-slate-400 mt-1">Chat directly with technicians without needing to call.</p>
           </div>
         </div>
 
@@ -355,11 +447,31 @@ export function SupportTicket() {
         </div>
       </div>
 
+      {/* ── Client Video & Training Guide Callout ── */}
+      <div className="bg-slate-900 text-white rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+            <Video className="w-4 h-4 text-indigo-400" />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-white">Looking for visual walk-throughs and guides?</p>
+            <p className="text-[11px] text-slate-400">Explore instructional videos and compliance modules in our Training Academy.</p>
+          </div>
+        </div>
+        <Link
+          to="/training"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white transition-colors shrink-0"
+        >
+          <BookOpen className="w-3.5 h-3.5" />
+          Open Video Training
+        </Link>
+      </div>
+
       {/* ── Main Tab Navigation ── */}
       <div className="flex items-center justify-between border-b border-slate-200 pb-3">
         <div className="flex gap-2">
           <button
-            onClick={() => { setActiveTab('create'); }}
+            onClick={() => setActiveTab('create')}
             className={clsx(
               'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all',
               activeTab === 'create'
@@ -381,7 +493,7 @@ export function SupportTicket() {
             )}
           >
             <TicketCheck className="w-4 h-4" />
-            My Tickets
+            My Tickets & Live Chat
             {tickets.length > 0 && (
               <span className={clsx(
                 'ml-1 px-2 py-0.5 text-xs rounded-full font-bold',
@@ -400,315 +512,275 @@ export function SupportTicket() {
 
       {/* ── TAB 1: CREATE TICKET ── */}
       {activeTab === 'create' && (
-        <div>
-          {submittedTicket ? (
-            /* ── Post-Submit Success View ── */
-            <div className="bg-white rounded-2xl border border-emerald-200/90 shadow-lg shadow-emerald-900/5 p-8 text-slate-800 animate-in fade-in zoom-in-95 duration-200">
-              <div className="flex items-center gap-3 text-emerald-600 mb-4">
-                <div className="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center">
-                  <CheckCircle2 className="w-7 h-7 text-emerald-600" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900">Support Ticket Registered</h3>
-                  <p className="text-xs text-slate-500">Your ticket has been logged into the CedarGuard Technical Governance System.</p>
-                </div>
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
+          {submitError && (
+            <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-center gap-3">
+              <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
+              <span>{submitError}</span>
+            </div>
+          )}
+
+          {/* Section 1: Classification */}
+          <div>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
+              <SlidersHorizontal className="w-4 h-4 text-indigo-500" />
+              1. Classification & Scope
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Category */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
+                  Technical Problem / Stream <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={category}
+                  onChange={e => setCategory(e.target.value)}
+                  className="w-full h-11 px-3.5 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  {CATEGORIES.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              {/* Ticket Summary Card */}
-              <div className="bg-slate-50 rounded-xl border border-slate-200 p-6 my-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div>
-                    <span className="text-xs uppercase font-bold text-slate-400 tracking-wider">Ticket Identifier</span>
-                    <div className="flex items-center gap-2 mt-1">
-                      <code className="text-base font-bold text-indigo-900 bg-white px-3 py-1.5 rounded-lg border border-indigo-100 font-mono shadow-sm">
-                        {submittedTicket.ticketCode}
-                      </code>
-                      <button
-                        onClick={() => copyToClipboard(submittedTicket.ticketCode)}
-                        title="Copy Ticket ID"
-                        className="p-1.5 text-slate-400 hover:text-slate-700 rounded-md hover:bg-slate-200 transition-colors"
-                      >
-                        {copiedId ? <CheckCircle className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <span className="text-xs uppercase font-bold text-slate-400 tracking-wider">Subject</span>
-                    <p className="text-sm font-semibold text-slate-900 mt-1">{submittedTicket.subject}</p>
-                  </div>
-
-                  <div>
-                    <span className="text-xs uppercase font-bold text-slate-400 tracking-wider">Status & Urgency</span>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
-                        Open & Assigned
-                      </span>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold uppercase bg-slate-200 text-slate-700">
-                        {submittedTicket.priority}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border-t border-slate-200 mt-5 pt-4 text-xs text-slate-500 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <span>An automated confirmation email has been dispatched via Resend to <strong>{userEmail}</strong>.</span>
-                  <span>Direct technical routing: <strong>cto@cedarguard.co.uk</strong></span>
-                </div>
-              </div>
-
-              {/* Direct CTO Escalation Option */}
-              <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-200/80 p-5 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-2 text-amber-800 font-bold text-sm">
-                    <AlertTriangle className="w-4 h-4 text-amber-600" />
-                    High Priority / Urgent Escalation
-                  </div>
-                  <p className="text-xs text-amber-700 mt-0.5 max-w-xl">
-                    Need immediate leadership attention or experiencing an active regulatory blocker? Trigger a prefilled email to our CTO with your ticket ID and system telemetry attached.
-                  </p>
-                </div>
-                <a
-                  href={buildMailtoUrl(submittedTicket.ticketCode)}
-                  className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-sm transition-colors"
+              {/* Priority / Urgency */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
+                  Urgency & Target SLA <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={priority}
+                  onChange={e => setPriority(e.target.value)}
+                  className="w-full h-11 px-3.5 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 >
-                  <Mail className="w-4 h-4" />
-                  Escalate to CTO via Direct Email
-                </a>
-              </div>
-
-              {/* Actions */}
-              <div className="flex flex-wrap items-center gap-3">
-                <button
-                  onClick={() => {
-                    setActiveTab('history');
-                    loadMyTickets();
-                  }}
-                  className="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-sm transition-colors"
-                >
-                  View My Tickets & Thread
-                </button>
-                <button
-                  onClick={resetForm}
-                  className="px-4 py-2.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-semibold transition-colors"
-                >
-                  Raise Another Ticket
-                </button>
+                  {PRIORITIES.map(p => (
+                    <option key={p.id} value={p.id}>
+                      {p.label} — SLA: {p.sla}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
-          ) : (
-            /* ── Ticket Creation Form ── */
-            <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
-              {submitError && (
-                <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-center gap-3">
-                  <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
-                  <span>{submitError}</span>
-                </div>
-              )}
 
-              {/* Section 1: Classification */}
+            {/* Priority SLA helper card */}
+            {(() => {
+              const selectedPrio = PRIORITIES.find(p => p.id === priority) || PRIORITIES[1];
+              return (
+                <div className={clsx('mt-3 p-3 rounded-lg border text-xs flex items-center justify-between', selectedPrio.badgeClass)}>
+                  <div className="flex items-center gap-2">
+                    <span className={clsx('w-2 h-2 rounded-full', selectedPrio.dotClass)} />
+                    <span><strong>{selectedPrio.label}:</strong> {selectedPrio.desc}</span>
+                  </div>
+                  <span className="font-bold font-mono">Response target: {selectedPrio.sla}</span>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Section 2: Subject & Property Reference */}
+          <div className="border-t border-slate-100 pt-6">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-indigo-500" />
+              2. Subject & Asset References
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
+                  Ticket Subject <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Issue uploading Fire Door certification or error on UPRN export"
+                  value={subject}
+                  onChange={e => setSubject(e.target.value)}
+                  className="w-full h-11 px-3.5 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+
               <div>
-                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
-                  <SlidersHorizontal className="w-4 h-4 text-indigo-500" />
-                  1. Classification & Scope
-                </h3>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
+                  Property Reference / UPRN <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. UPRN 1000234891 / Block 4B"
+                  value={propertyRef}
+                  onChange={e => setPropertyRef(e.target.value)}
+                  className="w-full h-11 px-3.5 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+            </div>
+          </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Category */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
-                      Compliance Stream / Category <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      value={category}
-                      onChange={e => setCategory(e.target.value)}
-                      className="w-full h-11 px-3.5 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    >
-                      {CATEGORIES.map(c => (
-                        <option key={c.id} value={c.id}>
-                          {c.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+          {/* Section 3: Detailed Description & File/Screenshot Upload */}
+          <div className="border-t border-slate-100 pt-6">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 text-indigo-500" />
+              3. Issue Description & Screenshot Attachment
+            </h3>
 
-                  {/* Priority / Urgency */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
-                      Urgency & Target SLA <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      value={priority}
-                      onChange={e => setPriority(e.target.value)}
-                      className="w-full h-11 px-3.5 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    >
-                      {PRIORITIES.map(p => (
-                        <option key={p.id} value={p.id}>
-                          {p.label} — SLA: {p.sla}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
+                  Detailed Description of the Issue <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  rows={4}
+                  required
+                  placeholder="Please describe what problem you encountered, error messages, or what you were trying to do..."
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  className="w-full p-3.5 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
 
-                {/* Priority SLA helper card */}
-                {(() => {
-                  const selectedPrio = PRIORITIES.find(p => p.id === priority) || PRIORITIES[1];
-                  return (
-                    <div className={clsx('mt-3 p-3 rounded-lg border text-xs flex items-center justify-between', selectedPrio.badgeClass)}>
-                      <div className="flex items-center gap-2">
-                        <span className={clsx('w-2 h-2 rounded-full', selectedPrio.dotClass)} />
-                        <span><strong>{selectedPrio.label}:</strong> {selectedPrio.desc}</span>
+              {/* ── Image / Screenshot Upload Field ── */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
+                  Upload Screenshot / Error Image <span className="text-slate-400 text-[10px] font-normal">(Recommended to demonstrate problem)</span>
+                </label>
+
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={e => handleFileChange(e, 'form')}
+                  accept="image/png,image/jpeg,image/webp,image/gif,application/pdf"
+                  className="hidden"
+                />
+
+                {attachedFile ? (
+                  <div className="p-3 bg-slate-50 border border-indigo-200 rounded-xl flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {attachedFile.previewUrl ? (
+                        <img
+                          src={attachedFile.previewUrl}
+                          alt="Attachment preview"
+                          className="w-12 h-12 rounded object-cover border border-slate-200 shrink-0"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+                          <FileText className="w-6 h-6" />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-slate-800 truncate">{attachedFile.name}</p>
+                        <p className="text-[11px] text-slate-400">{attachedFile.type}</p>
                       </div>
-                      <span className="font-bold font-mono">Response target: {selectedPrio.sla}</span>
                     </div>
-                  );
-                })()}
-              </div>
-
-              {/* Section 2: Subject & Property Reference */}
-              <div className="border-t border-slate-100 pt-6">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-indigo-500" />
-                  2. Subject & Asset References
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
-                      Ticket Subject <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Discrepancy in Gas Safety LGSR inspection schedule or Report export failure"
-                      value={subject}
-                      onChange={e => setSubject(e.target.value)}
-                      className="w-full h-11 px-3.5 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    />
+                    <button
+                      type="button"
+                      onClick={() => setAttachedFile(null)}
+                      className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg transition-colors"
+                      title="Remove file"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
-                      Property Reference / UPRN <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. UPRN 1000234891 / Block 4B"
-                      value={propertyRef}
-                      onChange={e => setPropertyRef(e.target.value)}
-                      className="w-full h-11 px-3.5 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Section 3: Detailed Description */}
-              <div className="border-t border-slate-100 pt-6">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4 text-indigo-500" />
-                  3. Issue Description & Diagnostics
-                </h3>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
-                      Detailed Description of the Issue <span className="text-red-500">*</span>
-                    </label>
-                    <textarea
-                      rows={5}
-                      required
-                      placeholder="Please provide full details of what you were doing, what occurred, and any specific records, schemes, or data points affected..."
-                      value={description}
-                      onChange={e => setDescription(e.target.value)}
-                      className="w-full p-3.5 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
-                        Steps to Reproduce / Error Text <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
-                      </label>
-                      <textarea
-                        rows={3}
-                        placeholder="1. Navigate to Compliance Tracker&#10;2. Filter by Fire Safety&#10;3. Click Export PDF..."
-                        value={stepsToReproduce}
-                        onChange={e => setStepsToReproduce(e.target.value)}
-                        className="w-full p-3 rounded-lg border border-slate-300 bg-white text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
-                        Operational / Audit Impact <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
-                      </label>
-                      <textarea
-                        rows={3}
-                        placeholder="e.g. Audit submission due this Friday, or 14 blocks pending verification..."
-                        value={impact}
-                        onChange={e => setImpact(e.target.value)}
-                        className="w-full p-3 rounded-lg border border-slate-300 bg-white text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
-                      Direct Contact Phone <span className="text-slate-400 text-[10px] font-normal">(Optional for urgent callback)</span>
-                    </label>
-                    <input
-                      type="tel"
-                      placeholder="e.g. +44 20 7946 0991"
-                      value={contactPhone}
-                      onChange={e => setContactPhone(e.target.value)}
-                      className="w-full md:w-1/2 h-10 px-3.5 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Submission Controls */}
-              <div className="border-t border-slate-200 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="text-xs text-slate-500">
-                  Tickets are permanently stored for audit compliance and dispatches real-time alerts.
-                </div>
-
-                <div className="flex items-center gap-3 w-full sm:w-auto">
-                  {/* Secondary Mailto Escalation Button */}
+                ) : (
                   <button
                     type="button"
-                    onClick={handleEscalateDirectly}
-                    className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold shadow-sm transition-colors"
-                    title="Opens your desktop/web email client directly to cto@cedarguard.co.uk with prefilled ticket details"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full border-2 border-dashed border-slate-300 hover:border-indigo-400 bg-slate-50/50 hover:bg-indigo-50/20 rounded-xl p-4 text-center transition-colors group cursor-pointer"
                   >
-                    <Mail className="w-4 h-4 text-amber-600" />
-                    Escalate via Email (CTO)
+                    <div className="flex flex-col items-center justify-center gap-1.5">
+                      <div className="w-9 h-9 rounded-full bg-slate-200/60 group-hover:bg-indigo-100 flex items-center justify-center text-slate-500 group-hover:text-indigo-600 transition-colors">
+                        <ImageIcon className="w-4 h-4" />
+                      </div>
+                      <span className="text-xs font-semibold text-slate-700">Click to upload screenshot or drag & drop</span>
+                      <span className="text-[10px] text-slate-400">PNG, JPG, WEBP, or PDF up to 3.5MB</span>
+                    </div>
                   </button>
+                )}
+                {fileError && <p className="text-xs text-red-600 mt-1">{fileError}</p>}
+              </div>
 
-                  {/* Primary Submit Button */}
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-sm transition-all disabled:opacity-50"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Registering Ticket...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-4 h-4" />
-                        Submit Ticket
-                      </>
-                    )}
-                  </button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
+                    Steps to Reproduce <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="1. Click on Compliance Tracker&#10;2. Filter by Block A..."
+                    value={stepsToReproduce}
+                    onChange={e => setStepsToReproduce(e.target.value)}
+                    className="w-full p-2.5 rounded-lg border border-slate-300 bg-white text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
+                    Operational Impact <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="e.g. Audit deadline approaching, or team unable to export..."
+                    value={impact}
+                    onChange={e => setImpact(e.target.value)}
+                    className="w-full p-2.5 rounded-lg border border-slate-300 bg-white text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
                 </div>
               </div>
-            </form>
-          )}
-        </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
+                  Direct Contact Phone <span className="text-slate-400 text-[10px] font-normal">(Optional for urgent callback)</span>
+                </label>
+                <input
+                  type="tel"
+                  placeholder="e.g. +44 20 7946 0991"
+                  value={contactPhone}
+                  onChange={e => setContactPhone(e.target.value)}
+                  className="w-full md:w-1/2 h-10 px-3.5 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Submission Controls */}
+          <div className="border-t border-slate-200 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-xs text-slate-500">
+              Submitting opens the live ticket chat and dispatches confirmation to your inbox.
+            </div>
+
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              {/* Secondary Mailto Escalation Button */}
+              <button
+                type="button"
+                onClick={handleEscalateDirectly}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold shadow-sm transition-colors"
+                title="Opens your email client directly to cto@cedarguard.co.uk with prefilled ticket details"
+              >
+                <Mail className="w-4 h-4 text-amber-600" />
+                Escalate via Direct Email (CTO)
+              </button>
+
+              {/* Primary Submit Button */}
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-sm transition-all disabled:opacity-50"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Opening Ticket Chat...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    Submit & Open Chat
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </form>
       )}
 
       {/* ── TAB 2: MY TICKETS & HISTORY ── */}
@@ -779,7 +851,6 @@ export function SupportTicket() {
               {filteredTickets.map(ticket => {
                 const statusCfg = STATUS_CONFIG[ticket.status] || STATUS_CONFIG.open;
                 const prioCfg = PRIORITIES.find(p => p.id === ticket.priority) || PRIORITIES[1];
-                const catObj = CATEGORIES.find(c => c.id === ticket.category);
 
                 return (
                   <div
@@ -801,6 +872,11 @@ export function SupportTicket() {
                         {ticket.propertyRef && (
                           <span className="text-[11px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded font-mono">
                             {ticket.propertyRef}
+                          </span>
+                        )}
+                        {ticket.attachmentUrl && (
+                          <span className="text-[11px] text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded flex items-center gap-1 font-medium">
+                            <ImageIcon className="w-3 h-3" /> Screenshot Attached
                           </span>
                         )}
                       </div>
@@ -833,7 +909,7 @@ export function SupportTicket() {
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex justify-end animate-in fade-in duration-200">
           <div className="w-full max-w-2xl bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-200">
             {/* Header */}
-            <div className="p-6 border-b border-slate-200 flex items-start justify-between bg-slate-50/50">
+            <div className="p-5 sm:p-6 border-b border-slate-200 flex items-start justify-between bg-slate-50/70">
               <div className="space-y-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-mono text-xs font-bold text-indigo-900 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded">
@@ -855,9 +931,27 @@ export function SupportTicket() {
               </div>
               <button
                 onClick={() => setSelectedTicket(null)}
-                className="p-2 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-700 transition-colors"
+                className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-700 transition-colors"
               >
                 <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Current Status Update Notice Banner (client requirement) */}
+            <div className="bg-indigo-50/80 border-b border-indigo-100 px-6 py-2.5 flex items-center justify-between text-xs text-indigo-900">
+              <div className="flex items-center gap-2 font-medium">
+                <Clock className="w-4 h-4 text-indigo-600 shrink-0" />
+                <span>
+                  {selectedTicket.status === 'resolved'
+                    ? 'This ticket has been marked resolved. You can reply if you need further help.'
+                    : 'We are working on it — expected update within 24 hours.'}
+                </span>
+              </div>
+              <button
+                onClick={() => copyToClipboard(selectedTicket.ticketCode)}
+                className="text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1 text-[11px]"
+              >
+                {copiedId ? 'Copied' : 'Copy Ref'}
               </button>
             </div>
 
@@ -874,9 +968,9 @@ export function SupportTicket() {
                   <p className="font-semibold text-slate-800 mt-0.5">{selectedTicket.userName} ({selectedTicket.userEmail})</p>
                 </div>
                 <div>
-                  <span className="text-slate-400 font-bold uppercase">Category</span>
+                  <span className="text-slate-400 font-bold uppercase">Compliance Stream</span>
                   <p className="font-semibold text-slate-800 mt-0.5 capitalize">
-                    {CATEGORIES.find(c => c.id === selectedTicket.category)?.label || selectedTicket.category}
+                    {CATEGORIES.find(c => c.id === selectedTicket.category)?.label || selectedTicket.category?.replace('_', ' ')}
                   </p>
                 </div>
                 <div>
@@ -886,13 +980,14 @@ export function SupportTicket() {
               </div>
 
               {/* Direct Escalation Action within Drawer */}
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between">
-                <div className="text-xs text-amber-900 font-medium">
-                  Need priority assistance on this ticket?
+              <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-bold text-amber-900">Need immediate leadership intervention?</div>
+                  <div className="text-[11px] text-amber-700 mt-0.5">Send a direct escalation to our CTO with full ticket telemetry.</div>
                 </div>
                 <a
                   href={buildMailtoUrl(selectedTicket.ticketCode)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-colors shrink-0"
                 >
                   <Mail className="w-3.5 h-3.5" />
                   Escalate to CTO
@@ -901,7 +996,7 @@ export function SupportTicket() {
 
               {/* Messages Thread */}
               <div className="space-y-4">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Communication History</h4>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Communication & Activity Thread</h4>
 
                 {(!selectedTicket.messages || selectedTicket.messages.length === 0) ? (
                   <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600">
@@ -911,25 +1006,59 @@ export function SupportTicket() {
                 ) : (
                   selectedTicket.messages.map((msg: any, i: number) => {
                     const isStaff = msg.isAdmin || msg.senderRole === 'support_admin';
+                    const isSystem = msg.senderId === 'system';
+
                     return (
                       <div
                         key={msg.id || i}
                         className={clsx(
-                          'p-4 rounded-xl border text-xs space-y-1.5',
-                          isStaff
-                            ? 'bg-indigo-50/60 border-indigo-200 ml-4'
+                          'p-4 rounded-xl border text-xs space-y-2',
+                          isSystem
+                            ? 'bg-slate-50 border-slate-200'
+                            : isStaff
+                            ? 'bg-indigo-50/70 border-indigo-200 ml-4'
                             : 'bg-white border-slate-200 mr-4 shadow-sm'
                         )}
                       >
                         <div className="flex items-center justify-between font-semibold">
                           <span className={isStaff ? 'text-indigo-900 font-bold' : 'text-slate-900'}>
-                            {msg.senderName} {isStaff && <span className="text-[10px] bg-indigo-200 text-indigo-800 px-1.5 py-0.2 rounded ml-1 font-normal">CedarGuard Support</span>}
+                            {msg.senderName}
+                            {isStaff && (
+                              <span className="text-[10px] bg-indigo-200 text-indigo-800 px-1.5 py-0.2 rounded ml-1 font-normal">
+                                {isSystem ? 'Automated Desk' : 'CedarGuard Support'}
+                              </span>
+                            )}
                           </span>
                           <span className="text-[10px] text-slate-400 font-normal">
                             {msg.createdAt ? new Date(msg.createdAt).toLocaleString('en-GB') : ''}
                           </span>
                         </div>
+
                         <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+
+                        {/* Attached Image/Screenshot in message */}
+                        {msg.attachmentUrl && (
+                          <div className="pt-2">
+                            <div className="text-[11px] font-semibold text-slate-500 mb-1 flex items-center gap-1">
+                              <Paperclip className="w-3 h-3 text-indigo-500" />
+                              Attached: {msg.attachmentName || 'Screenshot'}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setPreviewImageModal(msg.attachmentUrl)}
+                              className="relative group rounded-lg overflow-hidden border border-slate-200 hover:border-indigo-400 transition-colors block text-left"
+                            >
+                              <img
+                                src={msg.attachmentUrl}
+                                alt={msg.attachmentName || 'Attachment'}
+                                className="max-h-48 max-w-full rounded object-contain bg-slate-100"
+                              />
+                              <div className="absolute inset-0 bg-slate-900/30 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity">
+                                <Maximize2 className="w-4 h-4 mr-1" /> View Full Size
+                              </div>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     );
                   })
@@ -944,24 +1073,85 @@ export function SupportTicket() {
                   {replyError}
                 </div>
               )}
-              <div className="flex gap-2">
+
+              {/* Reply Attachment Preview */}
+              {replyAttachment && (
+                <div className="p-2 bg-indigo-50 border border-indigo-200 rounded-lg flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2 truncate">
+                    <ImageIcon className="w-4 h-4 text-indigo-600 shrink-0" />
+                    <span className="font-semibold text-indigo-950 truncate">{replyAttachment.name}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setReplyAttachment(null)}
+                    className="p-1 text-slate-400 hover:text-red-600"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
+              <input
+                type="file"
+                ref={replyFileInputRef}
+                onChange={e => handleFileChange(e, 'reply')}
+                accept="image/png,image/jpeg,image/webp,image/gif,application/pdf"
+                className="hidden"
+              />
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => replyFileInputRef.current?.click()}
+                  className="p-2.5 rounded-lg border border-slate-300 hover:bg-slate-200 text-slate-600 transition-colors"
+                  title="Attach screenshot or file"
+                >
+                  <Paperclip className="w-4 h-4" />
+                </button>
+
                 <textarea
                   rows={2}
-                  placeholder="Provide additional details or respond to support team..."
+                  placeholder="Type a response or add more context..."
                   value={replyText}
                   onChange={e => setReplyText(e.target.value)}
                   className="flex-1 p-2.5 rounded-lg border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                 />
+
                 <button
                   type="submit"
-                  disabled={isSendingReply || !replyText.trim()}
-                  className="px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
+                  disabled={isSendingReply || (!replyText.trim() && !replyAttachment)}
+                  className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 h-full"
                 >
                   {isSendingReply ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                   Reply
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Image Lightbox Modal ── */}
+      {previewImageModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 animate-in fade-in"
+          onClick={() => setPreviewImageModal(null)}
+        >
+          <div className="relative max-w-4xl max-h-[90vh] bg-white rounded-xl overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="p-3 bg-slate-900 text-white flex items-center justify-between">
+              <span className="text-xs font-mono font-bold">Screenshot Attachment</span>
+              <button
+                onClick={() => setPreviewImageModal(null)}
+                className="p-1 rounded hover:bg-white/20 text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <img
+              src={previewImageModal}
+              alt="Screenshot full size"
+              className="max-h-[80vh] w-auto mx-auto object-contain p-2"
+            />
           </div>
         </div>
       )}

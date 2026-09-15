@@ -868,12 +868,17 @@ export const api = {
     stepsToReproduce?: string;
     impact?: string;
     contactPhone?: string;
+    attachment?: { name: string; type: string; base64: string };
   }) => callApi("createSupportTicket", payload),
   getMySupportTickets: () => callApi("getMySupportTickets", {}),
   getSupportTicketDetails: (args: { id?: string; ticketCode?: string }) =>
     callApi("getSupportTicketDetails", args),
-  addSupportTicketMessage: (args: { id: string; message: string; newStatus?: string }) =>
-    callApi("addSupportTicketMessage", args),
+  addSupportTicketMessage: (args: {
+    id: string;
+    message?: string;
+    newStatus?: string;
+    attachment?: { name: string; type: string; base64: string };
+  }) => callApi("addSupportTicketMessage", args),
   adminGetSupportTickets: () => callApi("adminGetSupportTickets", {}),
   adminUpdateSupportTicketStatus: (args: { id: string; status: string; resolutionNotes?: string }) =>
     callApi("adminUpdateSupportTicketStatus", args),

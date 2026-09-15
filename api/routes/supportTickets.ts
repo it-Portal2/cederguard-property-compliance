@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { ApiContext } from '../lib/context.js';
 import { sendEmail, escapeHtml, renderEmail } from '../lib/email.js';
 import { logActivity } from '../lib/activityLog.js';
+import { uploadAsset } from '../lib/storage.js';
 
 const APP_URL = (process.env.APP_URL || 'https://cedarguard.co.uk').replace(/\/+$/, '');
 const CTO_EMAIL = process.env.CTO_EMAIL || 'cto@cedarguard.co.uk';
@@ -67,6 +68,62 @@ export const supportTicketsRoutes: Record<string, (req: any, res: any, ctx: ApiC
     const cleanCategory = String(category || 'technical_issue').trim();
     const callerName = displayName || email.split('@')[0] || 'User';
 
+    const slaMap: Record<string, string> = {
+      critical: 'Within 2 Hours (Urgent Statutory Escalation)',
+      high: 'Within 8-12 Hours (Compliance Target)',
+      medium: 'Within 24 Hours (Standard Support)',
+      low: 'Within 48 Hours (General Inquiry)',
+    };
+    const slaText = slaMap[cleanPriority] || 'Within 24 Hours';
+
+    // ── Attachment processing ──
+    const { attachment } = req.body || {};
+    let attachmentUrl: string | null = null;
+    let attachmentName: string | null = null;
+    let attachmentType: string | null = null;
+
+    if (attachment && typeof attachment.base64 === 'string' && attachment.base64.trim()) {
+      try {
+        const rawBase64 = attachment.base64.replace(/^data:[^;]+;base64,/, '');
+        const buffer = Buffer.from(rawBase64, 'base64');
+        const safeName = (attachment.name || 'screenshot.png').replace(/[^a-zA-Z0-9.-]/g, '_');
+        const mime = attachment.type || 'image/png';
+        const storagePath = `support-tickets/${ticketCode}/${Date.now()}_${safeName}`;
+        const uploadResult = await uploadAsset(storagePath, buffer, mime, { makePublic: true });
+        attachmentUrl = uploadResult?.url || null;
+        attachmentName = attachment.name || safeName;
+        attachmentType = mime;
+      } catch (uploadErr) {
+        console.error('[createSupportTicket] Attachment upload failed (non-fatal):', uploadErr);
+      }
+    }
+
+    const initialMessages = [
+      {
+        id: crypto.randomUUID(),
+        senderId: uid,
+        senderName: callerName,
+        senderEmail: email,
+        senderRole: userRole,
+        isAdmin: false,
+        text: cleanDescription,
+        attachmentUrl,
+        attachmentName,
+        attachmentType,
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: crypto.randomUUID(),
+        senderId: 'system',
+        senderName: 'CedarGuard Support Desk',
+        senderEmail: 'support@cedarguard.co.uk',
+        senderRole: 'support_admin',
+        isAdmin: true,
+        text: `Hello ${callerName}, your ticket has been assigned reference ${ticketCode}. Our engineering & technical compliance team is actively reviewing your request. Target update window: ${slaText}. You can post replies or additional screenshots directly in this chat thread.`,
+        createdAt: new Date(Date.now() + 500).toISOString(),
+      },
+    ];
+
     const ticketData = {
       ticketCode,
       subject: cleanSubject,
@@ -74,6 +131,9 @@ export const supportTicketsRoutes: Record<string, (req: any, res: any, ctx: ApiC
       priority: cleanPriority,
       status: 'open',
       description: cleanDescription,
+      attachmentUrl: attachmentUrl || null,
+      attachmentName: attachmentName || null,
+      attachmentType: attachmentType || null,
       propertyRef: propertyRef ? String(propertyRef).trim() : null,
       stepsToReproduce: stepsToReproduce ? String(stepsToReproduce).trim() : null,
       impact: impact ? String(impact).trim() : null,
@@ -89,18 +149,7 @@ export const supportTicketsRoutes: Record<string, (req: any, res: any, ctx: ApiC
       resolvedAt: null,
       resolvedBy: null,
       resolutionNotes: null,
-      messages: [
-        {
-          id: crypto.randomUUID(),
-          senderId: uid,
-          senderName: callerName,
-          senderEmail: email,
-          senderRole: userRole,
-          isAdmin: false,
-          text: cleanDescription,
-          createdAt: new Date().toISOString(),
-        },
-      ],
+      messages: initialMessages,
     };
 
     const docRef = await db.collection('support_tickets').add(ticketData);
@@ -258,14 +307,12 @@ export const supportTicketsRoutes: Record<string, (req: any, res: any, ctx: ApiC
         snap = await db
           .collection('support_tickets')
           .where('clientId', '==', primaryUid)
-          .orderBy('createdAt', 'desc')
           .limit(100)
           .get();
       } else {
         snap = await db
           .collection('support_tickets')
           .where('userId', '==', uid)
-          .orderBy('createdAt', 'desc')
           .limit(100)
           .get();
       }
@@ -280,6 +327,9 @@ export const supportTicketsRoutes: Record<string, (req: any, res: any, ctx: ApiC
           resolvedAt: d.resolvedAt?.toDate ? d.resolvedAt.toDate().toISOString() : d.resolvedAt,
         };
       });
+
+      // In-memory sort avoids requiring composite index in Firestore
+      tickets.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
 
       return res.status(200).json({ success: true, tickets });
     } catch (e: any) {
@@ -340,10 +390,10 @@ export const supportTicketsRoutes: Record<string, (req: any, res: any, ctx: ApiC
   // ── 4. Add Message to Ticket Thread ───────────────────────────────────────
   addSupportTicketMessage: async (req, res, ctx) => {
     const { db, uid, email, displayName, primaryUid, isAdmin } = ctx;
-    const { id, message, newStatus } = req.body || {};
+    const { id, message, newStatus, attachment } = req.body || {};
 
-    if (!id || !message || !String(message).trim()) {
-      return res.status(400).json({ error: 'Ticket id and message are required' });
+    if (!id || (!message && !attachment)) {
+      return res.status(400).json({ error: 'Ticket id and message or attachment are required' });
     }
 
     try {
@@ -363,7 +413,28 @@ export const supportTicketsRoutes: Record<string, (req: any, res: any, ctx: ApiC
       }
 
       const senderName = displayName || email.split('@')[0] || (isAdmin ? 'CedarGuard Support' : 'User');
-      const cleanMessage = String(message).trim();
+      const cleanMessage = String(message || '').trim();
+
+      // Attachment processing
+      let attachmentUrl: string | null = null;
+      let attachmentName: string | null = null;
+      let attachmentType: string | null = null;
+
+      if (attachment && typeof attachment.base64 === 'string' && attachment.base64.trim()) {
+        try {
+          const rawBase64 = attachment.base64.replace(/^data:[^;]+;base64,/, '');
+          const buffer = Buffer.from(rawBase64, 'base64');
+          const safeName = (attachment.name || 'attachment.png').replace(/[^a-zA-Z0-9.-]/g, '_');
+          const mime = attachment.type || 'image/png';
+          const storagePath = `support-tickets/${ticketData.ticketCode || id}/${Date.now()}_${safeName}`;
+          const uploadResult = await uploadAsset(storagePath, buffer, mime, { makePublic: true });
+          attachmentUrl = uploadResult?.url || null;
+          attachmentName = attachment.name || safeName;
+          attachmentType = mime;
+        } catch (uploadErr) {
+          console.error('[addSupportTicketMessage] Attachment upload failed (non-fatal):', uploadErr);
+        }
+      }
 
       const newMsg = {
         id: crypto.randomUUID(),
@@ -373,6 +444,9 @@ export const supportTicketsRoutes: Record<string, (req: any, res: any, ctx: ApiC
         senderRole: isAdmin ? 'support_admin' : (ticketData.userRole || 'user'),
         isAdmin: !!isAdmin,
         text: cleanMessage,
+        attachmentUrl,
+        attachmentName,
+        attachmentType,
         createdAt: new Date().toISOString(),
       };
 
