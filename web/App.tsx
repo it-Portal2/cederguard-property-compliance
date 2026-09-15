@@ -58,6 +58,7 @@ import { DeveloperSettings } from './features/admin/pages/DeveloperSettings';
 import IntegrationsPage from './features/integrations/pages/IntegrationsPage';
 import { APIDocs } from './features/admin/pages/APIDocs';
 import { HelpCenter } from './features/learning/pages/HelpCenter';
+import { SupportTicket } from './features/learning/pages/SupportTicket';
 import { ClientTeamPanel } from './features/admin/pages/ClientTeamPanel';
 import { MappingManager } from './components/admin/MappingManager';
 import { RoleGuard } from './components/RoleGuard';
@@ -380,6 +381,9 @@ function AppContent() {
 
               {/* Help Center*/}
               <Route path="/help" element={<HelpCenter />} />
+
+              {/* Support Ticket (mailto-based) — authenticated contact page */}
+              <Route path="/contact" element={<SupportTicket />} />
 
               {/* Team Management*/}
               <Route path="/team" element={<RoleGuard requireAdmin><ClientTeamPanel /></RoleGuard>} />

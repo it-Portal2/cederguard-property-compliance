@@ -21,6 +21,7 @@ import { DetailsModal } from '../../../components/admin/DetailsModal';
 import { TABS } from '../../../components/admin/constants';
 import { UsersTab } from '../../../components/admin/UsersTab';
 import { AccessRequestsTab } from '../../../components/admin/AccessRequestsTab';
+import { SupportTicketsTab } from '../../../components/admin/SupportTicketsTab';
 import { ActivityTab } from '../../../components/admin/ActivityTab';
 import { ProjectsTab } from '../../../components/admin/ProjectsTab';
 import { PricingTab } from '../../../components/admin/PricingTab';
@@ -157,6 +158,7 @@ export function AdminPanel() {
             )}
             {tab === 'users' && <UsersTab isAdmin={userIsSuperAdmin} />}
             {tab === 'access-requests' && <AccessRequestsTab isAdmin={userIsSuperAdmin} />}
+            {tab === 'support-tickets' && <SupportTicketsTab isAdmin={userIsSuperAdmin} />}
             {tab === 'mappings' && <MappingManager />}
             {tab === 'regulations' && <RegulationManager />}
             {tab === 'pricing' && <PricingTab />}

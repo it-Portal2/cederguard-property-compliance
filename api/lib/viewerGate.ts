@@ -55,6 +55,12 @@ export const VIEWER_ALLOWED_ACTIONS: ReadonlySet<string> = new Set([
   // the access-request flow itself must always be reachable
   'getMyAccessRequest',
   'createAccessRequest',
+
+  // support ticket system is reachable by all authenticated users
+  'createSupportTicket',
+  'getMySupportTickets',
+  'getSupportTicketDetails',
+  'addSupportTicketMessage',
 ]);
 
 export const ACCESS_RESTRICTED_CODE = 'ACCESS_RESTRICTED';

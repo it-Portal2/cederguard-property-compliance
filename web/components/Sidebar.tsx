@@ -47,6 +47,7 @@ import {
   Search,
   SlidersHorizontal,
   Blocks,
+  LifeBuoy,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { useStore } from "../store/useStore";
@@ -875,6 +876,12 @@ export function Sidebar() {
                   icon={HelpCircle}
                   label="Help Centre"
                   iconClass="text-indigo-500"
+                />
+                <NavItem
+                  to="/contact"
+                  icon={LifeBuoy}
+                  label="Support Ticket"
+                  iconClass="text-violet-500"
                 />
               </NavGroup>
             )}

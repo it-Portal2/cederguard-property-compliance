@@ -1,4 +1,4 @@
-import { Users, Building2, Shield, Briefcase, User, BarChart, History, Settings, Loader2, Cpu, UserCheck } from 'lucide-react';
+import { Users, Building2, Shield, Briefcase, User, BarChart, History, Settings, Loader2, Cpu, UserCheck, LifeBuoy } from 'lucide-react';
 import { clsx } from 'clsx';
 
 // ─── Role Configuration ────────────────────────────────────────────────────────
@@ -32,6 +32,11 @@ export const ACTIVITY_ICONS: Record<string, { label: string; color: string }> = 
     pm_added_to_programme: { label: 'PM Added to Programme', color: 'text-emerald-600 bg-emerald-50' },
     pm_removed_from_programme: { label: 'PM Removed from Programme', color: 'text-amber-600 bg-amber-50' },
     admin_user_promoted: { label: 'Role Changed', color: 'text-violet-600 bg-violet-50' },
+    access_request: { label: 'Access Request', color: 'text-amber-600 bg-amber-50' },
+    export: { label: 'Export', color: 'text-indigo-600 bg-indigo-50' },
+    user_status_change: { label: 'Status Changed', color: 'text-slate-600 bg-slate-100' },
+    system: { label: 'System', color: 'text-indigo-600 bg-indigo-50' },
+    other: { label: 'Activity', color: 'text-slate-600 bg-slate-100' },
     pm_level_updated: { label: 'PM Level Changed', color: 'text-slate-600 bg-slate-50' },
     default: { label: 'Activity', color: 'text-slate-600 bg-slate-100' },
 };
@@ -57,6 +62,7 @@ export const TABS = [
     { id: 'overview', label: 'Overview', icon: BarChart },
     { id: 'users', label: 'Users', icon: Users },
     { id: 'access-requests', label: 'Access Requests', icon: UserCheck },
+    { id: 'support-tickets', label: 'Support Tickets', icon: LifeBuoy },
     { id: 'mappings', label: 'Mapping Editor', icon: Briefcase },
     { id: 'regulations', label: 'Regulations', icon: Shield },
     { id: 'pricing', label: 'Cost Config', icon: Settings },

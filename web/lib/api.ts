@@ -857,4 +857,24 @@ export const api = {
   integrationGenerateFeedKey: () =>
     callApi("integrationGenerateFeedKey", {}),
   integrationRevokeFeedKey: () => callApi("integrationRevokeFeedKey", {}),
+
+  // --- Support Tickets (Authenticated / Admin) ---
+  createSupportTicket: (payload: {
+    subject: string;
+    category: string;
+    priority: string;
+    description: string;
+    propertyRef?: string;
+    stepsToReproduce?: string;
+    impact?: string;
+    contactPhone?: string;
+  }) => callApi("createSupportTicket", payload),
+  getMySupportTickets: () => callApi("getMySupportTickets", {}),
+  getSupportTicketDetails: (args: { id?: string; ticketCode?: string }) =>
+    callApi("getSupportTicketDetails", args),
+  addSupportTicketMessage: (args: { id: string; message: string; newStatus?: string }) =>
+    callApi("addSupportTicketMessage", args),
+  adminGetSupportTickets: () => callApi("adminGetSupportTickets", {}),
+  adminUpdateSupportTicketStatus: (args: { id: string; status: string; resolutionNotes?: string }) =>
+    callApi("adminUpdateSupportTicketStatus", args),
 };

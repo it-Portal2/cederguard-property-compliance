@@ -31,6 +31,7 @@ import { assuranceRoutes } from './assurance.js';
 import { integrationsRoutes } from './integrations.js';
 import { accessRequestsRoutes } from './accessRequests.js';
 import { agentRoutes } from './agents.js';
+import { supportTicketsRoutes } from './supportTickets.js';
 
 export const allRoutes: Record<string, any> = {
   ...projectRoutes,
@@ -66,4 +67,5 @@ export const allRoutes: Record<string, any> = {
   ...accessRequestsRoutes,
   ...alertEngineRoutes,
   ...agentRoutes,
+  ...supportTicketsRoutes,
 };
