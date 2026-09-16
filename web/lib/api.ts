@@ -865,9 +865,12 @@ export const api = {
   // --- Support Tickets (Authenticated / Admin) ---
   createSupportTicket: (payload: {
     subject: string;
-    category: string;
+    category?: string;
+    featureArea?: string;
+    issueType?: string;
     priority: string;
     description: string;
+    projectRef?: string;
     propertyRef?: string;
     stepsToReproduce?: string;
     impact?: string;

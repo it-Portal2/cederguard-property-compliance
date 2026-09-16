@@ -6,29 +6,14 @@ import {
   TicketCheck,
   AlertTriangle,
   Bug,
-  Lightbulb,
-  UserCog,
   HelpCircle,
   CheckCircle2,
-  Copy,
   Mail,
   Clock,
-  ShieldAlert,
-  Building2,
-  Flame,
-  FileCheck,
-  Zap,
-  Droplets,
-  Layers,
-  Search,
-  MessageSquare,
-  ArrowRight,
-  ExternalLink,
   ChevronRight,
   RefreshCw,
   X,
   Loader2,
-  CheckCircle,
   PlusCircle,
   SlidersHorizontal,
   Paperclip,
@@ -38,66 +23,79 @@ import {
   BookOpen,
   Maximize2,
   Shield,
-  Sparkles,
+  FolderKanban,
+  Wrench,
+  MessageSquare,
 } from 'lucide-react';
 import { useStore } from '../../../store/useStore';
 import { api } from '../../../lib/api';
 import PageHeader from '../../../components/PageHeader';
 import { Link } from 'react-router';
-import { isSuperAdmin } from '../../../lib/roles';
+import { isSuperAdmin, getFriendlyRoleLabel } from '../../../lib/roles';
 
-/* ── Category options matching UK Social Housing & Compliance ────── */
-const CATEGORIES = [
-  { id: 'technical_issue', label: 'Technical Issue / Platform Glitch', icon: Bug, color: 'text-amber-600 bg-amber-50 border-amber-200' },
-  { id: 'golden_thread', label: 'Golden Thread & Building Safety Act 2022', icon: ShieldAlert, color: 'text-indigo-600 bg-indigo-50 border-indigo-200' },
-  { id: 'fire_safety', label: 'Fire Safety (FRAEW, PAS 79 / PAS 9980)', icon: Flame, color: 'text-rose-600 bg-rose-50 border-rose-200' },
-  { id: 'gas_eicr', label: 'Gas (LGSR) & Electrical (EICR) Compliance', icon: Zap, color: 'text-amber-600 bg-amber-50 border-amber-200' },
-  { id: 'damp_mould', label: "Damp, Mould & Awaab's Law Hazards", icon: Droplets, color: 'text-cyan-600 bg-cyan-50 border-cyan-200' },
-  { id: 'integrations', label: 'Integrations, API & Webhook Sync', icon: Layers, color: 'text-purple-600 bg-purple-50 border-purple-200' },
-  { id: 'account_access', label: 'User Roles, Multi-Council Access & RBAC', icon: UserCog, color: 'text-blue-600 bg-blue-50 border-blue-200' },
-  { id: 'statutory_query', label: 'General Statutory Compliance Inquiry', icon: HelpCircle, color: 'text-slate-600 bg-slate-50 border-slate-200' },
+/* ── Platform Feature Areas (SaaS Application Modules) ────── */
+export const FEATURE_AREAS = [
+  { id: 'programmes_projects', label: 'Programmes & Projects (Initiation, Plan, Schemes)' },
+  { id: 'compliance_tracker', label: 'Compliance (Setup, Tracker, Evidence & Documents)' },
+  { id: 'risk_management', label: 'Risk Management (Risk Register, Issues Log, Alerts)' },
+  { id: 'programme_governance', label: 'Programme Governance (Reports, Forward Plan, Meetings)' },
+  { id: 'technical_assurance', label: 'Technical Assurance Companion (TAC Enquiries & RFIs)' },
+  { id: 'resource_planner', label: 'Resource Planner (Timeline, Demand, Capacity)' },
+  { id: 'escalations_incidents', label: 'Escalations, Controls & Incidents Register' },
+  { id: 'reporting_dashboards', label: 'Executive Dashboards, Reports & Trends' },
+  { id: 'user_roles_access', label: 'User Roles, Permissions & Workspace Settings' },
+  { id: 'exports_documents', label: 'Document Exports (PDF, Excel, CSV) & Uploads' },
+  { id: 'general_platform', label: 'General Navigation, UI Glitch or Performance' },
 ] as const;
 
-/* ── Urgency levels & SLAs ────── */
-const PRIORITIES = [
+/* ── Technical Issue Types ────── */
+export const ISSUE_TYPES = [
+  { id: 'bug_error', label: 'Bug / Unexpected Error Message' },
+  { id: 'data_save', label: 'Data Saving / Form Submission Failure' },
+  { id: 'file_upload', label: 'File or Screenshot Upload Problem' },
+  { id: 'export_failure', label: 'PDF or Data Export Generation Failure' },
+  { id: 'access_permission', label: 'Permission Denied / Feature Access Issue' },
+  { id: 'data_discrepancy', label: 'Calculation, Metric, or Status Discrepancy' },
+  { id: 'slow_performance', label: 'Slow Performance or Page Freezing' },
+  { id: 'feature_inquiry', label: 'Feature Question / How-To Guidance' },
+] as const;
+
+/* ── Urgency levels & standard operational SLAs ────── */
+export const PRIORITIES = [
   {
     id: 'low',
-    label: 'Standard (Low)',
-    sla: '48-72 hrs',
-    desc: 'General inquiry or non-urgent UI improvement.',
+    label: 'Low',
+    sla: 'Within 48-72 hours',
+    desc: 'General inquiry, feature question, or minor non-blocking UI improvement.',
     badgeClass: 'text-slate-700 bg-slate-100 border-slate-200',
-    dotClass: 'bg-slate-400',
   },
   {
     id: 'medium',
-    label: 'Medium (Operational)',
-    sla: '24 hrs',
-    desc: 'Daily task impairment with available manual workaround.',
+    label: 'Medium',
+    sla: 'Within 24 hours',
+    desc: 'Operational task impairment with an available workaround.',
     badgeClass: 'text-blue-700 bg-blue-50 border-blue-200',
-    dotClass: 'bg-blue-500',
   },
   {
     id: 'high',
-    label: 'High (Compliance Deadline)',
-    sla: '8-12 hrs',
-    desc: 'Approaching statutory deadline or core workflow blocker.',
+    label: 'High',
+    sla: 'Within 8-12 hours',
+    desc: 'Core workflow blocker or approaching programme/reporting milestone.',
     badgeClass: 'text-amber-700 bg-amber-50 border-amber-200',
-    dotClass: 'bg-amber-500',
   },
   {
     id: 'critical',
-    label: 'Critical (Statutory Emergency)',
-    sla: '< 2 hrs',
-    desc: 'System outage, regulatory breach, or immediate safety hazard.',
+    label: 'Critical',
+    sla: 'Within 2 hours',
+    desc: 'System outage, critical data loss, or blocking all team members.',
     badgeClass: 'text-red-700 bg-red-50 border-red-200',
-    dotClass: 'bg-red-500',
   },
 ] as const;
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; border: string }> = {
   open: { label: 'Open / Assigned', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
   in_progress: { label: 'In Progress', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
-  waiting_on_client: { label: 'Waiting on Council', bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' },
+  waiting_on_client: { label: 'Waiting on User', bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' },
   resolved: { label: 'Resolved', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
   closed: { label: 'Closed', bg: 'bg-slate-100', text: 'text-slate-600', border: 'border-slate-200' },
 };
@@ -123,10 +121,11 @@ export function SupportTicket() {
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
 
   // Form states
-  const [category, setCategory] = useState<string>('technical_issue');
+  const [featureArea, setFeatureArea] = useState<string>('programmes_projects');
+  const [issueType, setIssueType] = useState<string>('bug_error');
   const [priority, setPriority] = useState<string>('medium');
   const [subject, setSubject] = useState('');
-  const [propertyRef, setPropertyRef] = useState('');
+  const [projectRef, setProjectRef] = useState('');
   const [description, setDescription] = useState('');
   const [stepsToReproduce, setStepsToReproduce] = useState('');
   const [impact, setImpact] = useState('');
@@ -156,9 +155,15 @@ export function SupportTicket() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
-  const userName = user?.displayName || user?.name || user?.email?.split('@')[0] || 'Council Officer';
+  const userName = user?.displayName || user?.name || user?.email?.split('@')[0] || 'User';
   const userEmail = user?.email || '';
-  const userOrg = (user as any)?.organizationName || (user as any)?.councilName || (user as any)?.company || 'Housing Governance Partner';
+  const userRoleLabel = getFriendlyRoleLabel(user?.role || (user as any)?.profile?.role, (user as any)?.pmLevel);
+  const userOrg =
+    (user as any)?.organizationName ||
+    (user as any)?.councilName ||
+    (user as any)?.company ||
+    (user as any)?.clientName ||
+    '';
 
   const loadMyTickets = useCallback(async () => {
     setLoadingTickets(true);
@@ -213,11 +218,17 @@ export function SupportTicket() {
     reader.readAsDataURL(file);
   };
 
-  // Construct structured mailto link for direct escalation to CTO
+  // Construct structured mailto link for direct escalation
   const buildMailtoUrl = (ticketCode?: string) => {
     const code = ticketCode || selectedTicket?.ticketCode || generateClientTicketId();
-    const catLabel = CATEGORIES.find(c => c.id === category)?.label || category;
-    const prioLabel = PRIORITIES.find(p => p.id === priority)?.label || priority;
+    const areaObj = FEATURE_AREAS.find(a => a.id === featureArea);
+    const issueObj = ISSUE_TYPES.find(i => i.id === issueType);
+    const prioObj = PRIORITIES.find(p => p.id === priority);
+
+    const areaLabel = areaObj?.label || selectedTicket?.featureArea || featureArea;
+    const issueLabel = issueObj?.label || selectedTicket?.issueType || issueType;
+    const prioLabel = prioObj?.label || selectedTicket?.priority || priority;
+
     const now = new Date().toLocaleString('en-GB', {
       day: '2-digit',
       month: 'short',
@@ -227,24 +238,28 @@ export function SupportTicket() {
       hour12: false,
     });
 
-    const emailSubject = `[ESCALATED TICKET #${code}] ${subject || selectedTicket?.subject || 'Urgent Platform Assistance'}`;
+    const emailSubject = `[TECHNICAL ESCALATION #${code}] ${subject || selectedTicket?.subject || 'Platform Support Request'}`;
     const emailBody = [
       '======================================================',
-      'CEDARGUARD STATUTORY & TECHNICAL ESCALATION',
+      'CEDARGUARD TECHNICAL PLATFORM ESCALATION',
       '======================================================',
       '',
-      `TICKET ID:       ${code}`,
-      `DATE / TIME:     ${now} (UTC)`,
-      `ORGANISATION:    ${userOrg}`,
-      `OFFICER NAME:    ${userName}`,
-      `OFFICER EMAIL:   ${userEmail}`,
-      contactPhone ? `CONTACT PHONE:   ${contactPhone}` : '',
+      `TICKET ID:          ${code}`,
+      `DATE / TIME:        ${now} (UTC)`,
+      `OFFICER NAME:       ${userName}`,
+      `OFFICER EMAIL:      ${userEmail}`,
+      `OFFICER ROLE:       ${userRoleLabel}`,
+      userOrg ? `ORGANISATION:       ${userOrg}` : '',
+      contactPhone ? `CONTACT PHONE:      ${contactPhone}` : '',
       '',
-      `CATEGORY:        ${catLabel}`,
-      `URGENCY LEVEL:   ${prioLabel}`,
-      propertyRef ? `PROPERTY / UPRN: ${propertyRef}` : '',
+      `APPLICATION AREA:   ${areaLabel}`,
+      `ISSUE TYPE:         ${issueLabel}`,
+      `URGENCY:            ${prioLabel}`,
+      (projectRef || selectedTicket?.projectRef || selectedTicket?.propertyRef)
+        ? `PROJECT/PROGRAMME:  ${projectRef || selectedTicket?.projectRef || selectedTicket?.propertyRef}`
+        : '',
       '',
-      'ISSUE DETAILS:',
+      'TECHNICAL ISSUE DETAILS:',
       '------------------------------------------------------',
       description || selectedTicket?.description || '(No additional description entered)',
       '',
@@ -252,42 +267,49 @@ export function SupportTicket() {
       stepsToReproduce ? '------------------------------------------------------' : '',
       stepsToReproduce ? stepsToReproduce : '',
       '',
-      impact ? 'OPERATIONAL / REGULATORY IMPACT:' : '',
+      impact ? 'OPERATIONAL IMPACT / DEADLINE:' : '',
       impact ? '------------------------------------------------------' : '',
       impact ? impact : '',
       '',
       attachedFile ? `ATTACHMENT INCLUDED: ${attachedFile.name}` : '',
       '======================================================',
-      'Pre-formatted escalation dispatched via CedarGuard Compliance Suite.',
+      'Dispatched via CedarGuard Support Console.',
     ]
       .filter(Boolean)
       .join('\n');
 
-    return `mailto:cto@cedarguard.co.uk?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+    return `mailto:support@cedarguard.co.uk?cc=cto@cedarguard.co.uk&subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
   };
 
   const handleEscalateDirectly = () => {
     window.location.href = buildMailtoUrl();
   };
 
-  // Submitting the ticket -> Immediately opens the chat system per client requirement!
+  // Submitting the ticket
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!subject.trim() || !description.trim()) {
-      setSubmitError('Please provide both a subject and detailed description.');
+      setSubmitError('Please provide both a ticket subject and description of the problem.');
       return;
     }
 
     setIsSubmitting(true);
     setSubmitError(null);
 
+    const areaObj = FEATURE_AREAS.find(a => a.id === featureArea);
+    const issueObj = ISSUE_TYPES.find(i => i.id === issueType);
+    const categoryLabel = `${areaObj?.label || featureArea} — ${issueObj?.label || issueType}`;
+
     try {
       const res = await api.createSupportTicket({
         subject: subject.trim(),
-        category,
+        category: categoryLabel,
+        featureArea,
+        issueType,
         priority,
         description: description.trim(),
-        propertyRef: propertyRef.trim() || undefined,
+        projectRef: projectRef.trim() || undefined,
+        propertyRef: projectRef.trim() || undefined,
         stepsToReproduce: stepsToReproduce.trim() || undefined,
         impact: impact.trim() || undefined,
         contactPhone: contactPhone.trim() || undefined,
@@ -303,14 +325,14 @@ export function SupportTicket() {
       if (res.success && res.ticket) {
         // Reset form fields
         setSubject('');
-        setPropertyRef('');
+        setProjectRef('');
         setDescription('');
         setStepsToReproduce('');
         setImpact('');
         setContactPhone('');
         setAttachedFile(null);
 
-        // Fetch full ticket details and immediately open the chat system!
+        // Fetch full ticket details and immediately open the chat system
         const detailRes = await api.getSupportTicketDetails({ id: res.ticket.id });
         if (detailRes.success && detailRes.ticket) {
           setSelectedTicket(detailRes.ticket);
@@ -329,7 +351,7 @@ export function SupportTicket() {
                 id: '2',
                 senderName: 'CedarGuard Support Desk',
                 isAdmin: true,
-                text: `Ticket registered. We are working on it and you should receive an update within 24 hours.`,
+                text: `Ticket registered. Our technical team is reviewing your report.`,
                 createdAt: new Date().toISOString(),
               },
             ],
@@ -396,12 +418,13 @@ export function SupportTicket() {
   const filteredTickets = useMemo(() => {
     return tickets.filter(t => {
       const matchesStatus = statusFilter === 'all' || t.status === statusFilter;
+      const refVal = t.projectRef || t.propertyRef || '';
       const matchesSearch =
         !searchQuery ||
         t.ticketCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         t.subject?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         t.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.propertyRef?.toLowerCase().includes(searchQuery.toLowerCase());
+        refVal.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesStatus && matchesSearch;
     });
   }, [tickets, statusFilter, searchQuery]);
@@ -410,17 +433,17 @@ export function SupportTicket() {
     <div className="space-y-6 max-w-6xl mx-auto pb-12">
       {/* ── Page Header ── */}
       <PageHeader
-        title="Technical Support & Governance Tickets"
-        subtitle="Direct technical escalation, issue reporting with screenshots, and back-and-forth ticket chat with CedarGuard technical leads."
+        title="Technical Support & Diagnostics"
+        subtitle="Report software issues, application bugs, export errors, or data saving problems with screenshots and direct back-and-forth messaging with CedarGuard engineering."
         breadcrumbs={[{ label: 'Help Centre' }, { label: 'Support Tickets' }]}
       />
 
       {/* ── Admin Mode Banner (if user is Super Admin) ── */}
       {isAdmin && (
-        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md border border-indigo-500/30">
+        <div className="bg-slate-900 text-white rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm border border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center shrink-0">
-              <Shield className="w-5 h-5 text-indigo-400" />
+            <div className="w-9 h-9 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center shrink-0">
+              <Shield className="w-4 h-4 text-indigo-400" />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -434,52 +457,52 @@ export function SupportTicket() {
           </div>
           <Link
             to="/admin?tab=support-tickets"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white transition-all shadow-sm shrink-0 whitespace-nowrap"
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white transition-all shadow-sm shrink-0 whitespace-nowrap"
           >
-            <ShieldAlert className="w-4 h-4" />
+            <Wrench className="w-3.5 h-3.5" />
             Open Admin Resolution Desk
           </Link>
         </div>
       )}
 
-      {/* ── Authority Trust & SLA Ribbon ── */}
+      {/* ── Platform Support Overview Ribbon ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm flex items-start gap-3">
+        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs flex items-start gap-3">
           <div className="w-10 h-10 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
-            <ShieldAlert className="w-5 h-5 text-indigo-600" />
+            <LifeBuoy className="w-5 h-5 text-indigo-600" />
           </div>
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Statutory Compliance</h4>
-            <p className="text-sm font-semibold text-slate-800 mt-0.5">Building Safety & Golden Thread</p>
-            <p className="text-xs text-slate-400 mt-1">Direct support for BSA 2022, Fire, Gas, and Awaab's Law issues.</p>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Platform Support</h4>
+            <p className="text-sm font-semibold text-slate-800 mt-0.5">Application Assistance</p>
+            <p className="text-xs text-slate-500 mt-1">Direct engineering support for project workflows, data saving, uploads, and exports.</p>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm flex items-start gap-3">
+        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs flex items-start gap-3">
           <div className="w-10 h-10 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
             <Clock className="w-5 h-5 text-emerald-600" />
           </div>
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Fast Resolution Guarantee</h4>
-            <p className="text-sm font-semibold text-slate-800 mt-0.5">Active Updates in 24 Hours</p>
-            <p className="text-xs text-slate-400 mt-1">Chat directly with technicians without needing to call.</p>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Resolution Updates</h4>
+            <p className="text-sm font-semibold text-slate-800 mt-0.5">Dedicated Ticket Thread</p>
+            <p className="text-xs text-slate-500 mt-1">Chat directly with technicians and post follow-up attachments inside your ticket thread.</p>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm flex items-start gap-3">
-          <div className="w-10 h-10 rounded-lg bg-amber-50 border border-amber-100 flex items-center justify-center shrink-0">
-            <Mail className="w-5 h-5 text-amber-600" />
+        <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs flex items-start gap-3">
+          <div className="w-10 h-10 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
+            <Mail className="w-5 h-5 text-blue-600" />
           </div>
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Direct CTO Escalation</h4>
-            <p className="text-sm font-semibold text-slate-800 mt-0.5">cto@cedarguard.co.uk</p>
-            <p className="text-xs text-slate-400 mt-1">One-click prefilled mailto logic with full ticket telemetry.</p>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Direct Escalation</h4>
+            <p className="text-sm font-semibold text-slate-800 mt-0.5">support@cedarguard.co.uk</p>
+            <p className="text-xs text-slate-500 mt-1">Priority escalation dispatch with full telemetry directly to technical leadership.</p>
           </div>
         </div>
       </div>
 
       {/* ── Client Video & Training Guide Callout ── */}
-      <div className="bg-slate-900 text-white rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+      <div className="bg-slate-900 text-white rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
             <Video className="w-4 h-4 text-indigo-400" />
@@ -499,14 +522,14 @@ export function SupportTicket() {
       </div>
 
       {/* ── Main Tab Navigation ── */}
-      <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-3 gap-3">
         <div className="flex gap-2">
           <button
             onClick={() => setActiveTab('create')}
             className={clsx(
               'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all',
               activeTab === 'create'
-                ? 'bg-indigo-600 text-white shadow-sm'
+                ? 'bg-indigo-600 text-white shadow-xs'
                 : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
             )}
           >
@@ -519,12 +542,12 @@ export function SupportTicket() {
             className={clsx(
               'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all',
               activeTab === 'history'
-                ? 'bg-indigo-600 text-white shadow-sm'
+                ? 'bg-indigo-600 text-white shadow-xs'
                 : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
             )}
           >
             <TicketCheck className="w-4 h-4" />
-            My Tickets & Live Chat
+            My Tickets & Chat
             {tickets.length > 0 && (
               <span className={clsx(
                 'ml-1 px-2 py-0.5 text-xs rounded-full font-bold',
@@ -536,14 +559,14 @@ export function SupportTicket() {
           </button>
         </div>
 
-        <div className="text-xs text-slate-500 hidden sm:block">
-          Signed in as: <strong className="text-slate-700">{userEmail}</strong> ({userOrg})
+        <div className="text-xs text-slate-600">
+          Signed in as: <strong className="text-slate-900">{userEmail}</strong> · <span className="font-semibold text-indigo-700">{userRoleLabel}</span>{userOrg ? ` (${userOrg})` : ''}
         </div>
       </div>
 
       {/* ── TAB 1: CREATE TICKET ── */}
       {activeTab === 'create' && (
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 sm:p-8 space-y-6">
           {submitError && (
             <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-center gap-3">
               <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
@@ -553,25 +576,43 @@ export function SupportTicket() {
 
           {/* Section 1: Classification */}
           <div>
-            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
-              <SlidersHorizontal className="w-4 h-4 text-indigo-500" />
-              1. Classification & Scope
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-600 mb-3 flex items-center gap-2">
+              <SlidersHorizontal className="w-4 h-4 text-indigo-600" />
+              1. Platform Feature & Technical Scope
             </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Category */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Feature Area */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
-                  Technical Problem / Stream <span className="text-red-500">*</span>
+                  Application Feature / Module <span className="text-red-500">*</span>
                 </label>
                 <select
-                  value={category}
-                  onChange={e => setCategory(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  value={featureArea}
+                  onChange={e => setFeatureArea(e.target.value)}
+                  className="w-full h-11 px-3 rounded-lg border border-slate-300 bg-white text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium"
                 >
-                  {CATEGORIES.map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.label}
+                  {FEATURE_AREAS.map(a => (
+                    <option key={a.id} value={a.id}>
+                      {a.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Issue Type */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
+                  Technical Problem Type <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={issueType}
+                  onChange={e => setIssueType(e.target.value)}
+                  className="w-full h-11 px-3 rounded-lg border border-slate-300 bg-white text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium"
+                >
+                  {ISSUE_TYPES.map(t => (
+                    <option key={t.id} value={t.id}>
+                      {t.label}
                     </option>
                   ))}
                 </select>
@@ -580,42 +621,32 @@ export function SupportTicket() {
               {/* Priority / Urgency */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
-                  Urgency & Target SLA <span className="text-red-500">*</span>
+                  Urgency Level <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={priority}
                   onChange={e => setPriority(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full h-11 px-3 rounded-lg border border-slate-300 bg-white text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium"
                 >
                   {PRIORITIES.map(p => (
                     <option key={p.id} value={p.id}>
-                      {p.label} — SLA: {p.sla}
+                      {p.label} — Response {p.sla}
                     </option>
                   ))}
                 </select>
               </div>
             </div>
 
-            {/* Priority SLA helper card */}
+            {/* Clean Priority SLA helper card (clean & professional, no fake AI gimmicks) */}
             {(() => {
               const selectedPrio = PRIORITIES.find(p => p.id === priority) || PRIORITIES[1];
               return (
-                <div className={clsx('mt-3 p-3 rounded-xl border text-xs flex items-center justify-between gap-3 shadow-2xs backdrop-blur-xs transition-all', selectedPrio.badgeClass)}>
-                  <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
-                    {/* Glowing pulsating AI Core beacon */}
-                    <div className="relative flex items-center justify-center w-4 h-4 shrink-0">
-                      <span className="animate-ping absolute inline-flex h-3.5 w-3.5 rounded-full bg-gradient-to-r from-cyan-400 via-indigo-500 to-violet-500 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-gradient-to-tr from-cyan-400 via-indigo-500 to-purple-600 shadow-[0_0_10px_rgba(99,102,241,0.95)] ring-1.5 ring-white/80" />
-                    </div>
-
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold tracking-wider uppercase bg-gradient-to-r from-indigo-500/15 via-purple-500/15 to-cyan-500/15 text-indigo-700 border border-indigo-200/80 shadow-2xs shrink-0">
-                      <Sparkles className="w-3 h-3 text-indigo-600 animate-pulse" />
-                      <span>AI SLA</span>
-                    </span>
-
-                    <span><strong>{selectedPrio.label}:</strong> {selectedPrio.desc}</span>
+                <div className={clsx('mt-3 p-3 rounded-xl border text-xs flex items-center justify-between gap-3 transition-colors', selectedPrio.badgeClass)}>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-slate-900">{selectedPrio.label}:</span>
+                    <span className="text-slate-700">{selectedPrio.desc}</span>
                   </div>
-                  <span className="font-bold font-mono shrink-0 px-2 py-0.5 rounded bg-white/70 border border-slate-200/60 shadow-2xs text-[11px]">
+                  <span className="font-semibold shrink-0 px-2 py-0.5 rounded bg-white border border-slate-200 text-[11px] text-slate-800 shadow-2xs">
                     Target: {selectedPrio.sla}
                   </span>
                 </div>
@@ -623,11 +654,11 @@ export function SupportTicket() {
             })()}
           </div>
 
-          {/* Section 2: Subject & Property Reference */}
+          {/* Section 2: Subject & Project/Programme Reference */}
           <div className="border-t border-slate-100 pt-6">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-indigo-500" />
-              2. Subject & Asset References
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-600 mb-3 flex items-center gap-2">
+              <FolderKanban className="w-4 h-4 text-indigo-600" />
+              2. Subject & Project / Programme Identification
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -638,7 +669,7 @@ export function SupportTicket() {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Issue uploading Fire Door certification or error on UPRN export"
+                  placeholder="e.g. Error exporting Programme Risk Register to PDF or failed saving milestone"
                   value={subject}
                   onChange={e => setSubject(e.target.value)}
                   className="w-full h-11 px-3.5 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
@@ -647,14 +678,14 @@ export function SupportTicket() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
-                  Property Reference / UPRN <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
+                  Project / Programme Reference <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. UPRN 1000234891 / Block 4B"
-                  value={propertyRef}
-                  onChange={e => setPropertyRef(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="e.g. PRJ-2024-001 or Decarbonisation Programme"
+                  value={projectRef}
+                  onChange={e => setProjectRef(e.target.value)}
+                  className="w-full h-11 px-3.5 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono"
                 />
               </div>
             </div>
@@ -662,20 +693,20 @@ export function SupportTicket() {
 
           {/* Section 3: Detailed Description & File/Screenshot Upload */}
           <div className="border-t border-slate-100 pt-6">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-indigo-500" />
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-600 mb-3 flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 text-indigo-600" />
               3. Issue Description & Screenshot Attachment
             </h3>
 
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
-                  Detailed Description of the Issue <span className="text-red-500">*</span>
+                  What were you doing and what problem did you face? <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   rows={4}
                   required
-                  placeholder="Please describe what problem you encountered, error messages, or what you were trying to do..."
+                  placeholder="Please describe what task you were performing in the application, what error or unexpected behavior occurred, and what you expected to happen..."
                   value={description}
                   onChange={e => setDescription(e.target.value)}
                   className="w-full p-3.5 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
@@ -685,7 +716,7 @@ export function SupportTicket() {
               {/* ── Image / Screenshot Upload Field ── */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
-                  Upload Screenshot / Error Image <span className="text-slate-400 text-[10px] font-normal">(Recommended to demonstrate problem)</span>
+                  Upload Screenshot or Error Document <span className="text-slate-400 text-[10px] font-normal">(Recommended to demonstrate problem)</span>
                 </label>
 
                 <input
@@ -749,7 +780,7 @@ export function SupportTicket() {
                   </label>
                   <textarea
                     rows={2}
-                    placeholder="1. Click on Compliance Tracker&#10;2. Filter by Block A..."
+                    placeholder="1. Opened Programme Governance -> Reports&#10;2. Clicked 'Export PDF'..."
                     value={stepsToReproduce}
                     onChange={e => setStepsToReproduce(e.target.value)}
                     className="w-full p-2.5 rounded-lg border border-slate-300 bg-white text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -758,11 +789,11 @@ export function SupportTicket() {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
-                    Operational Impact <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
+                    Operational / Team Impact <span className="text-slate-400 text-[10px] font-normal">(Optional)</span>
                   </label>
                   <textarea
                     rows={2}
-                    placeholder="e.g. Audit deadline approaching, or team unable to export..."
+                    placeholder="e.g. Committee meeting scheduled for tomorrow, or team unable to record items..."
                     value={impact}
                     onChange={e => setImpact(e.target.value)}
                     className="w-full p-2.5 rounded-lg border border-slate-300 bg-white text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -788,7 +819,7 @@ export function SupportTicket() {
           {/* Submission Controls */}
           <div className="border-t border-slate-200 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="text-xs text-slate-500">
-              Submitting opens the live ticket chat and dispatches confirmation to your inbox.
+              Submitting registers your ticket and opens the live chat thread with CedarGuard engineering.
             </div>
 
             <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -796,18 +827,18 @@ export function SupportTicket() {
               <button
                 type="button"
                 onClick={handleEscalateDirectly}
-                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold shadow-sm transition-colors"
-                title="Opens your email client directly to cto@cedarguard.co.uk with prefilled ticket details"
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold shadow-xs transition-colors"
+                title="Opens your email client directly to support@cedarguard.co.uk with prefilled ticket details"
               >
-                <Mail className="w-4 h-4 text-amber-600" />
-                Escalate via Direct Email (CTO)
+                <Mail className="w-4 h-4 text-slate-600" />
+                Escalate via Email
               </button>
 
               {/* Primary Submit Button */}
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-sm transition-all disabled:opacity-50"
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-xs transition-all disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <>
@@ -830,12 +861,12 @@ export function SupportTicket() {
       {activeTab === 'history' && (
         <div className="space-y-4">
           {/* Filter Bar */}
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             <div className="relative flex-1">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search tickets by ID, subject, or compliance stream..."
+                placeholder="Search tickets by ID, subject, project, or feature area..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -851,7 +882,7 @@ export function SupportTicket() {
                 <option value="all">All Statuses</option>
                 <option value="open">Open</option>
                 <option value="in_progress">In Progress</option>
-                <option value="waiting_on_client">Waiting on Council</option>
+                <option value="waiting_on_client">Waiting on User</option>
                 <option value="resolved">Resolved</option>
                 <option value="closed">Closed</option>
               </select>
@@ -890,10 +921,11 @@ export function SupportTicket() {
               </button>
             </div>
           ) : (
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden divide-y divide-slate-100">
               {filteredTickets.map(ticket => {
                 const statusCfg = STATUS_CONFIG[ticket.status] || STATUS_CONFIG.open;
                 const prioCfg = PRIORITIES.find(p => p.id === ticket.priority) || PRIORITIES[1];
+                const refCode = ticket.projectRef || ticket.propertyRef;
 
                 return (
                   <div
@@ -912,9 +944,9 @@ export function SupportTicket() {
                         <span className={clsx('text-[11px] font-semibold px-2 py-0.5 rounded border uppercase', prioCfg.badgeClass)}>
                           {prioCfg.label}
                         </span>
-                        {ticket.propertyRef && (
-                          <span className="text-[11px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded font-mono">
-                            {ticket.propertyRef}
+                        {refCode && (
+                          <span className="text-[11px] text-slate-600 bg-slate-100 px-2 py-0.5 rounded font-mono">
+                            {refCode}
                           </span>
                         )}
                         {ticket.attachmentUrl && (
@@ -947,9 +979,9 @@ export function SupportTicket() {
         </div>
       )}
 
-      {/* ── TICKET DISCUSSION & DETAILS DRAWER / MODAL ── */}
+      {/* ── TICKET DISCUSSION & DETAILS DRAWER ── */}
       {selectedTicket && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex justify-end animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex justify-end animate-in fade-in duration-200">
           <div className="w-full max-w-2xl bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-200">
             {/* Header */}
             <div className="p-5 sm:p-6 border-b border-slate-200 flex items-start justify-between bg-slate-50/70">
@@ -980,14 +1012,14 @@ export function SupportTicket() {
               </button>
             </div>
 
-            {/* Current Status Update Notice Banner (client requirement) */}
+            {/* Current Status Update Notice Banner */}
             <div className="bg-indigo-50/80 border-b border-indigo-100 px-6 py-2.5 flex items-center justify-between text-xs text-indigo-900">
               <div className="flex items-center gap-2 font-medium">
                 <Clock className="w-4 h-4 text-indigo-600 shrink-0" />
                 <span>
                   {selectedTicket.status === 'resolved'
-                    ? 'This ticket has been marked resolved. You can reply if you need further help.'
-                    : 'We are working on it — expected update within 24 hours.'}
+                    ? 'This ticket has been marked resolved. You can reply below if you require further assistance.'
+                    : 'We are actively investigating — expect updates directly in this thread.'}
                 </span>
               </div>
               <button
@@ -1003,37 +1035,37 @@ export function SupportTicket() {
               {/* Metadata Panel */}
               <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 text-xs grid grid-cols-2 gap-3">
                 <div>
-                  <span className="text-slate-400 font-bold uppercase">Council / Organisation</span>
-                  <p className="font-semibold text-slate-800 mt-0.5">{selectedTicket.clientName || userOrg}</p>
+                  <span className="text-slate-400 font-bold uppercase">Organisation</span>
+                  <p className="font-semibold text-slate-800 mt-0.5">{selectedTicket.clientName || userOrg || 'Workspace'}</p>
                 </div>
                 <div>
                   <span className="text-slate-400 font-bold uppercase">Logged By</span>
                   <p className="font-semibold text-slate-800 mt-0.5">{selectedTicket.userName} ({selectedTicket.userEmail})</p>
                 </div>
                 <div>
-                  <span className="text-slate-400 font-bold uppercase">Compliance Stream</span>
-                  <p className="font-semibold text-slate-800 mt-0.5 capitalize">
-                    {CATEGORIES.find(c => c.id === selectedTicket.category)?.label || selectedTicket.category?.replace('_', ' ')}
+                  <span className="text-slate-400 font-bold uppercase">Feature Area / Stream</span>
+                  <p className="font-semibold text-slate-800 mt-0.5">
+                    {selectedTicket.category || 'General Platform'}
                   </p>
                 </div>
                 <div>
-                  <span className="text-slate-400 font-bold uppercase">Property Reference</span>
-                  <p className="font-semibold text-slate-800 mt-0.5 font-mono">{selectedTicket.propertyRef || 'N/A'}</p>
+                  <span className="text-slate-400 font-bold uppercase">Project / Programme Ref</span>
+                  <p className="font-semibold text-slate-800 mt-0.5 font-mono">{selectedTicket.projectRef || selectedTicket.propertyRef || 'N/A'}</p>
                 </div>
               </div>
 
               {/* Direct Escalation Action within Drawer */}
-              <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between">
+              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
                 <div>
-                  <div className="text-xs font-bold text-amber-900">Need immediate leadership intervention?</div>
-                  <div className="text-[11px] text-amber-700 mt-0.5">Send a direct escalation to our CTO with full ticket telemetry.</div>
+                  <div className="text-xs font-bold text-slate-800">Need urgent escalation?</div>
+                  <div className="text-[11px] text-slate-500 mt-0.5">Send a direct email escalation to engineering leads.</div>
                 </div>
                 <a
                   href={buildMailtoUrl(selectedTicket.ticketCode)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-colors shrink-0"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors shrink-0"
                 >
                   <Mail className="w-3.5 h-3.5" />
-                  Escalate to CTO
+                  Escalate via Email
                 </a>
               </div>
 
@@ -1060,7 +1092,7 @@ export function SupportTicket() {
                             ? 'bg-slate-50 border-slate-200'
                             : isStaff
                             ? 'bg-indigo-50/70 border-indigo-200 ml-4'
-                            : 'bg-white border-slate-200 mr-4 shadow-sm'
+                            : 'bg-white border-slate-200 mr-4 shadow-2xs'
                         )}
                       >
                         <div className="flex items-center justify-between font-semibold">
@@ -1068,7 +1100,7 @@ export function SupportTicket() {
                             {msg.senderName}
                             {isStaff && (
                               <span className="text-[10px] bg-indigo-200 text-indigo-800 px-1.5 py-0.2 rounded ml-1 font-normal">
-                                {isSystem ? 'Automated Desk' : 'CedarGuard Support'}
+                                {isSystem ? 'Support Desk' : 'CedarGuard Engineering'}
                               </span>
                             )}
                           </span>
@@ -1154,7 +1186,7 @@ export function SupportTicket() {
 
                 <textarea
                   rows={2}
-                  placeholder="Type a response or add more context..."
+                  placeholder="Type a response or add more diagnostic context..."
                   value={replyText}
                   onChange={e => setReplyText(e.target.value)}
                   className="flex-1 p-2.5 rounded-lg border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"

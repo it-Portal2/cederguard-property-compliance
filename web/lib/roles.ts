@@ -189,6 +189,25 @@ export const isStrategicDirector = (role?: string | null) => {
   return canonicalRole(role) === "strategic_director";
 };
 
+export const getFriendlyRoleLabel = (role?: string | null, pmLevel?: string | null): string => {
+  const r = (role || "").trim().toLowerCase();
+  if (r === "admin" || r === "super_admin" || r === "superadmin" || r === "admin_employee") return "Super Administrator";
+  if (r === "client_admin") return "Client Administrator";
+  if (r === "programme_manager") return "Programme Manager";
+  if (r === "senior_project_manager" || r === "senior_pm") return "Senior Project Manager";
+  if (r === "assistant_project_manager" || r === "assistant_pm") return "Assistant Project Manager";
+  if (r === "project_coordinator") return "Project Coordinator";
+  if (r === "project_manager") {
+    return pmLevel ? pmLevelLabel(pmLevel) : "Project Manager";
+  }
+  if (r === "strategic_director") return "Strategic Director";
+  if (r === "enterprise") return "Enterprise Admin";
+  if (r === "auditor") return "Compliance Auditor";
+  if (r === "contractor") return "Contractor";
+  if (r === "viewer") return "Viewer";
+  return role ? role.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : "Team Member";
+};
+
 // Technical Assurance Companion — Compliance Lead extra role.
 // Stored alongside the user's primary role on `users/{uid}.extraRoles[]`
 // (or its TAC-specific alias `tacExtraRoles[]`). Additive helper — does NOT

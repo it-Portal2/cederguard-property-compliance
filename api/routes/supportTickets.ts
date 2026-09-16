@@ -26,8 +26,11 @@ export const supportTicketsRoutes: Record<string, (req: any, res: any, ctx: ApiC
     const {
       subject,
       category = 'technical_issue',
+      featureArea,
+      issueType,
       priority = 'medium',
       description,
+      projectRef,
       propertyRef,
       stepsToReproduce,
       impact,
@@ -41,36 +44,36 @@ export const supportTicketsRoutes: Record<string, (req: any, res: any, ctx: ApiC
       return res.status(400).json({ error: 'Description is required' });
     }
 
-    // Get user profile organization/name
-    let orgName = 'Local Authority / Housing Provider';
+    // Get user profile organization and role
+    let orgName = '';
     let userRole = 'user';
     try {
       const userDoc = await db.collection('users').doc(uid).get();
       if (userDoc.exists) {
         const udata = userDoc.data() || {};
         userRole = udata.role || 'user';
-        if (udata.organizationName) {
-          orgName = udata.organizationName;
-        } else if (udata.councilName) {
-          orgName = udata.councilName;
-        } else if (udata.company) {
-          orgName = udata.company;
-        }
+        orgName = udata.organizationName || udata.councilName || udata.company || udata.clientName || '';
       }
     } catch {
       // Non-fatal profile lookup
+    }
+    if (!orgName) {
+      orgName = 'CedarGuard Workspace';
     }
 
     const ticketCode = generateTicketCode();
     const cleanSubject = subject.trim();
     const cleanDescription = description.trim();
+    const resolvedRef = projectRef ? String(projectRef).trim() : (propertyRef ? String(propertyRef).trim() : null);
+    const cleanCategory = featureArea && issueType
+      ? `${featureArea}: ${issueType}`
+      : String(category || 'technical_issue').trim();
     const cleanPriority = ['low', 'medium', 'high', 'critical'].includes(priority) ? priority : 'medium';
-    const cleanCategory = String(category || 'technical_issue').trim();
     const callerName = displayName || email.split('@')[0] || 'User';
 
     const slaMap: Record<string, string> = {
-      critical: 'Within 2 Hours (Urgent Statutory Escalation)',
-      high: 'Within 8-12 Hours (Compliance Target)',
+      critical: 'Within 2 Hours (Urgent Technical Escalation)',
+      high: 'Within 8-12 Hours (High Priority)',
       medium: 'Within 24 Hours (Standard Support)',
       low: 'Within 48 Hours (General Inquiry)',
     };
@@ -119,7 +122,7 @@ export const supportTicketsRoutes: Record<string, (req: any, res: any, ctx: ApiC
         senderEmail: 'support@cedarguard.co.uk',
         senderRole: 'support_admin',
         isAdmin: true,
-        text: `Hello ${callerName}, your ticket has been assigned reference ${ticketCode}. Our engineering & technical compliance team is actively reviewing your request. Target update window: ${slaText}. You can post replies or additional screenshots directly in this chat thread.`,
+        text: `Hello ${callerName}, your ticket has been assigned reference ${ticketCode}. Our engineering and technical team is actively reviewing your request. Target update window: ${slaText}. You can post replies or additional screenshots directly in this chat thread.`,
         createdAt: new Date(Date.now() + 500).toISOString(),
       },
     ];
@@ -128,13 +131,16 @@ export const supportTicketsRoutes: Record<string, (req: any, res: any, ctx: ApiC
       ticketCode,
       subject: cleanSubject,
       category: cleanCategory,
+      featureArea: featureArea ? String(featureArea).trim() : null,
+      issueType: issueType ? String(issueType).trim() : null,
       priority: cleanPriority,
       status: 'open',
       description: cleanDescription,
       attachmentUrl: attachmentUrl || null,
       attachmentName: attachmentName || null,
       attachmentType: attachmentType || null,
-      propertyRef: propertyRef ? String(propertyRef).trim() : null,
+      projectRef: resolvedRef,
+      propertyRef: resolvedRef,
       stepsToReproduce: stepsToReproduce ? String(stepsToReproduce).trim() : null,
       impact: impact ? String(impact).trim() : null,
       contactPhone: contactPhone ? String(contactPhone).trim() : null,
@@ -156,20 +162,12 @@ export const supportTicketsRoutes: Record<string, (req: any, res: any, ctx: ApiC
 
     // ── Resend Transactional Email #1: Confirmation to User ──
     try {
-      const slaMap: Record<string, string> = {
-        critical: 'Within 2 Hours (Urgent Statutory Escalation)',
-        high: 'Within 8-12 Hours (Compliance Target)',
-        medium: 'Within 24-48 Hours (Standard Support)',
-        low: 'Within 48-72 Hours (General Inquiry)',
-      };
-      const slaText = slaMap[cleanPriority] || 'Within 24-48 Hours';
-
       const userHtml = renderEmail({
         previewText: `[${ticketCode}] CedarGuard support ticket received: ${cleanSubject}`,
         heading: `Support Ticket Acknowledged: ${ticketCode}`,
         bodyHtml: `
           <p style="margin:0 0 16px;">Dear ${escapeHtml(callerName)},</p>
-          <p style="margin:0 0 16px;">Thank you for contacting CedarGuard Technical Support. Your ticket has been logged into our technical governance system and assigned for review.</p>
+          <p style="margin:0 0 16px;">Thank you for contacting CedarGuard Technical Support. Your ticket has been logged into our support queue and assigned for review.</p>
           
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;">
             <tr>
@@ -188,10 +186,10 @@ export const supportTicketsRoutes: Record<string, (req: any, res: any, ctx: ApiC
               <td style="padding:12px 16px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#64748b;"><strong>Target SLA</strong></td>
               <td style="padding:12px 16px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#0f172a;">${escapeHtml(slaText)}</td>
             </tr>
-            ${ticketData.propertyRef ? `
+            ${resolvedRef ? `
             <tr>
-              <td style="padding:12px 16px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#64748b;"><strong>Property / UPRN</strong></td>
-              <td style="padding:12px 16px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#0f172a;">${escapeHtml(ticketData.propertyRef)}</td>
+              <td style="padding:12px 16px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#64748b;"><strong>Project / Programme</strong></td>
+              <td style="padding:12px 16px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#0f172a;">${escapeHtml(resolvedRef)}</td>
             </tr>` : ''}
             <tr>
               <td style="padding:12px 16px;font-size:13px;color:#64748b;"><strong>Details</strong></td>
@@ -203,30 +201,30 @@ export const supportTicketsRoutes: Record<string, (req: any, res: any, ctx: ApiC
         `,
         cta: {
           label: 'Track Ticket in CedarGuard',
-          url: `${APP_URL}/contact`,
+          url: `${APP_URL}/support-tickets`,
         },
       });
 
       await sendEmail({
         to: email,
-        subject: `[${ticketCode}] CedarGuard Support Ticket Logged: ${cleanSubject}`,
+        subject: `[${ticketCode}] Support Ticket Acknowledged: ${cleanSubject}`,
         html: userHtml,
       });
     } catch (err: any) {
       console.error('[createSupportTicket] User confirmation email failed (non-fatal):', err?.message || err);
     }
 
-    // ── Resend Transactional Email #2: Notification to CTO & Tech Team ──
+    // ── Resend Transactional Email #2: Alert to CTO & Escalation Team ──
     try {
       const ctoHtml = renderEmail({
         previewText: `[NEW TICKET - ${cleanPriority.toUpperCase()}] ${ticketCode}: ${cleanSubject}`,
-        heading: `New Support Ticket: ${ticketCode}`,
+        heading: `New Support Ticket Logged: ${ticketCode}`,
         bodyHtml: `
-          <p style="margin:0 0 16px;">A new support ticket has been raised on the CedarGuard platform.</p>
+          <p style="margin:0 0 16px;">A new support ticket has been submitted on CedarGuard Platform.</p>
           
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;">
             <tr>
-              <td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#64748b;width:30%;"><strong>Ticket Code</strong></td>
+              <td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#64748b;width:30%;"><strong>Ticket ID</strong></td>
               <td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#0f172a;font-weight:bold;">${escapeHtml(ticketCode)}</td>
             </tr>
             <tr>
@@ -245,10 +243,10 @@ export const supportTicketsRoutes: Record<string, (req: any, res: any, ctx: ApiC
               <td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#64748b;"><strong>Priority</strong></td>
               <td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#b91c1c;font-weight:600;text-transform:uppercase;">${escapeHtml(cleanPriority)}</td>
             </tr>
-            ${ticketData.propertyRef ? `
+            ${resolvedRef ? `
             <tr>
-              <td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#64748b;"><strong>Property / UPRN</strong></td>
-              <td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#0f172a;">${escapeHtml(ticketData.propertyRef)}</td>
+              <td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#64748b;"><strong>Project / Programme</strong></td>
+              <td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#0f172a;">${escapeHtml(resolvedRef)}</td>
             </tr>` : ''}
             <tr>
               <td style="padding:10px 14px;font-size:13px;color:#64748b;"><strong>Issue Details</strong></td>

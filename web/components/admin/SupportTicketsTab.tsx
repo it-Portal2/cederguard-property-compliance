@@ -99,7 +99,8 @@ export function SupportTicketsTab({ isAdmin }: { isAdmin: boolean }) {
         t.userName?.toLowerCase().includes(q) ||
         t.userEmail?.toLowerCase().includes(q) ||
         t.clientName?.toLowerCase().includes(q) ||
-        t.propertyRef?.toLowerCase().includes(q);
+        t.category?.toLowerCase().includes(q) ||
+        (t.projectRef || t.propertyRef)?.toLowerCase().includes(q);
       return matchesStatus && matchesPriority && matchesSearch;
     });
   }, [tickets, statusFilter, priorityFilter, searchQuery]);
@@ -260,7 +261,7 @@ export function SupportTicketsTab({ isAdmin }: { isAdmin: boolean }) {
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
-            placeholder="Search by ticket ID, subject, requester, council, or UPRN..."
+            placeholder="Search by ticket ID, subject, requester, organisation, or project..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-4 py-2 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -324,8 +325,8 @@ export function SupportTicketsTab({ isAdmin }: { isAdmin: boolean }) {
               <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[11px]">
                 <tr>
                   <th className="py-3.5 px-4">Ticket Ref</th>
-                  <th className="py-3.5 px-4">Requester & Council</th>
-                  <th className="py-3.5 px-4">Subject & Category</th>
+                  <th className="py-3.5 px-4">Requester & Organisation</th>
+                  <th className="py-3.5 px-4">Subject & Feature Area</th>
                   <th className="py-3.5 px-4">Priority</th>
                   <th className="py-3.5 px-4">Status</th>
                   <th className="py-3.5 px-4">Date</th>
@@ -447,20 +448,20 @@ export function SupportTicketsTab({ isAdmin }: { isAdmin: boolean }) {
               {/* Requester Profile Panel */}
               <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 text-xs grid grid-cols-2 gap-3">
                 <div>
-                  <span className="text-slate-400 font-bold uppercase">Council / Organisation</span>
-                  <p className="font-bold text-slate-900 mt-0.5">{selectedTicket.clientName || 'Housing Partner'}</p>
+                  <span className="text-slate-400 font-bold uppercase">Organisation</span>
+                  <p className="font-bold text-slate-900 mt-0.5">{selectedTicket.clientName || 'Organisation'}</p>
                 </div>
                 <div>
                   <span className="text-slate-400 font-bold uppercase">Requester Officer</span>
                   <p className="font-bold text-slate-900 mt-0.5">{selectedTicket.userName} ({selectedTicket.userEmail})</p>
                 </div>
                 <div>
-                  <span className="text-slate-400 font-bold uppercase">Compliance Stream</span>
-                  <p className="font-bold text-slate-900 mt-0.5 capitalize">{selectedTicket.category?.replace('_', ' ')}</p>
+                  <span className="text-slate-400 font-bold uppercase">Feature Area / Issue Type</span>
+                  <p className="font-bold text-slate-900 mt-0.5">{selectedTicket.category || 'General Platform'}</p>
                 </div>
                 <div>
-                  <span className="text-slate-400 font-bold uppercase">Property Ref / UPRN</span>
-                  <p className="font-bold text-slate-900 mt-0.5 font-mono">{selectedTicket.propertyRef || 'N/A'}</p>
+                  <span className="text-slate-400 font-bold uppercase">Project / Programme Ref</span>
+                  <p className="font-bold text-slate-900 mt-0.5 font-mono">{selectedTicket.projectRef || selectedTicket.propertyRef || 'N/A'}</p>
                 </div>
                 {selectedTicket.contactPhone && (
                   <div className="col-span-2">
