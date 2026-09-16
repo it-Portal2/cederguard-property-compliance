@@ -15,6 +15,8 @@ import {
   Check,
   Menu,
   Search,
+  LifeBuoy,
+  HelpCircle,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { SinceLastVisitBadge } from "./SinceLastVisitBadge";
@@ -470,6 +472,21 @@ export function Header() {
         </button>
       </div>
 
+      {/* Support Tickets Quick Action */}
+      <div className="relative flex items-center shrink-0">
+        <button
+          onClick={() => navigate("/support-tickets")}
+          className="p-2 rounded-lg hover:bg-indigo-50/80 text-slate-500 hover:text-indigo-600 transition-all flex items-center gap-1.5 group"
+          title="Support Tickets & Escalation"
+          aria-label="Support Tickets"
+        >
+          <LifeBuoy className="w-5 h-5 text-slate-500 group-hover:text-indigo-600 group-hover:rotate-45 transition-transform" />
+          <span className="hidden xl:inline text-xs font-medium text-slate-600 group-hover:text-indigo-600">
+            Support
+          </span>
+        </button>
+      </div>
+
       {/* Notifications */}
       <div
         className="relative flex items-center gap-3 shrink-0"
@@ -597,6 +614,28 @@ export function Header() {
             >
               <User className="w-4 h-4" />
               Profile Settings
+            </button>
+
+            <button
+              onClick={() => {
+                setShowUserDropdown(false);
+                navigate("/support-tickets");
+              }}
+              className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition-colors"
+            >
+              <LifeBuoy className="w-4 h-4 text-violet-600" />
+              Support Tickets
+            </button>
+
+            <button
+              onClick={() => {
+                setShowUserDropdown(false);
+                navigate("/help");
+              }}
+              className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition-colors"
+            >
+              <HelpCircle className="w-4 h-4 text-indigo-600" />
+              Help Centre
             </button>
 
             <button

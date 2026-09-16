@@ -26,6 +26,7 @@ import { ActivityTab } from '../../../components/admin/ActivityTab';
 import { ProjectsTab } from '../../../components/admin/ProjectsTab';
 import { PricingTab } from '../../../components/admin/PricingTab';
 import { OverviewTab } from '../../../components/admin/OverviewTab';
+import { AdminAgentTab } from '../../../components/admin/AdminAgentTab';
 import { AIModelsTab } from '../../../components/admin/AIModelsTab';
 import PageHeader from '../../../components/PageHeader';
 
@@ -156,6 +157,7 @@ export function AdminPanel() {
                     setTab={setTab}
                 />
             )}
+            {tab === 'agent' && <AdminAgentTab isAdmin={userIsSuperAdmin} />}
             {tab === 'users' && <UsersTab isAdmin={userIsSuperAdmin} />}
             {tab === 'access-requests' && <AccessRequestsTab isAdmin={userIsSuperAdmin} />}
             {tab === 'support-tickets' && <SupportTicketsTab isAdmin={userIsSuperAdmin} />}

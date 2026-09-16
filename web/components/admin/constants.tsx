@@ -1,10 +1,12 @@
-import { Users, Building2, Shield, Briefcase, User, BarChart, History, Settings, Loader2, Cpu, UserCheck, LifeBuoy } from 'lucide-react';
+import { Users, Building2, Shield, Briefcase, User, BarChart, History, Settings, Loader2, Cpu, UserCheck, LifeBuoy, Bot } from 'lucide-react';
 import { clsx } from 'clsx';
 
 // ─── Role Configuration ────────────────────────────────────────────────────────
 
 export const ROLE_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
     admin: { label: 'Admin', color: 'bg-purple-100 text-purple-800', icon: Shield },
+    super_admin: { label: 'Admin', color: 'bg-purple-100 text-purple-800', icon: Shield },
+    admin_employee: { label: 'Admin Employee', color: 'bg-purple-100 text-purple-800', icon: Shield },
     client_admin: { label: 'Client Admin', color: 'bg-indigo-100 text-indigo-800', icon: Building2 },
     project_manager: { label: 'Project Manager', color: 'bg-teal-100 text-teal-800', icon: Briefcase },
     senior_project_manager: { label: 'Senior Project Manager', color: 'bg-emerald-100 text-emerald-800', icon: Shield },
@@ -60,6 +62,7 @@ export const ACTIVITY_CATEGORY_BADGES: Record<string, { label: string; color: st
 
 export const TABS = [
     { id: 'overview', label: 'Overview', icon: BarChart },
+    { id: 'agent', label: 'AI Employee', icon: Bot },
     { id: 'users', label: 'Users', icon: Users },
     { id: 'access-requests', label: 'Access Requests', icon: UserCheck },
     { id: 'support-tickets', label: 'Support Tickets', icon: LifeBuoy },

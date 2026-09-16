@@ -85,6 +85,7 @@ export const GROUP_ORDER: readonly string[] = [
   "Integrations",
   "Admin",
   "Access Requests",
+  "Support Tickets",
 ];
 
 const BASE_URL = "https://cedarguard.co.uk/api";
@@ -398,6 +399,8 @@ export const API_ACTIONS: ApiActionDoc[] = [
   { action: "adminUpdateAIModelConfig", group: "Admin", title: "Update AI model config", description: "Validates and overwrites the AI model configuration document and busts its cache.", requiredRole: "Admin", params: [ { name: "config", type: "object", required: true, description: "Full AI model config payload." } ] },
   { action: "adminGetOpenRouterCatalog", group: "Admin", title: "Get OpenRouter catalog", description: "Fetches the OpenRouter model catalog, optionally forcing a refresh past the cache.", requiredRole: "Admin", params: [ { name: "force", type: "boolean", required: false, description: "Force a fresh upstream fetch." } ] },
   { action: "adminMigrateApiKeyHashes", group: "Admin", title: "Migrate API key hashes", description: "One-time idempotent migration of legacy plaintext-id API keys to hashed storage.", requiredRole: "Admin" },
+  { action: "adminAgentQuery", group: "Admin", title: "Admin AI Employee query", description: "Performs full platform telemetry enquiry, root cause analysis, and action formulation via AI.", requiredRole: "Admin", params: [ { name: "prompt", type: "string", required: true, description: "Super Admin prompt or question." }, { name: "history", type: "array", required: false, description: "Optional conversation history." } ] },
+  { action: "adminAgentExecuteAction", group: "Admin", title: "Execute Admin AI Employee action", description: "Executes an approved administrative CRUD action proposed by the AI Employee.", requiredRole: "Admin", params: [ { name: "actionType", type: "string", required: true, description: "Type of action to execute." }, { name: "params", type: "object", required: true, description: "Action parameters." }, { name: "confirmation", type: "boolean", required: true, description: "Confirmation flag." } ] },
 
   // ── Access Requests ──────────────────────────────────────────────────────
   { action: "getMyAccessRequest", group: "Access Requests", title: "Get my access request", description: "Returns the caller's current pending access request, if any.", requiredRole: "Any signed-in user" },
@@ -543,6 +546,72 @@ export const API_ACTIONS: ApiActionDoc[] = [
   { action: "hrcListCorrections", group: "Historical Reporting", title: "List snapshot corrections", description: "Returns the correction-history entries for a snapshot, optionally filtered, newest first.", requiredRole: "Any signed-in user (workspace-scoped)", params: [ { name: "yearMonth", type: "string", required: true, description: "Target month (YYYY-MM)." } ] },
   { action: "hrcCorrectSnapshotRow", group: "Historical Reporting", title: "Correct snapshot row", description: "Patches one frozen snapshot row, appends an immutable correction-history entry, and fires an audit event.", requiredRole: "Admin", params: [ { name: "yearMonth", type: "string", required: true, description: "Target month (YYYY-MM)." }, { name: "collection", type: "string", required: true, description: "Snapshot collection." }, { name: "docId", type: "string", required: true, description: "Row id." }, { name: "patch", type: "object", required: true, description: "Fields to merge." }, { name: "reason", type: "string", required: true, description: "Correction reason (min 5 chars)." } ] },
   { action: "hrcGetDeploymentMeta", group: "Historical Reporting", title: "Get deployment meta", description: "Returns the workspace's snapshot deployment metadata (first/last snapshot month and run count).", requiredRole: "Any signed-in user (workspace-scoped)" },
+
+  // ── Support Tickets ──────────────────────────────────────────────────────
+  {
+    action: "createSupportTicket",
+    group: "Support Tickets",
+    title: "Create support ticket",
+    description: "Submits a new technical support or statutory compliance ticket with optional screenshot attachments and direct SLA target.",
+    requiredRole: "Any signed-in user",
+    params: [
+      { name: "subject", type: "string", required: true, description: "Ticket summary." },
+      { name: "description", type: "string", required: true, description: "Detailed issue report." },
+      { name: "category", type: "string", required: false, description: "Problem category (e.g. technical_issue, golden_thread, fire_safety, etc.)." },
+      { name: "priority", type: "string", required: false, description: "Urgency: low, medium, high, critical." },
+      { name: "propertyRef", type: "string", required: false, description: "Optional UPRN or property reference." },
+      { name: "attachment", type: "object", required: false, description: "Optional base64 image or screenshot." },
+    ],
+  },
+  {
+    action: "getMySupportTickets",
+    group: "Support Tickets",
+    title: "Get my support tickets",
+    description: "Returns all support tickets submitted by the authenticated caller with latest status and messages.",
+    requiredRole: "Any signed-in user",
+  },
+  {
+    action: "getSupportTicketDetails",
+    group: "Support Tickets",
+    title: "Get support ticket details",
+    description: "Returns full conversation thread and telemetry for a specific ticket.",
+    requiredRole: "Any signed-in user (owner or admin)",
+    params: [
+      { name: "id", type: "string", required: false, description: "Ticket doc ID." },
+      { name: "ticketCode", type: "string", required: false, description: "CG-TKT code." },
+    ],
+  },
+  {
+    action: "addSupportTicketMessage",
+    group: "Support Tickets",
+    title: "Add message to ticket",
+    description: "Appends a message and optional screenshot attachment to a ticket conversation thread.",
+    requiredRole: "Any signed-in user (ticket owner or admin)",
+    params: [
+      { name: "id", type: "string", required: true, description: "Ticket doc ID." },
+      { name: "message", type: "string", required: false, description: "Reply message text." },
+      { name: "attachment", type: "object", required: false, description: "Optional screenshot or document." },
+    ],
+  },
+  {
+    action: "adminGetSupportTickets",
+    group: "Support Tickets",
+    title: "Admin: Get all support tickets",
+    description: "Retrieves all support tickets across all tenants with filter parameters.",
+    requiredRole: "Admin",
+  },
+  {
+    action: "adminUpdateSupportTicketStatus",
+    group: "Support Tickets",
+    title: "Admin: Update ticket status",
+    description: "Transitions ticket status (open, in_progress, waiting_on_client, resolved, closed) and logs resolution notes.",
+    requiredRole: "Admin",
+    params: [
+      { name: "id", type: "string", required: true, description: "Ticket doc ID." },
+      { name: "status", type: "string", required: true, description: "New status." },
+      { name: "resolutionNotes", type: "string", required: false, description: "Resolution notes." },
+    ],
+  },
 ];
 
 /** Set of every action name documented in this catalog (for the coverage test). */

@@ -25,7 +25,7 @@ export const SYSTEM_ADMIN_EMAILS: string[] = (() => {
       .map((e) => e.trim().toLowerCase())
       .filter(Boolean);
   }
-  return [];
+  return ["admin@cedarguard.co.uk", "ali@cedarguard.co.uk", "jeetbanerjeesujanagar@gmail.com"];
 })();
 
 export const SUPER_ADMIN_EMAIL =
@@ -42,13 +42,26 @@ export const isSystemAdmin = (email?: string) => {
 };
 
 export const isSuperAdmin = (email?: string, role?: string) => {
-  // A Super Admin is someone with the 'admin' role OR a system admin
-  return role === ROLE_STRINGS.ADMIN || isSystemAdmin(email);
+  const r = (role || "").trim().toLowerCase();
+  return (
+    r === ROLE_STRINGS.ADMIN ||
+    r === "super_admin" ||
+    r === "superadmin" ||
+    r === "admin_employee" ||
+    isSystemAdmin(email)
+  );
 };
 
-export const isAtLeastClientAdmin = (role?: UserRole) => {
+export const isAtLeastClientAdmin = (role?: UserRole | string) => {
   if (!role) return false;
-  return [ROLE_STRINGS.ADMIN, ROLE_STRINGS.CLIENT_ADMIN].includes(role as any);
+  const r = String(role).trim().toLowerCase();
+  return (
+    r === ROLE_STRINGS.ADMIN ||
+    r === "super_admin" ||
+    r === "superadmin" ||
+    r === "admin_employee" ||
+    r === ROLE_STRINGS.CLIENT_ADMIN
+  );
 };
 
 export const isAtLeastPM = (role?: UserRole) => {
@@ -81,16 +94,20 @@ export const canCreateProgramme = (role?: UserRole) => {
   return [ROLE_STRINGS.ADMIN, ROLE_STRINGS.CLIENT_ADMIN].includes(role as any);
 };
 
+export const hasCoreProjectAccess = (role?: UserRole) => {
+  return isAtLeastClientAdmin(role) || isAtLeastPM(role) || isAtLeastProgrammeManager(role);
+};
+
 export const canCreateCompliance = (role?: UserRole) => {
   if (!role) return false;
-  // Admin, Client Admin, and PM (SRO) roles can create compliance requirements
-  return isAtLeastClientAdmin(role) || isAtLeastPM(role);
+  // Admin, Client Admin, PM, and Programme Manager roles can create compliance requirements
+  return isAtLeastClientAdmin(role) || isAtLeastPM(role) || isAtLeastProgrammeManager(role);
 };
 
 export const canCreateRisk = (role?: UserRole) => {
   if (!role) return false;
-  // Admin, Client Admin, and PM (SRO) roles can create risks
-  return isAtLeastClientAdmin(role) || isAtLeastPM(role);
+  // Admin, Client Admin, PM, and Programme Manager roles can create risks
+  return isAtLeastClientAdmin(role) || isAtLeastPM(role) || isAtLeastProgrammeManager(role);
 };
 
 export const canManageWorkspace = (role?: UserRole) => {
@@ -115,10 +132,13 @@ export const isPM = (role?: string) => {
   ].includes((role || "") as any);
 };
 
-// Canonical role mapping — collapses granular role strings into the product tiers.
 export function canonicalRole(role?: string | null): CanonicalRole {
-  switch (role) {
+  const r = (role || "").trim().toLowerCase();
+  switch (r) {
     case ROLE_STRINGS.ADMIN:
+    case "super_admin":
+    case "superadmin":
+    case "admin_employee":
       return "super_admin";
     case ROLE_STRINGS.CLIENT_ADMIN:
     case ROLE_STRINGS.PROGRAMME_MANAGER:

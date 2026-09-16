@@ -11,6 +11,7 @@ import {
   X,
   MessageSquare,
   Mail,
+  LifeBuoy,
 } from 'lucide-react';
 import { useStore } from '../../../store/useStore';
 import { isSuperAdmin, isAtLeastClientAdmin } from '../../../lib/roles';
@@ -218,11 +219,11 @@ export function HelpCenter() {
               Reference
             </h4>
             <Link
-              to="/contact"
-              className="flex items-center gap-2.5 rounded-[7px] px-2.5 py-2 text-[13px] text-[oklch(0.32_0.012_270)] transition-colors hover:bg-[oklch(0.96_0.005_270)] dark:text-slate-300 dark:hover:bg-white/5"
+              to="/support-tickets"
+              className="flex items-center gap-2.5 rounded-[7px] px-2.5 py-2 text-[13px] text-[oklch(0.32_0.012_270)] transition-colors hover:bg-[oklch(0.96_0.005_270)] dark:text-slate-300 dark:hover:bg-white/5 font-medium"
             >
-              <MessageSquare className="h-3.5 w-3.5 shrink-0 text-[var(--accent)] opacity-85" />
-              Contact support
+              <LifeBuoy className="h-3.5 w-3.5 shrink-0 text-violet-600 opacity-90" />
+              Raise Support Ticket
             </Link>
           </div>
         </aside>
@@ -293,11 +294,11 @@ export function HelpCenter() {
               </p>
               <div className="flex flex-wrap items-center gap-3.5 text-[13px]">
                 <Link
-                  to="/contact"
+                  to="/support-tickets"
                   className="inline-flex items-center gap-1.5 font-medium text-[var(--accent)] transition-[gap] hover:gap-2.5"
                 >
-                  <MessageSquare className="h-3.5 w-3.5" />
-                  Contact support
+                  <LifeBuoy className="h-3.5 w-3.5 text-violet-600" />
+                  Raise Support Ticket
                 </Link>
                 <span className="text-[oklch(0.68_0.010_270)]">·</span>
                 <a

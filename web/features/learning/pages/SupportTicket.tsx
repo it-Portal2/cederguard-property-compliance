@@ -37,11 +37,14 @@ import {
   Video,
   BookOpen,
   Maximize2,
+  Shield,
+  Sparkles,
 } from 'lucide-react';
 import { useStore } from '../../../store/useStore';
 import { api } from '../../../lib/api';
 import PageHeader from '../../../components/PageHeader';
 import { Link } from 'react-router';
+import { isSuperAdmin } from '../../../lib/roles';
 
 /* ── Category options matching UK Social Housing & Compliance ────── */
 const CATEGORIES = [
@@ -112,6 +115,7 @@ function generateClientTicketId(): string {
 
 export function SupportTicket() {
   const { user } = useStore();
+  const isAdmin = isSuperAdmin(user?.email, user?.role);
 
   const [activeTab, setActiveTab] = useState<'create' | 'history'>('create');
   const [tickets, setTickets] = useState<any[]>([]);
@@ -408,8 +412,35 @@ export function SupportTicket() {
       <PageHeader
         title="Technical Support & Governance Tickets"
         subtitle="Direct technical escalation, issue reporting with screenshots, and back-and-forth ticket chat with CedarGuard technical leads."
-        breadcrumbs={[{ label: 'Help Centre', href: '/help' }, { label: 'Support Tickets' }]}
+        breadcrumbs={[{ label: 'Help Centre' }, { label: 'Support Tickets' }]}
       />
+
+      {/* ── Admin Mode Banner (if user is Super Admin) ── */}
+      {isAdmin && (
+        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md border border-indigo-500/30">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center shrink-0">
+              <Shield className="w-5 h-5 text-indigo-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-indigo-300">Admin Mode Active</span>
+                <span className="text-[10px] bg-indigo-500/30 text-indigo-200 px-2 py-0.5 rounded font-mono uppercase">Platform Admin</span>
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5">
+                Signed in as Platform Administrator ({user?.email}). You can test ticket submission here, or open the Resolution Desk to manage and reply to tickets submitted across the platform.
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/admin?tab=support-tickets"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white transition-all shadow-sm shrink-0 whitespace-nowrap"
+          >
+            <ShieldAlert className="w-4 h-4" />
+            Open Admin Resolution Desk
+          </Link>
+        </div>
+      )}
 
       {/* ── Authority Trust & SLA Ribbon ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -569,12 +600,24 @@ export function SupportTicket() {
             {(() => {
               const selectedPrio = PRIORITIES.find(p => p.id === priority) || PRIORITIES[1];
               return (
-                <div className={clsx('mt-3 p-3 rounded-lg border text-xs flex items-center justify-between', selectedPrio.badgeClass)}>
-                  <div className="flex items-center gap-2">
-                    <span className={clsx('w-2 h-2 rounded-full', selectedPrio.dotClass)} />
+                <div className={clsx('mt-3 p-3 rounded-xl border text-xs flex items-center justify-between gap-3 shadow-2xs backdrop-blur-xs transition-all', selectedPrio.badgeClass)}>
+                  <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+                    {/* Glowing pulsating AI Core beacon */}
+                    <div className="relative flex items-center justify-center w-4 h-4 shrink-0">
+                      <span className="animate-ping absolute inline-flex h-3.5 w-3.5 rounded-full bg-gradient-to-r from-cyan-400 via-indigo-500 to-violet-500 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-gradient-to-tr from-cyan-400 via-indigo-500 to-purple-600 shadow-[0_0_10px_rgba(99,102,241,0.95)] ring-1.5 ring-white/80" />
+                    </div>
+
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold tracking-wider uppercase bg-gradient-to-r from-indigo-500/15 via-purple-500/15 to-cyan-500/15 text-indigo-700 border border-indigo-200/80 shadow-2xs shrink-0">
+                      <Sparkles className="w-3 h-3 text-indigo-600 animate-pulse" />
+                      <span>AI SLA</span>
+                    </span>
+
                     <span><strong>{selectedPrio.label}:</strong> {selectedPrio.desc}</span>
                   </div>
-                  <span className="font-bold font-mono">Response target: {selectedPrio.sla}</span>
+                  <span className="font-bold font-mono shrink-0 px-2 py-0.5 rounded bg-white/70 border border-slate-200/60 shadow-2xs text-[11px]">
+                    Target: {selectedPrio.sla}
+                  </span>
                 </div>
               );
             })()}

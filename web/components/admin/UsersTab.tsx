@@ -71,8 +71,7 @@ export function UsersTab({ isAdmin }: { isAdmin: boolean }) {
     const handleRoleChange = async (targetUid: string, role: string) => {
         setUpdating(targetUid);
         try {
-            const canonical = canonicalRole(role);
-            await api.adminPromoteUser(targetUid, canonical);
+            await api.adminPromoteUser(targetUid, role);
             setUsers(prev => prev.map(u => u.uid === targetUid ? { ...u, role } : u));
         } catch (e: any) {
             setError('Update failed: ' + e.message);

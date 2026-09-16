@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { AlertCircle, Users, Building2 as Building, Briefcase, Layers, FolderKanban, Server, DollarSign, Download, Loader2 } from 'lucide-react';
+import { AlertCircle, Users, Building2 as Building, Briefcase, Layers, FolderKanban, Server, DollarSign, Download, Loader2, Bot, Sparkles, ArrowRight } from 'lucide-react';
 import { RoleBadge } from './constants';
 import { StatsCard } from '../common/StatsCard';
 import { DEFAULT_PRICING, calculatePlatformCosts } from '../../features/admin/pages/InvoiceManager';
@@ -219,6 +219,42 @@ export function OverviewTab({
                         </>
                     );
                 })()}
+            </div>
+
+            {/* AI Employee Launch Banner */}
+            <div className="relative overflow-hidden bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 rounded-xl p-6 text-white shadow-md border border-indigo-700/40">
+                <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-500/20 via-transparent to-transparent pointer-events-none" />
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+                    <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/20 shrink-0 shadow-inner">
+                            <Bot className="w-6 h-6 text-indigo-300" />
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <span className="font-mono text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 border border-indigo-400/30">
+                                    Agentic Operations
+                                </span>
+                                <span className="flex items-center gap-1 text-[11px] text-emerald-400 font-medium">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Full DB Telemetry Live
+                                </span>
+                            </div>
+                            <h3 className="text-lg font-bold text-white tracking-tight mt-1">
+                                CedarGuard Platform AI Employee
+                            </h3>
+                            <p className="text-xs text-indigo-200/90 max-w-xl mt-0.5 leading-relaxed">
+                                Autonomous administrative partner with full database inspection, root-cause diagnostic capabilities on support tickets, and confirmation-gated CRUD actions.
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setTab('agent')}
+                        className="self-start md:self-center px-4 py-2.5 bg-white text-indigo-900 hover:bg-indigo-50 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-2 shrink-0 cursor-pointer"
+                    >
+                        <Sparkles className="w-4 h-4 text-indigo-600" />
+                        Open AI Employee Console
+                        <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                </div>
             </div>
 
             {/* Detailed Client Administration Breakdown */}

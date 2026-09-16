@@ -25,9 +25,11 @@ import {
   Paperclip,
   Image as ImageIcon,
   Maximize2,
+  PlusCircle,
 } from 'lucide-react';
 import { api } from '../../lib/api';
 import { clsx } from 'clsx';
+import { Link } from 'react-router';
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; border: string }> = {
   open: { label: 'Open / Unassigned', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
@@ -187,6 +189,36 @@ export function SupportTicketsTab({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <div className="space-y-6">
+      {/* ── Top Header Bar ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div>
+          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+            <LifeBuoy className="w-5 h-5 text-indigo-600" />
+            Support Tickets Resolution Desk
+          </h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Triage, investigate, and reply to technical and compliance tickets submitted across all organizations.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => loadTickets()}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200"
+            title="Refresh tickets"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Refresh
+          </button>
+          <Link
+            to="/support-tickets"
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-colors shadow-sm"
+          >
+            <PlusCircle className="w-3.5 h-3.5" />
+            Raise a Support Ticket
+          </Link>
+        </div>
+      </div>
+
       {/* ── KPI Metric Header ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">

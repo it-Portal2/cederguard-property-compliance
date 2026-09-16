@@ -24,8 +24,10 @@ describe('Role-Based Access Control', () => {
     });
 
     describe('isSuperAdmin', () => {
-        it('should return true if role is admin', () => {
+        it('should return true if role is admin or super_admin', () => {
             expect(isSuperAdmin(REGULAR_USER, 'admin')).toBe(true);
+            expect(isSuperAdmin(REGULAR_USER, 'super_admin')).toBe(true);
+            expect(isSuperAdmin(REGULAR_USER, 'superadmin')).toBe(true);
         });
 
         it('should return true if email is system admin', () => {

@@ -393,6 +393,10 @@ export const api = {
   getActiveChatModels: () => callApi("getActiveChatModels"),
   adminGetOpenRouterCatalog: (opts: { force?: boolean } = {}) =>
     callApi("adminGetOpenRouterCatalog", { force: opts.force === true }),
+  adminAgentQuery: (prompt: string, history?: Array<{ role: string; content: string }>) =>
+    callApi("adminAgentQuery", { prompt, history }),
+  adminAgentExecuteAction: (actionType: string, params: any) =>
+    callApi("adminAgentExecuteAction", { actionType, params, confirmation: true }),
 
   adminCreateInvoice: (invoice: any) =>
     callApi("adminCreateInvoice", { invoice }),

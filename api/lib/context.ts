@@ -204,6 +204,7 @@ export type ApiContext = {
   uid: string;
   email: string;
   userData: any;
+  displayName?: string;
   primaryUid: string;
   isAdmin: boolean;
   isClientAdmin: boolean;
@@ -399,22 +400,27 @@ export async function createContext(
       }
     }
     // Admin Check Logic: Firestore role OR System Admin list
-    const SYSTEM_ADMIN_EMAILS = (process.env.SYSTEM_ADMIN_EMAILS || "")
+    const SYSTEM_ADMIN_EMAILS = (process.env.SYSTEM_ADMIN_EMAILS || process.env.VITE_SYSTEM_ADMIN_EMAILS || "admin@cedarguard.co.uk,ali@cedarguard.co.uk,jeetbanerjeesujanagar@gmail.com")
       .split(",")
       .map((e) => e.trim().toLowerCase())
       .filter(Boolean);
 
-    const isAdmin =
-      userData.role === ROLE_STRINGS.ADMIN || SYSTEM_ADMIN_EMAILS.includes(email);
+    const rawUserRole = String(userData.role || "").trim().toLowerCase();
+    const isRoleAdmin =
+      rawUserRole === ROLE_STRINGS.ADMIN ||
+      rawUserRole === "super_admin" ||
+      rawUserRole === "superadmin" ||
+      rawUserRole === "admin_employee";
+    const isAdmin = isRoleAdmin || SYSTEM_ADMIN_EMAILS.includes(email);
     if (isAdmin) {
       console.log(
-        `Admin access granted to: ${email} (Method: ${userData.role === ROLE_STRINGS.ADMIN ? "Firestore" : "Env Var"})`,
+        `Admin access granted to: ${email} (Method: ${isRoleAdmin ? "Firestore (" + rawUserRole + ")" : "Env Var"})`,
       );
     }
     const isClientAdmin =
       isAdmin ||
-      userData.role === ROLE_STRINGS.CLIENT_ADMIN ||
-      userData.role === ROLE_STRINGS.ENTERPRISE;
+      rawUserRole === ROLE_STRINGS.CLIENT_ADMIN ||
+      rawUserRole === ROLE_STRINGS.ENTERPRISE;
 
     const isAuthorizedForContext = async (contextId: string) => {
       return isAuthorizedForContextImpl(

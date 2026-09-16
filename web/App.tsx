@@ -379,11 +379,12 @@ function AppContent() {
               <Route path="/settings/developer" element={<Navigate to="/developer/keys" replace />} />
               <Route path="/api-docs" element={<Navigate to="/developer/docs" replace />} />
 
-              {/* Help Center*/}
-              <Route path="/help" element={<HelpCenter />} />
-
-              {/* Support Ticket (mailto-based) — authenticated contact page */}
+              {/* Help Center & Support Tickets */}
+              <Route path="/support-tickets" element={<SupportTicket />} />
+              <Route path="/tickets" element={<Navigate to="/support-tickets" replace />} />
+              <Route path="/support" element={<Navigate to="/support-tickets" replace />} />
               <Route path="/contact" element={<SupportTicket />} />
+              <Route path="/help" element={<HelpCenter />} />
 
               {/* Team Management*/}
               <Route path="/team" element={<RoleGuard requireAdmin><ClientTeamPanel /></RoleGuard>} />

@@ -259,20 +259,25 @@ export function Sidebar() {
       setOpenGroup("Account");
     } else if (path.startsWith("/developer")) {
       setOpenGroup("Developer / API");
-    } else if (path.startsWith("/help")) {
+    } else if (
+      path.startsWith("/help") ||
+      path.startsWith("/support") ||
+      path.startsWith("/tickets") ||
+      path.startsWith("/contact")
+    ) {
       setOpenGroup("Help");
     }
   }, [location.pathname]);
 
-  const userRole = user?.role;
+  const userRole = user?.role || user?.profile?.role;
   const isAdmin = isSuperAdmin(user?.email, userRole);
   const isClientAdmin = isAtLeastClientAdmin(userRole) || isAdmin;
   const isProjectManager = isAtLeastPM(userRole);
   // Programme Manager tier = admin / client_admin / programme_manager
   // (excludes plain project managers). Gates the Resource Planner group.
   const isProgrammeManager = isAtLeastProgrammeManager(userRole) || isAdmin;
-  // PMs + Client Admins both get access to core project functionality
-  const hasCoreAccess = isClientAdmin || isProjectManager;
+  // PMs + Client Admins + Programme Managers all get access to core platform functionality
+  const hasCoreAccess = isClientAdmin || isProjectManager || isProgrammeManager;
   const canNewProject = canCreateProject(userRole);
   const canNewProgramme = canCreateProgramme(userRole);
 
@@ -372,6 +377,12 @@ export function Sidebar() {
                 to="/projects"
                 icon={FolderKanban}
                 label="All Projects"
+              />
+              <NavItem
+                to="/support-tickets"
+                icon={LifeBuoy}
+                label="Support Tickets"
+                iconClass="text-violet-600"
               />
             </NavGroup>
 
@@ -863,33 +874,51 @@ export function Sidebar() {
               </NavGroup>
             )}
 
-            {/* HELP */}
-            {hasCoreAccess && (
-              <NavGroup
-                label="Help"
-                isAdmin={true}
-                isOpen={openGroup === "Help"}
-                onToggle={() => toggleGroup("Help")}
-              >
-                <NavItem
-                  to="/help"
-                  icon={HelpCircle}
-                  label="Help Centre"
-                  iconClass="text-indigo-500"
-                />
-                <NavItem
-                  to="/contact"
-                  icon={LifeBuoy}
-                  label="Support Ticket"
-                  iconClass="text-violet-500"
-                />
-              </NavGroup>
-            )}
+            {/* HELP & SUPPORT — available to all workspace users regardless of role */}
+            <NavGroup
+              label="Help & Support"
+              isAdmin={true}
+              isOpen={openGroup === "Help"}
+              onToggle={() => toggleGroup("Help")}
+            >
+              <NavItem
+                to="/support-tickets"
+                icon={LifeBuoy}
+                label="Support Tickets"
+                iconClass="text-violet-600"
+              />
+              <NavItem
+                to="/help"
+                icon={HelpCircle}
+                label="Help Centre"
+                iconClass="text-indigo-500"
+              />
+            </NavGroup>
           </div>
         </SidebarFilterContext.Provider>
 
         {/* Profile & Sign Out — pinned footer tray (slate-50 elevated) */}
-        <div className="border-t border-slate-200 bg-slate-50/60 px-2 pt-2.5 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] space-y-1.5">
+        <div className="border-t border-slate-200 bg-slate-50/60 px-2 pt-2 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] space-y-1.5">
+          {/* Direct Support Desk CTA */}
+          <button
+            onClick={() => {
+              navigate("/support-tickets");
+              if (window.innerWidth < 768) {
+                useStore.getState().setMobileMenuOpen(false);
+              }
+            }}
+            className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-indigo-50/80 hover:bg-indigo-100 border border-indigo-100/80 text-indigo-700 transition-all text-xs font-semibold group shadow-2xs"
+            title="Open Support Ticket Desk"
+          >
+            <span className="flex items-center gap-2 truncate">
+              <LifeBuoy className="w-3.5 h-3.5 text-indigo-600 shrink-0 group-hover:rotate-45 transition-transform" />
+              <span className="truncate">Need Help? Raise Ticket</span>
+            </span>
+            <span className="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded font-mono font-bold uppercase tracking-wider shrink-0">
+              Support
+            </span>
+          </button>
+
           {/* Avatar row — gradient circle + name + role mono uppercase + cog */}
           <button
             onClick={() => setProfileSettingsOpen(true)}

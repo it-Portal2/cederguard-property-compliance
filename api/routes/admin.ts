@@ -13,10 +13,15 @@ import {
 } from '../lib/aiModelConfig.js';
 import { fetchOpenRouterCatalog } from '../lib/openRouterCatalog.js';
 import { logActivity } from '../lib/activityLog.js';
+import { runAIOperation } from '../lib/aiOperationRouter.js';
 
 const canonicalOf = (role?: string | null): string => {
-  switch (role) {
+  const r = (role || "").trim().toLowerCase();
+  switch (r) {
     case ROLE_STRINGS.ADMIN:
+    case 'super_admin':
+    case 'superadmin':
+    case 'admin_employee':
       return 'super_admin';
     case ROLE_STRINGS.CLIENT_ADMIN:
     case ROLE_STRINGS.PROGRAMME_MANAGER:
@@ -366,8 +371,13 @@ export const adminRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =
       return res.status(403).json({ error: 'Forbidden' });
     }
 
+    const effectiveRole =
+      (newRole === 'super_admin' || newRole === 'superadmin' || newRole === 'admin' || newRole === 'admin_employee')
+        ? 'admin'
+        : newRole;
+
     const updates: any = {
-      role: newRole,
+      role: effectiveRole,
       updatedAt: new Date().toISOString(),
     };
     if (newCanonical === 'project_manager') {
@@ -381,7 +391,7 @@ export const adminRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =
       entityType: 'user',
       entityId: targetUid,
       entityName: targetData.displayName || targetData.email || targetUid,
-      details: { adminAction: true, fromRole, toRole: newRole, pmLevel: updates.pmLevel || null },
+      details: { adminAction: true, fromRole, toRole: effectiveRole, pmLevel: updates.pmLevel || null },
     });
 
     return res.status(200).json({ success: true });
@@ -703,5 +713,412 @@ export const adminRoutes: Record<string, (req: any, res: any, ctx: ApiContext) =
     });
 
     return res.status(200).json({ success: true, migrated, skipped });
+  },
+
+  // ── Admin AI Employee (Agentic Intelligence & CRUD Controller) ───────────
+  adminAgentQuery: async (req, res, ctx) => {
+    const { db, isAdmin, email, uid } = ctx;
+    if (!isAdmin) return res.status(403).json({ error: 'Forbidden: Admin access required.' });
+
+    const { prompt, history } = req.body || {};
+    if (!prompt || typeof prompt !== 'string') {
+      return res.status(400).json({ error: 'Missing prompt text' });
+    }
+
+    // 1. Multi-Collection Telemetry Aggregation
+    const [usersSnap, logsSnap, ticketsSnap, projectsSnap, progsSnap, reqsSnap] = await Promise.all([
+      db.collection('users').get(),
+      db.collection('activityLogs').orderBy('timestamp', 'desc').limit(400).get(),
+      db.collection('support_tickets').orderBy('createdAt', 'desc').limit(200).get(),
+      db.collection('projects').get(),
+      db.collection('programmes').get(),
+      db.collection('access_requests').get(),
+    ]);
+
+    const users = usersSnap.docs.map(d => ({ uid: d.id, ...d.data() }));
+    const logs = logsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const tickets = ticketsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const projects = projectsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const programmes = progsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const accessRequests = reqsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // Role counts & activity time windows
+    const roleCounts: Record<string, number> = {};
+    const now = Date.now();
+    const oneDayAgo = now - 24 * 60 * 60 * 1000;
+    const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
+    const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
+
+    let activeUsers24h = 0;
+    let activeUsers7d = 0;
+    let activeUsers30d = 0;
+    const userActivityMap: Record<string, { count: number; timestamps: number[]; email: string; displayName?: string; role: string }> = {};
+
+    users.forEach((u: any) => {
+      const r = canonicalOf(u.role);
+      roleCounts[r] = (roleCounts[r] || 0) + 1;
+      const t = u.updatedAt ? new Date(u.updatedAt).getTime() : 0;
+      if (t > oneDayAgo) activeUsers24h++;
+      if (t > sevenDaysAgo) activeUsers7d++;
+      if (t > thirtyDaysAgo) activeUsers30d++;
+    });
+
+    // Parse logs for active sessions and hour estimates
+    logs.forEach((l: any) => {
+      const uEmail = l.userEmail || l.userId || 'unknown';
+      const t = l.timestamp ? new Date(l.timestamp).getTime() : 0;
+      if (!userActivityMap[uEmail]) {
+        userActivityMap[uEmail] = { count: 0, timestamps: [], email: uEmail, role: l.details?.role || 'user' };
+      }
+      userActivityMap[uEmail].count++;
+      if (t > 0) userActivityMap[uEmail].timestamps.push(t);
+    });
+
+    // Estimate user active hours (clustering actions within 30-min active windows)
+    let totalPlatformUsageHours = 0;
+    const userUsageStats: Array<{ email: string; actions: number; estimatedHours: number }> = [];
+
+    Object.entries(userActivityMap).forEach(([userEmail, data]) => {
+      const sorted = data.timestamps.sort((a, b) => a - b);
+      let minutes = 0;
+      if (sorted.length > 0) {
+        minutes = 5; // minimum session block
+        for (let i = 1; i < sorted.length; i++) {
+          const diff = (sorted[i] - sorted[i - 1]) / (1000 * 60);
+          if (diff <= 30) {
+            minutes += diff;
+          } else {
+            minutes += 5;
+          }
+        }
+      }
+      const hours = Math.round((minutes / 60) * 10) / 10;
+      totalPlatformUsageHours += hours;
+      userUsageStats.push({ email: userEmail, actions: data.count, estimatedHours: hours });
+    });
+
+    userUsageStats.sort((a, b) => b.estimatedHours - a.estimatedHours);
+
+    // Support tickets analysis
+    const ticketStatusCounts: Record<string, number> = { open: 0, in_progress: 0, waiting_client: 0, resolved: 0, closed: 0 };
+    const ticketSeverityCounts: Record<string, number> = { critical: 0, high: 0, medium: 0, low: 0 };
+    const ticketCategoryCounts: Record<string, number> = {};
+    const unresolvedTickets: any[] = [];
+
+    tickets.forEach((t: any) => {
+      const s = t.status || 'open';
+      const p = t.priority || 'medium';
+      const c = t.category || 'technical_issue';
+      ticketStatusCounts[s] = (ticketStatusCounts[s] || 0) + 1;
+      ticketSeverityCounts[p] = (ticketSeverityCounts[p] || 0) + 1;
+      ticketCategoryCounts[c] = (ticketCategoryCounts[c] || 0) + 1;
+      if (s === 'open' || s === 'in_progress' || s === 'waiting_client') {
+        unresolvedTickets.push({
+          id: t.id,
+          code: t.ticketCode || t.id,
+          subject: t.subject,
+          description: (t.description || '').slice(0, 350),
+          category: c,
+          priority: p,
+          status: s,
+          createdAt: t.createdAt,
+          reportedBy: t.createdByEmail || t.createdByName,
+          orgName: t.orgName,
+          impact: t.impact,
+          stepsToReproduce: t.stepsToReproduce,
+        });
+      }
+    });
+
+    const pendingAccessRequests = accessRequests.filter((a: any) => a.status === 'pending');
+    const unassignedProjects = projects.filter((p: any) => !p.pm && !p.userId);
+
+    const telemetryData = {
+      userMetrics: {
+        totalUsers: users.length,
+        roleCounts,
+        activeUsers24h,
+        activeUsers7d,
+        activeUsers30d,
+        topActiveUsers: userUsageStats.slice(0, 8),
+        totalUsageHoursLogged: Math.round(totalPlatformUsageHours * 10) / 10,
+      },
+      supportTicketsMetrics: {
+        total: tickets.length,
+        unresolvedCount: unresolvedTickets.length,
+        statusCounts: ticketStatusCounts,
+        severityCounts: ticketSeverityCounts,
+        categoryCounts: ticketCategoryCounts,
+        recentUnresolved: unresolvedTickets.slice(0, 10),
+      },
+      governanceMetrics: {
+        totalProjects: projects.length,
+        totalProgrammes: programmes.length,
+        unassignedProjectsCount: unassignedProjects.length,
+        pendingAccessRequestsCount: pendingAccessRequests.length,
+        pendingAccessRequests: pendingAccessRequests.slice(0, 6).map((a: any) => ({
+          id: a.id,
+          email: a.email,
+          displayName: a.displayName,
+          reason: a.reason,
+          createdAt: a.createdAt,
+        })),
+      },
+    };
+
+    const systemPrompt = `You are the CedarGuard Platform Executive AI Employee — an autonomous, highly capable, and secure administrative operations partner serving the Platform Super Administrator (${email}).
+You have direct read access to platform-wide telemetry, user activity, usage duration, support tickets, root causes, projects, programmes, and access requests.
+
+Here is the real-time aggregated snapshot from the platform database:
+${JSON.stringify(telemetryData, null, 2)}
+
+Users Sample (First 15 for administrative reference):
+${JSON.stringify(users.slice(0, 15).map((u: any) => ({ uid: u.uid, email: u.email, displayName: u.displayName, role: u.role, clientId: u.clientId, supervisorUid: u.supervisorUid })), null, 2)}
+
+Your Core Capabilities:
+1. TELEMETRY & USAGE INQUIRIES:
+- Answer exact metrics about user counts, active users (24h/7d/30d), and estimated usage hours (how much time users spend active on the platform).
+- Detail what specific types of activity users are performing.
+
+2. ROOT CAUSE ANALYSIS & PROBLEM DIAGNOSTICS:
+- When asked about problems, bugs, or tickets reported by client admins or project managers, analyze the issue descriptions and steps to reproduce.
+- Identify the underlying root cause (e.g., missing permissions, role mismatch, unassigned supervisor, regulatory data sync, browser cache, API configuration).
+- Propose clear, permanent resolutions.
+
+3. ADMINISTRATIVE ACTION PROPOSALS (CRUD WITH APPROVAL):
+- You have CRUD administrative capabilities on the platform, BUT for safety, every mutation REQUIRES Super Admin approval.
+- When the Super Admin asks you to take an action (e.g., promote a user, update a profile, assign a supervisor, resolve a support ticket, approve an access request, transfer a project), or when your diagnostic points to an immediate fix:
+  Explain the rationale to the administrator AND include an action proposal code block in the following exact format:
+
+\`\`\`action_proposal
+{
+  "actionType": "promote_user" | "update_user" | "assign_supervisor" | "resolve_ticket" | "approve_access_request" | "reject_access_request" | "transfer_project" | "transfer_programme",
+  "title": "Clear action title",
+  "description": "Short explanation of what this action will execute",
+  "params": {
+    /* For promote_user: targetUid, newRole, pmLevel */
+    /* For update_user: targetUid, updates */
+    /* For assign_supervisor: targetUid, supervisorUid */
+    /* For resolve_ticket: ticketId, resolutionNotes, status */
+    /* For approve_access_request: requestId */
+    /* For reject_access_request: requestId, reason */
+    /* For transfer_project / transfer_programme: id, targetUser: { uid, email } */
+  },
+  "dangerLevel": "low" | "medium" | "high",
+  "impactSummary": "Impact on security, permissions, or system state."
+}
+\`\`\`
+
+Tone & Quality:
+- Executive, precise, structured, and insightful.
+- Use markdown formatting, bullet points, and tables when helpful.
+- If recommending changes to a specific user or ticket, always reference their UID or Ticket ID.`;
+
+    const conversationHistory = Array.isArray(history)
+      ? history.map((h: any) => `${h.role === 'user' ? 'Admin' : 'AI Employee'}: ${h.content}`).join('\n\n')
+      : '';
+
+    const fullPrompt = `${systemPrompt}
+
+${conversationHistory ? `Conversation Context:\n${conversationHistory}\n\n` : ''}Admin: ${prompt}
+AI Employee:`;
+
+    try {
+      const routed = await runAIOperation({
+        ctx,
+        prompt: fullPrompt,
+        config: {
+          temperature: 0.3,
+          maxOutputTokens: 4096,
+        },
+        action: 'adminAgent',
+      });
+
+      const responseText = routed?.text || '';
+
+      let proposedAction: any = null;
+      const proposalMatch = responseText.match(/```action_proposal\s*([\s\S]*?)\s*```/);
+      if (proposalMatch && proposalMatch[1]) {
+        try {
+          proposedAction = JSON.parse(proposalMatch[1]);
+          proposedAction.id = `act_${crypto.randomBytes(4).toString('hex')}`;
+        } catch (e) {
+          console.warn('[adminAgentQuery] Failed to parse action_proposal JSON:', e);
+        }
+      }
+
+      const cleanAnswer = responseText.replace(/```action_proposal[\s\S]*?```/g, '').trim();
+
+      return res.status(200).json({
+        success: true,
+        answer: cleanAnswer,
+        telemetry: telemetryData,
+        proposedAction,
+        modelUsed: routed?.modelUsed || 'cedarguard-ai',
+      });
+    } catch (err: any) {
+      console.error('[adminAgentQuery] AI execution error:', err);
+      return res.status(500).json({
+        error: 'AI Employee operation failed: ' + (err.message || 'Unknown error'),
+      });
+    }
+  },
+
+  adminAgentExecuteAction: async (req, res, ctx) => {
+    const { db, isAdmin, email, uid } = ctx;
+    if (!isAdmin) return res.status(403).json({ error: 'Forbidden: Admin access required.' });
+
+    const { actionType, params, confirmation } = req.body || {};
+    if (!confirmation) {
+      return res.status(400).json({ error: 'Admin confirmation required to execute agent action.' });
+    }
+    if (!actionType || !params) {
+      return res.status(400).json({ error: 'Missing actionType or params' });
+    }
+
+    let actionResult: any = null;
+
+    switch (actionType) {
+      case 'promote_user': {
+        const { targetUid, newRole, pmLevel } = params;
+        if (!targetUid || !newRole) return res.status(400).json({ error: 'Missing targetUid or newRole' });
+        let err: any = null;
+        const fakeRes = {
+          status: (code: number) => ({
+            json: (b: any) => { if (code >= 400) err = b?.error || 'Promotion failed'; return b; }
+          })
+        };
+        await adminRoutes.adminPromoteUser({ body: { targetUid, newRole, pmLevel } }, fakeRes, ctx);
+        if (err) return res.status(500).json({ error: err });
+        actionResult = { message: `User ${targetUid} successfully assigned role ${newRole}.` };
+        break;
+      }
+
+      case 'update_user': {
+        const { targetUid, updates } = params;
+        if (!targetUid || !updates) return res.status(400).json({ error: 'Missing targetUid or updates' });
+        let err: any = null;
+        const fakeRes = {
+          status: (code: number) => ({
+            json: (b: any) => { if (code >= 400) err = b?.error || 'Update failed'; return b; }
+          })
+        };
+        await adminRoutes.adminUpdateUser({ body: { targetUid, updates } }, fakeRes, ctx);
+        if (err) return res.status(500).json({ error: err });
+        actionResult = { message: `User ${targetUid} profile updated successfully.` };
+        break;
+      }
+
+      case 'assign_supervisor': {
+        const { targetUid, supervisorUid } = params;
+        if (!targetUid) return res.status(400).json({ error: 'Missing targetUid' });
+        let err: any = null;
+        const fakeRes = {
+          status: (code: number) => ({
+            json: (b: any) => { if (code >= 400) err = b?.error || 'Assignment failed'; return b; }
+          })
+        };
+        await adminRoutes.adminAssignSupervisor({ body: { targetUid, supervisorUid } }, fakeRes, ctx);
+        if (err) return res.status(500).json({ error: err });
+        actionResult = { message: `Supervisor ${supervisorUid || 'none'} assigned to user ${targetUid}.` };
+        break;
+      }
+
+      case 'resolve_ticket': {
+        const { ticketId, resolutionNotes, status } = params;
+        if (!ticketId) return res.status(400).json({ error: 'Missing ticketId' });
+        const ticketRef = db.collection('support_tickets').doc(ticketId);
+        const ticketDoc = await ticketRef.get();
+        if (!ticketDoc.exists) return res.status(404).json({ error: 'Support ticket not found' });
+
+        const now = new Date().toISOString();
+        const nextStatus = status || 'resolved';
+        await ticketRef.set({
+          status: nextStatus,
+          resolutionNotes: resolutionNotes || 'Resolved via Admin AI Employee.',
+          resolvedAt: now,
+          resolvedBy: email,
+          updatedAt: now,
+        }, { merge: true });
+
+        await logActivity(ctx, 'support_ticket_status_changed', {
+          category: 'update',
+          entityType: 'support_ticket',
+          entityId: ticketId,
+          entityName: ticketDoc.data()?.subject || ticketId,
+          details: { adminAgentAction: true, status: nextStatus, resolutionNotes },
+        });
+
+        actionResult = { message: `Ticket ${ticketId} updated to status '${nextStatus}'.` };
+        break;
+      }
+
+      case 'approve_access_request': {
+        const { requestId } = params;
+        if (!requestId) return res.status(400).json({ error: 'Missing requestId' });
+        const reqRef = db.collection('access_requests').doc(requestId);
+        const reqDoc = await reqRef.get();
+        if (!reqDoc.exists) return res.status(404).json({ error: 'Access request not found' });
+        const reqData: any = reqDoc.data();
+        await adminRoutes.adminPromoteUser({ body: { targetUid: reqData.uid, newRole: reqData.requestedRole || 'project_manager' } }, { status: () => ({ json: (b: any) => b }) }, ctx);
+        const now = new Date().toISOString();
+        await reqRef.set({ status: 'approved', reviewedAt: now, reviewedBy: uid }, { merge: true });
+        actionResult = { message: `Access request for ${reqData.email} approved.` };
+        break;
+      }
+
+      case 'reject_access_request': {
+        const { requestId, reason } = params;
+        if (!requestId) return res.status(400).json({ error: 'Missing requestId' });
+        const reqRef = db.collection('access_requests').doc(requestId);
+        const reqDoc = await reqRef.get();
+        if (!reqDoc.exists) return res.status(404).json({ error: 'Access request not found' });
+        const now = new Date().toISOString();
+        await reqRef.set({ status: 'rejected', reason: reason || 'Declined by Admin AI Employee', reviewedAt: now, reviewedBy: uid }, { merge: true });
+        actionResult = { message: `Access request rejected.` };
+        break;
+      }
+
+      case 'transfer_project': {
+        const { id, targetUser } = params;
+        if (!id || !targetUser) return res.status(400).json({ error: 'Missing project id or targetUser' });
+        let err: any = null;
+        await adminRoutes.adminTransferProject({ body: { id, targetUser } }, {
+          status: (code: number) => ({
+            json: (b: any) => { if (code >= 400) err = b?.error || 'Transfer failed'; return b; }
+          })
+        }, ctx);
+        if (err) return res.status(500).json({ error: err });
+        actionResult = { message: `Project ${id} transferred to ${targetUser.email || targetUser.uid}.` };
+        break;
+      }
+
+      case 'transfer_programme': {
+        const { id, targetUser } = params;
+        if (!id || !targetUser) return res.status(400).json({ error: 'Missing programme id or targetUser' });
+        let err: any = null;
+        await adminRoutes.adminTransferProgramme({ body: { id, targetUser } }, {
+          status: (code: number) => ({
+            json: (b: any) => { if (code >= 400) err = b?.error || 'Transfer failed'; return b; }
+          })
+        }, ctx);
+        if (err) return res.status(500).json({ error: err });
+        actionResult = { message: `Programme ${id} transferred to ${targetUser.email || targetUser.uid}.` };
+        break;
+      }
+
+      default:
+        return res.status(400).json({ error: `Unsupported action type: ${actionType}` });
+    }
+
+    await logActivity(ctx, 'admin_agent_action_executed', {
+      category: 'system',
+      entityType: 'admin_agent',
+      entityId: actionType,
+      entityName: `Admin AI Employee: ${actionType}`,
+      details: { executedBy: email, actionType, params, result: actionResult },
+    });
+
+    return res.status(200).json({ success: true, ...actionResult });
   },
 };
