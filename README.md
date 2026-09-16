@@ -1,180 +1,169 @@
 # CedarGuard — Property Compliance & Risk Intelligence
 
-> The control tower for social housing compliance, risk and governance.
+> The control tower for UK social housing compliance, risk and governance.
 > Real-time intelligence across every project, programme and portfolio — built for the **Building Safety Act 2022**, the **Fire Safety Act 2021**, the **Social Housing (Regulation) Act 2023**, and **Awaab's Law**.
 
-CedarGuard is a multi-tenant SaaS platform that helps UK social housing providers, local authorities, and PMOs prove compliance, manage risk, and surface what their boards actually need to see — **before** the breach line.
+CedarGuard is a multi-tenant SaaS platform that helps UK social housing providers, local authorities, and PMOs prove statutory compliance, manage multi-tier risks, and surface actionable governance insights — **before** the breach line.
 
 ---
 
-## Product preview
+## Who It's For
 
-**Sign-in — two-pane auth with live portfolio preview**
-
-![CedarGuard sign-in page](./docs/screenshots/auth.png)
-
-**Executive dashboard — portfolio KPIs, risk heatmap, 90-day outlook**
-
-![CedarGuard executive dashboard](./docs/screenshots/dashboard.png)
-
----
-
-## Who it's for
-
-| Persona | What CedarGuard does for them |
-| --- | --- |
-| **Housing executives & boards** | A live, RAG-coded view of portfolio compliance health, financial exposure, and the top risks driving it. Exportable executive reports in two clicks. |
-| **Programme & project managers** | One register for risks, issues, controls, and compliance items across every project and programme they own. AI-assisted risk identification and control suggestions cut the discovery work from days to minutes. |
-| **Compliance officers** | A regulation library mapped to statutory authorities, evidence linking, KRI tracking, and breach-alert routing — built around the new wave of post-Grenfell legislation. |
-| **Auditors & regulators** | Tamper-evident activity log, role-gated access, historical snapshots that show portfolio state at any past month, and audit-ready evidence packs. |
+| Persona | What CedarGuard Delivers |
+| :--- | :--- |
+| **Housing Executives & Boards** | A live, RAG-coded view of portfolio compliance health, financial exposure, and critical risks. One-click exportable board and statutory packs. |
+| **Programme & Project Managers** | Unified registers for risks, issues, controls, and compliance obligations across all projects. AI-assisted risk identification and control generation. |
+| **Compliance & Safety Officers** | Golden Thread repository, regulation library mapped to statutory authorities, evidence linking, and automated breach alerts. |
+| **Auditors & Regulators** | Tamper-evident activity logs, granular RBAC access controls, immutable monthly audit snapshots, and ready-to-inspect evidence dossiers. |
 
 ---
 
-## What's inside
+## Core Capabilities
 
-### Compliance intelligence
-- **Compliance profiler** — multi-phase questionnaire that maps each property to its statutory obligations based on building height, tenure, jurisdiction, and use class.
-- **AI compliance gap analysis** — Google Gemini scores every requirement against your evidence and surfaces the gaps with a recommended remediation path.
-- **Regulation library** — searchable, admin-curated reference set covering the BSA, FSA, Decent Homes Standard, HHSRS, and emerging Awaab's Law obligations.
-- **Evidence vault** — attach inspection reports, safety cases, and certificates to specific compliance items, with role-gated access.
+### 1. Compliance Intelligence & Golden Thread
+- **Compliance Profiler**: Multi-phase questionnaire mapping properties to statutory obligations based on height, tenure, jurisdiction, and use class.
+- **AI Gap Analysis**: Model-driven evaluation scoring evidence against statutory requirements with actionable remediation guidance.
+- **Statutory Stream Coverage**: Pre-configured matrices for Fire Safety (FRAEW, PAS 79 / PAS 9980), Gas (LGSR), Electrical (EICR), Asbestos, Water/Legionella, and Damp & Mould (Awaab's Law).
+- **Evidence Vault**: Secure, role-gated asset storage with cryptographic verification and document linking.
 
-### Risk management
-- **Programme- and project-level risk registers** with full 5×5 matrix scoring (gross, residual, ALE).
-- **AI risk identification** — describe the project context, get a starter risk register seeded with category-appropriate risks and KRIs.
-- **AI control suggestions** — for any risk, generate plausible mitigation controls with cost/impact framing.
-- **KRI tracking** — define thresholds, get breach alerts when a portfolio-wide indicator crosses the line.
-- **Risk → issue conversion** — promote a realised risk to an issue without losing the audit trail.
+### 2. Enterprise Risk & Issue Management
+- **5×5 Risk Scoring**: Qualitative and quantitative scoring (Gross, Residual, Annualised Loss Expectancy / ALE).
+- **KRI Monitoring**: Portfolio-level Key Risk Indicators with threshold tracking and automated breach alerts.
+- **Risk-to-Issue Escalation**: Convert emerging risks into active issues without breaking the audit chain.
 
-### Executive & operational dashboards
-- **Strategic portfolio dashboard** — KPI tiles with honest period-over-period deltas, a 5×5 risk heatmap, financial exposure roll-up, AI-generated strategic insight panel, and a **Risk outlook — next 90 days** projection with a tolerance line.
-- **Activity timeline** — every meaningful state change across the workspace in one feed.
-- **Historical view** — pick any past month and the dashboard rewinds to that month-end snapshot.
+### 3. Enterprise Support Desk & Communication Portal
+- **Dual-Mode `/contact` Portal**: Public landing page for unauthenticated visitors; enterprise **Support Ticket & Resolution Desk** for authenticated council and housing teams.
+- **Diagnostics & Image Uploads**: Categorised technical stream selection, property/UPRN tagging, and screenshot/error image attachments with instant preview.
+- **Interactive Chat & Tracking Drawer**: Live two-way communication thread per ticket with status updates (*Open*, *In Progress*, *Waiting on Council*, *Resolved*) and a 24-hour SLA guarantee.
+- **Leadership Escalation**: Prefilled `mailto:cto@cedarguard.co.uk` action with comprehensive ticket telemetry for critical statutory bottlenecks.
+- **Admin Resolution Console**: Dedicated management view in `/admin` for support engineers to inspect attachments, converse with councils, and mark issues resolved.
 
-### Governance & collaboration
-- **Multi-tenant by design** — strict client/programme/project authorisation enforced at both the API layer and Firestore security rules.
-- **Role-gated UX** — `super_admin`, `client_admin`, `project_manager`, `viewer` — every menu item, action, and field write checked.
-- **Team management** — client admins invite PMs by email, assign them to programmes and projects, and rotate roles.
-- **In-app calendar** — compliance deadlines, risk reviews, and milestones in one place.
-- **PWA + push notifications** — install on mobile, get FCM alerts for KRI breaches and overdue actions.
+### 4. Resilient Multi-Provider AI Architecture
+- **Cascading Router**: Transparent failover across admin-curated OpenRouter models, free fallback tiers, and Google Gemini Direct.
+- **Admin Model Catalog**: Real-time OpenRouter model picker and operational controls in `/admin` allowing dynamic model rotation without code deployments.
+- **Per-User Backup Keys**: Individual users can register private Gemini API keys via their profile as an isolated fallback.
 
 ---
 
-## Tech stack
+## Technology Stack
 
-| Layer | Choice |
-| --- | --- |
-| **Frontend** | React 19 · TypeScript · Vite 6 · Tailwind CSS v4 · React Router v7 · Zustand · Motion (Framer v12) · Recharts |
-| **Backend** | Express on Vercel serverless · single action-dispatch endpoint · multi-tenant authorisation context |
-| **Data** | Firebase Auth · Firestore · Firebase Cloud Messaging |
-| **AI** | Google Gemini (`@google/genai`) with retry, dual-key fallback, and quota handling |
-| **Infra** | Vercel (Fluid Compute) · PWA via `vite-plugin-pwa` · Firestore security rules + composite indexes |
-| **Design system** | Geist + Geist Mono · OKLCH-driven palette · scoped CSS where Tailwind cannot reach (auth pages) |
-
-Production build: ~6 seconds. TypeScript strict-mode-lite checked via `tsc --noEmit`. PWA precaches 27 entries.
+| Layer | Technologies |
+| :--- | :--- |
+| **Frontend** | React 19 · TypeScript · Vite 6 · Tailwind CSS v4 · React Router v7 · Zustand · Motion · Recharts |
+| **Backend** | Node.js Express · Action-dispatch architecture · Multi-tenant authorization context (`ApiContext`) |
+| **Database & Auth** | Google Firebase Authentication · Cloud Firestore · Firebase Storage |
+| **AI Routing** | OpenRouter (`openrouter.ai`) · Google Gemini (`@google/genai`) · Structured JSON outputs |
+| **Hosting & Infra** | Oracle Cloud Linux (Ubuntu) with PM2 & Nginx · Compatible with Vercel Serverless |
 
 ---
 
-## Quick start
+## Getting Started
 
-**Prerequisites**
-- Node.js 20+ (24 LTS recommended)
-- A Firebase project (Auth + Firestore enabled)
-- A Google Gemini API key
+### Prerequisites
+- Node.js 20+ (Node 22 or 24 LTS recommended)
+- Firebase Project with Authentication, Cloud Firestore, and Cloud Storage enabled
+- OpenRouter API Key and/or Google Gemini API Key
 
-**Install & run**
+### Installation
 
-```bash
-npm install
-npm run dev          # dev server on http://localhost:3000
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/cedarguard-co-uk/cedarguard.git
+   cd cedarguard
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Configure Environment Variables:**
+   Copy the example environment configuration template:
+   ```bash
+   cp .env.example .env
+   ```
+   Edit `.env` with your project's configuration values (see [Environment Configuration](#environment-configuration)).
+
+4. **Run in Development Mode:**
+   ```bash
+   npm run dev
+   ```
+   Access the web application at `http://localhost:3000`.
+
+---
+
+## Useful Scripts
+
+| Command | Description |
+| :--- | :--- |
+| `npm run dev` | Starts Vite development server with hot module replacement |
+| `npm run build` | Generates optimised production frontend bundle in `dist/` |
+| `npx tsc --noEmit` | Performs comprehensive TypeScript type-checking |
+| `npm run test` | Executes Vitest automated test suite |
+| `node server.js` | Runs the production Express server on port 4000 |
+
+---
+
+## Environment Configuration
+
+All credentials and sensitive configuration are strictly managed via environment variables. **Never commit `.env` or service account keys to version control.**
+
+Refer to [`.env.example`](./.env.example) for the full configuration reference:
+
+```env
+# Frontend (Client-side exposed via Vite)
+VITE_FIREBASE_API_KEY=your_firebase_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-project-id
+VITE_FIREBASE_STORAGE_BUCKET=your-project.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+VITE_API_URL=/api
+
+# Backend (Server-side runtime only)
+PORT=4000
+NODE_ENV=production
+FIREBASE_SERVICE_ACCOUNT={"type":"service_account",...}
+OPENROUTER_API_KEY=your_openrouter_api_key
+GEMINI_API_KEY=your_gemini_api_key
+CORS_ALLOWED_ORIGINS=https://cedarguard.co.uk,https://www.cedarguard.co.uk
 ```
 
-**Useful scripts**
+---
 
-```bash
-npx tsc --noEmit     # type-check (canonical "is it broken" gate)
-npm run build        # production build (~6s)
-npm run test         # Vitest — currently API tests only
-```
+## Production Deployment
 
-Set environment variables in `.env.local`:
+CedarGuard runs on production Linux instances managed via **PM2** and reverse-proxied by **Nginx**:
 
-```
-VITE_FIREBASE_API_KEY=...
-VITE_FIREBASE_AUTH_DOMAIN=...
-VITE_FIREBASE_PROJECT_ID=...
-VITE_FIREBASE_APP_ID=...
-GEMINI_API_KEY=...
-GEMINI_API_KEY_BACKUP=...   # optional dual-key fallback
-```
+1. **Build the production assets:**
+   ```bash
+   npm run build
+   ```
+2. **Launch API service:**
+   ```bash
+   pm2 start server.js --name cedarguard-api
+   pm2 save
+   ```
+3. **Configure Nginx:**
+   - Proxy `/api` requests to `http://127.0.0.1:4000/api`
+   - Serve static frontend files from `dist/` with single-page application fallback:
+     ```nginx
+     location / {
+         try_files $uri $uri/ /index.html;
+     }
+     ```
 
 ---
 
-## Repository map
+## Security & Compliance Standards
 
-```
-src/
-├── App.tsx                  Router + authenticated/public layout split
-├── main.tsx                 Bootstrap, StrictMode, PWA registration
-├── components/
-│   ├── table/               DynamicTable + ConfirmDialog (canonical table primitive)
-│   ├── dashboard/           v4-calibrated dashboard primitives (KPI cards, RiskBurnDown…)
-│   ├── compliance/          Compliance questionnaire + analysis summary
-│   ├── admin/               Super-admin panels
-│   ├── common/              EmptyState, StatsCard, PremiumAIBanner
-│   └── …                    Header, Sidebar, RiskModal, IssueModal, UserAvatar, AIWriter
-├── pages/                   Route-level pages (Dashboard, RiskRegister, ComplianceTracker…)
-├── store/useStore.ts        Zustand store — single source of truth for app state
-├── lib/                     api.ts, firebase.ts, roles.ts, riskMetrics.ts, utils.ts
-├── services/aiService.ts    Gemini prompt construction + response parsing
-└── data/                    Static regulation library, risk categories, sample data
-
-api/
-├── index.ts                 Express entry — action dispatcher
-├── lib/context.ts           Firebase Admin + multi-tenant authorisation context
-└── routes/                  Per-feature handler maps (auth, ai, compliance, projects, …)
-```
-
-For deeper architectural context, conventions, and contributor rules see **[CLAUDE.md](./CLAUDE.md)** — it's the canonical onboarding document.
-
----
-
-## Architecture in one paragraph
-
-A single-page React 19 app talks to a single Vercel serverless endpoint (`/api?action=…`) that dispatches to per-feature handlers and authorises every request against a `clientId`-scoped multi-tenant context. State lives in one Zustand store; Firestore is the system of record. AI features go through Gemini with retry + a backup key. The UI is Tailwind v4 first with a small set of scoped-CSS exceptions for public surfaces. Tables across the app are powered by a single `DynamicTable` primitive — search, filters, pagination, bulk and row actions, and confirm-on-action all built in. Every avatar, every status chip, every score threshold has one canonical helper — drift is treated as a bug.
-
----
-
-## Security & compliance posture
-
-- **Authentication** — Firebase Auth, passwordless by default (Google OAuth + magic-link). Friendly error mapping, client-side throttling, no raw SDK strings to the UI.
-- **Authorisation** — every API action checks `clientId`, role, and project/programme membership via `ApiContext`. Firestore rules are the second line.
-- **Data hygiene** — profile fields are whitelisted server-side; avatar URLs are `onError`-guarded so revoked OAuth tokens never break the UI.
-- **Audit trail** — every meaningful write is logged with actor + timestamp and surfaced in the admin activity log.
-- **Built for**: SOC 2 Type II, ISO 27001, and GDPR alignment.
-
----
-
-## Status
-
-Actively developed. The current sprint focus is the DynamicTable migration across all list pages, the strategic dashboard hardening pass, and the Geist Mono typography calibration sweep across the authenticated app.
-
-## Roadmap
-
-### Desktop application (in progress)
-A native desktop build for **macOS** and **Windows** packaged with **Electron.js**, so the same UI runs offline-capable on inspectors' laptops with a native install experience, OS-native notifications, and seamless update channels for both platforms.
-
-### Dual-cloud deployment (planned)
-CedarGuard will ship in two parallel deployment modes so customers can pick the cloud that matches their procurement and data-residency posture:
-
-| Mode | Backend | Target customers |
-| --- | --- | --- |
-| **Azure** | Microsoft Entra ID auth, Azure Cosmos DB / Azure SQL, Azure Functions, Azure Blob Storage, Azure AI Foundry | UK central government, local authorities, and any organisation that requires sovereign hosting under G-Cloud / OFFICIAL-SENSITIVE controls |
-| **Google Firebase** *(current)* | Firebase Auth, Firestore, Cloud Functions / Vercel, Firebase Storage, Google Gemini | Non-government social housing providers, registered providers, and PMOs |
-
-The application layer is being refactored to a thin storage/auth abstraction so the same React + TypeScript codebase can target either cloud at build time, with feature parity across both.
+- **Zero-Credential Policy**: All keys and certificates are excluded via `.gitignore`.
+- **Role-Based Access Control (RBAC)**: Granular role gating across `super_admin`, `client_admin`, `project_manager`, and `viewer`.
+- **Multi-Tenant Data Isolation**: Tenant boundary checks enforced at both the API layer and Firestore security rules.
+- **Audit Trails**: All state mutations and administrative actions are permanently recorded with actor identity and timestamps.
 
 ---
 
 ## License
 
-Internal proprietary software. © CedarGuard Risk Intelligence. All rights reserved.
+Proprietary and confidential. © CedarGuard Risk Intelligence. All rights reserved.
